@@ -1,6 +1,7 @@
 import { useTranslation } from '../contexts/LanguageContext';
 import { usePaymentTransactions } from '../../data/access/usePaymentTransactions';
 import { useOverviewData } from '../../data/access/useOverviewData';
+import { StatusChip } from './StatusChip';
 
 const fmt = (n: number) => '$' + n.toLocaleString('en-US', { maximumFractionDigits: 0 });
 
@@ -90,15 +91,7 @@ export function PaymentStatusTableCard({ variant = 'dealer' }: { variant?: 'deal
                   </p>
                 </div>
                 <div className="content-stretch flex gap-[10px] items-start px-4 py-0 relative shrink-0 w-[109px]">
-                  <div className="content-stretch flex gap-1 items-center pl-1.5 pr-2 py-[3px] relative rounded-lg shrink-0 bg-[#e8f5e9]">
-                    <svg className="size-3.5" fill="none" viewBox="0 0 14 14">
-                      <circle cx="7" cy="7" r="6" stroke="#4CAF50" strokeLinecap="round" strokeLinejoin="round" />
-                      <path d="M4.5 7l2 2 3-4" stroke="#4CAF50" strokeLinecap="round" strokeLinejoin="round" />
-                    </svg>
-                    <div className="flex flex-col font-['Roboto'] font-normal justify-center leading-[0] relative shrink-0 text-[#1b5e20] text-[11px] tracking-[0.4px]">
-                      <p className="leading-[1.66]">{t(row.status)}</p>
-                    </div>
-                  </div>
+                  <StatusChip status={row.status} />
                 </div>
               </div>
             ))}

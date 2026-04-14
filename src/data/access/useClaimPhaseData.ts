@@ -25,11 +25,13 @@ export function useClaimPhaseData() {
 
   const filtered = useMemo(() =>
     raw.filter(r => {
-      if (filters.area          && r.area          !== filters.area)          return false;
+      const rowDate = new Date(r.month + '-01');
+      if (rowDate < filters.dateFrom || rowDate > filters.dateTo) return false;
+      if (filters.area           && r.area           !== filters.area)           return false;
       if (filters.dealershipCode && r.dealershipCode !== filters.dealershipCode) return false;
       return true;
     }),
-    [raw, filters.area, filters.dealershipCode],
+    [raw, filters],
   );
 
   // claim phase = phase2Days (Pre-Approval → Final Approval)

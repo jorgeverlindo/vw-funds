@@ -83,6 +83,7 @@ export interface ClaimPhaseRecord {
   claimId: string;
   dealershipCode: string;
   area: string;
+  month: string;
   phase1Days: number;
   phase2Days: number;
   phase3Days: number;

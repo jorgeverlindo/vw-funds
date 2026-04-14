@@ -22,7 +22,7 @@ export function SpendBreakdownStackedBarCard() {
   }, [displayData]);
 
   return (
-    <div className="bg-white rounded-xl p-4 border border-[rgba(0,0,0,0.12)] flex flex-col gap-4 h-[320px] min-w-0">
+    <div className="bg-white rounded-xl p-4 border border-[rgba(0,0,0,0.12)] flex flex-col gap-4 h-[320px] min-w-0 overflow-hidden">
       <div className="flex justify-between items-center">
         <h3 className="text-base font-semibold text-[#1f1d25] tracking-[0.15px] leading-6">
           {t('Spend')}

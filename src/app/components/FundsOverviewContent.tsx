@@ -103,7 +103,7 @@ export function FundsOverviewContent() {
 
       <AccrualsSubmittedDifferenceCard />
 
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-2 gap-4 min-w-0">
         <SpendBreakdownStackedBarCard />
         <PreApprovalsPieCard />
       </div>

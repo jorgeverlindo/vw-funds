@@ -54,7 +54,7 @@ export function FundUtilizationDonutCard() {
                 />
               }
             />
-            <Pie data={chartData} cx="50%" cy="50%" innerRadius={70} outerRadius={100} paddingAngle={2} dataKey="value">
+            <Pie data={chartData} key={utilizationData.total} cx="50%" cy="50%" innerRadius={70} outerRadius={100} paddingAngle={2} dataKey="value" animationBegin={0} animationDuration={600}>
               {chartData.map((entry, index) => (
                 <Cell key={`cell-utilization-${entry.name}-${index}`} fill={entry.color} />
               ))}

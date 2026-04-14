@@ -35,19 +35,21 @@ export function useClaimPhaseData() {
     [raw, filters],
   );
 
-  // claim phase = phase2Days (Pre-Approval → Final Approval)
+  // claim phase = phase2Days (Pre-Approval → Final Approval) — top 10
   const claimTimings = useMemo(() =>
     [...filtered]
       .map(r => ({ id: r.claimId, days: r.phase2Days }))
-      .sort((a, b) => b.days - a.days),
+      .sort((a, b) => b.days - a.days)
+      .slice(0, 10),
     [filtered],
   );
 
-  // payment phase = phase3Days (Final Approval → Payment)
+  // payment phase = phase3Days (Final Approval → Payment) — top 10
   const paymentTimings = useMemo(() =>
     [...filtered]
       .map(r => ({ id: r.claimId, days: r.phase3Days }))
-      .sort((a, b) => b.days - a.days),
+      .sort((a, b) => b.days - a.days)
+      .slice(0, 10),
     [filtered],
   );
 

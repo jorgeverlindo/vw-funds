@@ -83,7 +83,7 @@ export function FundsPieCard() {
                 />
               }
             />
-            <Pie data={data} cx="50%" cy="50%" outerRadius={80} dataKey="value" paddingAngle={2}>
+            <Pie data={data} key={data.reduce((s, d) => s + d.value, 0)} cx="50%" cy="50%" outerRadius={80} dataKey="value" paddingAngle={2} animationBegin={0} animationDuration={600}>
               {data.map((entry, index) => (
                 <Cell key={`cell-funds-${entry.name}-${index}`} fill={entry.color} />
               ))}

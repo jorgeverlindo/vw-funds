@@ -256,15 +256,9 @@ export default function AppContent() {
                 {activeTab === 'overview' && (
                   <div className="h-full overflow-y-auto custom-scrollbar p-6">
                      {userType === 'dealer' ? (
-                       <FundsOverviewContent 
-                         dateRange={dateRange} 
-                         onDateRangeChange={setDateRange} 
-                       />
+                       <FundsOverviewContent />
                      ) : (
-                       <FundsOverviewOEMContent 
-                         dateRange={dateRange} 
-                         onDateRangeChange={setDateRange} 
-                       />
+                       <FundsOverviewOEMContent />
                      )}
                   </div>
                 )}

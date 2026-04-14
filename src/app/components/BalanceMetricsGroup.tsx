@@ -1,8 +1,13 @@
 import { MetricCard } from './MetricCard';
 import { useTranslation } from '../contexts/LanguageContext';
+import { useOverviewData } from '../../data/access/useOverviewData';
 
-export function BalanceMetricsGroup({ variant = 'dealer' }: { variant?: 'dealer' | 'oem' }) {
+const fmt = (n: number) =>
+  '$' + n.toLocaleString('en-US', { maximumFractionDigits: 0 });
+
+export function BalanceMetricsGroup() {
   const { t } = useTranslation();
+  const { kpis } = useOverviewData();
   return (
     <div className="bg-[#F0F2F4] flex-1 min-h-px min-w-px relative rounded-xl">
       <div className="content-stretch flex flex-col items-start p-2 relative w-full">
@@ -10,10 +15,10 @@ export function BalanceMetricsGroup({ variant = 'dealer' }: { variant?: 'dealer'
           {t('Balance')}
         </p>
         <div className="content-center flex flex-wrap gap-2 items-center relative shrink-0 w-full">
-          <MetricCard label="Current Balance" value={variant === 'oem' ? "$15,492,000" : "$155,492"} />
-          <MetricCard label="Available Funds" value={variant === 'oem' ? "$9,946,700" : "$99,467"} />
-          <MetricCard label="Proj. EOY Balance" value={variant === 'oem' ? "$1,201,300" : "$12,013"} />
-          <MetricCard label="Expiring this month" value={variant === 'oem' ? "$413,000" : "$4,130"} />
+          <MetricCard label="Current Balance"     value={fmt(kpis.currentBalance)} />
+          <MetricCard label="Available Funds"     value={fmt(kpis.availableFunds)} />
+          <MetricCard label="Proj. EOY Balance"   value={fmt(kpis.projEOYBalance)} />
+          <MetricCard label="Expiring this month" value={fmt(kpis.expiringThisMonth)} />
         </div>
       </div>
     </div>

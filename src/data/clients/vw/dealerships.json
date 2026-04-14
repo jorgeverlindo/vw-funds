@@ -1,0 +1,16 @@
+[
+  { "code": "408252", "name": "Jack Daniels Volkswagen", "city": "Paramus", "state": "NJ", "area": "Northeast", "region": "Mid-Atlantic", "active": true },
+  { "code": "423063", "name": "Armstrong Volkswagen", "city": "Gladstone", "state": "NJ", "area": "Northeast", "region": "Mid-Atlantic", "active": true },
+  { "code": "419055", "name": "Palisades Volkswagen", "city": "Nyack", "state": "NY", "area": "Northeast", "region": "Tri-State", "active": true },
+  { "code": "420012", "name": "Open Road Volkswagen Manhattan", "city": "New York", "state": "NY", "area": "Northeast", "region": "Tri-State", "active": true },
+  { "code": "422031", "name": "Douglas Volkswagen", "city": "Summit", "state": "NJ", "area": "Northeast", "region": "Mid-Atlantic", "active": true },
+  { "code": "424018", "name": "Trend Motors Volkswagen", "city": "Rockaway", "state": "NJ", "area": "Northeast", "region": "Mid-Atlantic", "active": true },
+  { "code": "409210", "name": "Paramount Volkswagen of Hickory", "city": "Hickory", "state": "NC", "area": "Southeast", "region": "Carolinas", "active": true },
+  { "code": "408253", "name": "Rick Case Volkswagen Weston", "city": "Weston", "state": "FL", "area": "Southeast", "region": "Florida", "active": true },
+  { "code": "411044", "name": "Gunther Volkswagen of Coconut Creek", "city": "Coconut Creek", "state": "FL", "area": "Southeast", "region": "Florida", "active": true },
+  { "code": "416033", "name": "Jim Ellis Volkswagen of Chamblee", "city": "Chamblee", "state": "GA", "area": "Southeast", "region": "Georgia", "active": true },
+  { "code": "402165", "name": "Volkswagen of Downtown Chicago", "city": "Chicago", "state": "IL", "area": "Midwest", "region": "Great Lakes", "active": true },
+  { "code": "421099", "name": "Luther Westside Volkswagen", "city": "Golden Valley", "state": "MN", "area": "Midwest", "region": "Upper Midwest", "active": true },
+  { "code": "414072", "name": "Emich Volkswagen", "city": "Denver", "state": "CO", "area": "West", "region": "Mountain", "active": true },
+  { "code": "418091", "name": "Hendrick Volkswagen Frisco", "city": "Frisco", "state": "TX", "area": "South Central", "region": "Texas", "active": true }
+]

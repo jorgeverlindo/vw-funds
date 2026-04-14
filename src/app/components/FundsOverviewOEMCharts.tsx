@@ -1,63 +1,30 @@
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, PieChart, Pie, Legend, ReferenceLine, LabelList, Label } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, PieChart, Pie, Legend, ReferenceLine, LabelList } from 'recharts';
 import { Download } from 'lucide-react';
 import { DatavizTooltip } from './DatavizTooltip';
 import { useTranslation } from '../contexts/LanguageContext';
+import { useOverviewData } from '../../data/access/useOverviewData';
 
-const ROOFTOPS = [
-  "Open Road VW of Manhattan",
-  "Palisades Volkswagen", 
-  "Volkswagen of Union",
-  "Reydel Volkswagen",
-  "Three County Volkswagen",
-  "Douglas Motors",
-  "Gengras Volkswagen",
-  "Volkswagen of Newton",
-  "Jack Daniels Volkswagen",
-  "Trend Motors"
-];
-
-// --- Mock Data ---
-
-const ACCRUED_FUNDS_ROOFTOP_DATA = ROOFTOPS.map((name, i) => ({
-  name,
-  value: Math.floor(Math.random() * 500000) + 100000
-})).sort((a, b) => b.value - a.value);
-
-const ACCRUED_FUNDS_REGION_DATA = [
-  { name: 'Northeast', value: 4500000, color: '#6050E0' },
-  { name: 'Southeast', value: 3200000, color: '#FF7F50' },
-  { name: 'Midwest', value: 2800000, color: '#51B994' },
-  { name: 'West', value: 2100000, color: '#2196F3' },
-  { name: 'South Central', value: 1500000, color: '#FFC107' },
-];
-
-const SUBMITTED_CLAIMS_ROOFTOP_DATA = ROOFTOPS.map((name, i) => ({
-  name,
-  value: Math.floor(Math.random() * 150) + 20
-})).sort((a, b) => b.value - a.value);
-
+// LONGEST_PAYMENT_TIME_DATA remains static (not in overview.json scope)
 const LONGEST_PAYMENT_TIME_DATA = [
-  { name: 'MFC541020', value: 11.0 },
-  { name: 'MFC540989', value: 11.0 },
-  { name: 'MFC540989 ', value: 9.5 }, // Added space to make unique key if needed, or rely on index
-  { name: 'MFC539881', value: 8.5 },
-  { name: 'MFC540978', value: 8.5 },
-  { name: 'MFC540978 ', value: 8.5 }, // Added space
-  { name: 'MFC540992', value: 6.0 },
-  { name: 'MFC539881 ', value: 6.0 }, // Added space
-  { name: 'MFC540978  ', value: 6.0 }, // Added spaces
-  { name: 'MFC539881  ', value: 5.0 }, // Added spaces
+  { name: 'MFC541020',    value: 11.0 },
+  { name: 'MFC540989',    value: 11.0 },
+  { name: 'MFC540989 ',   value: 9.5 },
+  { name: 'MFC539881',    value: 8.5 },
+  { name: 'MFC540978',    value: 8.5 },
+  { name: 'MFC540978 ',   value: 8.5 },
+  { name: 'MFC540992',    value: 6.0 },
+  { name: 'MFC539881 ',   value: 6.0 },
+  { name: 'MFC540978  ',  value: 6.0 },
+  { name: 'MFC539881  ',  value: 5.0 },
 ];
 
-// --- Shared Components ---
-
-const CardHeader = ({ title, subtitle, onDownload }: { title: string, subtitle?: string, onDownload?: () => void }) => (
+const CardHeader = ({ title, subtitle, onDownload }: { title: string; subtitle?: string; onDownload?: () => void }) => (
   <div className="flex justify-between items-start mb-4">
     <div>
       <h3 className="text-base font-medium text-[#1f1d25] tracking-[0.15px] leading-6">{title}</h3>
       {subtitle && <p className="text-[11px] text-[#686576] font-normal tracking-[0.4px] leading-[1.66]">{subtitle}</p>}
     </div>
-    <button 
+    <button
       onClick={onDownload}
       className="p-1.5 rounded-full hover:bg-black/5 text-[#ACABFF] hover:text-[#2f2673] transition-colors cursor-pointer"
       title="Download CSV"
@@ -67,37 +34,30 @@ const CardHeader = ({ title, subtitle, onDownload }: { title: string, subtitle?:
   </div>
 );
 
-// --- Charts ---
-
 export function AccruedFundsRooftopCard() {
   const { t } = useTranslation();
+  const { rooftopChart } = useOverviewData();
   return (
     <div className="bg-white rounded-xl p-4 border border-[rgba(0,0,0,0.12)] flex flex-col h-[400px]">
-      <CardHeader title={t("Accrued funds — by rooftop (USD)")} />
+      <CardHeader title={t('Accrued funds — by rooftop (USD)')} />
       <div className="flex-1 min-h-0">
         <ResponsiveContainer width="100%" height="100%" minWidth={100} minHeight={100} debounce={1}>
-          <BarChart data={ACCRUED_FUNDS_ROOFTOP_DATA} layout="vertical" margin={{ top: 5, right: 30, left: 40, bottom: 5 }}>
+          <BarChart data={rooftopChart} layout="vertical" margin={{ top: 5, right: 30, left: 40, bottom: 5 }}>
             <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#E0E0E0" />
             <XAxis type="number" hide />
-            <YAxis 
-              dataKey="name" 
-              type="category" 
-              width={140} 
-              tick={{ fontSize: 11, fill: '#686576' }} 
-              interval={0}
-            />
-            <Tooltip 
-                content={<DatavizTooltip title={t("Accrued funds — by rooftop (USD)")} />} 
-                cursor={{ fill: 'transparent' }} 
-                formatter={(value: number) => [`$${value.toLocaleString()}`, 'Value']}
+            <YAxis dataKey="name" type="category" width={140} tick={{ fontSize: 11, fill: '#686576' }} interval={0} />
+            <Tooltip
+              content={<DatavizTooltip title={t('Accrued funds — by rooftop (USD)')} />}
+              cursor={{ fill: 'transparent' }}
+              formatter={(value: number) => [`$${value.toLocaleString()}`, 'Value']}
             />
             <Bar dataKey="value" fill="#6050E0" radius={[0, 4, 4, 0]} barSize={16} animationDuration={1000}>
-                <LabelList 
-                    dataKey="value" 
-                    position="right" 
-                    style={{ fontSize: '10px', fill: '#686576' }} 
-                    formatter={(val: number) => `$${(val/1000).toFixed(0)}k`}
-                />
+              <LabelList
+                dataKey="value"
+                position="right"
+                style={{ fontSize: '10px', fill: '#686576' }}
+                formatter={(val: number) => `$${(val / 1000).toFixed(0)}k`}
+              />
             </Bar>
           </BarChart>
         </ResponsiveContainer>
@@ -108,15 +68,13 @@ export function AccruedFundsRooftopCard() {
 
 export function AccruedFundsRegionCard() {
   const { t } = useTranslation();
-  const total = ACCRUED_FUNDS_REGION_DATA.reduce((sum, item) => sum + item.value, 0);
-  const dataWithPercent = ACCRUED_FUNDS_REGION_DATA.map(item => ({
-    ...item,
-    percent: item.value / total
-  }));
+  const { regionChart } = useOverviewData();
+  const total = regionChart.reduce((s, r) => s + r.value, 0) || 1;
+  const dataWithPercent = regionChart.map(item => ({ ...item, percent: item.value / total }));
 
   return (
     <div className="bg-white rounded-xl p-4 border border-[rgba(0,0,0,0.12)] flex flex-col h-[400px]">
-      <CardHeader title={t("Accrued Funds — by Region (USD)")} />
+      <CardHeader title={t('Accrued Funds — by Region (USD)')} />
       <div className="flex-1 min-h-0">
         <ResponsiveContainer width="100%" height="100%" minWidth={100} minHeight={100} debounce={1}>
           <PieChart>
@@ -133,14 +91,16 @@ export function AccruedFundsRegionCard() {
                 <Cell key={`cell-${index}`} fill={entry.color} />
               ))}
             </Pie>
-            <Tooltip content={<DatavizTooltip title={t("Accrued Funds — by Region (USD)")} />} />
-            <Legend 
-              layout="vertical" 
-              verticalAlign="middle" 
+            <Tooltip content={<DatavizTooltip title={t('Accrued Funds — by Region (USD)')} />} />
+            <Legend
+              layout="vertical"
+              verticalAlign="middle"
               align="right"
               wrapperStyle={{ fontSize: '11px', color: '#1f1d25' }}
-              formatter={(value, entry: any) => (
-                <span className="text-[#1f1d25] ml-1">{value} ({Math.round(entry.payload.percent * 100)}%)</span>
+              formatter={(value: string, entry: { payload?: { percent?: number } }) => (
+                <span className="text-[#1f1d25] ml-1">
+                  {value} ({Math.round((entry.payload?.percent ?? 0) * 100)}%)
+                </span>
               )}
             />
           </PieChart>
@@ -152,28 +112,19 @@ export function AccruedFundsRegionCard() {
 
 export function SubmittedClaimsRooftopCard() {
   const { t } = useTranslation();
+  const { claimsRooftopChart } = useOverviewData();
   return (
     <div className="bg-white rounded-xl p-4 border border-[rgba(0,0,0,0.12)] flex flex-col h-[400px]">
-      <CardHeader title={t("Submitted Claims — by Rooftop (Count)")} />
+      <CardHeader title={t('Submitted Claims — by Rooftop (Count)')} />
       <div className="flex-1 min-h-0">
         <ResponsiveContainer width="100%" height="100%" minWidth={100} minHeight={100} debounce={1}>
-          <BarChart data={SUBMITTED_CLAIMS_ROOFTOP_DATA} layout="vertical" margin={{ top: 5, right: 30, left: 40, bottom: 5 }}>
+          <BarChart data={claimsRooftopChart} layout="vertical" margin={{ top: 5, right: 30, left: 40, bottom: 5 }}>
             <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#E0E0E0" />
             <XAxis type="number" hide />
-            <YAxis 
-              dataKey="name" 
-              type="category" 
-              width={140} 
-              tick={{ fontSize: 11, fill: '#686576' }} 
-              interval={0}
-            />
-            <Tooltip content={<DatavizTooltip title={t("Submitted Claims — by Rooftop (Count)")} />} cursor={{ fill: 'transparent' }} />
+            <YAxis dataKey="name" type="category" width={140} tick={{ fontSize: 11, fill: '#686576' }} interval={0} />
+            <Tooltip content={<DatavizTooltip title={t('Submitted Claims — by Rooftop (Count)')} />} cursor={{ fill: 'transparent' }} />
             <Bar dataKey="value" fill="#51B994" radius={[0, 4, 4, 0]} barSize={16} animationDuration={1000}>
-                <LabelList 
-                    dataKey="value" 
-                    position="right" 
-                    style={{ fontSize: '10px', fill: '#686576' }} 
-                />
+              <LabelList dataKey="value" position="right" style={{ fontSize: '10px', fill: '#686576' }} />
             </Bar>
           </BarChart>
         </ResponsiveContainer>
@@ -184,76 +135,60 @@ export function SubmittedClaimsRooftopCard() {
 
 export function LongestPaymentTimeCard() {
   const { t } = useTranslation();
-  const average = 8.3; // Updated to match figma-translation-fix table 3e
+  const average = 8.3;
 
   return (
     <div className="bg-white rounded-xl p-4 border border-[rgba(0,0,0,0.12)] flex flex-col gap-2 w-full min-w-0">
-      {/* Header */}
       <div className="flex items-center justify-between shrink-0">
         <h3 className="text-base font-semibold text-[#1f1d25] tracking-[0.17px] leading-6">
-          {t("Time in Payment phase")}
+          {t('Time in Payment phase')}
         </h3>
-        <button 
+        <button
           className="p-1.5 rounded-full hover:bg-black/5 text-[#ACABFF] hover:text-[#2f2673] transition-colors cursor-pointer"
           title="Download"
         >
           <Download size={20} />
         </button>
       </div>
-      <p className="text-[11px] text-[#686576] shrink-0">{t("Claim ID vs days")}</p>
-
+      <p className="text-[11px] text-[#686576] shrink-0">{t('Claim ID vs days')}</p>
       <div className="w-full h-[320px] min-w-[100px]" style={{ minHeight: '320px' }}>
         <ResponsiveContainer width="100%" height="100%" minWidth={100} minHeight={100} debounce={1}>
-          <BarChart 
-            data={LONGEST_PAYMENT_TIME_DATA} 
-            layout="vertical" 
-            margin={{ top: 0, right: 30, left: 10, bottom: 20 }} // Added bottom margin for label
+          <BarChart
+            data={LONGEST_PAYMENT_TIME_DATA}
+            layout="vertical"
+            margin={{ top: 0, right: 30, left: 10, bottom: 20 }}
             barSize={16}
             barGap={8}
           >
             <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#E0E0E0" />
-            <XAxis 
-                type="number" 
-                tick={{ fontSize: 10, fill: '#686576' }}
-                tickLine={false}
-                axisLine={{ stroke: '#E6E8EC' }}
-                domain={[0, 25]} // Updated to match figma-translation-fix table 3e
-            />
-            <YAxis 
-              dataKey="name" 
-              type="category" 
-              width={80} 
-              tick={{ fontSize: 11, fill: '#686576' }} 
+            <XAxis type="number" tick={{ fontSize: 10, fill: '#686576' }} tickLine={false} axisLine={{ stroke: '#E6E8EC' }} domain={[0, 25]} />
+            <YAxis
+              dataKey="name"
+              type="category"
+              width={80}
+              tick={{ fontSize: 11, fill: '#686576' }}
               interval={0}
-              tickFormatter={(val) => val.trim()} // remove spaces used for uniqueness
+              tickFormatter={(val: string) => val.trim()}
             />
-            <Tooltip content={<DatavizTooltip title={t("In days")} />} cursor={{ fill: 'transparent' }} />
+            <Tooltip content={<DatavizTooltip title={t('In days')} />} cursor={{ fill: 'transparent' }} />
             <Bar dataKey="value" radius={[0, 4, 4, 0]}>
-                {LONGEST_PAYMENT_TIME_DATA.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.value > average ? '#F78664' : '#51B994'} />
-                ))}
+              {LONGEST_PAYMENT_TIME_DATA.map((entry, index) => (
+                <Cell key={`cell-${index}`} fill={entry.value > average ? '#F78664' : '#51B994'} />
+              ))}
             </Bar>
-            <ReferenceLine 
-                x={average} 
-                stroke="#686576" 
-                strokeDasharray="3 3" 
-                isFront={true}
-                label={({ viewBox }) => {
-                    // Custom label renderer to position text at bottom right of the line
-                    const { x, y, height } = viewBox;
-                    return (
-                        <text 
-                            x={x + 5} 
-                            y={y + height - 5} 
-                            fill="#1F1D25" 
-                            fontSize="10" 
-                            fontWeight="500"
-                            textAnchor="start"
-                        >
-                            {t("Average: 8.3")}
-                        </text>
-                    );
-                }}
+            <ReferenceLine
+              x={average}
+              stroke="#686576"
+              strokeDasharray="3 3"
+              isFront={true}
+              label={({ viewBox }: { viewBox: { x: number; y: number; height: number } }) => {
+                const { x, y, height } = viewBox;
+                return (
+                  <text x={x + 5} y={y + height - 5} fill="#1F1D25" fontSize="10" fontWeight="500" textAnchor="start">
+                    {t('Average: 8.3')}
+                  </text>
+                );
+              }}
             />
           </BarChart>
         </ResponsiveContainer>

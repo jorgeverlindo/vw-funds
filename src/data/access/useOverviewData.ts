@@ -74,7 +74,8 @@ export function useOverviewData() {
 
   const filtered = useMemo(() => {
     return raw.filter(row => {
-      const rowDate = new Date(row.month + '-01');
+      const [ry, rm] = row.month.split('-').map(Number);
+      const rowDate = new Date(ry, rm - 1, 1);
       if (rowDate < filters.dateFrom || rowDate > filters.dateTo) return false;
       if (filters.area && row.area !== filters.area) return false;
       if (filters.dealershipCode && row.dealershipCode !== filters.dealershipCode) return false;

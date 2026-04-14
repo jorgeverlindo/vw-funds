@@ -1,11 +1,16 @@
 import { createContext, useContext, useState, ReactNode } from 'react';
 import { FilterState } from '../../data/types/common';
 
+function getDefaultDateRange() {
+  const today = new Date();
+  const from = new Date(today.getFullYear() - 1, today.getMonth(), 1);
+return { dateFrom: from, dateTo: today };
+}
+
 const defaultFilters: FilterState = {
   area: null,
   dealershipCode: null,
-  dateFrom: new Date(2025, 0, 1),
-  dateTo: new Date(2025, 11, 31),
+  ...getDefaultDateRange(),
 };
 
 interface FilterContextValue {

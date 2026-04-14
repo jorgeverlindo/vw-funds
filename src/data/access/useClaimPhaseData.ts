@@ -25,7 +25,8 @@ export function useClaimPhaseData() {
 
   const filtered = useMemo(() =>
     raw.filter(r => {
-      const rowDate = new Date(r.month + '-01');
+      const [ry, rm] = r.month.split('-').map(Number);
+      const rowDate = new Date(ry, rm - 1, 1);
       if (rowDate < filters.dateFrom || rowDate > filters.dateTo) return false;
       if (filters.area           && r.area           !== filters.area)           return false;
       if (filters.dealershipCode && r.dealershipCode !== filters.dealershipCode) return false;

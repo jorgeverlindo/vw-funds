@@ -21,7 +21,7 @@ import { useFilters } from '../contexts/FilterContext';
 import { useDealerships } from '../../data/access/useDealerships';
 
 export function FundsOverviewOEMContent() {
-  const { filters, setArea, setDateRange } = useFilters();
+  const { filters, setArea, setDateRange, resetFilters } = useFilters();
   const { areas } = useDealerships();
   const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
   const datePickerRef = useRef<HTMLDivElement>(null);
@@ -43,7 +43,7 @@ export function FundsOverviewOEMContent() {
 
   const handleDateReset = (e: React.MouseEvent) => {
     e.stopPropagation();
-    setDateRange(new Date(2025, 0, 1), new Date(2025, 11, 31));
+    resetFilters();
   };
 
   const dateRangeForInput: DateRange = { from: filters.dateFrom, to: filters.dateTo };

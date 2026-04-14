@@ -21,9 +21,9 @@ export function DateRangePicker({ initialRange, onApply, onCancel }: DateRangePi
   // Helper to safely format range
   const formattedRange = selectedRange?.from && selectedRange?.to 
     ? `${format(selectedRange.from, 'MMM d')} - ${format(selectedRange.to, 'MMM d')}`
-    : selectedRange?.from 
-      ? `${format(selectedRange.from, 'MMM d')} - Select End` 
-      : 'Select Range';
+    : selectedRange?.from
+      ? `${format(selectedRange.from, 'MMM d')} - Select End`
+      : t('Select Range');
 
   // Presets
   const handlePreset = (preset: string) => {

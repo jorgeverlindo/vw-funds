@@ -1,3 +1,5 @@
+import { useTranslation } from '../contexts/LanguageContext';
+
 interface PaymentRow {
   date: string;
   amount: string;
@@ -15,12 +17,13 @@ const paymentData: PaymentRow[] = [
 ];
 
 export function PaymentStatusTable() {
+  const { t } = useTranslation();
   return (
     <div className="bg-white rounded-xl p-4 border border-[rgba(0,0,0,0.12)]">
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-3">
           <h3 className="text-[16px] font-medium text-[#1f1d25] tracking-[0.15px]">
-            Payment Status
+            {t('Payment Status')}
           </h3>
           <div className="bg-[#f9fafa] h-[34px] rounded-full px-3 flex items-center gap-2 border border-[rgba(0,0,0,0.12)]">
             <svg className="size-6 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
@@ -29,7 +32,7 @@ export function PaymentStatusTable() {
             </svg>
             <input
               type="text"
-              placeholder="Find below"
+              placeholder={t('Find below')}
               className="w-[160px] bg-transparent border-none outline-none text-sm text-[#9c99a9]"
             />
           </div>
@@ -46,7 +49,7 @@ export function PaymentStatusTable() {
             <tr className="bg-[#f9fafa] border-b border-[rgba(0,0,0,0.12)]">
               <th className="px-4 py-3 text-left">
                 <div className="flex items-center gap-1">
-                  <span className="text-[12px] font-medium text-[#686576] tracking-[0.15px]">Date</span>
+                  <span className="text-[12px] font-medium text-[#686576] tracking-[0.15px]">{t('Date')}</span>
                   <svg className="size-4 text-[#686576]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path d="M7 10l5 5 5-5" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
                   </svg>
@@ -54,7 +57,7 @@ export function PaymentStatusTable() {
               </th>
               <th className="px-4 py-3 text-left">
                 <div className="flex items-center gap-1">
-                  <span className="text-[12px] font-medium text-[#686576] tracking-[0.15px]">Amount</span>
+                  <span className="text-[12px] font-medium text-[#686576] tracking-[0.15px]">{t('Amount')}</span>
                   <svg className="size-4 text-[#686576]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path d="M7 10l5 5 5-5" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
                   </svg>
@@ -62,7 +65,7 @@ export function PaymentStatusTable() {
               </th>
               <th className="px-4 py-3 text-left">
                 <div className="flex items-center gap-1">
-                  <span className="text-[12px] font-medium text-[#686576] tracking-[0.15px]">Date paid</span>
+                  <span className="text-[12px] font-medium text-[#686576] tracking-[0.15px]">{t('Date paid')}</span>
                   <svg className="size-4 text-[#686576]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path d="M7 10l5 5 5-5" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
                   </svg>
@@ -70,7 +73,7 @@ export function PaymentStatusTable() {
               </th>
               <th className="px-4 py-3 text-left">
                 <div className="flex items-center gap-1">
-                  <span className="text-[12px] font-medium text-[#686576] tracking-[0.15px]">Status</span>
+                  <span className="text-[12px] font-medium text-[#686576] tracking-[0.15px]">{t('Status')}</span>
                   <svg className="size-4 text-[#686576]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path d="M7 10l5 5 5-5" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
                   </svg>
@@ -95,7 +98,7 @@ export function PaymentStatusTable() {
                 </td>
                 <td className="px-4 py-3">
                   <span className="inline-flex items-center px-2 py-0.5 rounded-md bg-[#DFF7EA] text-[#1F7A4D] text-[11px] font-medium tracking-[0.4px]">
-                    {row.status}
+                    {t(row.status)}
                   </span>
                 </td>
               </tr>

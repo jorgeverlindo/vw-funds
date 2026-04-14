@@ -188,7 +188,7 @@ export function FundsCasesContent({
                       {row.dealershipName}
                     </td>
                     <td className="px-4 py-3.5 text-xs text-[#1f1d25] whitespace-nowrap">
-                      {row.type}
+                      {t(row.type)}
                     </td>
                     <td className="px-4 py-3.5 whitespace-nowrap">
                       <PriorityBadge priority={row.priority} />
@@ -218,6 +218,7 @@ export function FundsCasesContent({
 }
 
 function PriorityBadge({ priority }: { priority: 'High' | 'Medium' | 'Low' }) {
+  const { t } = useTranslation();
   const styles = {
     High: "text-[#D2323F] bg-[#FDE8E8]",
     Medium: "text-[#EF6C00] bg-[#FFF3E0]",
@@ -225,7 +226,7 @@ function PriorityBadge({ priority }: { priority: 'High' | 'Medium' | 'Low' }) {
   };
   return (
     <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide ${styles[priority]}`}>
-      {priority}
+      {t(priority)}
     </span>
   );
 }

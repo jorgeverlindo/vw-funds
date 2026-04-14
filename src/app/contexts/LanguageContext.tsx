@@ -211,6 +211,29 @@ const translations: Record<Language, Record<string, string>> = {
     'Web Monitoring': 'Web Monitoring',
     // PaymentStatusTableCard
     'Payouts': 'Payouts',
+    // FundsCasesContent — filter & type/priority cells
+    'Case Type': 'Case Type',
+    'All Types': 'All Types',
+    'All Priorities': 'All Priorities',
+    'Resolved': 'Resolved',
+    'Escalated': 'Escalated',
+    'High': 'High',
+    'Medium': 'Medium',
+    'Low': 'Low',
+    'Audit': 'Audit',
+    'Dispute': 'Dispute',
+    'Compliance': 'Compliance',
+    // PaymentStatusTable
+    'Paid out': 'Paid out',
+    // DateRangePicker fallback
+    'Select Range': 'Select Range',
+    // WebMonitoringPanel / Modal — annotation strings
+    'Missing Legal Disclaimer': 'Missing Legal Disclaimer',
+    'Offer card displays payment terms without required disclaimer language visible near the promotional copy.': 'Offer card displays payment terms without required disclaimer language visible near the promotional copy.',
+    // WebMonitoringContent table
+    'Showing 10 violations': 'Showing 10 violations',
+    // WebMonitoringPanel channel value
+    'Website': 'Website',
     // Misc
     'Claim': 'Claim',
   },
@@ -416,6 +439,29 @@ const translations: Record<Language, Record<string, string>> = {
     'Web Monitoring': 'Surveillance web',
     // PaymentStatusTableCard
     'Payouts': 'Paiements',
+    // FundsCasesContent — filter & type/priority cells
+    'Case Type': 'Type de dossier',
+    'All Types': 'Tous les types',
+    'All Priorities': 'Toutes les priorités',
+    'Resolved': 'Résolu',
+    'Escalated': 'Escaladé',
+    'High': 'Élevée',
+    'Medium': 'Moyenne',
+    'Low': 'Faible',
+    'Audit': 'Audit',
+    'Dispute': 'Contestation',
+    'Compliance': 'Conformité',
+    // PaymentStatusTable
+    'Paid out': 'Versé',
+    // DateRangePicker fallback
+    'Select Range': 'Sélectionner une plage',
+    // WebMonitoringPanel / Modal — annotation strings
+    'Missing Legal Disclaimer': 'Avertissement légal manquant',
+    'Offer card displays payment terms without required disclaimer language visible near the promotional copy.': 'La carte d\'offre affiche des conditions de paiement sans l\'avertissement légal requis visible près du texte promotionnel.',
+    // WebMonitoringContent table
+    'Showing 10 violations': '10 violations affichées',
+    // WebMonitoringPanel channel value
+    'Website': 'Site web',
     // Misc
     'Claim': 'Réclamation',
   },

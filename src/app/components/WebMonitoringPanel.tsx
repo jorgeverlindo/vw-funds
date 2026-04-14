@@ -64,7 +64,7 @@ export function WebMonitoringPanel({ item, onClose, onOpenModal }: WebMonitoring
                 <KeyValueRow label={t('Detected On')}    value={item.detectedOn} />
                 <KeyValueRow label={t('Dealership')}     value={item.dealership} />
                 <KeyValueRow label={t('Violation Type')} value={item.violationType} />
-                <KeyValueRow label={t('Channel')}        value="Website" />
+                <KeyValueRow label={t('Channel')}        value={t('Website')} />
                 <KeyValueRow
                   label={t('Website / URL')}
                   value={
@@ -130,8 +130,8 @@ export function WebMonitoringPanel({ item, onClose, onOpenModal }: WebMonitoring
                     id="1"
                     number={1}
                     category="WCM"
-                    title="Missing Legal Disclaimer"
-                    description="Offer card displays payment terms without required disclaimer language visible near the promotional copy."
+                    title={t('Missing Legal Disclaimer')}
+                    description={t('Offer card displays payment terms without required disclaimer language visible near the promotional copy.')}
                     x={18}
                     y={56}
                     isOpen={annotationStates['1']}
@@ -145,8 +145,8 @@ export function WebMonitoringPanel({ item, onClose, onOpenModal }: WebMonitoring
                     id="2"
                     number={2}
                     category="WCM"
-                    title="Missing Legal Disclaimer"
-                    description="Offer card displays payment terms without required disclaimer language visible near the promotional copy."
+                    title={t('Missing Legal Disclaimer')}
+                    description={t('Offer card displays payment terms without required disclaimer language visible near the promotional copy.')}
                     x={48}
                     y={56}
                     isOpen={annotationStates['2']}

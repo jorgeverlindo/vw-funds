@@ -78,8 +78,8 @@ export function WebMonitoringModal({ item, open, onClose }: WebMonitoringModalPr
                   id="modal-1"
                   number={1}
                   category="WCM"
-                  title="Missing Legal Disclaimer"
-                  description="Offer card displays payment terms without required disclaimer language visible near the promotional copy."
+                  title={t('Missing Legal Disclaimer')}
+                  description={t('Offer card displays payment terms without required disclaimer language visible near the promotional copy.')}
                   x={22}
                   y={54}
                   isOpen={annotationStates['1']}
@@ -93,8 +93,8 @@ export function WebMonitoringModal({ item, open, onClose }: WebMonitoringModalPr
                   id="modal-2"
                   number={2}
                   category="WCM"
-                  title="Missing Legal Disclaimer"
-                  description="Offer card displays payment terms without required disclaimer language visible near the promotional copy."
+                  title={t('Missing Legal Disclaimer')}
+                  description={t('Offer card displays payment terms without required disclaimer language visible near the promotional copy.')}
                   x={50}
                   y={54}
                   isOpen={annotationStates['2']}

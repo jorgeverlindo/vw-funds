@@ -1,0 +1,10 @@
+[
+  { "id": "CTR-001", "dealershipCode": null, "area": null, "value": 59445.21, "mediaCost": 35000.00, "hardCost": 24445.21, "startDate": "2025-01-15", "expiresDate": "2026-01-15" },
+  { "id": "CTR-002", "dealershipCode": null, "area": null, "value": 45594.42, "mediaCost": 30000.00, "hardCost": 15594.42, "startDate": "2025-02-15", "expiresDate": "2026-02-15" },
+  { "id": "CTR-003", "dealershipCode": null, "area": null, "value": 48176.61, "mediaCost": 28000.00, "hardCost": 20176.61, "startDate": "2025-03-15", "expiresDate": "2026-03-15" },
+  { "id": "CTR-004", "dealershipCode": null, "area": null, "value": 74168.52, "mediaCost": 44000.00, "hardCost": 30168.52, "startDate": "2025-04-15", "expiresDate": "2026-04-15" },
+  { "id": "CTR-005", "dealershipCode": null, "area": null, "value": 34024.30, "mediaCost": 20000.00, "hardCost": 14024.30, "startDate": "2025-05-15", "expiresDate": "2026-05-15" },
+  { "id": "CTR-006", "dealershipCode": null, "area": null, "value": 79658.16, "mediaCost": 47000.00, "hardCost": 32658.16, "startDate": "2025-06-15", "expiresDate": "2026-06-15" },
+  { "id": "CTR-007", "dealershipCode": null, "area": null, "value": 75249.97, "mediaCost": 45000.00, "hardCost": 30249.97, "startDate": "2025-07-15", "expiresDate": "2026-07-15" },
+  { "id": "CTR-008", "dealershipCode": null, "area": null, "value": 59445.21, "mediaCost": 35000.00, "hardCost": 24445.21, "startDate": "2025-08-15", "expiresDate": "2026-08-15" }
+]

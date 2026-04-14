@@ -3,20 +3,7 @@ import { Download } from 'lucide-react';
 import { DatavizTooltip } from './DatavizTooltip';
 import { useTranslation } from '../contexts/LanguageContext';
 import { useOverviewData } from '../../data/access/useOverviewData';
-
-// LONGEST_PAYMENT_TIME_DATA remains static (not in overview.json scope)
-const LONGEST_PAYMENT_TIME_DATA = [
-  { name: 'MFC541020',    value: 11.0 },
-  { name: 'MFC540989',    value: 11.0 },
-  { name: 'MFC540989 ',   value: 9.5 },
-  { name: 'MFC539881',    value: 8.5 },
-  { name: 'MFC540978',    value: 8.5 },
-  { name: 'MFC540978 ',   value: 8.5 },
-  { name: 'MFC540992',    value: 6.0 },
-  { name: 'MFC539881 ',   value: 6.0 },
-  { name: 'MFC540978  ',  value: 6.0 },
-  { name: 'MFC539881  ',  value: 5.0 },
-];
+import { useClaimPhaseData } from '../../data/access/useClaimPhaseData';
 
 const CardHeader = ({ title, subtitle, onDownload }: { title: string; subtitle?: string; onDownload?: () => void }) => (
   <div className="flex justify-between items-start mb-4">
@@ -135,7 +122,8 @@ export function SubmittedClaimsRooftopCard() {
 
 export function LongestPaymentTimeCard() {
   const { t } = useTranslation();
-  const average = 8.3;
+  const { paymentTimings, paymentAverage: average } = useClaimPhaseData();
+  const data = paymentTimings.map(r => ({ name: r.id, value: r.days }));
 
   return (
     <div className="bg-white rounded-xl p-4 border border-[rgba(0,0,0,0.12)] flex flex-col gap-2 w-full min-w-0">
@@ -154,7 +142,7 @@ export function LongestPaymentTimeCard() {
       <div className="w-full h-[320px] min-w-[100px]" style={{ minHeight: '320px' }}>
         <ResponsiveContainer width="100%" height="100%" minWidth={100} minHeight={100} debounce={1}>
           <BarChart
-            data={LONGEST_PAYMENT_TIME_DATA}
+            data={data}
             layout="vertical"
             margin={{ top: 0, right: 30, left: 10, bottom: 20 }}
             barSize={16}
@@ -185,7 +173,7 @@ export function LongestPaymentTimeCard() {
                 const { x, y, height } = viewBox;
                 return (
                   <text x={x + 5} y={y + height - 5} fill="#1F1D25" fontSize="10" fontWeight="500" textAnchor="start">
-                    {t('Average: 8.3')}
+                    {`${t('Average')}: ${average}`}
                   </text>
                 );
               }}

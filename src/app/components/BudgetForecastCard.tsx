@@ -4,62 +4,15 @@ import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 import { motion, AnimatePresence } from 'motion/react';
 import { useTranslation } from '../contexts/LanguageContext';
+import { useContractsData } from '../../data/access/useContractsData';
+import { ContractForDisplay, RangeOption } from '../../data/types/overview';
 
 // --- Utility ---
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
-// --- Types ---
-type RangeOption = '3m' | '6m' | '12m';
-
-interface Contract {
-  id: string;
-  value: number;
-  formattedValue: string;
-  expiresAt: string;
-  expiresDate: Date;
-  mediaCost: number;
-  hardCost: number;
-  mediaCostFormatted: string;
-  hardCostFormatted: string;
-}
-
-// --- Data ---
-const CONTRACTS: Contract[] = [
-  { id: '1', value: 59445.21, formattedValue: '$59,445.21', expiresAt: '1/15/2026', expiresDate: new Date(2026, 0, 15), mediaCost: 35000, hardCost: 24445.21, mediaCostFormatted: '$35k', hardCostFormatted: '$24k' },
-  { id: '2', value: 45594.42, formattedValue: '$45,594.42', expiresAt: '2/15/2026', expiresDate: new Date(2026, 1, 15), mediaCost: 30000, hardCost: 15594.42, mediaCostFormatted: '$30k', hardCostFormatted: '$16k' },
-  { id: '3', value: 48176.61, formattedValue: '$48,176.61', expiresAt: '3/15/2026', expiresDate: new Date(2026, 2, 15), mediaCost: 28000, hardCost: 20176.61, mediaCostFormatted: '$28k', hardCostFormatted: '$20k' },
-  { id: '4', value: 74168.52, formattedValue: '$74,168.52', expiresAt: '4/15/2026', expiresDate: new Date(2026, 3, 15), mediaCost: 44000, hardCost: 30168.52, mediaCostFormatted: '$44k', hardCostFormatted: '$30k' },
-  { id: '5', value: 34024.30, formattedValue: '$34,024.30', expiresAt: '5/15/2026', expiresDate: new Date(2026, 4, 15), mediaCost: 20000, hardCost: 14024.30, mediaCostFormatted: '$20k', hardCostFormatted: '$14k' },
-  { id: '6', value: 79658.16, formattedValue: '$79,658.16', expiresAt: '6/15/2026', expiresDate: new Date(2026, 5, 15), mediaCost: 47000, hardCost: 32658.16, mediaCostFormatted: '$47k', hardCostFormatted: '$33k' },
-  { id: '7', value: 75249.97, formattedValue: '$75,249.97', expiresAt: '7/15/2026', expiresDate: new Date(2026, 6, 15), mediaCost: 45000, hardCost: 30249.97, mediaCostFormatted: '$45k', hardCostFormatted: '$30k' },
-  { id: '8', value: 59445.21, formattedValue: '$59,445.21', expiresAt: '8/15/2026', expiresDate: new Date(2026, 7, 15), mediaCost: 35000, hardCost: 24445.21, mediaCostFormatted: '$35k', hardCostFormatted: '$24k' },
-];
-
-const KPI_DATA_MAP = {
-  '3m': {
-    available: '$475,759.98',
-    expiring: '$153,215.54',
-    mediaCost: '$101,121.23',
-    hardCost: '$52,094.04',
-    subtitle: '3 months'
-  },
-  '6m': {
-    available: '$475,759.98',
-    expiring: '$341,065.27',
-    mediaCost: '$225,102.64',
-    hardCost: '$62,146.34',
-    subtitle: '6 months'
-  },
-  '12m': {
-    available: '$475,759.98',
-    expiring: '$475,759.98',
-    mediaCost: '$313,802.94',
-    hardCost: '$161,956.04',
-    subtitle: '12 months'
-  }
-};
+// RangeOption is imported from data/types/overview
 
 const MONTHS = [
   "Jan ’26", "Feb ’26", "Mar ’26", "Apr ’26", "May ’26", "Jun ’26",
@@ -212,21 +165,13 @@ const BudgetForecastStatusChip = ({ value }: { value: string }) => {
 };
 
 // --- Tooltip Component ---
-const BudgetForecastTooltip = ({ month, monthIndex }: { month: string, monthIndex: number }) => {
-  // Filter for contracts active in this month or future (simplification: not expired before this month)
-  // Actually, "As months progress, one line disappears".
-  // Let's assume the list is sorted by date.
-  // We show contracts where expiresDate >= currentMonthDate
-  
+const BudgetForecastTooltip = ({ month, monthIndex, contracts }: { month: string; monthIndex: number; contracts: ContractForDisplay[] }) => {
   const currentMonthDate = new Date(2026, monthIndex, 1);
-  
-  const relevantContracts = CONTRACTS.filter(c => {
-    // Only show contracts that expire in this month or later
-    return c.expiresDate >= currentMonthDate;
-  });
+
+  const relevantContracts = contracts.filter(c => c.expiresDate >= currentMonthDate);
 
   // Find max value for bar scaling (across ALL contracts to maintain relative scale)
-  const maxValue = Math.max(...CONTRACTS.map(c => c.value));
+  const maxValue = contracts.length > 0 ? Math.max(...contracts.map(c => c.value)) : 1;
 
   return (
     <div className="bg-white rounded-lg shadow-xl border border-gray-100 p-4 min-w-[320px] pointer-events-auto">
@@ -237,7 +182,7 @@ const BudgetForecastTooltip = ({ month, monthIndex }: { month: string, monthInde
                {month}
             </div>
             <div className="text-[11px] font-normal text-gray-500 tracking-[0.4px]">
-               Total Available: $475,762.00
+               Total Available: ${contracts.reduce((s, c) => s + c.value, 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </div>
          </div>
          
@@ -319,30 +264,8 @@ export function BudgetForecastCard({ variant = 'card' }: { variant?: 'card' | 'c
   const [selectedYear, setSelectedYear] = useState(2026);
   const [hoveredMonth, setHoveredMonth] = useState<string | null>(null);
 
-  // Data Override for OEM
-  const contracts = variant === 'oem' ? CONTRACTS.map(c => ({
-    ...c,
-    formattedValue: c.formattedValue.replace('$', '$10,'),
-    value: c.value * 10,
-    mediaCost: c.mediaCost * 10,
-    hardCost: c.hardCost * 10,
-  })) : CONTRACTS;
-
-  const currentKpi = KPI_DATA_MAP[selectedRange];
-
-  const kpiData = variant === 'oem' ? {
-    available: '$47,575,998',
-    expiring: '$4,757,599',
-    mediaCost: '$31,380,294',
-    hardCost: '$16,195,604',
-    subtitle: currentKpi.subtitle // Pass subtitle to OEM as well? OEM override might need it.
-  } : {
-    available: currentKpi.available,
-    expiring: currentKpi.expiring,
-    mediaCost: currentKpi.mediaCost,
-    hardCost: currentKpi.hardCost,
-    subtitle: currentKpi.subtitle
-  };
+  const { contracts, kpis: contractKpis } = useContractsData();
+  const kpiData = contractKpis[selectedRange];
 
   // Range Logic
   const monthsToShow = selectedRange === '3m' ? 3 : selectedRange === '6m' ? 6 : 12;
@@ -419,7 +342,7 @@ export function BudgetForecastCard({ variant = 'card' }: { variant?: 'card' | 'c
                 {/* Tooltip - Rendered when hovered */}
                 {hoveredMonth === month && (
                   <div className="absolute top-[55px] left-[50%] z-50 transform translate-x-2 pointer-events-auto">
-                     <BudgetForecastTooltip month={month} monthIndex={index} />
+                     <BudgetForecastTooltip month={month} monthIndex={index} contracts={contracts} />
                   </div>
                 )}
              </div>

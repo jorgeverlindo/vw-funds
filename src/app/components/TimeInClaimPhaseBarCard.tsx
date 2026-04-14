@@ -2,24 +2,11 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Refere
 import { Download } from 'lucide-react';
 import { DatavizTooltip } from './DatavizTooltip';
 import { useTranslation } from '../contexts/LanguageContext';
-
-const data = [
-  { id: 'MFC541099', days: 10 },
-  { id: 'MFC540448', days: 10 },
-  { id: 'MFC542616', days: 9 },
-  { id: 'MFC540609', days: 8.5 },
-  { id: 'MFC540878', days: 8 },
-  { id: 'MFC539561', days: 7 },
-  { id: 'MFC541992', days: 6 },
-  { id: 'MFC539861', days: 6 },
-  { id: 'MFC540978', days: 5 },
-  { id: 'MFC540881', days: 5 },
-];
-
-const average = 7.8;
+import { useClaimPhaseData } from '../../data/access/useClaimPhaseData';
 
 export function TimeInClaimPhaseBarCard() {
   const { t } = useTranslation();
+  const { claimTimings: data, claimAverage: average } = useClaimPhaseData();
   return (
     <div className="bg-white rounded-xl p-4 border border-[rgba(0,0,0,0.12)] flex flex-col gap-3 w-full min-w-0">
       <div className="flex items-center justify-between">
@@ -96,7 +83,7 @@ export function TimeInClaimPhaseBarCard() {
                 textAnchor="start"
                 className="bg-white/80" 
               >
-                {t('Average: 7.8')}
+                {`${t('Average')}: ${average}`}
               </text>
             </ReferenceLine>
           </BarChart>

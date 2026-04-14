@@ -4,52 +4,23 @@ import { DatavizTooltip } from './DatavizTooltip';
 import { Download } from 'lucide-react';
 import { useTranslation } from '../contexts/LanguageContext';
 import { cn } from '../../lib/utils';
-
-const comparisonData = [
-  { 
-    name: 'Luther Westside Volkswagen', 
-    'Submission → Pre-Approval': 29, 
-    'Pre-Approval → Final Approval': 12, 
-    'Final Approval → Payment': 12 
-  },
-  { 
-    name: 'Benchmark', 
-    'Submission → Pre-Approval': 18, 
-    'Pre-Approval → Final Approval': 14, 
-    'Final Approval → Payment': 16 
-  },
-];
-
-const oemComparisonData = [
-  { name: 'Rick Case Volkswagen Weston', 'Submission → Pre-Approval': 14, 'Pre-Approval → Final Approval': 10, 'Final Approval → Payment': 8 },
-  { name: 'Gunther Volkswagen of Coconut Creek', 'Submission → Pre-Approval': 18, 'Pre-Approval → Final Approval': 12, 'Final Approval → Payment': 9 },
-  { name: 'Emich Volkswagen (45)', 'Submission → Pre-Approval': 21, 'Pre-Approval → Final Approval': 14, 'Final Approval → Payment': 11 },
-  { name: 'Jim Ellis Volkswagen of Chamblee', 'Submission → Pre-Approval': 16, 'Pre-Approval → Final Approval': 9, 'Final Approval → Payment': 7 },
-  { name: 'Hendrick Volkswagen Frisco', 'Submission → Pre-Approval': 24, 'Pre-Approval → Final Approval': 15, 'Final Approval → Payment': 10 },
-  { name: 'Volkswagen Clear Lake', 'Submission → Pre-Approval': 19, 'Pre-Approval → Final Approval': 11, 'Final Approval → Payment': 8 },
-  { name: 'Luther Westside Volkswagen', 'Submission → Pre-Approval': 22, 'Pre-Approval → Final Approval': 13, 'Final Approval → Payment': 9 },
-  { name: 'Lindsay Volkswagen of Dulles', 'Submission → Pre-Approval': 17, 'Pre-Approval → Final Approval': 10, 'Final Approval → Payment': 8 },
-  { name: 'Bommarito Volkswagen of Hazelwood', 'Submission → Pre-Approval': 20, 'Pre-Approval → Final Approval': 12, 'Final Approval → Payment': 9 },
-  { name: 'Benchmark', 'Submission → Pre-Approval': 15, 'Pre-Approval → Final Approval': 9, 'Final Approval → Payment': 6 },
-];
-
-const legendItems = [
-  { name: 'Submission', color: '#6356e1' },
-  { name: 'Pre-Approval', color: '#acabff' },
-  { name: 'Final Approval', color: '#72c6a8' },
-  { name: 'Payment', color: '#e0e0e0' }, // Added placeholder for payment if needed, though design has 3 main segments
-];
+import { useClaimPhaseData } from '../../data/access/useClaimPhaseData';
 
 export function SubmissionPhaseStackedBarCard({ variant = 'dealer' }: { variant?: 'dealer' | 'oem' }) {
   const { t } = useTranslation();
-  
+  const { submissionPhases } = useClaimPhaseData();
+
   const chartData = useMemo(() => {
-    const data = variant === 'oem' ? oemComparisonData : comparisonData;
-    return data.map(item => ({
-      ...item,
-      name: t(item.name)
-    }));
-  }, [t, variant]);
+    // dealer mode: first dealer row + benchmark (last row)
+    // oem mode: all rows (up to 10 dealers + benchmark)
+    const rows = variant === 'dealer'
+      ? submissionPhases.length >= 2
+        ? [submissionPhases[0], submissionPhases[submissionPhases.length - 1]]
+        : submissionPhases
+      : submissionPhases.slice(0, 11);   // max 10 dealers + benchmark
+
+    return rows.map(item => ({ ...item, name: t(item.name) }));
+  }, [t, variant, submissionPhases]);
 
   const displayLegendItems = useMemo(() => {
     if (variant === 'oem') {

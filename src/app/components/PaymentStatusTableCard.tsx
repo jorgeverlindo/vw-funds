@@ -1,28 +1,13 @@
 import { useTranslation } from '../contexts/LanguageContext';
+import { usePaymentTransactions } from '../../data/access/usePaymentTransactions';
+import { useOverviewData } from '../../data/access/useOverviewData';
 
-interface PaymentRow {
-  date: string;
-  amount: string;
-  datePaid: string;
-  status: 'Finished';
-}
-
-const paymentData: PaymentRow[] = [
-  { date: 'Dec 15, 2025', amount: '$13,065.90', datePaid: '12/22/2025', status: 'Finished' },
-  { date: 'Dec 18, 2025', amount: '$48,047.52', datePaid: '01/05/2026', status: 'Finished' },
-  { date: 'Nov 15, 2025', amount: '$47,047.12', datePaid: '11/22/2025', status: 'Finished' },
-  { date: 'Oct 8, 2025', amount: '$12,532.15', datePaid: '10/15/2025', status: 'Finished' },
-  { date: 'Oct 1, 2025', amount: '$4,630.21', datePaid: '10/08/2025', status: 'Finished' },
-  { date: 'Nov 17, 2025', amount: '$43,362.55', datePaid: '11/24/2025', status: 'Finished' },
-];
+const fmt = (n: number) => '$' + n.toLocaleString('en-US', { maximumFractionDigits: 0 });
 
 export function PaymentStatusTableCard({ variant = 'dealer' }: { variant?: 'dealer' | 'oem' }) {
   const { t } = useTranslation();
-  const data = variant === 'oem' ? paymentData.map(d => ({
-    ...d,
-    amount: d.amount.replace('$', '$1,0').replace('.', ','), // Rough fake scale up
-    status: 'Finished' as const
-  })) : paymentData;
+  const { rows: data } = usePaymentTransactions();
+  const { kpis } = useOverviewData();
 
   return (
     <div className="bg-white rounded-xl overflow-clip border border-[rgba(0,0,0,0.12)] flex flex-col h-[400px]">
@@ -50,7 +35,7 @@ export function PaymentStatusTableCard({ variant = 'dealer' }: { variant?: 'deal
         {/* Total */}
         <div className="content-stretch flex gap-[3px] items-start relative shrink-0 font-['Roboto'] font-normal leading-[1.66] text-[11px] tracking-[0.4px]">
           <p className="relative shrink-0 text-[#1f1d25]">{t('Total Balance')}</p>
-          <p className="relative shrink-0 text-[#686576]">  $1,741,685.45</p>
+          <p className="relative shrink-0 text-[#686576]">  {fmt(kpis.currentBalance)}</p>
         </div>
       </div>
 

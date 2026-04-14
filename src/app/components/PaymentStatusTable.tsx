@@ -1,23 +1,9 @@
 import { useTranslation } from '../contexts/LanguageContext';
-
-interface PaymentRow {
-  date: string;
-  amount: string;
-  datePaid: string;
-  status: 'Paid out' | 'Pending';
-}
-
-const paymentData: PaymentRow[] = [
-  { date: 'Dec 15, 2025', amount: '$13,065.90', datePaid: '12/22/2025', status: 'Paid out' },
-  { date: 'Dec 18, 2025', amount: '$48,047.52', datePaid: '01/05/2026', status: 'Paid out' },
-  { date: 'Nov 15, 2025', amount: '$47,047.12', datePaid: '11/22/2025', status: 'Paid out' },
-  { date: 'Oct 8, 2025', amount: '$12,532.15', datePaid: '10/15/2025', status: 'Paid out' },
-  { date: 'Oct 1, 2025', amount: '$4,630.21', datePaid: '10/08/2025', status: 'Paid out' },
-  { date: 'Nov 17, 2025', amount: '$43,362.55', datePaid: '11/24/2025', status: 'Paid out' },
-];
+import { usePaymentTransactions } from '../../data/access/usePaymentTransactions';
 
 export function PaymentStatusTable() {
   const { t } = useTranslation();
+  const { rows: paymentData } = usePaymentTransactions();
   return (
     <div className="bg-white rounded-xl p-4 border border-[rgba(0,0,0,0.12)]">
       <div className="flex items-center justify-between mb-4">

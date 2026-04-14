@@ -77,3 +77,66 @@ export interface FundSplitViews {
   pending: FundSplit[];
   expiring: FundSplit[];
 }
+
+// --- Claim phase timings ---
+export interface ClaimPhaseRecord {
+  claimId: string;
+  dealershipCode: string;
+  area: string;
+  phase1Days: number;
+  phase2Days: number;
+  phase3Days: number;
+}
+
+// --- Payment transactions ---
+export interface PaymentTransaction {
+  id: string;
+  dealershipCode: string;
+  area: string;
+  month: string;
+  submitDate: string;
+  paidDate: string | null;
+  amount: number;
+  status: 'Paid out' | 'Pending' | 'Finished';
+}
+
+export interface PaymentRow {
+  date: string;
+  amount: string;
+  datePaid: string;
+  status: 'Paid out' | 'Pending' | 'Finished';
+}
+
+// --- Contracts ---
+export interface ContractRecord {
+  id: string;
+  dealershipCode: string | null;
+  area: string | null;
+  value: number;
+  mediaCost: number;
+  hardCost: number;
+  startDate: string;
+  expiresDate: string;
+}
+
+export interface ContractForDisplay {
+  id: string;
+  value: number;
+  formattedValue: string;
+  expiresAt: string;
+  expiresDate: Date;
+  mediaCost: number;
+  hardCost: number;
+  mediaCostFormatted: string;
+  hardCostFormatted: string;
+}
+
+export interface ContractKPIs {
+  available: string;
+  expiring: string;
+  mediaCost: string;
+  hardCost: string;
+  subtitle: string;
+}
+
+export type RangeOption = '3m' | '6m' | '12m';

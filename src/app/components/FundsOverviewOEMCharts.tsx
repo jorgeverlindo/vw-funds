@@ -160,7 +160,7 @@ export function LongestPaymentTimeCard() {
             />
             <Tooltip content={<DatavizTooltip title={t('In days')} />} cursor={{ fill: 'transparent' }} />
             <Bar dataKey="value" radius={[0, 4, 4, 0]}>
-              {LONGEST_PAYMENT_TIME_DATA.map((entry, index) => (
+              {data.map((entry, index) => (
                 <Cell key={`cell-${index}`} fill={entry.value > average ? '#F78664' : '#51B994'} />
               ))}
             </Bar>

@@ -1,5 +1,6 @@
 import { useTranslation } from '../contexts/LanguageContext';
 import { usePaymentTransactions } from '../../data/access/usePaymentTransactions';
+import { StatusChip } from './StatusChip';
 
 export function PaymentStatusTable() {
   const { t } = useTranslation();
@@ -83,15 +84,7 @@ export function PaymentStatusTable() {
                   <span className="text-[12px] text-[#1f1d25] tracking-[0.17px]">{row.datePaid}</span>
                 </td>
                 <td className="px-4 py-3">
-                  <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-medium tracking-[0.4px] ${
-                    row.status === 'Pending'
-                      ? 'bg-[#E1F5FE] text-[#014361]'
-                      : row.status === 'Paid out'
-                      ? 'bg-[#DFF7EA] text-[#1F7A4D]'
-                      : 'bg-gray-100 text-gray-700'
-                  }`}>
-                    {t(row.status)}
-                  </span>
+                  <StatusChip status={row.status} />
                 </td>
               </tr>
             ))}

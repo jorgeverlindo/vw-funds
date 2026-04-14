@@ -53,6 +53,7 @@ export function StatusChip({ status, className }: StatusChipProps) {
   
   switch (status) {
     case 'Approved':
+    case 'Paid out':
       styles = "bg-[#E8F5E9] text-[#1b5e20]"; // Green
       icon = (
         <div className="w-3.5 h-3.5 mr-1.5 flex items-center justify-center rounded-full border border-[#4CAF50]">

@@ -2,8 +2,7 @@ import { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { ArrowLeft, Search } from 'lucide-react';
 import { cn } from '../../lib/utils';
-import audiLogoOEM from '../../assets/audi-logo-oem.svg';
-import audiLogoPacific from '../../assets/audi-logo-pacific.svg';
+import audiLogoOEM from '../../assets/logos/Audi.png';
 
 // ─── Logos ─────────────────────────────────────────────────────────────────
 
@@ -148,17 +147,17 @@ export function ClientSwitcher({ isOpen, onClose, currentClientId, onSelect }: C
         <>
           {/* Backdrop (click outside to close) */}
           <div
-            className="fixed inset-0 z-[45]"
+            className="fixed inset-0 z-[105]"
             onClick={onClose}
           />
 
-          {/* Panel — sits above backdrop and TopNavBar (z-40) */}
+          {/* Panel — z-[110] sits above TopNavBar z-[100] */}
           <motion.div
             initial={{ x: -240, opacity: 0 }}
             animate={{ x: 0, opacity: 1 }}
             exit={{ x: -240, opacity: 0 }}
             transition={{ type: 'spring', stiffness: 400, damping: 35 }}
-            className="fixed left-[72px] top-0 bottom-0 w-[240px] bg-[#1e1a42] z-50 flex flex-col shadow-2xl"
+            className="fixed left-[72px] top-0 bottom-0 w-[240px] bg-[#1e1a42] z-[110] flex flex-col shadow-2xl"
           >
             {/* Header */}
             <div className="flex items-center gap-3 px-4 h-[60px] shrink-0 border-b border-white/10">

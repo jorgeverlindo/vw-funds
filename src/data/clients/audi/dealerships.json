@@ -1,1 +1,92 @@
-[]
+[
+  {
+    "code": "501001",
+    "name": "Audi Manhattan",
+    "city": "New York",
+    "state": "NY",
+    "area": "Northeast",
+    "region": "Tri-State",
+    "active": true
+  },
+  {
+    "code": "501042",
+    "name": "Audi Paramus",
+    "city": "Paramus",
+    "state": "NJ",
+    "area": "Northeast",
+    "region": "Mid-Atlantic",
+    "active": true
+  },
+  {
+    "code": "501088",
+    "name": "Audi Summit",
+    "city": "Summit",
+    "state": "NJ",
+    "area": "Northeast",
+    "region": "Mid-Atlantic",
+    "active": true
+  },
+  {
+    "code": "502011",
+    "name": "Audi Fort Lauderdale",
+    "city": "Fort Lauderdale",
+    "state": "FL",
+    "area": "Southeast",
+    "region": "Florida",
+    "active": true
+  },
+  {
+    "code": "502065",
+    "name": "Audi Atlanta",
+    "city": "Atlanta",
+    "state": "GA",
+    "area": "Southeast",
+    "region": "Georgia",
+    "active": true
+  },
+  {
+    "code": "503019",
+    "name": "Audi Chicago",
+    "city": "Chicago",
+    "state": "IL",
+    "area": "Midwest",
+    "region": "Great Lakes",
+    "active": true
+  },
+  {
+    "code": "503077",
+    "name": "Audi Minneapolis",
+    "city": "Minneapolis",
+    "state": "MN",
+    "area": "Midwest",
+    "region": "Upper Midwest",
+    "active": true
+  },
+  {
+    "code": "504031",
+    "name": "Audi Beverly Hills",
+    "city": "Beverly Hills",
+    "state": "CA",
+    "area": "West",
+    "region": "Pacific",
+    "active": true
+  },
+  {
+    "code": "504092",
+    "name": "Audi Seattle",
+    "city": "Seattle",
+    "state": "WA",
+    "area": "West",
+    "region": "Pacific NW",
+    "active": true
+  },
+  {
+    "code": "505008",
+    "name": "Audi Dallas",
+    "city": "Dallas",
+    "state": "TX",
+    "area": "South Central",
+    "region": "Texas",
+    "active": true
+  }
+]

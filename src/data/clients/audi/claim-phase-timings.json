@@ -1,1 +1,317 @@
-[]
+[
+  {
+    "claimId": "AFC1001001",
+    "dealershipCode": "501001",
+    "area": "Northeast",
+    "month": "2025-03",
+    "phase1Days": 12,
+    "phase2Days": 10,
+    "phase3Days": 5
+  },
+  {
+    "claimId": "AFC1001002",
+    "dealershipCode": "501001",
+    "area": "Northeast",
+    "month": "2025-07",
+    "phase1Days": 13,
+    "phase2Days": 9,
+    "phase3Days": 7
+  },
+  {
+    "claimId": "AFC1001003",
+    "dealershipCode": "501001",
+    "area": "Northeast",
+    "month": "2025-11",
+    "phase1Days": 15,
+    "phase2Days": 8,
+    "phase3Days": 7
+  },
+  {
+    "claimId": "AFC1001004",
+    "dealershipCode": "501001",
+    "area": "Northeast",
+    "month": "2026-03",
+    "phase1Days": 13,
+    "phase2Days": 10,
+    "phase3Days": 5
+  },
+  {
+    "claimId": "AFC1042005",
+    "dealershipCode": "501042",
+    "area": "Northeast",
+    "month": "2025-04",
+    "phase1Days": 20,
+    "phase2Days": 10,
+    "phase3Days": 8
+  },
+  {
+    "claimId": "AFC1042006",
+    "dealershipCode": "501042",
+    "area": "Northeast",
+    "month": "2025-08",
+    "phase1Days": 17,
+    "phase2Days": 11,
+    "phase3Days": 8
+  },
+  {
+    "claimId": "AFC1042007",
+    "dealershipCode": "501042",
+    "area": "Northeast",
+    "month": "2025-12",
+    "phase1Days": 16,
+    "phase2Days": 12,
+    "phase3Days": 8
+  },
+  {
+    "claimId": "AFC1088008",
+    "dealershipCode": "501088",
+    "area": "Northeast",
+    "month": "2025-02",
+    "phase1Days": 22,
+    "phase2Days": 10,
+    "phase3Days": 9
+  },
+  {
+    "claimId": "AFC1088009",
+    "dealershipCode": "501088",
+    "area": "Northeast",
+    "month": "2025-06",
+    "phase1Days": 22,
+    "phase2Days": 9,
+    "phase3Days": 9
+  },
+  {
+    "claimId": "AFC1088010",
+    "dealershipCode": "501088",
+    "area": "Northeast",
+    "month": "2025-10",
+    "phase1Days": 20,
+    "phase2Days": 10,
+    "phase3Days": 5
+  },
+  {
+    "claimId": "AFC1088011",
+    "dealershipCode": "501088",
+    "area": "Northeast",
+    "month": "2026-02",
+    "phase1Days": 22,
+    "phase2Days": 10,
+    "phase3Days": 6
+  },
+  {
+    "claimId": "AFC2011012",
+    "dealershipCode": "502011",
+    "area": "Southeast",
+    "month": "2025-03",
+    "phase1Days": 17,
+    "phase2Days": 8,
+    "phase3Days": 7
+  },
+  {
+    "claimId": "AFC2011013",
+    "dealershipCode": "502011",
+    "area": "Southeast",
+    "month": "2025-07",
+    "phase1Days": 14,
+    "phase2Days": 9,
+    "phase3Days": 8
+  },
+  {
+    "claimId": "AFC2011014",
+    "dealershipCode": "502011",
+    "area": "Southeast",
+    "month": "2025-11",
+    "phase1Days": 16,
+    "phase2Days": 10,
+    "phase3Days": 8
+  },
+  {
+    "claimId": "AFC2065015",
+    "dealershipCode": "502065",
+    "area": "Southeast",
+    "month": "2025-05",
+    "phase1Days": 21,
+    "phase2Days": 10,
+    "phase3Days": 6
+  },
+  {
+    "claimId": "AFC2065016",
+    "dealershipCode": "502065",
+    "area": "Southeast",
+    "month": "2025-09",
+    "phase1Days": 21,
+    "phase2Days": 11,
+    "phase3Days": 6
+  },
+  {
+    "claimId": "AFC2065017",
+    "dealershipCode": "502065",
+    "area": "Southeast",
+    "month": "2026-01",
+    "phase1Days": 16,
+    "phase2Days": 14,
+    "phase3Days": 9
+  },
+  {
+    "claimId": "AFC3019018",
+    "dealershipCode": "503019",
+    "area": "Midwest",
+    "month": "2025-02",
+    "phase1Days": 21,
+    "phase2Days": 18,
+    "phase3Days": 11
+  },
+  {
+    "claimId": "AFC3019019",
+    "dealershipCode": "503019",
+    "area": "Midwest",
+    "month": "2025-06",
+    "phase1Days": 22,
+    "phase2Days": 15,
+    "phase3Days": 8
+  },
+  {
+    "claimId": "AFC3019020",
+    "dealershipCode": "503019",
+    "area": "Midwest",
+    "month": "2025-10",
+    "phase1Days": 21,
+    "phase2Days": 13,
+    "phase3Days": 12
+  },
+  {
+    "claimId": "AFC3019021",
+    "dealershipCode": "503019",
+    "area": "Midwest",
+    "month": "2026-02",
+    "phase1Days": 26,
+    "phase2Days": 14,
+    "phase3Days": 11
+  },
+  {
+    "claimId": "AFC3077022",
+    "dealershipCode": "503077",
+    "area": "Midwest",
+    "month": "2025-04",
+    "phase1Days": 20,
+    "phase2Days": 16,
+    "phase3Days": 11
+  },
+  {
+    "claimId": "AFC3077023",
+    "dealershipCode": "503077",
+    "area": "Midwest",
+    "month": "2025-08",
+    "phase1Days": 19,
+    "phase2Days": 14,
+    "phase3Days": 7
+  },
+  {
+    "claimId": "AFC3077024",
+    "dealershipCode": "503077",
+    "area": "Midwest",
+    "month": "2025-12",
+    "phase1Days": 21,
+    "phase2Days": 15,
+    "phase3Days": 7
+  },
+  {
+    "claimId": "AFC4031025",
+    "dealershipCode": "504031",
+    "area": "West",
+    "month": "2025-03",
+    "phase1Days": 14,
+    "phase2Days": 7,
+    "phase3Days": 5
+  },
+  {
+    "claimId": "AFC4031026",
+    "dealershipCode": "504031",
+    "area": "West",
+    "month": "2025-07",
+    "phase1Days": 12,
+    "phase2Days": 8,
+    "phase3Days": 5
+  },
+  {
+    "claimId": "AFC4031027",
+    "dealershipCode": "504031",
+    "area": "West",
+    "month": "2025-11",
+    "phase1Days": 12,
+    "phase2Days": 9,
+    "phase3Days": 7
+  },
+  {
+    "claimId": "AFC4031028",
+    "dealershipCode": "504031",
+    "area": "West",
+    "month": "2026-03",
+    "phase1Days": 17,
+    "phase2Days": 8,
+    "phase3Days": 7
+  },
+  {
+    "claimId": "AFC4092029",
+    "dealershipCode": "504092",
+    "area": "West",
+    "month": "2025-05",
+    "phase1Days": 16,
+    "phase2Days": 9,
+    "phase3Days": 9
+  },
+  {
+    "claimId": "AFC4092030",
+    "dealershipCode": "504092",
+    "area": "West",
+    "month": "2025-09",
+    "phase1Days": 14,
+    "phase2Days": 13,
+    "phase3Days": 5
+  },
+  {
+    "claimId": "AFC4092031",
+    "dealershipCode": "504092",
+    "area": "West",
+    "month": "2026-01",
+    "phase1Days": 14,
+    "phase2Days": 9,
+    "phase3Days": 8
+  },
+  {
+    "claimId": "AFC5008032",
+    "dealershipCode": "505008",
+    "area": "South Central",
+    "month": "2025-04",
+    "phase1Days": 16,
+    "phase2Days": 8,
+    "phase3Days": 7
+  },
+  {
+    "claimId": "AFC5008033",
+    "dealershipCode": "505008",
+    "area": "South Central",
+    "month": "2025-08",
+    "phase1Days": 15,
+    "phase2Days": 9,
+    "phase3Days": 5
+  },
+  {
+    "claimId": "AFC5008034",
+    "dealershipCode": "505008",
+    "area": "South Central",
+    "month": "2025-12",
+    "phase1Days": 14,
+    "phase2Days": 9,
+    "phase3Days": 7
+  },
+  {
+    "claimId": "AFC5008035",
+    "dealershipCode": "505008",
+    "area": "South Central",
+    "month": "2026-04",
+    "phase1Days": 20,
+    "phase2Days": 11,
+    "phase3Days": 5
+  }
+]

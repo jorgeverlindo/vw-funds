@@ -73,7 +73,7 @@ function GuidelinesCard({
       <img
         src={image}
         alt={title}
-        className="absolute inset-0 w-full h-full object-cover transition-transform duration-300 group-hover:scale-[1.02]"
+        className="absolute inset-0 w-full h-full object-cover scale-[1.06] transition-transform duration-300 group-hover:scale-[1.08]"
       />
 
       {/* Gradient overlay — darkens bottom 60% for text legibility */}

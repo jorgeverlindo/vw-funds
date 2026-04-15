@@ -27,10 +27,10 @@ const FUND_TO_SPEND: Record<string, { category: string; color: string }> = {
   'DMF - Media Costs': { category: 'MEDIA - OTHER', color: '#A8A8F8' },
   'DMP - Hard Costs':  { category: 'MEDIA - CPO',   color: '#6050E0' },
   'DMF - Hard Costs':  { category: 'HARD',           color: 'rgba(247, 134, 100, 0.9)' },
-  // Audi fund types
-  'AoA - Media Costs': { category: 'MEDIA',          color: '#BB0A14' },
-  'AoA - Hard Costs':  { category: 'HARD',           color: 'rgba(187, 10, 20, 0.6)' },
-  'AoA - Events':      { category: 'EVENTS',         color: '#888888' },
+  // Audi fund types — same standard palette as VW
+  'AoA - Media Costs': { category: 'MEDIA',  color: '#A8A8F8' },
+  'AoA - Hard Costs':  { category: 'HARD',   color: 'rgba(247, 134, 100, 0.9)' },
+  'AoA - Events':      { category: 'EVENTS', color: '#6050E0' },
 };
 
 // Fund type colors for pie chart
@@ -39,10 +39,10 @@ const FUND_COLORS: Record<string, string> = {
   'DMF - Media Costs': '#6050E0',
   'DMF - Hard Costs':  'rgba(247, 134, 100, 0.9)',
   'DMP - Hard Costs':  '#51B994',
-  // Audi fund types
-  'AoA - Media Costs': '#BB0A14',
-  'AoA - Hard Costs':  'rgba(187, 10, 20, 0.6)',
-  'AoA - Events':      '#888888',
+  // Audi fund types — same standard palette as VW
+  'AoA - Media Costs': '#6050E0',
+  'AoA - Hard Costs':  'rgba(247, 134, 100, 0.9)',
+  'AoA - Events':      '#51B994',
 };
 
 // Region colors

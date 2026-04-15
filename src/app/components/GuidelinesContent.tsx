@@ -1,13 +1,58 @@
 import { useTranslation } from '../contexts/LanguageContext';
+import { useClient } from '../contexts/ClientContext';
 
-// Card images from the Figma design — exact asset references, do not substitute
+// VW card images — Figma assets
 import imgCoop   from 'figma:asset/85a0c71df6a4fdf6c8713a2ec4063036ceb6ee23.png';
 import imgBrand  from 'figma:asset/c24d45a1c65f1ce9c23d8dafd2787f4fa397aa92.png';
 import imgJetta  from 'figma:asset/c45369b25447b6fa84f02227e98c3db81b9de3da.png';
 import imgTiguan from 'figma:asset/4a61db968612064253430d01cb62b28422ad7a74.png';
 import imgApril  from 'figma:asset/990a5c560985c278f9d761d79cebaff821f02f52.png';
 
+// Audi card images
+import imgAudiCoop     from '../../assets/audi_images/Guidelines Card.png';
+import imgAudiBrand    from '../../assets/audi_images/Guidelines Card-1.png';
+import imgAudiA7       from '../../assets/audi_images/Guidelines Card-2.png';
+import imgAudiQ5       from '../../assets/audi_images/Guidelines Card-3.png';
+import imgAudiApril    from '../../assets/audi_images/Guidelines Card-4.png';
+
+// ─── Per-client card configs ──────────────────────────────────────────────────
+
+interface CardConfig {
+  image: string;
+  title: string;
+}
+
+interface ClientCards {
+  row1: [CardConfig, CardConfig];
+  row2: [CardConfig, CardConfig, CardConfig];
+}
+
+const VW_CARDS: ClientCards = {
+  row1: [
+    { image: imgCoop,   title: 'COOP Guidelines' },
+    { image: imgBrand,  title: 'Brand Guidelines' },
+  ],
+  row2: [
+    { image: imgJetta,  title: 'Jetta Assets' },
+    { image: imgTiguan, title: 'Tiguan Assets' },
+    { image: imgApril,  title: 'April Campaign' },
+  ],
+};
+
+const AUDI_CARDS: ClientCards = {
+  row1: [
+    { image: imgAudiCoop,  title: 'COOP Guidelines' },
+    { image: imgAudiBrand, title: 'Brand Guidelines' },
+  ],
+  row2: [
+    { image: imgAudiA7,    title: 'Audi A7 Sportback Assets' },
+    { image: imgAudiQ5,    title: 'Audi Q5' },
+    { image: imgAudiApril, title: 'April Campaign' },
+  ],
+};
+
 // ─── GuidelinesCard ──────────────────────────────────────────────────────────
+
 interface GuidelinesCardProps {
   image: string;
   title: string;
@@ -62,47 +107,31 @@ function GuidelinesCard({
 }
 
 // ─── GuidelinesContent ────────────────────────────────────────────────────────
+
 export function GuidelinesContent() {
+  const { client } = useClient();
+  const cards = client.clientId === 'audi' ? AUDI_CARDS : VW_CARDS;
+
   return (
     <div className="h-full overflow-y-auto custom-scrollbar">
       <div className="p-6 space-y-6">
 
         {/* Row 1 — 2 large cards, 50/50, 24px gap */}
         <div className="flex gap-6">
-          <div className="flex-1 min-w-0">
-            <GuidelinesCard
-              image={imgCoop}
-              title="COOP Guidelines"
-            />
-          </div>
-          <div className="flex-1 min-w-0">
-            <GuidelinesCard
-              image={imgBrand}
-              title="Brand Guidelines"
-            />
-          </div>
+          {cards.row1.map((card) => (
+            <div key={card.title} className="flex-1 min-w-0">
+              <GuidelinesCard image={card.image} title={card.title} />
+            </div>
+          ))}
         </div>
 
         {/* Row 2 — 3 smaller cards, equal width, 24px gap */}
         <div className="flex gap-6">
-          <div className="flex-1 min-w-0">
-            <GuidelinesCard
-              image={imgJetta}
-              title="Jetta Assets"
-            />
-          </div>
-          <div className="flex-1 min-w-0">
-            <GuidelinesCard
-              image={imgTiguan}
-              title="Tiguan Assets"
-            />
-          </div>
-          <div className="flex-1 min-w-0">
-            <GuidelinesCard
-              image={imgApril}
-              title="April Campaign"
-            />
-          </div>
+          {cards.row2.map((card) => (
+            <div key={card.title} className="flex-1 min-w-0">
+              <GuidelinesCard image={card.image} title={card.title} />
+            </div>
+          ))}
         </div>
 
       </div>

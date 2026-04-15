@@ -206,13 +206,13 @@ export function ClientSwitcher({ isOpen, onClose, currentClientId, onSelect }: C
                 </div>
               )}
 
-              {/* Divider */}
-              {filtered(RECENT_CLIENTS).length > 0 && filtered(ALL_CLIENTS).length > 0 && (
+              {/* Divider — hidden while All Clients section is hidden */}
+              {/* {filtered(RECENT_CLIENTS).length > 0 && filtered(ALL_CLIENTS).length > 0 && (
                 <div className="mx-3 my-2 border-t border-white/12" />
-              )}
+              )} */}
 
-              {/* All Clients */}
-              {filtered(ALL_CLIENTS).length > 0 && (
+              {/* All Clients — temporarily hidden; data kept in ALL_CLIENTS for future use */}
+              {/* {filtered(ALL_CLIENTS).length > 0 && (
                 <div>
                   <p className="px-3 py-1.5 text-[11px] font-medium font-['Roboto'] text-white/40 uppercase tracking-[0.8px]">
                     All Clients
@@ -226,7 +226,7 @@ export function ClientSwitcher({ isOpen, onClose, currentClientId, onSelect }: C
                     />
                   ))}
                 </div>
-              )}
+              )} */}
             </div>
           </motion.div>
         </>

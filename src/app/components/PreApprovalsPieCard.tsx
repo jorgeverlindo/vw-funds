@@ -3,10 +3,12 @@ import { DatavizTooltip } from './DatavizTooltip';
 import { Download } from 'lucide-react';
 import { useTranslation } from '../contexts/LanguageContext';
 import { useOverviewData } from '../../data/access/useOverviewData';
+import { useChartAnimation } from '../hooks/useChartAnimation';
 
 export function PreApprovalsPieCard() {
   const { t } = useTranslation();
   const { preApprovalStats } = useOverviewData();
+  const chartAnim = useChartAnimation();
 
   return (
     <div className="bg-white rounded-xl p-4 border border-[rgba(0,0,0,0.12)] flex flex-col gap-3 h-[320px] min-w-0">
@@ -49,7 +51,7 @@ export function PreApprovalsPieCard() {
                   />
                 }
               />
-              <Pie data={preApprovalStats} cx="50%" cy="50%" outerRadius="90%" dataKey="value" stroke="none">
+              <Pie data={preApprovalStats} cx="50%" cy="50%" outerRadius="90%" dataKey="value" stroke="none" {...chartAnim}>
                 {preApprovalStats.map((entry, index) => (
                   <Cell key={`cell-pre-approval-${entry.name}-${index}`} fill={entry.color} />
                 ))}

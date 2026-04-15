@@ -4,6 +4,7 @@ import { DatavizTooltip } from './DatavizTooltip';
 import { useTranslation } from '../contexts/LanguageContext';
 import { useOverviewData } from '../../data/access/useOverviewData';
 import { useClaimPhaseData } from '../../data/access/useClaimPhaseData';
+import { useChartAnimation } from '../hooks/useChartAnimation';
 
 const CardHeader = ({ title, subtitle, onDownload }: { title: string; subtitle?: string; onDownload?: () => void }) => (
   <div className="flex justify-between items-start mb-4">
@@ -24,6 +25,7 @@ const CardHeader = ({ title, subtitle, onDownload }: { title: string; subtitle?:
 export function AccruedFundsRooftopCard() {
   const { t } = useTranslation();
   const { rooftopChart } = useOverviewData();
+  const chartAnim = useChartAnimation();
   return (
     <div className="bg-white rounded-xl p-4 border border-[rgba(0,0,0,0.12)] flex flex-col h-[400px]">
       <CardHeader title={t('Accrued funds — by rooftop (USD)')} />
@@ -38,7 +40,7 @@ export function AccruedFundsRooftopCard() {
               cursor={{ fill: 'transparent' }}
               formatter={(value: number) => [`$${value.toLocaleString()}`, 'Value']}
             />
-            <Bar dataKey="value" fill="#6050E0" radius={[0, 4, 4, 0]} barSize={16} animationDuration={1000}>
+            <Bar dataKey="value" fill="#6050E0" radius={[0, 4, 4, 0]} barSize={16} {...chartAnim}>
               <LabelList
                 dataKey="value"
                 position="right"
@@ -56,6 +58,7 @@ export function AccruedFundsRooftopCard() {
 export function AccruedFundsRegionCard() {
   const { t } = useTranslation();
   const { regionChart } = useOverviewData();
+  const chartAnim = useChartAnimation();
   const total = regionChart.reduce((s, r) => s + r.value, 0) || 1;
   const dataWithPercent = regionChart.map(item => ({ ...item, percent: item.value / total }));
 
@@ -73,6 +76,7 @@ export function AccruedFundsRegionCard() {
               outerRadius={100}
               paddingAngle={2}
               dataKey="value"
+              {...chartAnim}
             >
               {dataWithPercent.map((entry, index) => (
                 <Cell key={`cell-${index}`} fill={entry.color} />
@@ -100,6 +104,7 @@ export function AccruedFundsRegionCard() {
 export function SubmittedClaimsRooftopCard() {
   const { t } = useTranslation();
   const { claimsRooftopChart } = useOverviewData();
+  const chartAnim = useChartAnimation();
   return (
     <div className="bg-white rounded-xl p-4 border border-[rgba(0,0,0,0.12)] flex flex-col h-[400px]">
       <CardHeader title={t('Submitted Claims — by Rooftop (Count)')} />
@@ -110,7 +115,7 @@ export function SubmittedClaimsRooftopCard() {
             <XAxis type="number" hide />
             <YAxis dataKey="name" type="category" width={140} tick={{ fontSize: 11, fill: '#686576' }} interval={0} />
             <Tooltip content={<DatavizTooltip title={t('Submitted Claims — by Rooftop (Count)')} />} cursor={{ fill: 'transparent' }} />
-            <Bar dataKey="value" fill="#51B994" radius={[0, 4, 4, 0]} barSize={16} animationDuration={1000}>
+            <Bar dataKey="value" fill="#51B994" radius={[0, 4, 4, 0]} barSize={16} {...chartAnim}>
               <LabelList dataKey="value" position="right" style={{ fontSize: '10px', fill: '#686576' }} />
             </Bar>
           </BarChart>
@@ -123,6 +128,7 @@ export function SubmittedClaimsRooftopCard() {
 export function LongestPaymentTimeCard() {
   const { t } = useTranslation();
   const { paymentTimings, paymentAverage: average } = useClaimPhaseData();
+  const chartAnim = useChartAnimation();
   const data = paymentTimings.map(r => ({ name: r.id, value: r.days }));
 
   return (
@@ -159,7 +165,7 @@ export function LongestPaymentTimeCard() {
               tickFormatter={(val: string) => val.trim()}
             />
             <Tooltip content={<DatavizTooltip title={t('In days')} />} cursor={{ fill: 'transparent' }} />
-            <Bar dataKey="value" radius={[0, 4, 4, 0]}>
+            <Bar dataKey="value" radius={[0, 4, 4, 0]} {...chartAnim}>
               {data.map((entry, index) => (
                 <Cell key={`cell-${index}`} fill={entry.value > average ? '#F78664' : '#51B994'} />
               ))}

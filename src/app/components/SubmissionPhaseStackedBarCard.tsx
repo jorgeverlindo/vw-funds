@@ -5,10 +5,12 @@ import { Download } from 'lucide-react';
 import { useTranslation } from '../contexts/LanguageContext';
 import { cn } from '../../lib/utils';
 import { useClaimPhaseData } from '../../data/access/useClaimPhaseData';
+import { useChartAnimation } from '../hooks/useChartAnimation';
 
 export function SubmissionPhaseStackedBarCard({ variant = 'dealer' }: { variant?: 'dealer' | 'oem' }) {
   const { t } = useTranslation();
   const { submissionPhases } = useClaimPhaseData();
+  const chartAnim = useChartAnimation();
 
   const chartData = useMemo(() => {
     // dealer mode: first dealer row + benchmark (last row)
@@ -164,9 +166,9 @@ export function SubmissionPhaseStackedBarCard({ variant = 'dealer' }: { variant?
               } 
               cursor={{ fill: 'rgba(0,0,0,0.04)' }}
             />
-            <Bar dataKey="Submission → Pre-Approval" stackId="a" fill="#6356e1" radius={[0, 0, 0, 0]} name={t("Submission → Pre-Approval")} />
-            <Bar dataKey="Pre-Approval → Final Approval" stackId="a" fill="#acabff" radius={[0, 0, 0, 0]} name={t("Pre-Approval → Final Approval")} />
-            <Bar dataKey="Final Approval → Payment" stackId="a" fill="#72c6a8" radius={[0, 4, 4, 0]} name={t("Final Approval → Payment")} />
+            <Bar dataKey="Submission → Pre-Approval" stackId="a" fill="#6356e1" radius={[0, 0, 0, 0]} name={t("Submission → Pre-Approval")} {...chartAnim} />
+            <Bar dataKey="Pre-Approval → Final Approval" stackId="a" fill="#acabff" radius={[0, 0, 0, 0]} name={t("Pre-Approval → Final Approval")} {...chartAnim} />
+            <Bar dataKey="Final Approval → Payment" stackId="a" fill="#72c6a8" radius={[0, 4, 4, 0]} name={t("Final Approval → Payment")} {...chartAnim} />
           </BarChart>
         </ResponsiveContainer>
       </div>

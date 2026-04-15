@@ -3,10 +3,12 @@ import { Download } from 'lucide-react';
 import { DatavizTooltip } from './DatavizTooltip';
 import { useTranslation } from '../contexts/LanguageContext';
 import { useClaimPhaseData } from '../../data/access/useClaimPhaseData';
+import { useChartAnimation } from '../hooks/useChartAnimation';
 
 export function TimeInClaimPhaseBarCard() {
   const { t } = useTranslation();
   const { claimTimings: data, claimAverage: average } = useClaimPhaseData();
+  const chartAnim = useChartAnimation();
   return (
     <div className="bg-white rounded-xl p-4 border border-[rgba(0,0,0,0.12)] flex flex-col gap-3 w-full min-w-0">
       <div className="flex items-center justify-between">
@@ -67,7 +69,7 @@ export function TimeInClaimPhaseBarCard() {
               }
               cursor={{ fill: 'rgba(0,0,0,0.04)' }}
             />
-            <Bar dataKey="days" radius={[0, 4, 4, 0]} barSize={12}>
+            <Bar dataKey="days" radius={[0, 4, 4, 0]} barSize={12} {...chartAnim}>
                {data.map((entry, index) => (
                   <Cell key={`cell-${entry.id}-${index}`} fill={entry.days > average ? 'rgba(247, 134, 100, 0.9)' : '#60C098'} />
                ))}

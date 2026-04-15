@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Legend, LabelList, Tooltip as RechartsTooltip } from 'recharts';
 import { useTranslation } from '../contexts/LanguageContext';
 import { useOverviewData } from '../../data/access/useOverviewData';
+import { useChartAnimation } from '../hooks/useChartAnimation';
 
 const fmt = (n: number) =>
   '$' + n.toLocaleString('en-US', { maximumFractionDigits: 0 });
@@ -72,6 +73,7 @@ const CustomTooltip = ({ active, payload, label }: { active?: boolean; payload?:
 export function AccrualsSubmittedDifferenceCard() {
   const { t } = useTranslation();
   const { kpis, monthlyChart } = useOverviewData();
+  const chartAnim = useChartAnimation();
 
   return (
     <div className="bg-white rounded-xl p-6 border border-[rgba(0,0,0,0.12)] flex flex-col gap-8 min-w-0">
@@ -121,13 +123,13 @@ export function AccrualsSubmittedDifferenceCard() {
               )}
             />
             <RechartsTooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(0,0,0,0.05)' }} />
-            <Bar dataKey="accruals" fill="#6050E0" name="Accruals">
+            <Bar dataKey="accruals" fill="#6050E0" name="Accruals" {...chartAnim}>
               <LabelList dataKey="accruals" position="top" fontSize={9} fill="#6050E0" formatter={(val: number) => val ? `$${(val/1000).toFixed(1)}k` : ''} />
             </Bar>
-            <Bar dataKey="submitted" fill="#F89070" name="Submitted">
+            <Bar dataKey="submitted" fill="#F89070" name="Submitted" {...chartAnim}>
               <LabelList dataKey="submitted" position="top" fontSize={9} fill="#F89070" formatter={(val: number) => val ? `$${(val/1000).toFixed(1)}k` : ''} />
             </Bar>
-            <Bar dataKey="difference" fill="#9CA3AF" name="Difference">
+            <Bar dataKey="difference" fill="#9CA3AF" name="Difference" {...chartAnim}>
               <LabelList dataKey="difference" position="top" fontSize={9} fill="#9CA3AF" formatter={(val: number) => val ? `$${(val/1000).toFixed(1)}k` : ''} />
             </Bar>
           </BarChart>

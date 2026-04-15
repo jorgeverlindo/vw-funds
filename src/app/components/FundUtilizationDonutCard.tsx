@@ -2,10 +2,12 @@ import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 import { DatavizTooltip } from './DatavizTooltip';
 import { useTranslation } from '../contexts/LanguageContext';
 import { useOverviewData } from '../../data/access/useOverviewData';
+import { useChartAnimation } from '../hooks/useChartAnimation';
 
 export function FundUtilizationDonutCard() {
   const { t } = useTranslation();
   const { utilizationData } = useOverviewData();
+  const chartAnim = useChartAnimation();
 
   const chartData = [
     { name: 'Available',  value: utilizationData.available,  percent: utilizationData.availablePercent,  color: '#51B994' },
@@ -54,7 +56,7 @@ export function FundUtilizationDonutCard() {
                 />
               }
             />
-            <Pie data={chartData} key={utilizationData.total} cx="50%" cy="50%" innerRadius={70} outerRadius={100} paddingAngle={2} dataKey="value" animationBegin={0} animationDuration={600}>
+            <Pie data={chartData} cx="50%" cy="50%" innerRadius={70} outerRadius={100} paddingAngle={2} dataKey="value" {...chartAnim}>
               {chartData.map((entry, index) => (
                 <Cell key={`cell-utilization-${entry.name}-${index}`} fill={entry.color} />
               ))}

@@ -4,6 +4,7 @@ import { DatavizTooltip } from './DatavizTooltip';
 import { Download } from 'lucide-react';
 import { useTranslation } from '../contexts/LanguageContext';
 import { useOverviewData } from '../../data/access/useOverviewData';
+import { useChartAnimation } from '../hooks/useChartAnimation';
 
 type TabKey = 'funds' | 'available' | 'approved' | 'pending' | 'expiring';
 const TABS: { id: TabKey; label: string }[] = [
@@ -18,6 +19,7 @@ export function FundsPieCard() {
   const { t } = useTranslation();
   const { fundSplitViews, kpis } = useOverviewData();
   const [activeTab, setActiveTab] = useState<TabKey>('available');
+  const chartAnim = useChartAnimation();
 
   const data = fundSplitViews[activeTab];
 
@@ -83,7 +85,7 @@ export function FundsPieCard() {
                 />
               }
             />
-            <Pie data={data} key={data.reduce((s, d) => s + d.value, 0)} cx="50%" cy="50%" outerRadius={80} dataKey="value" paddingAngle={2} animationBegin={0} animationDuration={600}>
+            <Pie data={data} cx="50%" cy="50%" outerRadius={80} dataKey="value" paddingAngle={2} {...chartAnim}>
               {data.map((entry, index) => (
                 <Cell key={`cell-funds-${entry.name}-${index}`} fill={entry.color} />
               ))}

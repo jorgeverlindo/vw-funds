@@ -4,10 +4,12 @@ import { DatavizTooltip } from './DatavizTooltip';
 import { Download } from 'lucide-react';
 import { useTranslation } from '../contexts/LanguageContext';
 import { useOverviewData } from '../../data/access/useOverviewData';
+import { useChartAnimation } from '../hooks/useChartAnimation';
 
 export function SpendBreakdownStackedBarCard() {
   const { t } = useTranslation();
   const { spendBreakdown } = useOverviewData();
+  const chartAnim = useChartAnimation();
 
   // Sort to stable order: CPO, OTHER, HARD
   const displayData = useMemo(() => {
@@ -85,6 +87,7 @@ export function SpendBreakdownStackedBarCard() {
                   barSize={32}
                   radius={idx === 0 ? [4, 0, 0, 4] : idx === displayData.length - 1 ? [0, 4, 4, 0] : [0, 0, 0, 0]}
                   name={t(item.category)}
+                  {...chartAnim}
                 />
               ))}
             </BarChart>

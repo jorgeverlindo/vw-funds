@@ -12,24 +12,18 @@ interface GuidelinesCardProps {
   image: string;
   title: string;
   ctaLabel?: string;
-  size?: 'large' | 'small';
 }
 
 function GuidelinesCard({
   image,
   title,
   ctaLabel = 'Access Documents',
-  size = 'large',
 }: GuidelinesCardProps) {
   const { t } = useTranslation();
 
   return (
-    <div
-      className={`
-        relative overflow-hidden rounded-[12px] cursor-pointer group
-        ${size === 'large' ? 'h-[280px]' : 'h-[190px]'}
-      `}
-    >
+    <div className="relative w-full overflow-hidden rounded-[12px] cursor-pointer group aspect-[16/9]">
+
       {/* Background image */}
       <img
         src={image}
@@ -50,7 +44,7 @@ function GuidelinesCard({
         {/* Title */}
         <span
           className="text-white leading-snug tracking-[0.15px]"
-          style={{ fontSize: size === 'large' ? '20px' : '16px', fontWeight: 500 }}
+          style={{ fontSize: '18px', fontWeight: 500 }}
         >
           {t(title)}
         </span>
@@ -79,14 +73,12 @@ export function GuidelinesContent() {
             <GuidelinesCard
               image={imgCoop}
               title="COOP Guidelines"
-              size="large"
             />
           </div>
           <div className="flex-1 min-w-0">
             <GuidelinesCard
               image={imgBrand}
               title="Brand Guidelines"
-              size="large"
             />
           </div>
         </div>
@@ -97,21 +89,18 @@ export function GuidelinesContent() {
             <GuidelinesCard
               image={imgJetta}
               title="Jetta Assets"
-              size="small"
             />
           </div>
           <div className="flex-1 min-w-0">
             <GuidelinesCard
               image={imgTiguan}
               title="Tiguan Assets"
-              size="small"
             />
           </div>
           <div className="flex-1 min-w-0">
             <GuidelinesCard
               image={imgApril}
               title="April Campaign"
-              size="small"
             />
           </div>
         </div>

@@ -28,7 +28,7 @@ export function Snackbar({
           exit={{ opacity: 0, y: 20 }}
           transition={{ duration: 0.3, ease: "easeOut" }}
           className={cn(
-            "fixed bottom-6 left-1/2 -translate-x-1/2 z-[10000] flex items-center min-w-[320px] bg-[#2C2C2C] text-white px-4 py-3 rounded-[4px] shadow-lg gap-4",
+            "fixed bottom-6 left-6 z-[10000] flex items-center min-w-[320px] bg-[#2C2C2C] text-white px-4 py-3 rounded-[4px] shadow-lg gap-4",
             className
           )}
         >

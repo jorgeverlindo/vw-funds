@@ -1,4 +1,6 @@
 import { format } from 'date-fns';
+import { frCA } from 'date-fns/locale';
+import { useTranslation } from '../contexts/LanguageContext';
 
 interface DateRangeInputProps {
   startDate: Date | undefined;
@@ -8,13 +10,17 @@ interface DateRangeInputProps {
 }
 
 export function DateRangeInput({ startDate, endDate, onClick, onReset }: DateRangeInputProps) {
-  const displayText = startDate && endDate 
-    ? `${format(startDate, 'MMM d, yyyy')} - ${format(endDate, 'MMM d, yyyy')}`
-    : 'Select Date Range';
+  const { t, language } = useTranslation();
+  const dateLocale = language === 'fr' ? frCA : undefined;
+  const fmtDate = (d: Date) => format(d, 'MMM d, yyyy', { locale: dateLocale });
+
+  const displayText = startDate && endDate
+    ? `${fmtDate(startDate)} - ${fmtDate(endDate)}`
+    : t('Select Date Range');
 
   return (
     <div className="flex flex-col items-start relative w-fit">
-      <div className="text-[#686576] text-xs font-normal mb-1 tracking-[0.15px] whitespace-nowrap">Date Range</div>
+      <div className="text-[#686576] text-xs font-normal mb-1 tracking-[0.15px] whitespace-nowrap">{t('Date Range')}</div>
       <div 
         onClick={onClick}
         className="group relative min-w-max bg-[#f9fafa] border border-[#cac9cf] rounded h-10 flex items-center px-2 pr-10 cursor-pointer hover:border-[#6356E1] transition-colors gap-2"

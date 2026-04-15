@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 140 40" fill="none">
+  <rect width="140" height="40" fill="white"/>
+  <!-- Audi 4 rings: r=15, center-to-center=28, stroke=3.5 -->
+  <!-- Ring 1 -->
+  <circle cx="20" cy="20" r="15" stroke="#1a1a1a" stroke-width="3.5" fill="none"/>
+  <!-- Ring 2 -->
+  <circle cx="48" cy="20" r="15" stroke="#1a1a1a" stroke-width="3.5" fill="none"/>
+  <!-- Ring 3 -->
+  <circle cx="76" cy="20" r="15" stroke="#1a1a1a" stroke-width="3.5" fill="none"/>
+  <!-- Ring 4 -->
+  <circle cx="104" cy="20" r="15" stroke="#1a1a1a" stroke-width="3.5" fill="none"/>
+</svg>

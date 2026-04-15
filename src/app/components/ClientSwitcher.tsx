@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { ArrowLeft, Search } from 'lucide-react';
 import { cn } from '../../lib/utils';
+import audiLogoOEM from '../../assets/audi-logo-oem.svg';
+import audiLogoPacific from '../../assets/audi-logo-pacific.svg';
 
 // ─── Logos ─────────────────────────────────────────────────────────────────
 
@@ -17,32 +19,16 @@ function VWLogo({ size = 32 }: { size?: number }) {
   );
 }
 
+/** Audi logo for the switcher list — always shows OEM (4 black rings on white) */
 function AudiLogo({ size = 32 }: { size?: number }) {
-  // Four overlapping rings — simplified SVG
-  const r = size * 0.18;
-  const gap = size * 0.14;
-  const cy = size / 2;
-  const centers = [
-    size * 0.5 - gap * 1.5,
-    size * 0.5 - gap * 0.5,
-    size * 0.5 + gap * 0.5,
-    size * 0.5 + gap * 1.5,
-  ];
   return (
-    <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} fill="none">
-      <rect width={size} height={size} rx="4" fill="#BB0A14" />
-      {centers.map((cx, i) => (
-        <circle
-          key={i}
-          cx={cx}
-          cy={cy}
-          r={r}
-          stroke="white"
-          strokeWidth={size * 0.055}
-          fill="none"
-        />
-      ))}
-    </svg>
+    <img
+      src={audiLogoOEM}
+      alt="Audi"
+      width={size}
+      height={size}
+      style={{ borderRadius: 4, objectFit: 'cover', display: 'block' }}
+    />
   );
 }
 
@@ -162,11 +148,11 @@ export function ClientSwitcher({ isOpen, onClose, currentClientId, onSelect }: C
         <>
           {/* Backdrop (click outside to close) */}
           <div
-            className="fixed inset-0 z-40"
+            className="fixed inset-0 z-[45]"
             onClick={onClose}
           />
 
-          {/* Panel */}
+          {/* Panel — sits above backdrop and TopNavBar (z-40) */}
           <motion.div
             initial={{ x: -240, opacity: 0 }}
             animate={{ x: 0, opacity: 1 }}

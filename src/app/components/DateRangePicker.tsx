@@ -1,4 +1,5 @@
 import { format } from 'date-fns';
+import { frCA } from 'date-fns/locale';
 import { DateRange, DayPicker } from 'react-day-picker';
 import {
   startOfWeek, endOfWeek, subWeeks, subDays,
@@ -15,14 +16,17 @@ interface DateRangePickerProps {
 }
 
 export function DateRangePicker({ initialRange, onApply, onCancel }: DateRangePickerProps) {
-  const { t } = useTranslation();
+  const { t, language } = useTranslation();
   const [selectedRange, setSelectedRange] = useState<DateRange | undefined>(initialRange);
 
+  const dateLocale = language === 'fr' ? frCA : undefined;
+  const fmtDate = (d: Date) => format(d, 'MMM d', { locale: dateLocale });
+
   // Helper to safely format range
-  const formattedRange = selectedRange?.from && selectedRange?.to 
-    ? `${format(selectedRange.from, 'MMM d')} - ${format(selectedRange.to, 'MMM d')}`
+  const formattedRange = selectedRange?.from && selectedRange?.to
+    ? `${fmtDate(selectedRange.from)} - ${fmtDate(selectedRange.to)}`
     : selectedRange?.from
-      ? `${format(selectedRange.from, 'MMM d')} - Select End`
+      ? `${fmtDate(selectedRange.from)} - ${t('Select End')}`
       : t('Select Range');
 
   // Presets
@@ -110,6 +114,7 @@ export function DateRangePicker({ initialRange, onApply, onCancel }: DateRangePi
             selected={selectedRange}
             onSelect={setSelectedRange}
             showOutsideDays
+            locale={dateLocale}
             components={{
               IconLeft: () => <ChevronLeft className="w-4 h-4" />,
               IconRight: () => <ChevronRight className="w-4 h-4" />,

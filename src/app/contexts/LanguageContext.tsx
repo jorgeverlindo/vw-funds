@@ -227,6 +227,8 @@ const translations: Record<Language, Record<string, string>> = {
     'Paid out': 'Paid out',
     // DateRangePicker fallback
     'Select Range': 'Select Range',
+    'Select Date Range': 'Select Date Range',
+    'Select End': 'Select End',
     // WebMonitoringPanel / Modal — annotation strings
     'Missing Legal Disclaimer': 'Missing Legal Disclaimer',
     'Offer card displays payment terms without required disclaimer language visible near the promotional copy.': 'Offer card displays payment terms without required disclaimer language visible near the promotional copy.',
@@ -455,6 +457,8 @@ const translations: Record<Language, Record<string, string>> = {
     'Paid out': 'Versé',
     // DateRangePicker fallback
     'Select Range': 'Sélectionner une plage',
+    'Select Date Range': 'Sélectionner une période',
+    'Select End': 'Sélect. fin',
     // WebMonitoringPanel / Modal — annotation strings
     'Missing Legal Disclaimer': 'Avertissement légal manquant',
     'Offer card displays payment terms without required disclaimer language visible near the promotional copy.': 'La carte d\'offre affiche des conditions de paiement sans l\'avertissement légal requis visible près du texte promotionnel.',

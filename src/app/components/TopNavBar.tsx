@@ -38,7 +38,7 @@ export function TopNavBar({ userType = 'dealer', onOpenOEMDrawer, languageToggle
   }, [isNotificationOpen]);
 
   return (
-    <div className="fixed top-0 left-[72px] right-0 h-12 bg-[#F9FAFA] flex items-center z-[100] px-[24px] py-[8px] mt-[8px] mr-[0px] mb-[0px] ml-[0px]">
+    <div className="fixed top-0 left-[72px] right-0 h-12 bg-[#F9FAFA] flex items-center z-40 px-[24px] py-[8px] mt-[8px] mr-[0px] mb-[0px] ml-[0px]">
       {/* Left: Logo */}
       <div className="flex items-center h-8">
         <svg viewBox="0 0 176 32" className="h-full w-auto" fill="none">

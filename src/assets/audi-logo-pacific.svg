@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 140 56" fill="none">
+  <rect width="140" height="56" fill="#BB0A14"/>
+  <!-- Audi 4 rings: r=13, center-to-center=24, stroke=3, white on red -->
+  <circle cx="22" cy="22" r="13" stroke="white" stroke-width="3" fill="none"/>
+  <circle cx="46" cy="22" r="13" stroke="white" stroke-width="3" fill="none"/>
+  <circle cx="70" cy="22" r="13" stroke="white" stroke-width="3" fill="none"/>
+  <circle cx="94" cy="22" r="13" stroke="white" stroke-width="3" fill="none"/>
+  <!-- PACIFIC text -->
+  <text x="70" y="47" text-anchor="middle" font-family="Arial, sans-serif" font-size="9" font-weight="700" letter-spacing="2" fill="white">PACIFIC</text>
+</svg>

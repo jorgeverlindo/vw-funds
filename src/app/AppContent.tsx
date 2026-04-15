@@ -25,6 +25,7 @@ import { useTranslation } from './contexts/LanguageContext';
 import { ClientSwitcher } from './components/ClientSwitcher';
 import { Snackbar } from './components/pre-approval/Snackbar';
 import { useClient } from './contexts/ClientContext';
+import { BreadcrumbBar } from './components/BreadcrumbBar';
 
 const DEALER_TABS = [
   { id: 'overview', label: 'Overview' },
@@ -259,42 +260,22 @@ export default function AppContent() {
             <>
               {/* Header Section inside Card */}
               <div className="flex-none px-6 pt-4 pb-0">
-                {/* Breadcrumbs */}
-                <div className="flex items-center gap-1 mb-2">
-                  <span className="text-[11px] text-[#686576] font-normal tracking-[0.4px]">{showLanguageToggle ? t('Campaigns') : 'Campaigns'}</span>
-                  <svg className="w-3.5 h-3.5 text-[#686576]" fill="currentColor" viewBox="0 0 14 14">
-                     <path d="M5.5 3.5L9 7l-3.5 3.5" />
-                  </svg>
-                  <span className="text-[11px] text-[#686576] font-normal tracking-[0.4px]">{showLanguageToggle ? t('Funds') : 'Funds'}</span>
-                  {activeTab === 'pre-approvals' && (
-                    <>
-                      <svg className="w-3.5 h-3.5 text-[#686576]" fill="currentColor" viewBox="0 0 14 14">
-                         <path d="M5.5 3.5L9 7l-3.5 3.5" />
-                      </svg>
-                      <span className="text-[11px] text-[#1f1d25] font-normal tracking-[0.4px]">{showLanguageToggle ? t('Pre-Approvals') : 'Pre-Approvals'}</span>
-                    </>
-                  )}
-                   {activeTab === 'claims' && (
-                    <>
-                      <svg className="w-3.5 h-3.5 text-[#686576]" fill="currentColor" viewBox="0 0 14 14">
-                         <path d="M5.5 3.5L9 7l-3.5 3.5" />
-                      </svg>
-                      <span className="text-[11px] text-[#1f1d25] font-normal tracking-[0.4px]">{showLanguageToggle ? t('Claims') : 'Claims'}</span>
-                    </>
-                  )}
-                  {activeTab === 'web-monitoring' && (
-                    <>
-                      <svg className="w-3.5 h-3.5 text-[#686576]" fill="currentColor" viewBox="0 0 14 14">
-                         <path d="M5.5 3.5L9 7l-3.5 3.5" />
-                      </svg>
-                      <span className="text-[11px] text-[#1f1d25] font-normal tracking-[0.4px]">{showLanguageToggle ? t('Web Monitoring') : 'Web Monitoring'}</span>
-                    </>
-                  )}
+                {/* Breadcrumbs — driven by active tab, all tabs covered */}
+                <div className="mb-2">
+                  <BreadcrumbBar
+                    items={[
+                      { label: 'Campaigns' },
+                      { label: 'Funds' },
+                    ]}
+                    activeLabel={translatedTabs.find(t => t.id === activeTab)?.label ?? activeTab}
+                  />
                 </div>
 
-                {/* Page Title */}
+                {/* Page Title — always "Funds" per design */}
                 <div className="mb-4">
-                   <h1 className="text-[20px] font-medium text-[#1f1d25] tracking-[0.15px] leading-6">{showLanguageToggle ? t('Funds') : 'Funds'}</h1>
+                  <h1 className="text-[20px] font-medium text-[#1f1d25] tracking-[0.15px] leading-6">
+                    {showLanguageToggle ? t('Funds') : 'Funds'}
+                  </h1>
                 </div>
 
                 {/* Tabs */}

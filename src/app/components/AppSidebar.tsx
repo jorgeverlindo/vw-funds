@@ -3,6 +3,7 @@ import { motion } from 'motion/react';
 import svgPaths from '@/imports/svg-kh2cdc4deu';
 import imgBrandLogo from 'figma:asset/92831320399bbc5ee6848b8f47ee2c2fdc72780d.png';
 import { useTranslation } from '../contexts/LanguageContext';
+import { useClient } from '../contexts/ClientContext';
 
 interface NavItemProps {
   icon: React.ReactNode;
@@ -12,6 +13,20 @@ interface NavItemProps {
 }
 
 const VOLKS_LOGO_PATH = "M20 32.3229C13.2414 32.3229 7.70429 26.7586 7.70429 20C7.70429 18.48 7.97571 17.0414 8.49143 15.6843L15.6843 30.1514C15.7657 30.3414 15.9014 30.5043 16.1186 30.5043C16.3357 30.5043 16.4714 30.3414 16.5529 30.1514L19.8643 22.7414C19.8914 22.66 19.9457 22.5786 20.0271 22.5786C20.1086 22.5786 20.1357 22.66 20.19 22.7414L23.5014 30.1514C23.5829 30.3414 23.7186 30.5043 23.9357 30.5043C24.1529 30.5043 24.2886 30.3414 24.37 30.1514L31.5629 15.6843C32.0786 17.0414 32.35 18.48 32.35 20C32.2957 26.7586 26.7586 32.3229 20 32.3229ZM20 17.2043C19.9186 17.2043 19.8914 17.1229 19.8371 17.0414L15.9829 8.35571C17.2314 7.89428 18.5886 7.65 20 7.65C21.4114 7.65 22.7686 7.89428 24.0171 8.35571L20.1629 17.0414C20.1086 17.15 20.0814 17.2043 20 17.2043ZM16.0643 26.1343C15.9829 26.1343 15.9557 26.0529 15.9014 25.9714L9.65857 13.3771C10.7714 11.6671 12.2643 10.2286 14.0829 9.22429L18.5886 19.24C18.6429 19.4029 18.7786 19.4571 18.9143 19.4571H21.0857C21.2486 19.4571 21.3571 19.43 21.4386 19.24L25.9443 9.22429C27.7357 10.2286 29.2557 11.6671 30.3686 13.3771L24.0714 25.9714C24.0443 26.0529 23.99 26.1343 23.9086 26.1343C23.8271 26.1343 23.8 26.0529 23.7457 25.9714L21.3843 20.5971C21.3029 20.4071 21.1943 20.38 21.0314 20.38H18.86C18.6971 20.38 18.5886 20.4071 18.5071 20.5971L16.2271 25.9714C16.2 26.0529 16.1457 26.1343 16.0643 26.1343ZM20 33.5714C27.5186 33.5714 33.5714 27.5186 33.5714 20C33.5714 12.4814 27.5186 6.42857 20 6.42857C12.4814 6.42857 6.42857 12.4814 6.42857 20C6.42857 27.5186 12.4814 33.5714 20 33.5714Z";
+
+// Audi four-rings logo (inline SVG)
+function AudiRings() {
+  const r = 7.2, gap = 5.6, cy = 20;
+  const centers = [20 - gap * 1.5, 20 - gap * 0.5, 20 + gap * 0.5, 20 + gap * 1.5];
+  return (
+    <svg width="40" height="40" viewBox="0 0 40 40" fill="none">
+      <rect width="40" height="40" rx="4" fill="#BB0A14" />
+      {centers.map((cx, i) => (
+        <circle key={i} cx={cx} cy={cy} r={r} stroke="white" strokeWidth="2.2" fill="none" />
+      ))}
+    </svg>
+  );
+}
 
 function NavItem({ icon, label, isActive = false, onClick }: NavItemProps) {
   return (
@@ -59,38 +74,49 @@ interface AppSidebarProps {
   onNavigate?: (route: string) => void;
   userType?: 'dealer' | 'oem';
   onToggleUserType?: () => void;
+  onOpenClientSwitcher?: () => void;
+  clientSwitcherOpen?: boolean;
 }
 
-export function AppSidebar({ activeRoute = 'campaigns', onNavigate, userType = 'dealer', onToggleUserType }: AppSidebarProps) {
+export function AppSidebar({
+  activeRoute = 'campaigns',
+  onNavigate,
+  userType = 'dealer',
+  onToggleUserType: _onToggleUserType,
+  onOpenClientSwitcher,
+  clientSwitcherOpen = false,
+}: AppSidebarProps) {
   const { t } = useTranslation();
+  const { client } = useClient();
+
+  const clientLogo = client.clientId === 'audi' ? (
+    <AudiRings />
+  ) : client.clientId === 'vw' ? (
+    <svg className="block size-full" fill="none" preserveAspectRatio="none" viewBox="0 0 40 40">
+      <rect fill="white" height="40" rx="4" width="40" />
+      <path d={VOLKS_LOGO_PATH} fill="#1F1D25" />
+    </svg>
+  ) : (
+    <div className="bg-white overflow-clip relative rounded size-10">
+      <div aria-hidden="true" className="absolute inset-0 pointer-events-none">
+        <div className="absolute bg-[#0c1b44] inset-0" />
+        <img alt="" className="absolute max-w-none object-contain size-full" src={imgBrandLogo} />
+      </div>
+    </div>
+  );
+
   return (
     <div className="fixed left-0 top-0 bottom-0 w-[72px] bg-[#1e1a42] flex flex-col items-center z-50 isolate">
-      {/* Logo Container */}
+      {/* Logo Container — click opens Client Switcher */}
       <div className="h-[60px] relative shrink-0 w-full z-[4]">
         <div className="flex flex-row items-center justify-center size-full">
           <div className="content-stretch flex items-center justify-center px-[11px] py-1 relative size-full">
-            <div 
-              className="relative cursor-pointer transition-transform active:scale-95"
-              onClick={onToggleUserType}
-              title={`Switch to ${userType === 'dealer' ? 'OEM' : 'Dealer'} View`}
+            <div
+              className={`relative cursor-pointer transition-transform active:scale-95 size-10 ${clientSwitcherOpen ? 'ring-2 ring-[#ACABFF] ring-offset-2 ring-offset-[#1e1a42] rounded-[4px]' : ''}`}
+              onClick={onOpenClientSwitcher}
+              title="Switch Client"
             >
-              {userType === 'dealer' ? (
-                <div className="bg-white overflow-clip relative rounded size-10">
-                  <div aria-hidden="true" className="absolute inset-0 pointer-events-none">
-                    <div className="absolute bg-[#0c1b44] inset-0" />
-                    <img alt="" className="absolute max-w-none object-contain size-full" src={imgBrandLogo} />
-                  </div>
-                </div>
-              ) : (
-                <div className="relative shrink-0 size-[40px]" data-name="Brand Logo/Volks">
-                  <svg className="block size-full" fill="none" preserveAspectRatio="none" viewBox="0 0 40 40">
-                    <g id="Brand Logo/Volks">
-                      <rect fill="white" height="40" rx="4" width="40" />
-                      <path d={VOLKS_LOGO_PATH} fill="#1F1D25" id="Vector" />
-                    </g>
-                  </svg>
-                </div>
-              )}
+              {clientLogo}
             </div>
           </div>
         </div>

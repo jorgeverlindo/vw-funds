@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import { AppSidebar } from './components/AppSidebar';
 import { TopNavBar } from './components/TopNavBar';
 import { TabNavigation } from './components/TabNavigation';
@@ -22,6 +22,9 @@ import { WebMonitoringContent, WCM_DATA } from './components/WebMonitoringConten
 import { WebMonitoringPanel } from './components/WebMonitoringPanel';
 import { WebMonitoringModal } from './components/WebMonitoringModal';
 import { useTranslation } from './contexts/LanguageContext';
+import { ClientSwitcher } from './components/ClientSwitcher';
+import { Snackbar } from './components/pre-approval/Snackbar';
+import { useClient } from './contexts/ClientContext';
 
 const DEALER_TABS = [
   { id: 'overview', label: 'Overview' },
@@ -54,6 +57,41 @@ export default function AppContent() {
   const [activeTab, setActiveTab] = useState('overview');
   const [userType, setUserType] = useState<UserType>('dealer');
   const [dateRange, setDateRange] = useState<DateRange | undefined>(defaultDateRange);
+
+  // Client switcher
+  const { client, switchClient } = useClient();
+  const [clientSwitcherOpen, setClientSwitcherOpen] = useState(false);
+
+  // View snackbar
+  const [snackbarOpen, setSnackbarOpen] = useState(false);
+  const [snackbarMsg, setSnackbarMsg] = useState('');
+  const snackbarTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const showViewSnackbar = useCallback((msg: string) => {
+    if (snackbarTimer.current) clearTimeout(snackbarTimer.current);
+    setSnackbarMsg(msg);
+    setSnackbarOpen(true);
+    snackbarTimer.current = setTimeout(() => setSnackbarOpen(false), 2500);
+  }, []);
+
+  // Keyboard shortcuts: e → OEM view, d → Dealer view
+  useEffect(() => {
+    const handleKey = (e: KeyboardEvent) => {
+      const tag = (e.target as HTMLElement)?.tagName?.toLowerCase();
+      if (['input', 'textarea', 'select'].includes(tag)) return;
+      if (e.metaKey || e.ctrlKey || e.altKey) return;
+      if (e.key === 'e') {
+        setUserType('oem');
+        showViewSnackbar('OEM view (e)');
+      }
+      if (e.key === 'd') {
+        setUserType('dealer');
+        showViewSnackbar('Dealer view (d)');
+      }
+    };
+    window.addEventListener('keydown', handleKey);
+    return () => window.removeEventListener('keydown', handleKey);
+  }, [showViewSnackbar]);
   
   // Pre-Approvals Specific State
   const [preApprovalSearchQuery, setPreApprovalSearchQuery] = useState('');
@@ -178,11 +216,25 @@ export default function AppContent() {
 
   return (
     <div className="min-h-screen bg-[#F9FAFA] overflow-hidden">
-      <AppSidebar 
-        activeRoute={activeAppSection} 
-        onNavigate={handleNavigate} 
-        userType={userType} 
-        onToggleUserType={toggleUserType} 
+      <AppSidebar
+        activeRoute={activeAppSection}
+        onNavigate={handleNavigate}
+        userType={userType}
+        onToggleUserType={toggleUserType}
+        onOpenClientSwitcher={() => setClientSwitcherOpen(o => !o)}
+        clientSwitcherOpen={clientSwitcherOpen}
+      />
+      <ClientSwitcher
+        isOpen={clientSwitcherOpen}
+        onClose={() => setClientSwitcherOpen(false)}
+        currentClientId={client.clientId}
+        onSelect={(id) => { switchClient(id); setClientSwitcherOpen(false); }}
+      />
+      <Snackbar
+        open={snackbarOpen}
+        onClose={() => setSnackbarOpen(false)}
+        message={snackbarMsg}
+        actionLabel=""
       />
       <TopNavBar 
         userType={userType} 

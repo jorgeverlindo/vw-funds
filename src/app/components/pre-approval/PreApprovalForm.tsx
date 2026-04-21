@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useForm, Controller } from 'react-hook-form';
-import { Info, Upload } from 'lucide-react';
+import { Info, Upload, Eye, Trash2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '@/lib/utils';
 import { CustomSelect, Option } from '@/app/components/ui/CustomSelect';
@@ -65,6 +65,23 @@ export function PreApprovalForm({ onClose, onDone }: PreApprovalFormProps) {
   const fundValue = watch('fund');
   const initiativeValue = watch('initiativeType');
   const formContainerRef = useRef<HTMLDivElement>(null);
+
+  // Supporting documents upload state
+  const [uploadedDocs, setUploadedDocs] = useState<{ name: string; size: string; type: string }[]>([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const sizeKB = file.size / 1024;
+    const sizeStr = sizeKB >= 1024 ? `${(sizeKB / 1024).toFixed(1)} MB` : `${Math.round(sizeKB)} KB`;
+    setUploadedDocs(prev => [...prev, {
+      name: file.name,
+      size: sizeStr,
+      type: file.name.split('.').pop()?.toUpperCase() ?? 'FILE',
+    }]);
+    e.target.value = '';
+  };
 
   // Logic to show extra info when fund and initiative are selected
   useEffect(() => {
@@ -328,21 +345,66 @@ export function PreApprovalForm({ onClose, onDone }: PreApprovalFormProps) {
             />
           </div>
 
-          {/* Supporting Documents (Renamed from Upload Media Type) */}
+          {/* Supporting Documents */}
           <div className="flex flex-col gap-2 mt-2">
-             <label className="text-[16px] text-[#1F1D25] font-normal flex items-center gap-1">
-               {t('Supporting Documents')}
-             </label>
-             <button
-               type="button"
-               className="w-full h-[48px] bg-[#473BAB] hover:bg-[#3D3295] text-white rounded-[12px] text-[16px] font-medium transition-colors shadow-sm flex items-center justify-center gap-2 cursor-pointer"
-             >
-                <Upload size={20} />
-                {t('Upload Media Type')}
-             </button>
-             <p className="text-[11px] text-[#686576] text-center">
-               PDF, PNG or JPG (Max. 3MB)
-             </p>
+            <label className="text-[16px] text-[#1F1D25] font-normal">
+              {t('Supporting Documents')}
+            </label>
+
+            {/* Hidden file input — must NOT use display:none (blocks .click() in Safari) */}
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".pdf,.png,.jpg,.jpeg,.doc,.docx"
+              className="absolute w-0 h-0 opacity-0 overflow-hidden pointer-events-none"
+              tabIndex={-1}
+              onChange={handleFileChange}
+            />
+
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              className="w-full h-[48px] bg-[#473BAB] hover:bg-[#3D3295] text-white rounded-[12px] text-[16px] font-medium transition-colors shadow-sm flex items-center justify-center gap-2 cursor-pointer"
+            >
+              <Upload size={20} />
+              {t('Upload Document')}
+            </button>
+            <p className="text-[11px] text-[#686576] text-center">
+              PDF, PNG or JPG (Max. 3MB)
+            </p>
+
+            {/* Uploaded file cards */}
+            {uploadedDocs.length > 0 && (
+              <div className="flex flex-col gap-2 mt-1">
+                {uploadedDocs.map((doc, idx) => (
+                  <div key={idx} className="border border-[#E0E0E0] rounded-lg flex overflow-hidden bg-white">
+                    <div className="w-[56px] bg-[#F5F5F5] flex items-center justify-center border-r border-[#E0E0E0] shrink-0">
+                      <div className="w-8 h-10 bg-white border border-[#E0E0E0] shadow-sm flex items-center justify-center">
+                        <span className="text-[8px] font-bold text-[#FF5252]">{doc.type.slice(0, 4)}</span>
+                      </div>
+                    </div>
+                    <div className="flex-1 px-3 py-2 flex items-center justify-between min-w-0">
+                      <div className="flex flex-col min-w-0 pr-2">
+                        <span className="text-[12px] font-medium text-[#1F1D25] truncate">{doc.name}</span>
+                        <span className="text-[10px] text-[#686576] uppercase tracking-wide">{doc.type} | {doc.size}</span>
+                      </div>
+                      <div className="flex items-center gap-0.5 shrink-0">
+                        <button type="button" className="p-1.5 text-[#686576] hover:text-[#1f1d25] hover:bg-gray-100 rounded-full transition-colors cursor-pointer">
+                          <Eye className="w-4 h-4" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setUploadedDocs(prev => prev.filter((_, i) => i !== idx))}
+                          className="p-1.5 text-[#9C99A9] hover:text-[#D2323F] hover:bg-red-50 rounded-full transition-colors cursor-pointer"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
         </div>

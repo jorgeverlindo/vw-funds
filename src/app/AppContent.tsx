@@ -379,9 +379,10 @@ export default function AppContent() {
             {activeTab === 'pre-approvals' && selectedPreApproval && (
               <div className="flex-none h-full overflow-hidden w-[716px]">
                 <RightPane>
-                  <PreApprovalPanel 
-                    preApproval={selectedPreApproval} 
-                    onClose={() => setSelectedPreApprovalId(null)} 
+                  <PreApprovalPanel
+                    preApproval={selectedPreApproval}
+                    onClose={() => setSelectedPreApprovalId(null)}
+                    userType={userType}
                   />
                 </RightPane>
               </div>
@@ -391,9 +392,10 @@ export default function AppContent() {
             {activeTab === 'claims' && selectedClaim && (
               <div className="flex-none h-full overflow-hidden w-[716px]">
                 <RightPane>
-                  <ClaimsPanel 
-                    claim={selectedClaim} 
-                    onClose={() => setSelectedClaimId(null)} 
+                  <ClaimsPanel
+                    claim={selectedClaim}
+                    onClose={() => setSelectedClaimId(null)}
+                    userType={userType}
                   />
                 </RightPane>
               </div>

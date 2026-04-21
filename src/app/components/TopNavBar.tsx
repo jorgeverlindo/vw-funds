@@ -15,9 +15,11 @@ interface TopNavBarProps {
   onOpenAgentPane?: () => void;
   isAgentPaneOpen?: boolean;
   onOpenWebMonitoring?: (id: string) => void;
+  onOpenPreApprovalFromNotif?: (id: string) => void;
+  onOpenClaimFromNotif?: (id: string) => void;
 }
 
-export function TopNavBar({ userType = 'dealer', onOpenOEMDrawer, languageToggleActive = false, onOpenAgentPane, isAgentPaneOpen = false, onOpenWebMonitoring }: TopNavBarProps) {
+export function TopNavBar({ userType = 'dealer', onOpenOEMDrawer, languageToggleActive = false, onOpenAgentPane, isAgentPaneOpen = false, onOpenWebMonitoring, onOpenPreApprovalFromNotif, onOpenClaimFromNotif }: TopNavBarProps) {
   const { t } = useTranslation();
   const { oemUnreadCount, dealerUnreadCount } = useWorkflow();
   const badgeCount = userType === 'oem' ? oemUnreadCount : dealerUnreadCount;
@@ -151,10 +153,12 @@ export function TopNavBar({ userType = 'dealer', onOpenOEMDrawer, languageToggle
           <div ref={notificationRef} className="absolute top-full right-0 z-[1000] pt-2">
              {userType === 'oem' ? (
                 <NotificationOverlayOEM
-                  isOpen={isNotificationOpen} 
+                  isOpen={isNotificationOpen}
                   onClose={() => setIsNotificationOpen(false)}
                   onOpenDrawer={onOpenOEMDrawer || (() => {})}
                   onOpenWebMonitoring={onOpenWebMonitoring || (() => {})}
+                  onOpenPreApproval={onOpenPreApprovalFromNotif}
+                  onOpenClaim={onOpenClaimFromNotif}
                 />
              ) : (
                 <NotificationOverlay 

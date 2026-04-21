@@ -77,6 +77,8 @@ interface NotificationOverlayOEMProps {
   onClose: () => void;
   onOpenDrawer: () => void;
   onOpenWebMonitoring: (id: string) => void;
+  onOpenPreApproval?: (id: string) => void;
+  onOpenClaim?: (id: string) => void;
   className?: string;
 }
 
@@ -85,6 +87,8 @@ export function NotificationOverlayOEM({
   onClose,
   onOpenDrawer,
   onOpenWebMonitoring,
+  onOpenPreApproval,
+  onOpenClaim,
   className,
 }: NotificationOverlayOEMProps) {
   const { workflow, markNotificationRead } = useWorkflow();
@@ -108,9 +112,17 @@ export function NotificationOverlayOEM({
     }));
 
   const handleItemClick = (id: string) => {
-    // Mark workflow notifications as read on click
+    // Workflow notification — mark read then navigate to the referenced item
     if (id.startsWith('wf-notif-')) {
       markNotificationRead(id);
+      const notif = workflow.notifications.find(n => n.id === id);
+      if (notif) {
+        if (notif.type === 'pre-approval') {
+          onOpenPreApproval?.(notif.referenceId);
+        } else if (notif.type === 'claim') {
+          onOpenClaim?.(notif.referenceId);
+        }
+      }
       onClose();
       return;
     }

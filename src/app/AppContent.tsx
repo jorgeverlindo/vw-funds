@@ -269,15 +269,23 @@ export default function AppContent() {
         message={snackbarMsg}
         actionLabel=""
       />
-      <TopNavBar 
-        userType={userType} 
-        onOpenOEMDrawer={() => setIsOEMDrawerOpen(true)} 
+      <TopNavBar
+        userType={userType}
+        onOpenOEMDrawer={() => setIsOEMDrawerOpen(true)}
         languageToggleActive={showLanguageToggle}
         onOpenAgentPane={() => setIsAgentPaneOpen(open => !open)}
         isAgentPaneOpen={isAgentPaneOpen}
         onOpenWebMonitoring={(id) => {
           setActiveTab('web-monitoring');
           setSelectedWebMonitoringId(id);
+        }}
+        onOpenPreApprovalFromNotif={(id) => {
+          setActiveTab('pre-approvals');
+          setSelectedPreApprovalId(id);
+        }}
+        onOpenClaimFromNotif={(id) => {
+          setActiveTab('claims');
+          setSelectedClaimId(id);
         }}
       />
 

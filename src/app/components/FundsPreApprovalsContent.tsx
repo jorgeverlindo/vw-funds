@@ -323,16 +323,14 @@ export function FundsPreApprovalsContent({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Filter Data — workflow item always at the top (pre-Draft statuses don't show)
+  // Filter Data — workflow item is always pinned at top, bypasses date filter.
+  // Mock items are filtered normally by date + search.
   const filteredData = useMemo(() => {
     const showWorkflow = workflow.preApproval.status !== 'Draft';
-    const base = showWorkflow ? [workflowPreApproval, ...MOCK_DATA] : MOCK_DATA;
-    return base.filter((item) => {
-      // Date Filter
+
+    const filteredMock = MOCK_DATA.filter((item) => {
       if (dateRange?.from && item.date < dateRange.from) return false;
       if (dateRange?.to && item.date > dateRange.to) return false;
-
-      // Search Filter
       if (searchQuery) {
         const query = searchQuery.toLowerCase();
         return (
@@ -345,9 +343,24 @@ export function FundsPreApprovalsContent({
           item.details.toLowerCase().includes(query)
         );
       }
-
       return true;
     });
+
+    // Workflow item matches search too when a query is present
+    if (showWorkflow && searchQuery) {
+      const q = searchQuery.toLowerCase();
+      const wfMatches =
+        workflowPreApproval.id.toLowerCase().includes(q) ||
+        workflowPreApproval.dealershipName.toLowerCase().includes(q) ||
+        workflowPreApproval.dealershipCode.toLowerCase().includes(q) ||
+        workflowPreApproval.status.toLowerCase().includes(q) ||
+        workflowPreApproval.submittedBy.name.toLowerCase().includes(q) ||
+        workflowPreApproval.mediaType.toLowerCase().includes(q) ||
+        workflowPreApproval.details.toLowerCase().includes(q);
+      return wfMatches ? [workflowPreApproval, ...filteredMock] : filteredMock;
+    }
+
+    return showWorkflow ? [workflowPreApproval, ...filteredMock] : filteredMock;
   }, [dateRange, searchQuery, workflow.preApproval.status, workflow.preApproval.claimsCount, workflowPreApproval]);
 
   return (

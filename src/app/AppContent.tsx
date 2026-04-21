@@ -109,7 +109,7 @@ export default function AppContent() {
       const wfPA = workflow.preApproval;
       return {
         id: WORKFLOW_PA_ID,
-        date: new Date('2026-04-20'),
+        date: new Date(),
         dealershipCode: WORKFLOW_DEALER.code,
         dealershipName: WORKFLOW_DEALER.name,
         dealershipCity: WORKFLOW_DEALER.city,

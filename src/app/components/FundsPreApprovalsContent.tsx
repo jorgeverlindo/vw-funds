@@ -293,13 +293,13 @@ export function FundsPreApprovalsContent({
   // Build the live workflow pre-approval item from shared context
   const workflowPreApproval: PreApproval = {
     id: WORKFLOW_PA_ID,
-    date: new Date('2026-04-20'),
+    date: new Date(),   // always today — avoids UTC-offset display bug
     dealershipCode: WORKFLOW_DEALER.code,
     dealershipName: WORKFLOW_DEALER.name,
     dealershipCity: WORKFLOW_DEALER.city,
     status: mapWorkflowPAStatus(workflow.preApproval.status),
     timeInPreApproval: 1,
-    submittedBy: { name: WORKFLOW_DEALER.contact, avatarUrl: '' },
+    submittedBy: { name: WORKFLOW_DEALER.contact, avatarUrl: AVATARS[5] },
     mediaType: WORKFLOW_CAMPAIGN.mediaType,
     details: 'March 2026 Digital Ad Campaign — Display, Facebook, Search, Video',
     lastUpdated: new Date(),
@@ -485,7 +485,12 @@ export function FundsPreApprovalsContent({
                        </div>
                      </td>
                      <td className="px-4 py-3.5 text-xs text-[#1f1d25] whitespace-nowrap pr-10 relative">
-                       {Math.round((new Date().getTime() - row.lastUpdated.getTime()) / (1000 * 3600 * 24))} days ago
+                       {(() => {
+                         const days = Math.round((new Date().getTime() - row.lastUpdated.getTime()) / (1000 * 3600 * 24));
+                         if (days <= 0) return 'just now';
+                         if (days === 1) return '1 day ago';
+                         return `${days} days ago`;
+                       })()}
                        
                        {/* More Actions - Visible on Hover or Selected */}
                        <div className={`absolute right-2 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 ${isSelected ? 'opacity-100' : ''}`}>

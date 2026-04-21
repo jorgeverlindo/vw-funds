@@ -26,6 +26,8 @@ import { ClientSwitcher } from './components/ClientSwitcher';
 import { Snackbar } from './components/pre-approval/Snackbar';
 import { useClient } from './contexts/ClientContext';
 import { BreadcrumbBar } from './components/BreadcrumbBar';
+import { useWorkflow, WORKFLOW_CL_ID, WORKFLOW_DEALER, WORKFLOW_CAMPAIGN } from './contexts/WorkflowContext';
+import type { Claim } from './components/ClaimsPanel';
 
 const DEALER_TABS = [
   { id: 'overview', label: 'Overview' },
@@ -54,6 +56,7 @@ export type UserType = 'dealer' | 'oem';
 
 export default function AppContent() {
   const { t } = useTranslation();
+  const { workflow } = useWorkflow();
   const [activeAppSection, setActiveAppSection] = useState('campaigns'); // 'campaigns' | 'portal'
   const [activeTab, setActiveTab] = useState('overview');
   const [userType, setUserType] = useState<UserType>('dealer');
@@ -105,9 +108,38 @@ export default function AppContent() {
   // Claims Specific State
   const [selectedClaimId, setSelectedClaimId] = useState<string | null>(null);
 
-  const selectedClaim = useMemo(() => 
-    selectedClaimId ? CLAIMS_MOCK_DATA.find(i => i.id === selectedClaimId) : null
-  , [selectedClaimId]);
+  const selectedClaim = useMemo((): Claim | null | undefined => {
+    if (!selectedClaimId) return null;
+    if (selectedClaimId === WORKFLOW_CL_ID) {
+      // Build a Claim object from live workflow state so ClaimsPanel gets fresh data
+      const wfCL = workflow.claim;
+      return {
+        id: WORKFLOW_CL_ID,
+        uid: WORKFLOW_CL_ID,
+        date: wfCL.submittedAt ? new Date(wfCL.submittedAt) : new Date(),
+        amount: WORKFLOW_CAMPAIGN.totalAmount,
+        status: (wfCL.status ?? 'Draft') as Claim['status'],
+        timeInClaim: 0,
+        timeInPayment: 0,
+        dealershipCode: WORKFLOW_DEALER.code,
+        dealershipName: WORKFLOW_DEALER.name,
+        dealershipCity: WORKFLOW_DEALER.city,
+        fund: 'VW Coop Fund 2026',
+        submittedBy: { name: WORKFLOW_DEALER.contact, avatarUrl: '' },
+        type: WORKFLOW_CAMPAIGN.initiativeType,
+        lastUpdated: new Date().toLocaleDateString(),
+        details: WORKFLOW_CAMPAIGN.description,
+      };
+    }
+    return CLAIMS_MOCK_DATA.find(i => i.id === selectedClaimId);
+  }, [selectedClaimId, workflow.claim]);
+
+  // Create Claim handler — called by PreApprovalPanel dealer CTA
+  const handleCreateClaim = useCallback(() => {
+    setActiveTab('claims');
+    setSelectedPreApprovalId(null);
+    setSelectedClaimId(WORKFLOW_CL_ID);
+  }, []);
 
   // Planner Specific State
   const [selectedCampaignId, setSelectedCampaignId] = useState<string | null>(null);
@@ -383,6 +415,7 @@ export default function AppContent() {
                     preApproval={selectedPreApproval}
                     onClose={() => setSelectedPreApprovalId(null)}
                     userType={userType}
+                    onCreateClaim={handleCreateClaim}
                   />
                 </RightPane>
               </div>

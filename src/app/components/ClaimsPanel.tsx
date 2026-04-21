@@ -48,6 +48,7 @@ export function ClaimsPanel({
   const { t } = useTranslation();
   const {
     workflow,
+    submitClaim,
     approveClaimAction,
     requestClaimRevision,
     resubmitClaim,
@@ -183,6 +184,28 @@ export function ClaimsPanel({
     }
 
     // ── Dealer view ──────────────────────────────────────────────────────────
+    if (liveStatus === 'Draft') {
+      return (
+        <div className="flex items-center justify-between">
+          <p className="text-[13px] text-[#686576]">Review the details and submit for OEM review.</p>
+          <div className="flex gap-3">
+            <button
+              onClick={onClose}
+              className="px-6 py-2 rounded-full text-sm font-medium text-[#111014]/60 hover:bg-black/5 transition-colors cursor-pointer"
+            >
+              {t('Close')}
+            </button>
+            <button
+              onClick={() => { submitClaim(); onClose(); }}
+              className="px-6 py-2 bg-[#473BAB] hover:bg-[#3D3295] text-white rounded-full text-sm font-medium transition-colors shadow-sm cursor-pointer"
+            >
+              Submit Claim
+            </button>
+          </div>
+        </div>
+      );
+    }
+
     if (liveStatus === 'Revision Requested') {
       return (
         <div className="flex justify-end gap-3">

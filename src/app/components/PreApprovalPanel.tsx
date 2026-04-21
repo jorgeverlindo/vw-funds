@@ -362,12 +362,14 @@ export function PreApprovalPanel({
               {/* Add Document button — dealer on workflow item only */}
               {isWorkflowItem && userType === 'dealer' && (
                 <>
+                  {/* Must NOT use display:none — browsers block .click() on hidden inputs */}
                   <input
                     ref={fileInputRef}
                     type="file"
                     accept=".pdf,.png,.jpg,.jpeg,.doc,.docx"
-                    className="hidden"
+                    className="absolute w-0 h-0 opacity-0 overflow-hidden pointer-events-none"
                     onChange={handleFileChange}
+                    tabIndex={-1}
                   />
                   <button
                     onClick={() => fileInputRef.current?.click()}

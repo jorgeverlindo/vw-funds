@@ -145,6 +145,10 @@ interface WorkflowContextType {
   requestClaimRevision: (comment: string) => void;
   processPayment: () => void;
 
+  // Document management
+  addPreApprovalDocument: (doc: WorkflowDocument) => void;
+  removePreApprovalDocument: (name: string) => void;
+
   // Notifications
   markNotificationRead: (id: string) => void;
   markAllRead: (role: 'oem' | 'dealer') => void;
@@ -469,6 +473,28 @@ export function WorkflowProvider({ children }: { children: ReactNode }) {
     });
   }, [pushEvent, pushNotif]);
 
+  // ── Document management ───────────────────────────────────────────────────
+
+  const addPreApprovalDocument = useCallback((doc: WorkflowDocument) => {
+    setWorkflow(prev => ({
+      ...prev,
+      preApproval: {
+        ...prev.preApproval,
+        documents: [...prev.preApproval.documents, doc],
+      },
+    }));
+  }, []);
+
+  const removePreApprovalDocument = useCallback((name: string) => {
+    setWorkflow(prev => ({
+      ...prev,
+      preApproval: {
+        ...prev.preApproval,
+        documents: prev.preApproval.documents.filter(d => d.name !== name),
+      },
+    }));
+  }, []);
+
   // ── Notification read state ───────────────────────────────────────────────
 
   const markNotificationRead = useCallback((id: string) => {
@@ -511,6 +537,8 @@ export function WorkflowProvider({ children }: { children: ReactNode }) {
         approveClaimAction,
         requestClaimRevision,
         processPayment,
+        addPreApprovalDocument,
+        removePreApprovalDocument,
         markNotificationRead,
         markAllRead,
         oemUnreadCount,

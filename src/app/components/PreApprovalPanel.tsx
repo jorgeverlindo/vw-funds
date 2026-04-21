@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { X, Eye, Star, Users, CheckCircle2, MessageSquare } from 'lucide-react';
+import { useState, useRef } from 'react';
+import { X, Eye, Star, Users, CheckCircle2, MessageSquare, Paperclip, Trash2 } from 'lucide-react';
 import { PreApproval } from './FundsPreApprovalsContent';
 import { StatusChip } from './StatusChip';
 import { useTranslation } from '../contexts/LanguageContext';
@@ -31,7 +31,23 @@ export function PreApprovalPanel({
     requestPreApprovalRevision,
     resubmitPreApproval,
     createClaim,
+    addPreApprovalDocument,
+    removePreApprovalDocument,
   } = useWorkflow();
+
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const sizeKB = file.size / 1024;
+    const sizeStr = sizeKB >= 1024
+      ? `${(sizeKB / 1024).toFixed(1)} MB`
+      : `${sizeKB.toFixed(0)} KB`;
+    addPreApprovalDocument({ name: file.name, size: sizeStr, type: file.name.split('.').pop() ?? 'file' });
+    // Reset so the same file can be re-added if removed
+    e.target.value = '';
+  };
 
   const [oemDraftComment, setOemDraftComment] = useState('');
 
@@ -341,7 +357,29 @@ export function PreApprovalPanel({
 
           {/* Supporting Documents */}
           <section>
-            <h3 className="text-[#1f1d25] text-[15px] font-medium mb-3">{t('Supporting Documents')}</h3>
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-[#1f1d25] text-[15px] font-medium">{t('Supporting Documents')}</h3>
+              {/* Add Document button — dealer on workflow item only */}
+              {isWorkflowItem && userType === 'dealer' && (
+                <>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept=".pdf,.png,.jpg,.jpeg,.doc,.docx"
+                    className="hidden"
+                    onChange={handleFileChange}
+                  />
+                  <button
+                    onClick={() => fileInputRef.current?.click()}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-[#E0E0E0] hover:bg-gray-50 text-[13px] text-[#686576] transition-colors cursor-pointer"
+                  >
+                    <Paperclip className="w-3.5 h-3.5" />
+                    Add Document
+                  </button>
+                </>
+              )}
+            </div>
+
             {(isWorkflowItem ? wfPA.documents : preApproval.documents).length > 0 ? (
               <div className="space-y-2">
                 {(isWorkflowItem ? wfPA.documents : preApproval.documents).map((doc, idx) => (
@@ -351,7 +389,9 @@ export function PreApprovalPanel({
                   >
                     <div className="w-[72px] bg-[#F5F5F5] flex items-center justify-center border-r border-[#E0E0E0] shrink-0">
                       <div className="w-10 h-12 bg-white border border-[#E0E0E0] shadow-sm flex items-center justify-center">
-                        <span className="text-[9px] font-bold text-[#FF5252]">PDF</span>
+                        <span className="text-[9px] font-bold text-[#FF5252]">
+                          {doc.type.toUpperCase().slice(0, 4)}
+                        </span>
                       </div>
                     </div>
                     <div className="flex-1 p-3 flex items-center justify-between min-w-0">
@@ -361,15 +401,33 @@ export function PreApprovalPanel({
                           {doc.type.toUpperCase()} | {doc.size}
                         </span>
                       </div>
-                      <button className="text-[#686576] hover:text-[#1f1d25] p-2 hover:bg-gray-50 rounded-full transition-colors cursor-pointer">
-                        <Eye className="w-5 h-5" />
-                      </button>
+                      <div className="flex items-center gap-1">
+                        <button className="text-[#686576] hover:text-[#1f1d25] p-2 hover:bg-gray-50 rounded-full transition-colors cursor-pointer">
+                          <Eye className="w-4 h-4" />
+                        </button>
+                        {/* Remove button — dealer on workflow item only */}
+                        {isWorkflowItem && userType === 'dealer' && (
+                          <button
+                            onClick={() => removePreApprovalDocument(doc.name)}
+                            className="text-[#9C99A9] hover:text-[#D2323F] p-2 hover:bg-red-50 rounded-full transition-colors cursor-pointer"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        )}
+                      </div>
                     </div>
                   </div>
                 ))}
               </div>
             ) : (
-              <div className="text-[13px] text-[#9C99A9] italic">{t('No documents attached')}</div>
+              <div className="flex flex-col items-center gap-2 py-6 border border-dashed border-[#E0E0E0] rounded-xl text-center">
+                <Paperclip className="w-6 h-6 text-[#9C99A9]" />
+                <p className="text-[13px] text-[#9C99A9]">
+                  {isWorkflowItem && userType === 'dealer'
+                    ? 'No documents attached yet. Click Add Document to attach.'
+                    : t('No documents attached')}
+                </p>
+              </div>
             )}
           </section>
 

@@ -26,8 +26,9 @@ import { ClientSwitcher } from './components/ClientSwitcher';
 import { Snackbar } from './components/pre-approval/Snackbar';
 import { useClient } from './contexts/ClientContext';
 import { BreadcrumbBar } from './components/BreadcrumbBar';
-import { useWorkflow, WORKFLOW_CL_ID, WORKFLOW_DEALER, WORKFLOW_CAMPAIGN } from './contexts/WorkflowContext';
+import { useWorkflow, WORKFLOW_PA_ID, WORKFLOW_CL_ID, WORKFLOW_DEALER, WORKFLOW_CAMPAIGN } from './contexts/WorkflowContext';
 import type { Claim } from './components/ClaimsPanel';
+import type { PreApproval } from './components/FundsPreApprovalsContent';
 
 const DEALER_TABS = [
   { id: 'overview', label: 'Overview' },
@@ -101,9 +102,41 @@ export default function AppContent() {
   const [preApprovalSearchQuery, setPreApprovalSearchQuery] = useState('');
   const [selectedPreApprovalId, setSelectedPreApprovalId] = useState<string | null>(null);
 
-  const selectedPreApproval = useMemo(() => 
-    selectedPreApprovalId ? PRE_APPROVALS_MOCK_DATA.find(i => i.id === selectedPreApprovalId) : null
-  , [selectedPreApprovalId]);
+  const selectedPreApproval = useMemo((): PreApproval | null | undefined => {
+    if (!selectedPreApprovalId) return null;
+    if (selectedPreApprovalId === WORKFLOW_PA_ID) {
+      // Build PreApproval from live workflow state so the panel always reflects current status
+      const wfPA = workflow.preApproval;
+      return {
+        id: WORKFLOW_PA_ID,
+        date: new Date('2026-04-20'),
+        dealershipCode: WORKFLOW_DEALER.code,
+        dealershipName: WORKFLOW_DEALER.name,
+        dealershipCity: WORKFLOW_DEALER.city,
+        status: (() => {
+          switch (wfPA.status) {
+            case 'Approved':           return 'Approved';
+            case 'Revision Requested': return 'Revision Requested';
+            case 'In Review':
+            case 'Resubmitted':        return 'In Review';
+            default:                   return 'Pending';
+          }
+        })() as PreApproval['status'],
+        timeInPreApproval: 1,
+        submittedBy: { name: WORKFLOW_DEALER.contact, avatarUrl: '' },
+        mediaType: WORKFLOW_CAMPAIGN.mediaType,
+        details: 'March 2026 Digital Ad Campaign — Display, Facebook, Search, Video',
+        lastUpdated: new Date(),
+        submittedAt: wfPA.submittedAt ? new Date(wfPA.submittedAt) : new Date('2026-04-20'),
+        initiativeType: WORKFLOW_CAMPAIGN.initiativeType,
+        claimsCount: wfPA.claimsCount,
+        contactEmail: WORKFLOW_DEALER.email,
+        description: WORKFLOW_CAMPAIGN.description,
+        documents: wfPA.documents,
+      };
+    }
+    return PRE_APPROVALS_MOCK_DATA.find(i => i.id === selectedPreApprovalId);
+  }, [selectedPreApprovalId, workflow.preApproval]);
 
   // Claims Specific State
   const [selectedClaimId, setSelectedClaimId] = useState<string | null>(null);

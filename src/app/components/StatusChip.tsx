@@ -1,4 +1,4 @@
-import { Check, MoreHorizontal, Eye, Hourglass, XCircle, FileCheck, ShieldAlert } from 'lucide-react';
+import { Check, MoreHorizontal, Eye, Hourglass, XCircle, FileCheck, Banknote, CreditCard } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { useTranslation } from '../contexts/LanguageContext';
 
@@ -28,14 +28,16 @@ export function SeverityChip({ severity }: { severity: string }) {
   );
 }
 
-export type ClaimStatus = 
-  | 'Approved' 
-  | 'Pending' 
-  | 'In Review' 
-  | 'Revision Requested' 
-  | 'Denied' 
+export type ClaimStatus =
+  | 'Approved'
+  | 'Pending'
+  | 'In Review'
+  | 'Revision Requested'
+  | 'Denied'
   | 'Finished'
-  | 'Penalty Applied';
+  | 'Penalty Applied'
+  | 'Ready for Payment'
+  | 'Paid';
 
 interface StatusChipProps {
   status: ClaimStatus | string; // Allow string to support flexible API data, but type strongly where possible
@@ -104,6 +106,14 @@ export function StatusChip({ status, className }: StatusChipProps) {
     case 'Penalty Applied':
       styles = "bg-[rgba(210,50,63,0.08)] text-[#be0e1c]"; // Red — same as Denied
       icon = <XCircle className="w-3.5 h-3.5 mr-1.5 text-[#D2323F]" />;
+      break;
+    case 'Ready for Payment':
+      styles = "bg-[#E8F5E9] text-[#1b5e20]"; // Green — same as Approved
+      icon = <Banknote className="w-3.5 h-3.5 mr-1.5 text-[#4CAF50]" />;
+      break;
+    case 'Paid':
+      styles = "bg-[#E8F5E9] text-[#1b5e20]"; // Green
+      icon = <CreditCard className="w-3.5 h-3.5 mr-1.5 text-[#4CAF50]" />;
       break;
     default:
       // Fallback for unknown statuses

@@ -1,6 +1,7 @@
 import { AlertTriangle } from 'lucide-react';
 import { NotificationItem, NotificationItemProps } from './NotificationItem';
 import { cn } from '@/lib/utils';
+import { useWorkflow } from '../../contexts/WorkflowContext';
 
 // Each entry in OEM_NOTIFICATIONS follows NotificationItemProps.
 // For items with user defined: the render loop composes message as [name / action text].
@@ -86,9 +87,33 @@ export function NotificationOverlayOEM({
   onOpenWebMonitoring,
   className,
 }: NotificationOverlayOEMProps) {
+  const { workflow, markNotificationRead } = useWorkflow();
+
   if (!isOpen) return null;
 
+  // Build workflow notifications as NotificationItemProps (OEM-targeted only)
+  const workflowNotifs: NotificationItemProps[] = workflow.notifications
+    .filter(n => n.targetRole === 'oem')
+    .map(n => ({
+      id: n.id,
+      type: n.type,
+      message: (
+        <div className="flex flex-col items-start gap-0.5">
+          <span className="font-normal text-[#1f1d25]">{n.title}</span>
+          <span className="font-normal text-[#1f1d25] text-[12px]">{n.body}</span>
+        </div>
+      ),
+      time: n.time,
+      isRead: n.isRead,
+    }));
+
   const handleItemClick = (id: string) => {
+    // Mark workflow notifications as read on click
+    if (id.startsWith('wf-notif-')) {
+      markNotificationRead(id);
+      onClose();
+      return;
+    }
     // Existing item click behavior — unchanged
     if (id === '1') {
       onOpenDrawer();
@@ -113,14 +138,25 @@ export function NotificationOverlayOEM({
       onClick={(e) => e.stopPropagation()}
     >
       <div className="flex flex-col max-h-[480px] overflow-y-auto custom-scrollbar">
+        {/* Workflow notifications — dynamic, OEM-targeted, pinned at top */}
+        {workflowNotifs.map((notif) => (
+          <div
+            key={notif.id}
+            onClick={() => handleItemClick(notif.id as string)}
+            className={notif.isRead ? 'opacity-70' : ''}
+          >
+            <NotificationItem {...notif} />
+          </div>
+        ))}
+
+        {/* Static OEM notifications */}
         {OEM_NOTIFICATIONS.map((notif) => (
           <div key={notif.id} onClick={() => handleItemClick(notif.id)}>
             <NotificationItem
               {...notif}
               message={
                 notif.user
-                  ? // Existing pattern: name on top, action text below
-                    (
+                  ? (
                       <div className="flex flex-col items-start gap-0.5">
                         <span className="font-normal text-[#1f1d25]">{notif.user.name}</span>
                         <span className="font-normal text-[#1f1d25] text-[12px]">
@@ -128,11 +164,8 @@ export function NotificationOverlayOEM({
                         </span>
                       </div>
                     )
-                  : // Violation notification: message ReactNode already contains icon + text
-                    notif.message
+                  : notif.message
               }
-              // For items with a user: blank the name so it isn't double-rendered inside NotificationItem
-              // For the violation item (user=undefined): pass undefined so no avatar slot renders
               user={notif.user ? { ...notif.user, name: '' } : undefined}
             />
           </div>

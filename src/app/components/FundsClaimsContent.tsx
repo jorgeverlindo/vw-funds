@@ -13,6 +13,7 @@ import { StatusChip, ClaimStatus } from './StatusChip';
 import { Claim } from './ClaimsPanel';
 import { cn } from '../../lib/utils';
 import { ActionButton } from './ActionButton';
+import { useWorkflow, WORKFLOW_DEALER, WORKFLOW_CAMPAIGN, WORKFLOW_CL_ID, type ClaimWorkflowStatus } from '../contexts/WorkflowContext';
 
 // People portraits — Figma source of truth
 import imgFabioVeloso from 'figma:asset/175d81a7864ae50d37ddf9a160e546af1d2a8ee8.png';
@@ -95,6 +96,19 @@ interface FundsClaimsContentProps {
   userType?: 'dealer' | 'oem';
 }
 
+// Maps workflow claim status to ClaimStatus for display
+function mapWorkflowClaimStatus(s: ClaimWorkflowStatus): ClaimStatus {
+  switch (s) {
+    case 'Approved':          return 'Approved';
+    case 'Ready for Payment': return 'Ready for Payment';
+    case 'Paid':              return 'Paid';
+    case 'Revision Requested': return 'Revision Requested';
+    case 'In Review':         return 'In Review';
+    case 'Resubmitted':       return 'In Review';
+    default:                  return 'Pending'; // Draft, Submitted
+  }
+}
+
 export function FundsClaimsContent({
   dateRange,
   onDateRangeChange,
@@ -103,6 +117,7 @@ export function FundsClaimsContent({
   userType = 'dealer'
 }: FundsClaimsContentProps) {
   const { t } = useTranslation();
+  const { workflow } = useWorkflow();
   const [activeFilter, setActiveFilter] = useState<ClaimStatus | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [expandedMonths, setExpandedMonths] = useState<Record<string, boolean>>({
@@ -110,9 +125,31 @@ export function FundsClaimsContent({
   });
   const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
 
-  // Filter Data
+  // Build workflow claim item when claim has been submitted
+  const workflowClaim: Claim | null = workflow.claim.status !== null && workflow.claim.status !== 'Draft'
+    ? {
+        id: WORKFLOW_CL_ID,
+        uid: WORKFLOW_CL_ID,
+        date: new Date(),
+        amount: WORKFLOW_CAMPAIGN.totalAmount,
+        status: mapWorkflowClaimStatus(workflow.claim.status),
+        timeInClaim: 1,
+        timeInPayment: workflow.claim.status === 'Paid' ? 2 : 0,
+        dealershipCode: WORKFLOW_DEALER.code,
+        dealershipName: WORKFLOW_DEALER.name,
+        dealershipCity: WORKFLOW_DEALER.city,
+        fund: 'DMF - Media Costs',
+        submittedBy: { name: WORKFLOW_DEALER.contact, avatarUrl: '' },
+        type: WORKFLOW_CAMPAIGN.initiativeType,
+        lastUpdated: 'just now',
+        details: WORKFLOW_CAMPAIGN.description,
+      }
+    : null;
+
+  // Filter Data — workflow claim pinned at top when present
   const filteredData = useMemo(() => {
-    return CLAIMS_MOCK_DATA.filter(item => {
+    const base = workflowClaim ? [workflowClaim, ...CLAIMS_MOCK_DATA] : CLAIMS_MOCK_DATA;
+    return base.filter(item => {
       if (dateRange?.from && item.date < dateRange.from) return false;
       if (dateRange?.to && item.date > dateRange.to) return false;
       if (activeFilter && item.status !== activeFilter) return false;
@@ -126,7 +163,7 @@ export function FundsClaimsContent({
       }
       return true;
     });
-  }, [dateRange, activeFilter, searchQuery]);
+  }, [dateRange, activeFilter, searchQuery, workflowClaim]);
 
   // Stats for BANs
   const statsData = useMemo(() => {

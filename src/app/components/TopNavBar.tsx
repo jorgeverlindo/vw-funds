@@ -6,6 +6,7 @@ import { NotificationOverlayOEM } from './notifications/NotificationOverlayOEM';
 import { cn } from '@/lib/utils';
 import { LanguageToggleButton } from './LanguageToggleButton';
 import { useTranslation } from '../contexts/LanguageContext';
+import { useWorkflow } from '../contexts/WorkflowContext';
 
 interface TopNavBarProps {
   userType?: 'dealer' | 'oem';
@@ -18,6 +19,8 @@ interface TopNavBarProps {
 
 export function TopNavBar({ userType = 'dealer', onOpenOEMDrawer, languageToggleActive = false, onOpenAgentPane, isAgentPaneOpen = false, onOpenWebMonitoring }: TopNavBarProps) {
   const { t } = useTranslation();
+  const { oemUnreadCount, dealerUnreadCount } = useWorkflow();
+  const badgeCount = userType === 'oem' ? oemUnreadCount : dealerUnreadCount;
   const [isNotificationOpen, setIsNotificationOpen] = useState(false);
   const notificationRef = useRef<HTMLDivElement>(null);
   const bellRef = useRef<HTMLButtonElement>(null);
@@ -134,10 +137,14 @@ export function TopNavBar({ userType = 'dealer', onOpenOEMDrawer, languageToggle
                 <path d={svgPaths.p2d90c980} stroke="#111014" strokeLinecap="round" strokeLinejoin="round" strokeOpacity="0.56" strokeWidth="1.5" />
               </svg>
             </div>
-            {/* Badge: Primary Color (#473bab) with number */}
-            <div className="absolute top-[2px] right-[2px] size-[18px] bg-[#473bab] rounded-full border border-white flex items-center justify-center transform translate-x-[25%] -translate-y-[25%]">
-              <span className="text-white text-[10px] font-medium leading-none">1</span>
-            </div>
+            {/* Badge — driven by WorkflowContext unread count */}
+            {badgeCount > 0 && (
+              <div className="absolute top-[2px] right-[2px] size-[18px] bg-[#473bab] rounded-full border border-white flex items-center justify-center transform translate-x-[25%] -translate-y-[25%]">
+                <span className="text-white text-[10px] font-medium leading-none">
+                  {badgeCount > 9 ? '9+' : badgeCount}
+                </span>
+              </div>
+            )}
           </button>
 
           {/* Overlay */}

@@ -2,6 +2,7 @@ import { useState, useRef, useEffect, useMemo } from 'react';
 import { DateRange } from 'react-day-picker';
 import { Search, Plus, MoreVertical } from 'lucide-react';
 import { useTranslation } from '../contexts/LanguageContext';
+import { useWorkflow, WORKFLOW_DEALER, WORKFLOW_CAMPAIGN, WORKFLOW_PA_ID, type PreApprovalWorkflowStatus } from '../contexts/WorkflowContext';
 import { DateRangeInput } from './DateRangeInput';
 import { DateRangePicker } from './DateRangePicker';
 import { FilterSelect } from './FilterSelect';
@@ -24,7 +25,7 @@ export interface PreApproval {
   dealershipCode: string;
   dealershipName: string;
   dealershipCity: string;
-  status: 'Pending' | 'Approved' | 'Revision Requested';
+  status: 'Pending' | 'Approved' | 'Revision Requested' | 'In Review';
   timeInPreApproval: number;
   submittedBy: {
     name: string;
@@ -265,6 +266,17 @@ export interface FundsPreApprovalsContentProps {
 
 import { PreApprovalDrawer } from './pre-approval/PreApprovalDrawer';
 
+// Maps workflow-specific status to PreApproval.status for list display
+function mapWorkflowPAStatus(s: PreApprovalWorkflowStatus): PreApproval['status'] {
+  switch (s) {
+    case 'Approved':           return 'Approved';
+    case 'Revision Requested': return 'Revision Requested';
+    case 'In Review':          return 'In Review';
+    case 'Resubmitted':        return 'In Review';
+    default:                   return 'Pending'; // Draft, Submitted
+  }
+}
+
 export function FundsPreApprovalsContent({
   dateRange,
   onDateRangeChange,
@@ -274,8 +286,30 @@ export function FundsPreApprovalsContent({
   onSelectPreApproval
 }: FundsPreApprovalsContentProps) {
   const { t } = useTranslation();
+  const { workflow } = useWorkflow();
   const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+
+  // Build the live workflow pre-approval item from shared context
+  const workflowPreApproval: PreApproval = {
+    id: WORKFLOW_PA_ID,
+    date: new Date('2026-04-20'),
+    dealershipCode: WORKFLOW_DEALER.code,
+    dealershipName: WORKFLOW_DEALER.name,
+    dealershipCity: WORKFLOW_DEALER.city,
+    status: mapWorkflowPAStatus(workflow.preApproval.status),
+    timeInPreApproval: 1,
+    submittedBy: { name: WORKFLOW_DEALER.contact, avatarUrl: '' },
+    mediaType: WORKFLOW_CAMPAIGN.mediaType,
+    details: 'March 2026 Digital Ad Campaign — Display, Facebook, Search, Video',
+    lastUpdated: new Date(),
+    submittedAt: new Date('2026-04-20'),
+    initiativeType: WORKFLOW_CAMPAIGN.initiativeType,
+    claimsCount: workflow.preApproval.claimsCount,
+    contactEmail: WORKFLOW_DEALER.email,
+    description: WORKFLOW_CAMPAIGN.description,
+    documents: workflow.preApproval.documents,
+  };
   const datePickerRef = useRef<HTMLDivElement>(null);
 
   // Close date picker on outside click
@@ -289,9 +323,11 @@ export function FundsPreApprovalsContent({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Filter Data
+  // Filter Data — workflow item always at the top (pre-Draft statuses don't show)
   const filteredData = useMemo(() => {
-    return MOCK_DATA.filter((item) => {
+    const showWorkflow = workflow.preApproval.status !== 'Draft';
+    const base = showWorkflow ? [workflowPreApproval, ...MOCK_DATA] : MOCK_DATA;
+    return base.filter((item) => {
       // Date Filter
       if (dateRange?.from && item.date < dateRange.from) return false;
       if (dateRange?.to && item.date > dateRange.to) return false;
@@ -312,7 +348,7 @@ export function FundsPreApprovalsContent({
 
       return true;
     });
-  }, [dateRange, searchQuery]);
+  }, [dateRange, searchQuery, workflow.preApproval.status, workflow.preApproval.claimsCount, workflowPreApproval]);
 
   return (
     <div className="flex flex-col h-full relative overflow-hidden">

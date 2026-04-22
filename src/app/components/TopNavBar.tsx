@@ -161,9 +161,11 @@ export function TopNavBar({ userType = 'dealer', onOpenOEMDrawer, languageToggle
                   onOpenClaim={onOpenClaimFromNotif}
                 />
              ) : (
-                <NotificationOverlay 
-                  isOpen={isNotificationOpen} 
-                  onClose={() => setIsNotificationOpen(false)} 
+                <NotificationOverlay
+                  isOpen={isNotificationOpen}
+                  onClose={() => setIsNotificationOpen(false)}
+                  onOpenPreApproval={onOpenPreApprovalFromNotif}
+                  onOpenClaim={onOpenClaimFromNotif}
                 />
              )}
           </div>

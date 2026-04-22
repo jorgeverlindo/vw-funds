@@ -13,6 +13,8 @@ interface FormValues {
   initiativeType: string;
   mediaType: string; // Changed to string for single select dropdown
   claimCount: string;
+  activityPeriod: string;
+  totalAmount: string;
   details: string;
   contactInfo: string;
 }
@@ -56,6 +58,8 @@ export function PreApprovalForm({ onClose, onDone }: PreApprovalFormProps) {
       initiativeType: "",
       mediaType: "",
       claimCount: "1",
+      activityPeriod: "Mar 1, 2026 – Mar 31, 2026",
+      totalAmount: "5000",
       details: "",
       contactInfo: ""
     }
@@ -182,6 +186,7 @@ export function PreApprovalForm({ onClose, onDone }: PreApprovalFormProps) {
                     value={field.value}
                     onChange={field.onChange}
                     options={[
+                        { value: "12345",  label: "12345 - Volkswagen Anytown" },
                         { value: "408253", label: "408253 - Rick Case VW" },
                         { value: "408254", label: "408254 - Gunther VW" },
                         { value: "408255", label: "408255 - Emich VW" }
@@ -276,6 +281,56 @@ export function PreApprovalForm({ onClose, onDone }: PreApprovalFormProps) {
                     placeholder="1"
                     error={!!errors.claimCount}
                 />
+              )}
+            />
+          </div>
+
+          {/* Activity Period */}
+          <div className="flex flex-col gap-1.5" id="field-activityPeriod">
+            <label className="text-[12px] text-[#686576] font-medium flex items-center gap-1">
+              <span className="text-[#D2323F]">*</span> {t('Activity Period')}
+            </label>
+            <Controller
+              name="activityPeriod"
+              control={control}
+              rules={{ required: true }}
+              render={({ field }) => (
+                <input
+                  {...field}
+                  className={cn(
+                    "w-full h-10 px-3 bg-[#F9FAFA] border rounded-[4px] text-[13px] text-[#1F1D25] focus:outline-none focus:ring-1 focus:ring-[#473BAB] transition-all cursor-pointer",
+                    errors.activityPeriod ? "border-[#D2323F]" : "border-[#CAC9CF]"
+                  )}
+                  placeholder={t("e.g. Mar 1, 2026 – Mar 31, 2026")}
+                />
+              )}
+            />
+          </div>
+
+          {/* Total Amount */}
+          <div className="flex flex-col gap-1.5" id="field-totalAmount">
+            <label className="text-[12px] text-[#686576] font-medium flex items-center gap-1">
+              <span className="text-[#D2323F]">*</span> {t('Total Amount')}
+            </label>
+            <Controller
+              name="totalAmount"
+              control={control}
+              rules={{ required: true }}
+              render={({ field }) => (
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[13px] text-[#686576] pointer-events-none">$</span>
+                  <input
+                    {...field}
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    className={cn(
+                      "w-full h-10 pl-7 pr-3 bg-[#F9FAFA] border rounded-[4px] text-[13px] text-[#1F1D25] focus:outline-none focus:ring-1 focus:ring-[#473BAB] transition-all cursor-pointer",
+                      errors.totalAmount ? "border-[#D2323F]" : "border-[#CAC9CF]"
+                    )}
+                    placeholder="0.00"
+                  />
+                </div>
               )}
             />
           </div>

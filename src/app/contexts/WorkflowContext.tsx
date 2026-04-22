@@ -25,8 +25,8 @@ export const WORKFLOW_DEALER = {
   name: 'Volkswagen Anytown',
   code: '12345',
   city: 'Anytown',
-  contact: 'Alex Johnson',
-  email: 'alex.johnson@vw-anytown.com',
+  contact: 'Mallory Manning',
+  email: 'mallory.manning@vw-anytown.com',
 };
 
 export const WORKFLOW_CAMPAIGN = {

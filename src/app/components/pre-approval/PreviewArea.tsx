@@ -230,10 +230,10 @@ export function PreviewArea({ initialState = 'dropzone', onFilesAccepted, onSubm
             </div>
 
             {/* Center Canvas */}
-            <div className="flex-1 relative flex flex-col items-center justify-center bg-transparent rounded-lg z-0">
-               
+            <div className="flex-1 relative flex flex-col items-center bg-transparent rounded-lg z-0 overflow-hidden">
+
                {/* Image Container */}
-               <div className="relative flex-1 w-full flex items-center justify-center overflow-visible">
+               <div className="relative flex-1 min-h-0 w-full flex items-center justify-center">
                    <div className="relative max-h-full max-w-full shadow-lg overflow-visible">
                       <img 
                         src={previewUrl || "https://images.unsplash.com/photo-1563450217504-d5e70a902a40?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHx2b2xrc3dhZ2VuJTIwY2FyJTIwYWR2ZXJ0aXNlbWVudCUyMHBvc3RlcnxlbnwxfHx8fDE3NjkwODY5OTJ8MA&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral"} 

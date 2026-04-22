@@ -29,6 +29,7 @@ import { BreadcrumbBar } from './components/BreadcrumbBar';
 import { useWorkflow, WORKFLOW_PA_ID, WORKFLOW_CL_ID, WORKFLOW_DEALER, WORKFLOW_CAMPAIGN } from './contexts/WorkflowContext';
 import type { Claim } from './components/ClaimsPanel';
 import type { PreApproval } from './components/FundsPreApprovalsContent';
+import imgMalloryManning from 'figma:asset/f0494d5017440bdc302141d9ab01c7c81e4a339a.png';
 
 const DEALER_TABS = [
   { id: 'overview', label: 'Overview' },
@@ -158,7 +159,7 @@ export default function AppContent() {
         dealershipName: WORKFLOW_DEALER.name,
         dealershipCity: WORKFLOW_DEALER.city,
         fund: 'VW Coop Fund 2026',
-        submittedBy: { name: WORKFLOW_DEALER.contact, avatarUrl: '' },
+        submittedBy: { name: WORKFLOW_DEALER.contact, avatarUrl: imgMalloryManning },
         type: WORKFLOW_CAMPAIGN.initiativeType,
         lastUpdated: new Date().toLocaleDateString(),
         details: WORKFLOW_CAMPAIGN.description,

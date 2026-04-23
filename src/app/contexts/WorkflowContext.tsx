@@ -16,11 +16,7 @@
 
 import { createContext, useContext, useState, useCallback, ReactNode } from 'react';
 
-// Demo campaign creative assets — displayed in the Visual Assets carousel
-import imgDisplayBanner from 'figma:asset/f925b175d9f45ba629bdedc9c27563c3216090ba.png';
-import imgFacebookAd    from 'figma:asset/dcd4a062f63eda60d1f2ae0b47f935693f998f44.png';
-
-// ─── Canonical demo data ────────────────────────────────────────────────────
+// ─── Canonical demo data ─────────────────────────────────────────────────────
 
 export const WORKFLOW_PA_ID = 'WF-PA-001';
 export const WORKFLOW_CL_ID = 'WF-CL-001';
@@ -227,14 +223,7 @@ const INITIAL_STATE: WorkflowState = {
         action: 'Pre-approval submitted for OEM review',
       },
     ],
-    documents: [
-      // Creative image assets — shown in Visual Assets carousel
-      { name: 'Display_Banner_March2026.png', size: '2.3 MB', type: 'png', url: imgDisplayBanner },
-      { name: 'Facebook_Ad_March2026.png',    size: '1.8 MB', type: 'png', url: imgFacebookAd },
-      // Supporting documents
-      { name: 'Campaign_Brief_March2026.pdf', size: '1.2 MB', type: 'pdf' },
-      { name: 'MediaPlan_Q1_2026.pdf',        size: '890 KB', type: 'pdf' },
-    ],
+    documents: [],
     submittedAt: '2026-04-20T09:30:00.000Z',
     claimsCount: 0,
     totalAmount: WORKFLOW_CAMPAIGN.totalAmount,
@@ -254,10 +243,7 @@ const INITIAL_STATE: WorkflowState = {
     history: [],
     linkedPreApprovalId: WORKFLOW_PA_ID,
     invoiceTotal: WORKFLOW_CAMPAIGN.totalAmount,
-    documents: [
-      { name: 'Invoice_March2026.pdf',      size: '2.1 MB', type: 'pdf' },
-      { name: 'ProofOfPerformance.pdf',     size: '3.4 MB', type: 'pdf' },
-    ],
+    documents: [],
     submittedAt: null,
   },
 
@@ -563,10 +549,7 @@ export function WorkflowProvider({ children }: { children: ReactNode }) {
         history: [],
         linkedPreApprovalId: newPaId,
         invoiceTotal: WORKFLOW_CAMPAIGN.totalAmount,
-        documents: [
-          { name: 'Invoice_March2026.pdf',   size: '2.1 MB', type: 'pdf' },
-          { name: 'ProofOfPerformance.pdf',  size: '3.4 MB', type: 'pdf' },
-        ],
+        documents: [],
         submittedAt: null,
       };
 

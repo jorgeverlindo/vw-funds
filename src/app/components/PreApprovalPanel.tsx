@@ -1,5 +1,5 @@
-import { useState, useRef } from 'react';
-import { X, Eye, Star, Users, CheckCircle2, MessageSquare, Paperclip, Trash2, ChevronLeft, ChevronRight, ImageIcon } from 'lucide-react';
+import { useRef, useState } from 'react';
+import { X, Eye, Star, Users, CheckCircle2, MessageSquare, Paperclip, Trash2 } from 'lucide-react';
 import { PreApproval } from './FundsPreApprovalsContent';
 import { StatusChip } from './StatusChip';
 import { useTranslation } from '../contexts/LanguageContext';
@@ -51,8 +51,6 @@ export function PreApprovalPanel({
     e.target.value = '';
   };
 
-  // Visual carousel state
-  const [carouselIndex, setCarouselIndex] = useState(0);
   const [previewDoc, setPreviewDoc] = useState<typeof wfPA.documents[number] | null>(null);
 
   const [oemDraftComment, setOemDraftComment] = useState('');
@@ -370,69 +368,52 @@ export function PreApprovalPanel({
             </div>
           </section>
 
-          {/* Visual Assets Carousel — shown when the PA has image documents */}
+          {/* Visual Assets — horizontal thumbnail gallery (same pattern as Planner side pane) */}
           {isWorkflowItem && (() => {
             const IMAGE_EXTS = new Set(['png', 'jpg', 'jpeg', 'gif', 'webp', 'svg']);
-          const imageDocs = wfPA.documents.filter(
-            d => d.url && IMAGE_EXTS.has(d.type.toLowerCase()),
-          );
+            const imageDocs = wfPA.documents.filter(
+              d => d.url && IMAGE_EXTS.has(d.type.toLowerCase()),
+            );
             if (imageDocs.length === 0) return null;
-            const safeIdx = Math.min(carouselIndex, imageDocs.length - 1);
             return (
               <section>
-                <h3 className="text-[#1f1d25] text-[15px] font-medium mb-3">Visual Assets</h3>
-                <div className="relative rounded-xl overflow-hidden bg-[#F0F2F4] aspect-[16/9] flex items-center justify-center">
-                  <img
-                    src={imageDocs[safeIdx].url}
-                    alt={imageDocs[safeIdx].name}
-                    className="max-h-full max-w-full object-contain"
-                  />
-                  {/* Prev arrow */}
-                  {safeIdx > 0 && (
-                    <button
-                      onClick={() => setCarouselIndex(safeIdx - 1)}
-                      className="absolute left-2 top-1/2 -translate-y-1/2 p-1.5 bg-white rounded-full shadow hover:bg-gray-50 transition-colors"
-                    >
-                      <ChevronLeft className="w-4 h-4 text-[#686576]" />
-                    </button>
-                  )}
-                  {/* Next arrow */}
-                  {safeIdx < imageDocs.length - 1 && (
-                    <button
-                      onClick={() => setCarouselIndex(safeIdx + 1)}
-                      className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 bg-white rounded-full shadow hover:bg-gray-50 transition-colors"
-                    >
-                      <ChevronRight className="w-4 h-4 text-[#686576]" />
-                    </button>
-                  )}
-                  {/* Counter badge */}
-                  {imageDocs.length > 1 && (
-                    <div className="absolute bottom-2 right-2 bg-black/50 text-white text-[11px] font-medium px-2 py-0.5 rounded-full">
-                      {safeIdx + 1} / {imageDocs.length}
-                    </div>
-                  )}
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="text-[#1f1d25] text-[15px] font-medium">Visual Assets</h3>
+                  <span className="text-[11px] text-[#686576]">
+                    {imageDocs.length} {imageDocs.length === 1 ? 'item' : 'items'}
+                  </span>
                 </div>
-                {/* Thumbnail strip */}
-                {imageDocs.length > 1 && (
-                  <div className="flex gap-2 mt-2 overflow-x-auto pb-1 custom-scrollbar">
-                    {imageDocs.map((doc, idx) => (
-                      <button
-                        key={idx}
-                        onClick={() => setCarouselIndex(idx)}
-                        className={`shrink-0 w-14 h-14 rounded-lg overflow-hidden border-2 transition-all ${
-                          idx === safeIdx ? 'border-[#473BAB]' : 'border-transparent hover:border-[#473BAB]/40'
-                        }`}
-                      >
-                        <img src={doc.url} alt={doc.name} className="w-full h-full object-cover" />
-                      </button>
-                    ))}
-                  </div>
-                )}
-                {/* Filename label */}
-                <p className="mt-1.5 text-[11px] text-[#686576] truncate flex items-center gap-1">
-                  <ImageIcon className="w-3 h-3 shrink-0" />
-                  {imageDocs[safeIdx].name}
-                </p>
+                <div className="flex overflow-x-auto gap-2 pb-2 custom-scrollbar snap-x">
+                  {imageDocs.map((doc, idx) => (
+                    <div
+                      key={doc.name + idx}
+                      className="w-[118px] h-[118px] rounded-xl overflow-hidden border border-[rgba(0,0,0,0.12)] shrink-0 snap-start relative group bg-[#f4f5f6]"
+                    >
+                      <img
+                        src={doc.url}
+                        alt={doc.name}
+                        className="w-full h-full object-cover cursor-pointer"
+                        onClick={() => setPreviewDoc(doc)}
+                      />
+                      {/* Hover overlay — remove for dealer on workflow item only */}
+                      {userType === 'dealer' && (
+                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center pointer-events-none">
+                          <button
+                            onClick={() => removePreApprovalDocument(doc.name)}
+                            className="p-1.5 bg-white rounded-full text-[#686576] hover:text-red-500 transition-colors shadow pointer-events-auto"
+                            aria-label={`Remove ${doc.name}`}
+                          >
+                            <X className="w-4 h-4" />
+                          </button>
+                        </div>
+                      )}
+                      {/* Index badge */}
+                      <div className="absolute top-1 left-1 bg-black/40 text-white text-[9px] font-bold rounded px-1 leading-tight pointer-events-none">
+                        {idx + 1}
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </section>
             );
           })()}

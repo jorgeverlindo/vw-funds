@@ -96,19 +96,22 @@ export function FundsPieCard() {
         </ResponsiveContainer>
       </div>
 
-      <div className="space-y-2">
+      <div className="space-y-1.5">
         {data.map(item => (
-          <div key={item.name} className="flex items-center justify-between text-[11px]">
-            <div className="flex items-center gap-2">
-              <div
-                className="px-2 py-0.5 rounded-full font-medium"
-                style={{ backgroundColor: `${item.color}20`, color: item.color }}
-              >
-                {item.percent}%
-              </div>
-              <span className="text-[#1f1d25]">{t(item.name)}</span>
+          <div key={item.name} className="grid grid-cols-[auto_1fr_auto] items-center gap-1.5 text-[11px]">
+            <div
+              className="px-1.5 py-0.5 rounded-full font-medium whitespace-nowrap text-[10px]"
+              style={{ backgroundColor: `${item.color}20`, color: item.color }}
+            >
+              {item.percent}%
             </div>
-            <span className="text-[#686576] font-medium">
+            <span
+              className="text-[#1f1d25] whitespace-nowrap overflow-hidden text-ellipsis min-w-0"
+              title={t(item.name)}
+            >
+              {t(item.name)}
+            </span>
+            <span className="text-[#686576] font-medium whitespace-nowrap text-right">
               ${item.value.toLocaleString('en-US', { maximumFractionDigits: 0 })}
             </span>
           </div>

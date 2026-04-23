@@ -1,7 +1,7 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { useForm, Controller } from 'react-hook-form';
-import { Info, Upload, Eye, Trash2, Calendar } from 'lucide-react';
+import { Info, Upload, Eye, Trash2, Calendar, Plus, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { DateRange } from 'react-day-picker';
 import { cn } from '@/lib/utils';
@@ -41,8 +41,16 @@ const FUND_OPTIONS: Option[] = [
 ];
 
 const INITIATIVE_OPTIONS: Option[] = [
-  { value: 'dmp-hard-costs', label: 'DMP - Hard Costs' },
+  { value: 'dmp-hard-costs',  label: 'DMP - Hard Costs' },
+  { value: 'dmp-media-costs', label: 'DMP - Media Costs' },
 ];
+
+// Fund → eligible Initiative values (filters the dropdown so Media funds
+// only show Media initiatives, and vice versa).
+const FUND_TO_INITIATIVES: Record<string, string[]> = {
+  'dmf-hard-costs':  ['dmp-hard-costs'],
+  'dmf-media-costs': ['dmp-media-costs'],
+};
 
 const MEDIA_TYPE_OPTIONS: Option[] = [
   { value: 'auto-shows',           label: 'Auto Shows/Offsite Displays' },
@@ -75,9 +83,9 @@ export function PreApprovalForm({ onClose, onDone }: PreApprovalFormProps) {
   const { t } = useTranslation();
   const { workflow, addPreApprovalDocument, removePreApprovalDocument, updatePreApprovalData } = useWorkflow();
 
-  const { control, handleSubmit, watch, formState: { errors } } = useForm<FormValues>({
+  const { control, handleSubmit, watch, setValue, formState: { errors } } = useForm<FormValues>({
     defaultValues: {
-      title:        'December Offers - Specials - Pre-Approval Request',
+      title:        '',
       fund:         '',
       dealershipName: '',
       initiativeType: '',
@@ -107,16 +115,14 @@ export function PreApprovalForm({ onClose, onDone }: PreApprovalFormProps) {
   };
 
   // ── Claim lines state ─────────────────────────────────────────────────────
-  const claimCountRaw = watch('claimCount');
-  const claimCountNum = Math.min(Math.max(parseInt(claimCountRaw || '1', 10) || 1, 1), 5);
-
+  // User can freely add/remove rows; the claimCount select below stays in sync
+  // with the actual list length so both surfaces agree.
   const [claimLines, setClaimLines] = useState<ClaimLine[]>([{ description: '', amount: '' }]);
 
+  // Keep the claimCount select mirrored to the current row count
   useEffect(() => {
-    setClaimLines(prev =>
-      Array.from({ length: claimCountNum }, (_, i) => prev[i] ?? { description: '', amount: '' })
-    );
-  }, [claimCountNum]);
+    setValue('claimCount', String(claimLines.length));
+  }, [claimLines.length, setValue]);
 
   const computedTotal = claimLines.reduce((sum, line) => {
     const n = parseFloat(line.amount.replace(/[^0-9.]/g, '')) || 0;
@@ -125,6 +131,12 @@ export function PreApprovalForm({ onClose, onDone }: PreApprovalFormProps) {
 
   const updateLine = (i: number, field: keyof ClaimLine, value: string) =>
     setClaimLines(prev => prev.map((l, j) => (j === i ? { ...l, [field]: value } : l)));
+
+  const addLine = () =>
+    setClaimLines(prev => [...prev, { description: '', amount: '' }]);
+
+  const removeLine = (i: number) =>
+    setClaimLines(prev => (prev.length <= 1 ? prev : prev.filter((_, j) => j !== i)));
 
   // ── Watch extra fields for context sync ──────────────────────────────────
   const watchedMediaType = watch('mediaType');
@@ -157,6 +169,23 @@ export function PreApprovalForm({ onClose, onDone }: PreApprovalFormProps) {
   useEffect(() => {
     if (fundValue && initiativeValue) setIsExpanded(true);
   }, [fundValue, initiativeValue]);
+
+  // Filter Initiative options by the selected Fund so Media funds surface
+  // Media initiatives (and vice versa). When the Fund changes, clear any
+  // stale Initiative selection that's no longer valid.
+  const eligibleInitiatives = useMemo(() => {
+    if (!fundValue) return INITIATIVE_OPTIONS;
+    const allowed = FUND_TO_INITIATIVES[fundValue];
+    if (!allowed) return INITIATIVE_OPTIONS;
+    return INITIATIVE_OPTIONS.filter(o => allowed.includes(o.value));
+  }, [fundValue]);
+
+  useEffect(() => {
+    if (!fundValue || !initiativeValue) return;
+    if (!eligibleInitiatives.some(o => o.value === initiativeValue)) {
+      setValue('initiativeType', '');
+    }
+  }, [fundValue, initiativeValue, eligibleInitiatives, setValue]);
 
   // ── File upload ───────────────────────────────────────────────────────────
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -294,7 +323,7 @@ export function PreApprovalForm({ onClose, onDone }: PreApprovalFormProps) {
                   <CustomSelect
                     value={field.value}
                     onChange={field.onChange}
-                    options={INITIATIVE_OPTIONS.map(o => ({ ...o, label: t(o.label) }))}
+                    options={eligibleInitiatives.map(o => ({ ...o, label: t(o.label) }))}
                     placeholder={t('Select Initiative')}
                     error={!!errors.initiativeType}
                   />
@@ -302,7 +331,7 @@ export function PreApprovalForm({ onClose, onDone }: PreApprovalFormProps) {
               />
             </div>
 
-            {/* Expanded info block */}
+            {/* Expanded info block — variant per initiative */}
             <AnimatePresence>
               {isExpanded && (
                 <motion.div
@@ -311,37 +340,77 @@ export function PreApprovalForm({ onClose, onDone }: PreApprovalFormProps) {
                   exit={{ opacity: 0, height: 0, marginTop: 0 }}
                   className="bg-[#F0F2F4] rounded-[8px] p-4 flex flex-col gap-4 overflow-hidden"
                 >
-                  <div>
-                    <h4 className="text-[12px] font-bold text-[#1F1D25] mb-2">{t('Description / Instruction (for Claims)')}</h4>
-                    <p className="text-[11px] text-[#1F1D25] leading-relaxed">
-                      {t('Please submit claims for all eligible categories for Co-Op Reimbursement:')}
-                      <br />• {t('Media (except Online Inventory Listings)')}
-                      <br />• {t('Experiential')}
-                      <br />• {t('Tier 3 Digital Tools')}
-                    </p>
-                  </div>
-                  <div className="space-y-2">
-                    <h4 className="text-[12px] font-bold text-[#1F1D25]">{t('Details')}</h4>
-                    <div className="flex justify-between items-center text-[11px] text-[#1F1D25] py-1 border-b border-[#111014]/10">
-                      <span>{t('Reimbursement rate')}</span>
-                      <span className="font-medium">100.00%</span>
-                    </div>
-                    <div className="flex justify-between items-center text-[11px] text-[#1F1D25] py-1 border-b border-[#111014]/10">
-                      <span>{t('Max. Reimbursement per period')}</span>
-                      <span className="font-medium">N/A</span>
-                    </div>
-                    <div className="flex justify-between items-start text-[11px] text-[#1F1D25] py-1">
-                      <span className="max-w-[140px]">{t('Minimum expenditure threshold')}</span>
-                      <span className="font-medium">N/A</span>
-                    </div>
-                  </div>
-                  <div>
-                    <h4 className="text-[12px] font-bold text-[#1F1D25] mb-1.5">{t('Required documents')}</h4>
-                    <ul className="text-[11px] text-[#1F1D25] list-disc pl-4 space-y-0.5">
-                      <li>{t('Invoice')}</li>
-                      <li>{t('Proof of media / Tear sheet')}</li>
-                    </ul>
-                  </div>
+                  {initiativeValue === 'dmp-media-costs' ? (
+                    // Variant: DMP - Media Costs
+                    <>
+                      <div>
+                        <h4 className="text-[12px] font-bold text-[#1F1D25] mb-2">{t('Description / Instruction (for Claims)')}</h4>
+                        <p className="text-[11px] text-[#1F1D25] leading-relaxed">
+                          {t('Please submit claims for all eligible media categories for Co-Op Reimbursement:')}
+                          <br />• {t('Digital Media (Display, Paid Search, Social, Video)')}
+                          <br />• {t('Traditional Media (Print, Radio, OOH)')}
+                          <br />• {t('Direct Mail')}
+                        </p>
+                      </div>
+                      <div className="space-y-2">
+                        <h4 className="text-[12px] font-bold text-[#1F1D25]">{t('Details')}</h4>
+                        <div className="flex justify-between items-center text-[11px] text-[#1F1D25] py-1 border-b border-[#111014]/10">
+                          <span>{t('Reimbursement rate')}</span>
+                          <span className="font-medium">100.00%</span>
+                        </div>
+                        <div className="flex justify-between items-center text-[11px] text-[#1F1D25] py-1 border-b border-[#111014]/10">
+                          <span>{t('Max. Reimbursement per period')}</span>
+                          <span className="font-medium">N/A</span>
+                        </div>
+                        <div className="flex justify-between items-start text-[11px] text-[#1F1D25] py-1">
+                          <span className="max-w-[140px]">{t('Minimum expenditure threshold')}</span>
+                          <span className="font-medium">N/A</span>
+                        </div>
+                      </div>
+                      <div>
+                        <h4 className="text-[12px] font-bold text-[#1F1D25] mb-1.5">{t('Required documents')}</h4>
+                        <ul className="text-[11px] text-[#1F1D25] list-disc pl-4 space-y-0.5">
+                          <li>{t('Invoice')}</li>
+                          <li>{t('Proof of media / Tear sheet')}</li>
+                        </ul>
+                      </div>
+                    </>
+                  ) : (
+                    // Variant: DMP - Hard Costs (default)
+                    <>
+                      <div>
+                        <h4 className="text-[12px] font-bold text-[#1F1D25] mb-2">{t('Description / Instruction (for Claims)')}</h4>
+                        <p className="text-[11px] text-[#1F1D25] leading-relaxed">
+                          {t('Please submit claims for all eligible categories for Co-Op Reimbursement:')}
+                          <br />• {t('Media (except Online Inventory Listings)')}
+                          <br />• {t('Experiential')}
+                          <br />• {t('Tier 3 Digital Tools')}
+                        </p>
+                      </div>
+                      <div className="space-y-2">
+                        <h4 className="text-[12px] font-bold text-[#1F1D25]">{t('Details')}</h4>
+                        <div className="flex justify-between items-center text-[11px] text-[#1F1D25] py-1 border-b border-[#111014]/10">
+                          <span>{t('Reimbursement rate')}</span>
+                          <span className="font-medium">100.00%</span>
+                        </div>
+                        <div className="flex justify-between items-center text-[11px] text-[#1F1D25] py-1 border-b border-[#111014]/10">
+                          <span>{t('Max. Reimbursement per period')}</span>
+                          <span className="font-medium">N/A</span>
+                        </div>
+                        <div className="flex justify-between items-start text-[11px] text-[#1F1D25] py-1">
+                          <span className="max-w-[140px]">{t('Minimum expenditure threshold')}</span>
+                          <span className="font-medium">N/A</span>
+                        </div>
+                      </div>
+                      <div>
+                        <h4 className="text-[12px] font-bold text-[#1F1D25] mb-1.5">{t('Required documents')}</h4>
+                        <ul className="text-[11px] text-[#1F1D25] list-disc pl-4 space-y-0.5">
+                          <li>{t('Invoice')}</li>
+                          <li>{t('Proof of media / Tear sheet')}</li>
+                        </ul>
+                      </div>
+                    </>
+                  )}
                 </motion.div>
               )}
             </AnimatePresence>
@@ -364,27 +433,7 @@ export function PreApprovalForm({ onClose, onDone }: PreApprovalFormProps) {
               </button>
             </div>
 
-            {/* ── Claim Number ── */}
-            <div className="flex flex-col gap-1.5" id="field-claimCount">
-              <label className="text-[12px] text-[#686576] font-medium flex items-center gap-1">
-                <span className="text-[#D2323F]">*</span> {t('Claim number on this pre-approval')}
-              </label>
-              <Controller
-                name="claimCount"
-                control={control}
-                render={({ field }) => (
-                  <CustomSelect
-                    value={field.value}
-                    onChange={field.onChange}
-                    options={['1', '2', '3', '4', '5'].map(v => ({ value: v, label: v }))}
-                    placeholder="1"
-                    error={!!errors.claimCount}
-                  />
-                )}
-              />
-            </div>
-
-            {/* ── Claim Lines (conditional, based on claimCount) ── */}
+            {/* ── Claim Lines (unbounded — user adds/removes rows freely) ── */}
             <div className="flex flex-col gap-2" id="field-claimLines">
               <div className="flex items-center justify-between">
                 <label className="text-[12px] text-[#686576] font-medium">
@@ -421,8 +470,27 @@ export function PreApprovalForm({ onClose, onDone }: PreApprovalFormProps) {
                       className="w-full h-8 pl-6 pr-2 bg-white border border-[#E0E0E0] rounded-[4px] text-[12px] text-[#1F1D25] focus:outline-none focus:ring-1 focus:ring-[#473BAB] focus:border-transparent"
                     />
                   </div>
+                  <button
+                    type="button"
+                    onClick={() => removeLine(i)}
+                    disabled={claimLines.length <= 1}
+                    className="shrink-0 p-1.5 rounded-full text-[#9C99A9] hover:text-[#D2323F] hover:bg-red-50 disabled:opacity-30 disabled:cursor-not-allowed transition-colors cursor-pointer"
+                    aria-label={t('Remove activity')}
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
                 </div>
               ))}
+
+              {/* Add row button */}
+              <button
+                type="button"
+                onClick={addLine}
+                className="flex items-center justify-center gap-1.5 px-3 py-2 border border-dashed border-[#CAC9CF] rounded-[6px] text-[12px] font-medium text-[#473BAB] hover:bg-[#473BAB]/5 hover:border-[#473BAB]/50 transition-colors cursor-pointer"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                {t('Add Activity')}
+              </button>
 
               {/* Total row */}
               <div className="flex items-center justify-between px-3 py-2.5 bg-[#EEEDFB] border border-[#CAC9CF] rounded-[6px] mt-1">

@@ -39,16 +39,8 @@ export function PaymentStatusTable() {
         <table className="w-full">
           <thead>
             <tr className="bg-[#f9fafa] border-b border-[rgba(0,0,0,0.12)]">
-              <th className="px-4 py-3 text-left w-[110px]">
+              <th className="px-4 py-3 text-left w-[120px]">
                 <span className="text-[12px] font-medium text-[#686576] tracking-[0.15px]">{t('Claim ID')}</span>
-              </th>
-              <th className="px-4 py-3 text-left">
-                <div className="flex items-center gap-1">
-                  <span className="text-[12px] font-medium text-[#686576] tracking-[0.15px]">{t('Date')}</span>
-                  <svg className="size-4 text-[#686576]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path d="M7 10l5 5 5-5" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
-                  </svg>
-                </div>
               </th>
               <th className="px-4 py-3 text-left">
                 <div className="flex items-center gap-1">
@@ -82,11 +74,8 @@ export function PaymentStatusTable() {
                 key={row.id || index}
                 className="border-b border-[rgba(0,0,0,0.12)] last:border-0 hover:bg-[#f9fafa]/50 transition-colors"
               >
-                <td className="px-4 py-3 w-[110px]">
+                <td className="px-4 py-3 w-[120px]">
                   <span className="text-[12px] text-[#473BAB] font-medium tracking-[0.17px]">{row.id || '—'}</span>
-                </td>
-                <td className="px-4 py-3">
-                  <span className="text-[12px] text-[#1f1d25] tracking-[0.17px]">{row.date}</span>
                 </td>
                 <td className="px-4 py-3">
                   <span className="text-[12px] text-[#1f1d25] tracking-[0.17px]">{row.amount}</span>

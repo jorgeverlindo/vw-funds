@@ -43,10 +43,10 @@ export function PaymentStatusTableCard({ variant = 'dealer' }: { variant?: 'deal
       {/* Table */}
       <div className="content-stretch flex flex-col items-start pb-2 pt-1 px-3 relative shrink-0 w-full flex-1 overflow-hidden min-h-0">
         <div className="w-full overflow-x-auto overflow-y-auto min-h-0 flex-1">
-          <div className="min-w-[500px]">
+          <div className="min-w-[380px]">
             {/* Header Row */}
             <div className="content-stretch flex items-start relative shrink-0 w-full border-b border-[rgba(0,0,0,0.12)] sticky top-0 bg-white z-10">
-              <div className="content-stretch flex items-start px-4 py-0 relative shrink-0 w-[110px]">
+              <div className="content-stretch flex items-start px-4 py-0 relative shrink-0 w-[100px]">
                 <div className="content-stretch flex flex-col h-9 items-start justify-center px-0 py-1.5 relative shrink-0">
                   <p className="font-['Roboto'] font-medium leading-3 relative shrink-0 text-[#686576] text-xs tracking-[0.15px]">Claim ID</p>
                 </div>
@@ -54,21 +54,16 @@ export function PaymentStatusTableCard({ variant = 'dealer' }: { variant?: 'deal
               <div className="flex-1 min-h-px min-w-px relative">
                 <div className="content-stretch flex items-start px-4 py-0 relative w-full">
                   <div className="content-stretch flex flex-col h-9 items-start justify-center px-0 py-1.5 relative shrink-0">
-                    <p className="font-['Roboto'] font-medium leading-3 relative shrink-0 text-[#686576] text-xs tracking-[0.15px]">{t('Date')}</p>
+                    <p className="font-['Roboto'] font-medium leading-3 relative shrink-0 text-[#686576] text-xs tracking-[0.15px]">{t('Amount')}</p>
                   </div>
                 </div>
               </div>
-              <div className="content-stretch flex items-start px-4 py-0 relative shrink-0 w-[130px]">
-                <div className="content-stretch flex flex-col h-9 items-start justify-center px-0 py-1.5 relative shrink-0">
-                  <p className="font-['Roboto'] font-medium leading-3 relative shrink-0 text-[#686576] text-xs tracking-[0.15px]">{t('Amount')}</p>
-                </div>
-              </div>
-              <div className="content-stretch flex items-start px-4 py-0 relative shrink-0 w-32">
+              <div className="content-stretch flex items-start px-4 py-0 relative shrink-0 w-[100px]">
                 <div className="content-stretch flex flex-col h-9 items-start justify-center px-0 py-1.5 relative shrink-0">
                   <p className="font-['Roboto'] font-medium leading-3 relative shrink-0 text-[#686576] text-xs tracking-[0.15px]">{t('Date paid')}</p>
                 </div>
               </div>
-              <div className="content-stretch flex gap-[10px] items-start px-4 py-0 relative shrink-0 w-[109px]">
+              <div className="content-stretch flex gap-[10px] items-start px-4 py-0 relative shrink-0 w-[90px]">
                 <div className="content-stretch flex flex-col h-9 items-start justify-center px-0 py-1.5 relative shrink-0">
                   <p className="font-['Roboto'] font-medium leading-3 relative shrink-0 text-[#686576] text-xs tracking-[0.15px]">{t('Status')}</p>
                 </div>
@@ -78,7 +73,7 @@ export function PaymentStatusTableCard({ variant = 'dealer' }: { variant?: 'deal
             {/* Data Rows */}
             {data.map((row, index) => (
               <div key={row.id || index} className="content-stretch flex items-center px-0 py-2 relative shrink-0 w-full border-b border-[rgba(0,0,0,0.12)] last:border-0">
-                <div className="content-stretch flex items-start px-4 py-0 relative shrink-0 w-[110px]">
+                <div className="content-stretch flex items-start px-4 py-0 relative shrink-0 w-[100px]">
                   <p className="font-['Roboto'] font-medium leading-[1.43] relative text-[#473BAB] text-xs tracking-[0.17px]">
                     {row.id || '—'}
                   </p>
@@ -86,21 +81,16 @@ export function PaymentStatusTableCard({ variant = 'dealer' }: { variant?: 'deal
                 <div className="flex-1 min-h-px min-w-px relative">
                   <div className="content-stretch flex items-start px-4 py-0 relative w-full">
                     <p className="flex-1 font-['Roboto'] font-normal leading-[1.43] min-h-px min-w-px overflow-hidden relative text-[#1f1d25] text-xs text-ellipsis tracking-[0.17px]">
-                      {row.date}
+                      {row.amount}
                     </p>
                   </div>
                 </div>
-                <div className="content-stretch flex items-start px-4 py-0 relative shrink-0 w-[130px]">
-                  <p className="flex-1 font-['Roboto'] font-normal leading-[1.43] min-h-px min-w-px overflow-hidden relative text-[#1f1d25] text-xs text-ellipsis tracking-[0.17px]">
-                    {row.amount}
-                  </p>
-                </div>
-                <div className="content-stretch flex items-start px-4 py-0 relative shrink-0 w-32">
+                <div className="content-stretch flex items-start px-4 py-0 relative shrink-0 w-[100px]">
                   <p className="flex-1 font-['Roboto'] font-normal leading-[1.43] min-h-px min-w-px overflow-hidden relative text-[#1f1d25] text-xs text-ellipsis tracking-[0.17px]">
                     {row.datePaid}
                   </p>
                 </div>
-                <div className="content-stretch flex gap-[10px] items-start px-4 py-0 relative shrink-0 w-[109px]">
+                <div className="content-stretch flex gap-[10px] items-start px-4 py-0 relative shrink-0 w-[90px]">
                   <StatusChip status={row.status} />
                 </div>
               </div>

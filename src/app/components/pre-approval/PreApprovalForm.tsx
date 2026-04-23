@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '@/lib/utils';
 import { CustomSelect, Option } from '@/app/components/ui/CustomSelect';
 import { useTranslation } from '@/app/contexts/LanguageContext';
+import { useWorkflow } from '@/app/contexts/WorkflowContext';
 
 interface FormValues {
   title: string;
@@ -65,13 +66,13 @@ export function PreApprovalForm({ onClose, onDone }: PreApprovalFormProps) {
     }
   });
 
+  const { workflow, addPreApprovalDocument, removePreApprovalDocument } = useWorkflow();
+
   const [isExpanded, setIsExpanded] = useState(false);
   const fundValue = watch('fund');
   const initiativeValue = watch('initiativeType');
   const formContainerRef = useRef<HTMLDivElement>(null);
 
-  // Supporting documents upload state
-  const [uploadedDocs, setUploadedDocs] = useState<{ name: string; size: string; type: string }[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -79,13 +80,15 @@ export function PreApprovalForm({ onClose, onDone }: PreApprovalFormProps) {
     if (!file) return;
     const sizeKB = file.size / 1024;
     const sizeStr = sizeKB >= 1024 ? `${(sizeKB / 1024).toFixed(1)} MB` : `${Math.round(sizeKB)} KB`;
-    setUploadedDocs(prev => [...prev, {
-      name: file.name,
-      size: sizeStr,
-      type: file.name.split('.').pop()?.toUpperCase() ?? 'FILE',
-    }]);
+    const ext = file.name.split('.').pop()?.toUpperCase() ?? 'FILE';
+    // Generate blob URL for image files so the panel carousel can preview them
+    const url = file.type.startsWith('image/') ? URL.createObjectURL(file) : undefined;
+    addPreApprovalDocument({ name: file.name, size: sizeStr, type: ext, url });
     e.target.value = '';
   };
+
+  // Read documents from WorkflowContext (single source of truth)
+  const uploadedDocs = workflow.preApproval.documents;
 
   // Logic to show extra info when fund and initiative are selected
   useEffect(() => {
@@ -449,7 +452,7 @@ export function PreApprovalForm({ onClose, onDone }: PreApprovalFormProps) {
                         </button>
                         <button
                           type="button"
-                          onClick={() => setUploadedDocs(prev => prev.filter((_, i) => i !== idx))}
+                          onClick={() => removePreApprovalDocument(doc.name)}
                           className="p-1.5 text-[#9C99A9] hover:text-[#D2323F] hover:bg-red-50 rounded-full transition-colors cursor-pointer"
                         >
                           <Trash2 className="w-4 h-4" />

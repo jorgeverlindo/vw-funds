@@ -5,6 +5,7 @@ import { X, CheckCircle2 } from 'lucide-react';
 import { PreviewArea } from './PreviewArea';
 import { PreApprovalForm } from './PreApprovalForm';
 import { Snackbar } from './Snackbar';
+import { useWorkflow } from '@/app/contexts/WorkflowContext';
 
 interface PreApprovalDrawerProps {
   open: boolean;
@@ -12,23 +13,23 @@ interface PreApprovalDrawerProps {
 }
 
 export function PreApprovalDrawer({ open, onClose }: PreApprovalDrawerProps) {
+  const { submitPreApproval } = useWorkflow();
   const [showSnackbar, setShowSnackbar] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
 
-  const handleSubmit = (data: any) => {
+  const handleSubmit = (_data: any) => {
     setIsSubmitting(true);
-    // Simulate API call
     setTimeout(() => {
+      // Persist to WorkflowContext — marks PA as Submitted and fires OEM notification
+      submitPreApproval();
       setIsSubmitting(false);
       setIsSubmitted(true);
       setShowSnackbar(true);
-      
-      // Auto dismiss snackbar and close drawer after delay
+
       setTimeout(() => {
         setShowSnackbar(false);
         onClose();
-        // Reset state for next time
         setTimeout(() => setIsSubmitted(false), 500);
       }, 3000);
     }, 1500);

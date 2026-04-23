@@ -13,7 +13,7 @@ import { StatusChip, ClaimStatus } from './StatusChip';
 import { Claim } from './ClaimsPanel';
 import { cn } from '../../lib/utils';
 import { ActionButton } from './ActionButton';
-import { useWorkflow, WORKFLOW_DEALER, WORKFLOW_CAMPAIGN, WORKFLOW_CL_ID, type ClaimWorkflowStatus } from '../contexts/WorkflowContext';
+import { useWorkflow, WORKFLOW_DEALER, WORKFLOW_CAMPAIGN, WORKFLOW_CL_ID, type ClaimWorkflowStatus, type ArchivedCycle } from '../contexts/WorkflowContext';
 
 // People portraits — Figma source of truth
 import imgFabioVeloso from 'figma:asset/175d81a7864ae50d37ddf9a160e546af1d2a8ee8.png';
@@ -109,6 +109,28 @@ function mapWorkflowClaimStatus(s: ClaimWorkflowStatus): ClaimStatus {
   }
 }
 
+/** Build a displayable Claim row from an archived cycle snapshot */
+function archivedCycleToClaimRow(cycle: ArchivedCycle): Claim {
+  const cl = cycle.claim;
+  return {
+    id: cl.id,
+    uid: cl.id,
+    date: cl.submittedAt ? new Date(cl.submittedAt) : new Date(cycle.archivedAt),
+    amount: cl.invoiceTotal,
+    status: cl.status ? mapWorkflowClaimStatus(cl.status) : 'Paid',
+    timeInClaim: 2,
+    timeInPayment: 2,
+    dealershipCode: WORKFLOW_DEALER.code,
+    dealershipName: WORKFLOW_DEALER.name,
+    dealershipCity: WORKFLOW_DEALER.city,
+    fund: 'DMF - Media Costs',
+    submittedBy: { name: WORKFLOW_DEALER.contact, avatarUrl: imgMalloryManning },
+    type: WORKFLOW_CAMPAIGN.initiativeType,
+    lastUpdated: new Date(cycle.archivedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+    details: WORKFLOW_CAMPAIGN.description,
+  };
+}
+
 export function FundsClaimsContent({
   dateRange,
   onDateRangeChange,
@@ -118,6 +140,13 @@ export function FundsClaimsContent({
 }: FundsClaimsContentProps) {
   const { t } = useTranslation();
   const { workflow } = useWorkflow();
+
+  // Archived cycle rows — newest first
+  const archivedClaimRows = useMemo(
+    () => [...workflow.archivedCycles].reverse().map(archivedCycleToClaimRow),
+    [workflow.archivedCycles],
+  );
+
   const [activeFilter, setActiveFilter] = useState<ClaimStatus | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [expandedMonths, setExpandedMonths] = useState<Record<string, boolean>>({
@@ -304,6 +333,76 @@ export function FundsClaimsContent({
                   <div className="w-[140px] text-[12px] font-medium text-[#1f1d25]">{t('Paid')}</div>
                   <div className="w-[140px] text-[12px] font-medium text-[#1f1d25]">{t('Pending')}</div>
                </div>
+
+               {/* Archived cycle claims — pinned above active, newest first */}
+               {archivedClaimRows
+                 .filter(cl => {
+                   if (activeFilter && cl.status !== activeFilter) return false;
+                   if (searchQuery) {
+                     const q = searchQuery.toLowerCase();
+                     return cl.id.toLowerCase().includes(q) || cl.dealershipName.toLowerCase().includes(q) || cl.status.toLowerCase().includes(q);
+                   }
+                   return true;
+                 })
+                 .map(archivedCl => (
+                 <div key={archivedCl.id} className="group-container">
+                   <div className="flex items-center bg-white border-b border-gray-200 h-14 px-4 select-none">
+                     <div className="flex items-center gap-2 w-[220px]">
+                       <ChevronDown className="w-5 h-5 text-gray-500/80" />
+                       <span className="text-[14px] font-medium text-[#1f1d25] tracking-[0.17px]">
+                         {archivedCl.date.toLocaleString('en-US', { month: 'short', year: 'numeric' })}
+                         <span className="ml-2 text-[11px] font-normal text-[#9C99A9] bg-[#F0F2F4] px-2 py-0.5 rounded-full">archived</span>
+                       </span>
+                     </div>
+                     <div className="flex items-center text-[12px] text-[#686576] gap-0">
+                       <div className="w-[120px]">-</div>
+                       <div className="w-[120px]">-</div>
+                       <div className="w-[120px]">-</div>
+                       <div className="w-[140px]">-</div>
+                       <div className="w-[140px]">-</div>
+                     </div>
+                   </div>
+                   <div className="bg-[#F9FAFA] border-b border-gray-100">
+                     <div className="flex items-center h-10 px-4 border-b border-gray-200/50 bg-[#F9FAFA]">
+                       <div className="w-[120px] pl-4 text-[11px] font-medium text-gray-500">{t('Date')}</div>
+                       <div className="w-[100px] text-[11px] font-medium text-gray-500">{t('ID')}</div>
+                       <div className="w-[100px] text-[11px] font-medium text-gray-500">{t('Amount')}</div>
+                       <div className="w-[160px] text-[11px] font-medium text-gray-500">{t('Status')}</div>
+                       <div className="w-[100px] text-[11px] font-medium text-gray-500">{t('Time in claim')}</div>
+                       <div className="w-[120px] text-[11px] font-medium text-gray-500">{t('Time in payment')}</div>
+                       <div className="flex-1 min-w-[200px] text-[11px] font-medium text-gray-500">{t('Dealership')}</div>
+                       <div className="w-[140px] text-[11px] font-medium text-gray-500">{t('Fund')}</div>
+                       <div className="w-[160px] text-[11px] font-medium text-gray-500">{t('Submitted by')}</div>
+                     </div>
+                     <div
+                       onClick={() => onSelectClaim(archivedCl.id)}
+                       className={cn(
+                         "flex items-center h-[52px] border-b border-gray-100 last:border-0 transition-colors cursor-pointer px-4",
+                         selectedClaimId === archivedCl.id ? "bg-[#F2F1FF]" : "bg-[#F9FAFA] hover:bg-gray-100"
+                       )}
+                     >
+                       <div className="w-[120px] pl-4 text-[12px] text-[#1f1d25]">
+                         {archivedCl.date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                       </div>
+                       <div className="w-[100px] text-[12px] text-[#1f1d25] font-medium">{archivedCl.id}</div>
+                       <div className="w-[100px] text-[12px] text-[#1f1d25]">${archivedCl.amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+                       <div className="w-[160px] pr-2"><StatusChip status={archivedCl.status} /></div>
+                       <div className="w-[100px] text-[12px] text-[#1f1d25]">{archivedCl.timeInClaim} days</div>
+                       <div className="w-[120px] text-[12px] text-[#1f1d25]">{archivedCl.timeInPayment} days</div>
+                       <div className="flex-1 min-w-[200px] text-[12px] text-[#1f1d25] truncate pr-4">
+                         {archivedCl.dealershipCode} - {archivedCl.dealershipName} ({archivedCl.dealershipCity})
+                       </div>
+                       <div className="w-[140px] text-[12px] text-[#1f1d25]">{archivedCl.fund}</div>
+                       <div className="w-[160px] flex items-center gap-2">
+                         <div className="w-6 h-6 rounded-full bg-gray-200 overflow-hidden shrink-0">
+                           <ImageWithFallback src={archivedCl.submittedBy.avatarUrl} alt={archivedCl.submittedBy.name} className="w-full h-full object-cover" />
+                         </div>
+                         <span className="text-[12px] text-[#1f1d25] truncate">{archivedCl.submittedBy.name}</span>
+                       </div>
+                     </div>
+                   </div>
+                 </div>
+               ))}
 
                {/* Workflow claim — pinned at top, always expanded, bypasses date filter */}
                {workflowClaimVisible && workflowClaim && (

@@ -2,7 +2,7 @@ import { useState, useRef, useEffect, useMemo } from 'react';
 import { DateRange } from 'react-day-picker';
 import { Search, Plus, MoreVertical } from 'lucide-react';
 import { useTranslation } from '../contexts/LanguageContext';
-import { useWorkflow, WORKFLOW_DEALER, WORKFLOW_CAMPAIGN, WORKFLOW_PA_ID, type PreApprovalWorkflowStatus } from '../contexts/WorkflowContext';
+import { useWorkflow, WORKFLOW_DEALER, WORKFLOW_CAMPAIGN, WORKFLOW_PA_ID, type PreApprovalWorkflowStatus, type ArchivedCycle } from '../contexts/WorkflowContext';
 import { DateRangeInput } from './DateRangeInput';
 import { DateRangePicker } from './DateRangePicker';
 import { FilterSelect } from './FilterSelect';
@@ -277,6 +277,30 @@ function mapWorkflowPAStatus(s: PreApprovalWorkflowStatus): PreApproval['status'
   }
 }
 
+/** Build a displayable PreApproval row from an archived cycle snapshot */
+function archivedCycleToPA(cycle: ArchivedCycle): PreApproval {
+  const pa = cycle.preApproval;
+  return {
+    id: pa.id,
+    date: new Date(cycle.archivedAt),
+    dealershipCode: WORKFLOW_DEALER.code,
+    dealershipName: WORKFLOW_DEALER.name,
+    dealershipCity:  WORKFLOW_DEALER.city,
+    status: mapWorkflowPAStatus(pa.status),
+    timeInPreApproval: 0,
+    submittedBy: { name: WORKFLOW_DEALER.contact, avatarUrl: AVATARS[5] },
+    mediaType: WORKFLOW_CAMPAIGN.mediaType,
+    details: 'March 2026 Digital Ad Campaign — Display, Facebook, Search, Video',
+    lastUpdated: new Date(cycle.archivedAt),
+    submittedAt: pa.submittedAt ? new Date(pa.submittedAt) : new Date(cycle.archivedAt),
+    initiativeType: WORKFLOW_CAMPAIGN.initiativeType,
+    claimsCount: pa.claimsCount,
+    contactEmail: WORKFLOW_DEALER.email,
+    description: WORKFLOW_CAMPAIGN.description,
+    documents: pa.documents,
+  };
+}
+
 export function FundsPreApprovalsContent({
   dateRange,
   onDateRangeChange,
@@ -323,10 +347,10 @@ export function FundsPreApprovalsContent({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Filter Data — workflow item is always pinned at top, bypasses date filter.
-  // Mock items are filtered normally by date + search.
+  // Filter Data — archived cycles + active workflow item are always pinned at top,
+  // bypassing date filter. Mock items are filtered normally by date + search.
   const filteredData = useMemo(() => {
-    const showWorkflow = workflow.preApproval.status !== 'Draft';
+    const showActiveWorkflow = workflow.preApproval.status !== 'Draft';
 
     const filteredMock = MOCK_DATA.filter((item) => {
       if (dateRange?.from && item.date < dateRange.from) return false;
@@ -346,22 +370,33 @@ export function FundsPreApprovalsContent({
       return true;
     });
 
-    // Workflow item matches search too when a query is present
-    if (showWorkflow && searchQuery) {
-      const q = searchQuery.toLowerCase();
-      const wfMatches =
-        workflowPreApproval.id.toLowerCase().includes(q) ||
-        workflowPreApproval.dealershipName.toLowerCase().includes(q) ||
-        workflowPreApproval.dealershipCode.toLowerCase().includes(q) ||
-        workflowPreApproval.status.toLowerCase().includes(q) ||
-        workflowPreApproval.submittedBy.name.toLowerCase().includes(q) ||
-        workflowPreApproval.mediaType.toLowerCase().includes(q) ||
-        workflowPreApproval.details.toLowerCase().includes(q);
-      return wfMatches ? [workflowPreApproval, ...filteredMock] : filteredMock;
-    }
+    // Convert archived cycles to PA rows (newest first)
+    const archivedRows = [...workflow.archivedCycles]
+      .reverse()
+      .map(archivedCycleToPA);
 
-    return showWorkflow ? [workflowPreApproval, ...filteredMock] : filteredMock;
-  }, [dateRange, searchQuery, workflow.preApproval.status, workflow.preApproval.claimsCount, workflowPreApproval]);
+    // Filter archived + active rows by search query when present
+    const filterRow = (row: PreApproval) => {
+      if (!searchQuery) return true;
+      const q = searchQuery.toLowerCase();
+      return (
+        row.id.toLowerCase().includes(q) ||
+        row.dealershipName.toLowerCase().includes(q) ||
+        row.dealershipCode.toLowerCase().includes(q) ||
+        row.status.toLowerCase().includes(q) ||
+        row.submittedBy.name.toLowerCase().includes(q) ||
+        row.mediaType.toLowerCase().includes(q) ||
+        row.details.toLowerCase().includes(q)
+      );
+    };
+
+    const pinnedRows = [
+      ...archivedRows.filter(filterRow),
+      ...(showActiveWorkflow && filterRow(workflowPreApproval) ? [workflowPreApproval] : []),
+    ];
+
+    return [...pinnedRows, ...filteredMock];
+  }, [dateRange, searchQuery, workflow.preApproval.status, workflow.preApproval.claimsCount, workflow.archivedCycles, workflowPreApproval]);
 
   return (
     <div className="flex flex-col h-full relative overflow-hidden">

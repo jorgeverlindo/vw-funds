@@ -3,6 +3,7 @@ import svgPaths from '@/imports/svg-kh2cdc4deu';
 import imgAvatar from 'figma:asset/f0494d5017440bdc302141d9ab01c7c81e4a339a.png';
 import { NotificationOverlay } from './notifications/NotificationOverlay';
 import { NotificationOverlayOEM } from './notifications/NotificationOverlayOEM';
+import { AvatarInitials } from './ui/AvatarInitials';
 import { cn } from '@/lib/utils';
 import { LanguageToggleButton } from './LanguageToggleButton';
 import { useTranslation } from '../contexts/LanguageContext';
@@ -182,9 +183,19 @@ export function TopNavBar({ userType = 'dealer', onOpenOEMDrawer, languageToggle
         </button>
 
         {/* Avatar */}
-        <div className="size-8 rounded-full overflow-hidden ml-2 cursor-pointer">
-          <img src={imgAvatar} alt="" className="size-full object-cover" />
-        </div>
+        {userType === 'oem' ? (
+          <AvatarInitials
+            initials="OR"
+            size={32}
+            shape="circular"
+            bgColor="#bcbbc2"
+            className="ml-2 cursor-pointer"
+          />
+        ) : (
+          <div className="size-8 rounded-full overflow-hidden ml-2 cursor-pointer">
+            <img src={imgAvatar} alt="" className="size-full object-cover" />
+          </div>
+        )}
       </div>
     </div>
   );

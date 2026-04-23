@@ -71,6 +71,8 @@ export interface WorkflowDocument {
   name: string;
   size: string;
   type: string;
+  /** Blob URL for image previews — set when an image file is uploaded */
+  url?: string;
 }
 
 export interface WorkflowEvent {
@@ -116,10 +118,20 @@ export interface WorkflowClaimState {
   submittedAt: string | null;
 }
 
+/** Snapshot of a completed PA → Claim cycle, kept for display in both datagrids */
+export interface ArchivedCycle {
+  /** 1-based index: first completed cycle is 1 */
+  cycleIndex: number;
+  preApproval: WorkflowPreApprovalState;
+  claim: WorkflowClaimState;
+  archivedAt: string;  // ISO string
+}
+
 export interface WorkflowState {
   preApproval: WorkflowPreApprovalState;
   claim: WorkflowClaimState;
   notifications: WorkflowNotification[];
+  archivedCycles: ArchivedCycle[];
 }
 
 // ─── Context interface ───────────────────────────────────────────────────────
@@ -144,6 +156,9 @@ interface WorkflowContextType {
   approveClaimAction: (comment?: string) => void;
   requestClaimRevision: (comment: string) => void;
   processPayment: () => void;
+
+  // Cycle management
+  archiveAndReset: () => void;
 
   // Document management
   addPreApprovalDocument: (doc: WorkflowDocument) => void;
@@ -211,6 +226,8 @@ const INITIAL_STATE: WorkflowState = {
     ],
     submittedAt: null,
   },
+
+  archivedCycles: [],
 
   // OEM sees one unread notification from the pre-approval submission.
   notifications: [
@@ -473,6 +490,56 @@ export function WorkflowProvider({ children }: { children: ReactNode }) {
     });
   }, [pushEvent, pushNotif]);
 
+  // ── Cycle archive + reset ─────────────────────────────────────────────────
+
+  const archiveAndReset = useCallback(() => {
+    setWorkflow(prev => {
+      const newCycleIndex = prev.archivedCycles.length + 1;
+      const newActiveNum  = newCycleIndex + 1;
+      const padded = String(newActiveNum).padStart(3, '0');
+      const newPaId = `WF-PA-${padded}`;
+      const newClId = `WF-CL-${padded}`;
+
+      const archived: ArchivedCycle = {
+        cycleIndex:   newCycleIndex,
+        preApproval:  { ...prev.preApproval },
+        claim:        { ...prev.claim },
+        archivedAt:   nowIso(),
+      };
+
+      const freshPA: WorkflowPreApprovalState = {
+        id: newPaId,
+        status: 'Draft',
+        oemComment: null,
+        history: [],
+        documents: [],
+        submittedAt: null,
+        claimsCount: 0,
+      };
+
+      const freshClaim: WorkflowClaimState = {
+        id: newClId,
+        status: null,
+        oemComment: null,
+        history: [],
+        linkedPreApprovalId: newPaId,
+        invoiceTotal: WORKFLOW_CAMPAIGN.totalAmount,
+        documents: [
+          { name: 'Invoice_March2026.pdf',   size: '2.1 MB', type: 'pdf' },
+          { name: 'ProofOfPerformance.pdf',  size: '3.4 MB', type: 'pdf' },
+        ],
+        submittedAt: null,
+      };
+
+      return {
+        ...prev,
+        archivedCycles: [...prev.archivedCycles, archived],
+        preApproval:    freshPA,
+        claim:          freshClaim,
+      };
+    });
+  }, []);
+
   // ── Document management ───────────────────────────────────────────────────
 
   const addPreApprovalDocument = useCallback((doc: WorkflowDocument) => {
@@ -537,6 +604,7 @@ export function WorkflowProvider({ children }: { children: ReactNode }) {
         approveClaimAction,
         requestClaimRevision,
         processPayment,
+        archiveAndReset,
         addPreApprovalDocument,
         removePreApprovalDocument,
         markNotificationRead,

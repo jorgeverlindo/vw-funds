@@ -1,5 +1,5 @@
 import { useState, useRef } from 'react';
-import { X, Eye, Star, Users, CheckCircle2, MessageSquare, Paperclip, Trash2 } from 'lucide-react';
+import { X, Eye, Star, Users, CheckCircle2, MessageSquare, Paperclip, Trash2, ChevronLeft, ChevronRight, ImageIcon } from 'lucide-react';
 import { PreApproval } from './FundsPreApprovalsContent';
 import { StatusChip } from './StatusChip';
 import { useTranslation } from '../contexts/LanguageContext';
@@ -44,10 +44,16 @@ export function PreApprovalPanel({
     const sizeStr = sizeKB >= 1024
       ? `${(sizeKB / 1024).toFixed(1)} MB`
       : `${sizeKB.toFixed(0)} KB`;
-    addPreApprovalDocument({ name: file.name, size: sizeStr, type: file.name.split('.').pop() ?? 'file' });
+    const ext = file.name.split('.').pop()?.toLowerCase() ?? 'file';
+    // For image files, create a blob URL so the carousel can display a preview
+    const imageUrl = file.type.startsWith('image/') ? URL.createObjectURL(file) : undefined;
+    addPreApprovalDocument({ name: file.name, size: sizeStr, type: ext, url: imageUrl });
     // Reset so the same file can be re-added if removed
     e.target.value = '';
   };
+
+  // Visual carousel state
+  const [carouselIndex, setCarouselIndex] = useState(0);
 
   const [oemDraftComment, setOemDraftComment] = useState('');
 
@@ -354,6 +360,70 @@ export function PreApprovalPanel({
               </div>
             </div>
           </section>
+
+          {/* Visual Assets Carousel — shown when the PA has image documents */}
+          {isWorkflowItem && (() => {
+            const imageDocs = wfPA.documents.filter(d => d.url);
+            if (imageDocs.length === 0) return null;
+            const safeIdx = Math.min(carouselIndex, imageDocs.length - 1);
+            return (
+              <section>
+                <h3 className="text-[#1f1d25] text-[15px] font-medium mb-3">Visual Assets</h3>
+                <div className="relative rounded-xl overflow-hidden bg-[#F0F2F4] aspect-[16/9] flex items-center justify-center">
+                  <img
+                    src={imageDocs[safeIdx].url}
+                    alt={imageDocs[safeIdx].name}
+                    className="max-h-full max-w-full object-contain"
+                  />
+                  {/* Prev arrow */}
+                  {safeIdx > 0 && (
+                    <button
+                      onClick={() => setCarouselIndex(safeIdx - 1)}
+                      className="absolute left-2 top-1/2 -translate-y-1/2 p-1.5 bg-white rounded-full shadow hover:bg-gray-50 transition-colors"
+                    >
+                      <ChevronLeft className="w-4 h-4 text-[#686576]" />
+                    </button>
+                  )}
+                  {/* Next arrow */}
+                  {safeIdx < imageDocs.length - 1 && (
+                    <button
+                      onClick={() => setCarouselIndex(safeIdx + 1)}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 bg-white rounded-full shadow hover:bg-gray-50 transition-colors"
+                    >
+                      <ChevronRight className="w-4 h-4 text-[#686576]" />
+                    </button>
+                  )}
+                  {/* Counter badge */}
+                  {imageDocs.length > 1 && (
+                    <div className="absolute bottom-2 right-2 bg-black/50 text-white text-[11px] font-medium px-2 py-0.5 rounded-full">
+                      {safeIdx + 1} / {imageDocs.length}
+                    </div>
+                  )}
+                </div>
+                {/* Thumbnail strip */}
+                {imageDocs.length > 1 && (
+                  <div className="flex gap-2 mt-2 overflow-x-auto pb-1 custom-scrollbar">
+                    {imageDocs.map((doc, idx) => (
+                      <button
+                        key={idx}
+                        onClick={() => setCarouselIndex(idx)}
+                        className={`shrink-0 w-14 h-14 rounded-lg overflow-hidden border-2 transition-all ${
+                          idx === safeIdx ? 'border-[#473BAB]' : 'border-transparent hover:border-[#473BAB]/40'
+                        }`}
+                      >
+                        <img src={doc.url} alt={doc.name} className="w-full h-full object-cover" />
+                      </button>
+                    ))}
+                  </div>
+                )}
+                {/* Filename label */}
+                <p className="mt-1.5 text-[11px] text-[#686576] truncate flex items-center gap-1">
+                  <ImageIcon className="w-3 h-3 shrink-0" />
+                  {imageDocs[safeIdx].name}
+                </p>
+              </section>
+            );
+          })()}
 
           {/* Supporting Documents */}
           <section>

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { X, Eye, Star, MessageSquare, Banknote } from 'lucide-react';
+import { X, Eye, Star, MessageSquare, Banknote, RefreshCw } from 'lucide-react';
 import { StatusChip, ClaimStatus } from './StatusChip';
 import { KeyValueRow } from './ui/KeyValueRow';
 import { useTranslation } from '../contexts/LanguageContext';
@@ -53,6 +53,7 @@ export function ClaimsPanel({
     requestClaimRevision,
     resubmitClaim,
     processPayment,
+    archiveAndReset,
   } = useWorkflow();
 
   const [oemDraftComment, setOemDraftComment] = useState('');
@@ -228,17 +229,26 @@ export function ClaimsPanel({
 
     if (liveStatus === 'Paid') {
       return (
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2 text-[13px] text-[#2e7d32]">
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2 text-[13px] text-[#2e7d32] shrink-0">
             <Banknote className="w-4 h-4" />
             <span>Payment of ${WORKFLOW_CAMPAIGN.totalAmount.toLocaleString()} processed successfully.</span>
           </div>
-          <button
-            onClick={onClose}
-            className="px-6 py-2 rounded-full text-sm font-medium text-[#111014]/60 hover:bg-black/5 transition-colors cursor-pointer"
-          >
-            {t('Close')}
-          </button>
+          <div className="flex items-center gap-2 shrink-0">
+            <button
+              onClick={onClose}
+              className="px-6 py-2 rounded-full text-sm font-medium text-[#111014]/60 hover:bg-black/5 transition-colors cursor-pointer"
+            >
+              {t('Close')}
+            </button>
+            <button
+              onClick={() => { archiveAndReset(); onClose(); }}
+              className="flex items-center gap-2 px-5 py-2 bg-[#473BAB] hover:bg-[#3D3295] text-white rounded-full text-sm font-medium transition-colors shadow-sm cursor-pointer"
+            >
+              <RefreshCw className="w-4 h-4" />
+              Start New Pre-approval
+            </button>
+          </div>
         </div>
       );
     }

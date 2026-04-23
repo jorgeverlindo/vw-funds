@@ -313,7 +313,7 @@ export function PreviewControlsZoom({
   className 
 }: PreviewControlsZoomProps) {
   return (
-    <div className={cn("content-stretch flex items-center justify-between px-px relative w-full pointer-events-auto", className)} data-name="Zoom">
+    <div className={cn("content-stretch flex items-center justify-between px-3 py-1 relative w-full pointer-events-auto bg-white/95 backdrop-blur-sm rounded-full shadow-sm border border-white/60", className)} data-name="Zoom">
       <div className="content-stretch flex items-start relative shrink-0" data-name=".ZoomController">
         <ButtonGroup onZoomIn={onZoomIn} onZoomOut={onZoomOut} onRotate={onRotate} />
       </div>

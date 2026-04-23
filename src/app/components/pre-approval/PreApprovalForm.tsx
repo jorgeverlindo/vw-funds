@@ -569,11 +569,11 @@ export function PreApprovalForm({ onClose, onDone }: PreApprovalFormProps) {
       {/* DateRangePicker portal overlay */}
       {showDatePicker && createPortal(
         <div
-          className="fixed inset-0 z-[9998]"
+          className="fixed inset-0 z-[10001]"
           onClick={() => setShowDatePicker(false)}
         >
           <div
-            className="absolute"
+            className="fixed"
             style={{ top: pickerAnchor.top, left: pickerAnchor.left }}
             onClick={e => e.stopPropagation()}
           >
@@ -581,6 +581,7 @@ export function PreApprovalForm({ onClose, onDone }: PreApprovalFormProps) {
               initialRange={activityRange}
               onApply={range => { setActivityRange(range); setShowDatePicker(false); }}
               onCancel={() => setShowDatePicker(false)}
+              className="bg-white rounded-lg shadow-xl border border-[rgba(0,0,0,0.12)] p-6 w-[600px] animate-in fade-in zoom-in-95 duration-200"
             />
           </div>
         </div>,

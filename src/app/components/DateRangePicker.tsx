@@ -13,9 +13,10 @@ interface DateRangePickerProps {
   initialRange: DateRange | undefined;
   onApply: (range: DateRange | undefined) => void;
   onCancel: () => void;
+  className?: string;
 }
 
-export function DateRangePicker({ initialRange, onApply, onCancel }: DateRangePickerProps) {
+export function DateRangePicker({ initialRange, onApply, onCancel, className }: DateRangePickerProps) {
   const { t, language } = useTranslation();
   const [selectedRange, setSelectedRange] = useState<DateRange | undefined>(initialRange);
 
@@ -62,7 +63,7 @@ export function DateRangePicker({ initialRange, onApply, onCancel }: DateRangePi
   const presets = ['This Week', 'Last Week', 'Last 7 Days', 'Current Month', 'Next Month', 'Reset'] as const;
 
   return (
-    <div className="absolute top-full right-0 mt-2 z-50 bg-white rounded-lg shadow-xl border border-[rgba(0,0,0,0.12)] p-6 w-[600px] animate-in fade-in zoom-in-95 duration-200">
+    <div className={className ?? "absolute top-full right-0 mt-2 z-50 bg-white rounded-lg shadow-xl border border-[rgba(0,0,0,0.12)] p-6 w-[600px] animate-in fade-in zoom-in-95 duration-200"}>
       {/* Title */}
       <div className="text-[10px] font-medium text-[#686576] uppercase tracking-wider mb-2">
         {t('SELECT DATE RANGE')}

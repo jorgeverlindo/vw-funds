@@ -1,10 +1,16 @@
 import { useTranslation } from '../contexts/LanguageContext';
 import { usePaymentTransactions } from '../../data/access/usePaymentTransactions';
+import { useOverviewData } from '../../data/access/useOverviewData';
 import { StatusChip } from './StatusChip';
+
+const fmt = (n: number) =>
+  '$' + n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
 export function PaymentStatusTable() {
   const { t } = useTranslation();
   const { rows: paymentData } = usePaymentTransactions();
+  const { kpis } = useOverviewData();
+
   return (
     <div className="bg-white rounded-xl p-4 border border-[rgba(0,0,0,0.12)]">
       <div className="flex items-center justify-between mb-4">
@@ -25,15 +31,17 @@ export function PaymentStatusTable() {
           </div>
         </div>
         <div className="text-[11px] text-[#686576] tracking-[0.4px]">
-          Total <span className="text-[#1f1d25]">$1,741,685.45</span>
+          Total <span className="text-[#1f1d25]">{fmt(kpis.currentBalance)}</span>
         </div>
       </div>
 
-      {/* Table */}
       <div className="border border-[rgba(0,0,0,0.12)] rounded-lg overflow-hidden">
         <table className="w-full">
           <thead>
             <tr className="bg-[#f9fafa] border-b border-[rgba(0,0,0,0.12)]">
+              <th className="px-4 py-3 text-left w-[110px]">
+                <span className="text-[12px] font-medium text-[#686576] tracking-[0.15px]">{t('Claim ID')}</span>
+              </th>
               <th className="px-4 py-3 text-left">
                 <div className="flex items-center gap-1">
                   <span className="text-[12px] font-medium text-[#686576] tracking-[0.15px]">{t('Date')}</span>
@@ -71,9 +79,12 @@ export function PaymentStatusTable() {
           <tbody>
             {paymentData.map((row, index) => (
               <tr
-                key={index}
+                key={row.id || index}
                 className="border-b border-[rgba(0,0,0,0.12)] last:border-0 hover:bg-[#f9fafa]/50 transition-colors"
               >
+                <td className="px-4 py-3 w-[110px]">
+                  <span className="text-[12px] text-[#473BAB] font-medium tracking-[0.17px]">{row.id || '—'}</span>
+                </td>
                 <td className="px-4 py-3">
                   <span className="text-[12px] text-[#1f1d25] tracking-[0.17px]">{row.date}</span>
                 </td>

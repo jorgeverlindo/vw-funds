@@ -102,6 +102,7 @@ export interface PaymentTransaction {
 }
 
 export interface PaymentRow {
+  id: string;
   date: string;
   amount: string;
   datePaid: string;

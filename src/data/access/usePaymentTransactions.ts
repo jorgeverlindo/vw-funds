@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import { useClient } from '../../app/contexts/ClientContext';
 import { useFilters } from '../../app/contexts/FilterContext';
+import { useWorkflow, WORKFLOW_DEALER } from '../../app/contexts/WorkflowContext';
 import vwTransactions from '../clients/vw/payment-transactions.json';
 import audiTransactions from '../clients/audi/payment-transactions.json';
 import { PaymentTransaction, PaymentRow } from '../types/overview';
@@ -22,13 +23,14 @@ function formatSubmitDate(iso: string): string {
 }
 
 function formatPaidDate(iso: string): string {
-  const [year, mm, dd] = iso.split('-');
+  const [year, mm, dd] = iso.split('T')[0].split('-');
   return `${mm}/${dd}/${year}`;
 }
 
 export function usePaymentTransactions() {
   const { client } = useClient();
   const { filters } = useFilters();
+  const { workflow } = useWorkflow();
   const raw = TX_MAP[client.clientId] ?? [];
 
   const rows = useMemo((): PaymentRow[] => {
@@ -41,15 +43,43 @@ export function usePaymentTransactions() {
       return true;
     });
 
-    return filtered
+    const jsonRows: PaymentRow[] = filtered
       .sort((a, b) => b.submitDate.localeCompare(a.submitDate))
       .map(r => ({
+        id:       r.id,
         date:     formatSubmitDate(r.submitDate),
         amount:   '$' + r.amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
         datePaid: r.paidDate ? formatPaidDate(r.paidDate) : '—',
         status:   r.status,
       }));
-  }, [raw, filters]);
+
+    // Inject paid workflow claim for VW when the demo claim has been paid
+    const wfClaim = workflow.claim;
+    const wfPA    = workflow.preApproval;
+
+    if (
+      client.clientId === 'vw' &&
+      wfClaim.status === 'Paid' &&
+      wfClaim.submittedAt
+    ) {
+      const passesCodeFilter =
+        !filters.dealershipCode || filters.dealershipCode === WORKFLOW_DEALER.code;
+
+      if (passesCodeFilter) {
+        const paidDate = new Date().toISOString();
+        const workflowRow: PaymentRow = {
+          id:       wfClaim.id,
+          date:     formatSubmitDate(wfClaim.submittedAt.slice(0, 10)),
+          amount:   '$' + wfPA.totalAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
+          datePaid: formatPaidDate(paidDate),
+          status:   'Paid out',
+        };
+        return [workflowRow, ...jsonRows];
+      }
+    }
+
+    return jsonRows;
+  }, [raw, filters, workflow.claim, workflow.preApproval, client.clientId]);
 
   return { rows };
 }

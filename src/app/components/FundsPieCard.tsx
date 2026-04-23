@@ -41,20 +41,22 @@ export function FundsPieCard() {
         </h3>
       </div>
 
-      <div className="flex items-center gap-1 p-1 bg-[#f9fafa] rounded-lg overflow-x-auto">
-        {TABS.map(tab => (
-          <button
-            key={tab.id}
-            onClick={() => setActiveTab(tab.id)}
-            className={`px-3 py-1.5 text-[11px] font-medium tracking-[0.4px] leading-[1.66] rounded-md transition-colors whitespace-nowrap cursor-pointer ${
-              activeTab === tab.id
-                ? 'bg-white text-[#1f1d25] shadow-sm'
-                : 'text-[#686576] hover:text-[#1f1d25]'
-            }`}
-          >
-            {t(tab.label)}
-          </button>
-        ))}
+      <div className="overflow-x-auto">
+        <div className="flex items-center gap-0.5 p-1 bg-[#f9fafa] rounded-lg min-w-max">
+          {TABS.map(tab => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              className={`shrink-0 px-2.5 py-1.5 text-[11px] font-medium tracking-[0.4px] leading-[1.66] rounded-md transition-colors whitespace-nowrap cursor-pointer ${
+                activeTab === tab.id
+                  ? 'bg-white text-[#1f1d25] shadow-sm'
+                  : 'text-[#686576] hover:text-[#1f1d25]'
+              }`}
+            >
+              {t(tab.label)}
+            </button>
+          ))}
+        </div>
       </div>
 
       <div className="w-full h-[200px] min-w-[100px]" style={{ minHeight: '200px' }}>

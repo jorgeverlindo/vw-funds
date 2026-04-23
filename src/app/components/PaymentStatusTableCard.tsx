@@ -46,6 +46,11 @@ export function PaymentStatusTableCard({ variant = 'dealer' }: { variant?: 'deal
           <div className="min-w-[500px]">
             {/* Header Row */}
             <div className="content-stretch flex items-start relative shrink-0 w-full border-b border-[rgba(0,0,0,0.12)] sticky top-0 bg-white z-10">
+              <div className="content-stretch flex items-start px-4 py-0 relative shrink-0 w-[110px]">
+                <div className="content-stretch flex flex-col h-9 items-start justify-center px-0 py-1.5 relative shrink-0">
+                  <p className="font-['Roboto'] font-medium leading-3 relative shrink-0 text-[#686576] text-xs tracking-[0.15px]">Claim ID</p>
+                </div>
+              </div>
               <div className="flex-1 min-h-px min-w-px relative">
                 <div className="content-stretch flex items-start px-4 py-0 relative w-full">
                   <div className="content-stretch flex flex-col h-9 items-start justify-center px-0 py-1.5 relative shrink-0">
@@ -72,7 +77,12 @@ export function PaymentStatusTableCard({ variant = 'dealer' }: { variant?: 'deal
 
             {/* Data Rows */}
             {data.map((row, index) => (
-              <div key={index} className="content-stretch flex items-center px-0 py-2 relative shrink-0 w-full border-b border-[rgba(0,0,0,0.12)] last:border-0">
+              <div key={row.id || index} className="content-stretch flex items-center px-0 py-2 relative shrink-0 w-full border-b border-[rgba(0,0,0,0.12)] last:border-0">
+                <div className="content-stretch flex items-start px-4 py-0 relative shrink-0 w-[110px]">
+                  <p className="font-['Roboto'] font-medium leading-[1.43] relative text-[#473BAB] text-xs tracking-[0.17px]">
+                    {row.id || '—'}
+                  </p>
+                </div>
                 <div className="flex-1 min-h-px min-w-px relative">
                   <div className="content-stretch flex items-start px-4 py-0 relative w-full">
                     <p className="flex-1 font-['Roboto'] font-normal leading-[1.43] min-h-px min-w-px overflow-hidden relative text-[#1f1d25] text-xs text-ellipsis tracking-[0.17px]">

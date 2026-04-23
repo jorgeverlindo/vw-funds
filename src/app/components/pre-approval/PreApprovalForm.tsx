@@ -131,7 +131,13 @@ export function PreApprovalForm({ onClose, onDone }: PreApprovalFormProps) {
   const watchedDetails   = watch('details');
 
   // ── Sync with WorkflowContext ──────────────────────────────────────────────
+  // hasMounted prevents the first fire from overwriting context pre-populated data
+  const hasMounted = useRef(false);
   useEffect(() => {
+    if (!hasMounted.current) {
+      hasMounted.current = true;
+      return;
+    }
     const mediaTypeLabel =
       MEDIA_TYPE_OPTIONS.find(o => o.value === watchedMediaType)?.label ?? watchedMediaType ?? '';
     updatePreApprovalData(

@@ -409,14 +409,11 @@ export function FundsPreApprovalsContent({
           <ActionButton
             label={t('New Pre-Approval')}
             onClick={() => {
-              // Only archive + start a new cycle when the OEM has already acted
-              // (Approved) or the full cycle is complete (claim Paid).
-              // For Submitted / In Review / Revision Requested the OEM still needs
-              // to act — do NOT archive or the approve buttons disappear from the panel.
-              const oemActed =
-                workflow.preApproval.status === 'Approved' ||
-                workflow.claim.status === 'Paid';
-              if (oemActed) {
+              // Archive the current PA whenever it has been submitted at least
+              // once (any status other than Draft). This makes the list dynamic:
+              // each "New Pre-Approval" flow produces a fresh entry in the grid.
+              // Draft PAs are not archived — the user hadn't submitted yet.
+              if (workflow.preApproval.status !== 'Draft') {
                 archiveAndReset();
               }
               setIsDrawerOpen(true);

@@ -40,62 +40,58 @@ export function PaymentStatusTableCard({ variant = 'dealer' }: { variant?: 'deal
         </div>
       </div>
 
-      {/* Table */}
+      {/* Table — table-fixed + colgroup keeps the 4 columns evenly spaced
+          no matter how wide the card ends up. Matches the full-width table. */}
       <div className="content-stretch flex flex-col items-start pb-2 pt-1 px-3 relative shrink-0 w-full flex-1 overflow-hidden min-h-0">
-        <div className="w-full overflow-x-auto overflow-y-auto min-h-0 flex-1">
-          <div className="min-w-[380px]">
-            {/* Header Row */}
-            <div className="content-stretch flex items-start relative shrink-0 w-full border-b border-[rgba(0,0,0,0.12)] sticky top-0 bg-white z-10">
-              <div className="content-stretch flex items-start px-4 py-0 relative shrink-0 w-[100px]">
-                <div className="content-stretch flex flex-col h-9 items-start justify-center px-0 py-1.5 relative shrink-0">
-                  <p className="font-['Roboto'] font-medium leading-3 relative shrink-0 text-[#686576] text-xs tracking-[0.15px]">Claim ID</p>
-                </div>
-              </div>
-              <div className="flex-1 min-h-px min-w-px relative">
-                <div className="content-stretch flex items-start px-4 py-0 relative w-full">
-                  <div className="content-stretch flex flex-col h-9 items-start justify-center px-0 py-1.5 relative shrink-0">
-                    <p className="font-['Roboto'] font-medium leading-3 relative shrink-0 text-[#686576] text-xs tracking-[0.15px]">{t('Amount')}</p>
-                  </div>
-                </div>
-              </div>
-              <div className="content-stretch flex items-start px-4 py-0 relative shrink-0 w-[100px]">
-                <div className="content-stretch flex flex-col h-9 items-start justify-center px-0 py-1.5 relative shrink-0">
-                  <p className="font-['Roboto'] font-medium leading-3 relative shrink-0 text-[#686576] text-xs tracking-[0.15px]">{t('Date paid')}</p>
-                </div>
-              </div>
-              <div className="content-stretch flex gap-[10px] items-start px-4 py-0 relative shrink-0 w-[90px]">
-                <div className="content-stretch flex flex-col h-9 items-start justify-center px-0 py-1.5 relative shrink-0">
-                  <p className="font-['Roboto'] font-medium leading-3 relative shrink-0 text-[#686576] text-xs tracking-[0.15px]">{t('Status')}</p>
-                </div>
-              </div>
-            </div>
-
-            {/* Data Rows */}
-            {data.map((row, index) => (
-              <div key={row.id || index} className="content-stretch flex items-center px-0 py-2 relative shrink-0 w-full border-b border-[rgba(0,0,0,0.12)] last:border-0">
-                <div className="content-stretch flex items-start px-4 py-0 relative shrink-0 w-[100px]">
-                  <p className="font-['Roboto'] font-medium leading-[1.43] relative text-[#473BAB] text-xs tracking-[0.17px]">
-                    {row.id || '—'}
-                  </p>
-                </div>
-                <div className="flex-1 min-h-px min-w-px relative">
-                  <div className="content-stretch flex items-start px-4 py-0 relative w-full">
-                    <p className="flex-1 font-['Roboto'] font-normal leading-[1.43] min-h-px min-w-px overflow-hidden relative text-[#1f1d25] text-xs text-ellipsis tracking-[0.17px]">
+        <div className="w-full overflow-y-auto min-h-0 flex-1">
+          <table className="w-full table-fixed">
+            <colgroup>
+              <col style={{ width: '25%' }} />
+              <col style={{ width: '25%' }} />
+              <col style={{ width: '25%' }} />
+              <col style={{ width: '25%' }} />
+            </colgroup>
+            <thead>
+              <tr className="sticky top-0 bg-white z-10 border-b border-[rgba(0,0,0,0.12)]">
+                <th className="px-2.5 py-2.5 text-left">
+                  <span className="font-['Roboto'] font-medium text-[#686576] text-xs tracking-[0.15px]">Claim ID</span>
+                </th>
+                <th className="px-2.5 py-2.5 text-left">
+                  <span className="font-['Roboto'] font-medium text-[#686576] text-xs tracking-[0.15px]">{t('Amount')}</span>
+                </th>
+                <th className="px-2.5 py-2.5 text-left">
+                  <span className="font-['Roboto'] font-medium text-[#686576] text-xs tracking-[0.15px]">{t('Date paid')}</span>
+                </th>
+                <th className="px-2.5 py-2.5 text-left">
+                  <span className="font-['Roboto'] font-medium text-[#686576] text-xs tracking-[0.15px]">{t('Status')}</span>
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {data.map((row, index) => (
+                <tr key={row.id || index} className="border-b border-[rgba(0,0,0,0.12)] last:border-0">
+                  <td className="px-2.5 py-2.5">
+                    <span className="font-['Roboto'] font-medium text-[#473BAB] text-xs tracking-[0.17px] truncate block">
+                      {row.id || '—'}
+                    </span>
+                  </td>
+                  <td className="px-2.5 py-2.5">
+                    <span className="font-['Roboto'] font-normal text-[#1f1d25] text-xs tracking-[0.17px] truncate block">
                       {row.amount}
-                    </p>
-                  </div>
-                </div>
-                <div className="content-stretch flex items-start px-4 py-0 relative shrink-0 w-[100px]">
-                  <p className="flex-1 font-['Roboto'] font-normal leading-[1.43] min-h-px min-w-px overflow-hidden relative text-[#1f1d25] text-xs text-ellipsis tracking-[0.17px]">
-                    {row.datePaid}
-                  </p>
-                </div>
-                <div className="content-stretch flex gap-[10px] items-start px-4 py-0 relative shrink-0 w-[90px]">
-                  <StatusChip status={row.status} />
-                </div>
-              </div>
-            ))}
-          </div>
+                    </span>
+                  </td>
+                  <td className="px-2.5 py-2.5">
+                    <span className="font-['Roboto'] font-normal text-[#1f1d25] text-xs tracking-[0.17px] truncate block">
+                      {row.datePaid}
+                    </span>
+                  </td>
+                  <td className="px-2.5 py-2.5">
+                    <StatusChip status={row.status} />
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       </div>
     </div>

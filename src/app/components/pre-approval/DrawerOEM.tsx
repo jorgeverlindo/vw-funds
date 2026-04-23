@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { X, CheckCircle2 } from 'lucide-react';
 import { DrawerOEMMainPane, OEM_ANNOTATIONS } from './DrawerOEMMainPane';
 import { DrawerOEMSidePanel } from './DrawerOEMSidePanel';
-import { Snackbar } from './Snackbar';
+import { emitSnackbar } from '@/app/components/Snackbar';
 
 interface DrawerOEMProps {
   open: boolean;
@@ -14,7 +14,6 @@ interface DrawerOEMProps {
 const INTRO_SENTENCE = "Please address the following feedback:";
 
 export function DrawerOEM({ open, onClose }: DrawerOEMProps) {
-  const [showSnackbar, setShowSnackbar] = useState(false);
   const [checkedIds, setCheckedIds] = useState<Set<string>>(new Set());
   const [comment, setComment] = useState("");
   
@@ -54,19 +53,8 @@ export function DrawerOEM({ open, onClose }: DrawerOEMProps) {
   };
 
   const handleSend = () => {
-    // Show snackbar and close
-    // Annex 5 behavior: success message
-    setShowSnackbar(true);
-    
-    // Close drawer immediately with dissolve (handled by AnimatePresence exit)
-    setTimeout(() => {
-       onClose();
-    }, 500); // Wait for animation? Or close immediately? "The drawer must close using a dissolve animation."
-    
-    // Auto dismiss snackbar
-    setTimeout(() => {
-      setShowSnackbar(false);
-    }, 3000);
+    emitSnackbar('Review submitted successfully');
+    setTimeout(() => onClose(), 500);
   };
 
   // Reset state when opening/closing
@@ -130,12 +118,6 @@ export function DrawerOEM({ open, onClose }: DrawerOEMProps) {
         )}
       </AnimatePresence>
       
-      <Snackbar 
-        open={showSnackbar} 
-        onClose={() => setShowSnackbar(false)} 
-        message="Review submitted successfully" // Annex 5 likely text
-        className="left-6 translate-x-0 bottom-6"
-      />
     </>,
     document.body
   );

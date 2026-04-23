@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useRef, useCallback } from 'react';
+import { useState, useMemo, useEffect, useCallback } from 'react';
 import { AppSidebar } from './components/AppSidebar';
 import { TopNavBar } from './components/TopNavBar';
 import { TabNavigation } from './components/TabNavigation';
@@ -23,7 +23,7 @@ import { WebMonitoringPanel } from './components/WebMonitoringPanel';
 import { WebMonitoringModal } from './components/WebMonitoringModal';
 import { useTranslation } from './contexts/LanguageContext';
 import { ClientSwitcher } from './components/ClientSwitcher';
-import { Snackbar } from './components/pre-approval/Snackbar';
+import { emitSnackbar } from './components/Snackbar';
 import { useClient } from './contexts/ClientContext';
 import { BreadcrumbBar } from './components/BreadcrumbBar';
 import { useWorkflow, WORKFLOW_DEALER, WORKFLOW_CAMPAIGN } from './contexts/WorkflowContext';
@@ -68,18 +68,6 @@ export default function AppContent() {
   const { client, switchClient } = useClient();
   const [clientSwitcherOpen, setClientSwitcherOpen] = useState(false);
 
-  // View snackbar
-  const [snackbarOpen, setSnackbarOpen] = useState(false);
-  const [snackbarMsg, setSnackbarMsg] = useState('');
-  const snackbarTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  const showViewSnackbar = useCallback((msg: string) => {
-    if (snackbarTimer.current) clearTimeout(snackbarTimer.current);
-    setSnackbarMsg(msg);
-    setSnackbarOpen(true);
-    snackbarTimer.current = setTimeout(() => setSnackbarOpen(false), 2500);
-  }, []);
-
   // Keyboard shortcuts: e → OEM view, d → Dealer view
   useEffect(() => {
     const handleKey = (e: KeyboardEvent) => {
@@ -88,16 +76,16 @@ export default function AppContent() {
       if (e.metaKey || e.ctrlKey || e.altKey) return;
       if (e.key === 'e') {
         setUserType('oem');
-        showViewSnackbar('OEM view (e)');
+        emitSnackbar('OEM view (e)');
       }
       if (e.key === 'd') {
         setUserType('dealer');
-        showViewSnackbar('Dealer view (d)');
+        emitSnackbar('Dealer view (d)');
       }
     };
     window.addEventListener('keydown', handleKey);
     return () => window.removeEventListener('keydown', handleKey);
-  }, [showViewSnackbar]);
+  }, []);
   
   // Pre-Approvals Specific State
   const [preApprovalSearchQuery, setPreApprovalSearchQuery] = useState('');
@@ -359,12 +347,6 @@ export default function AppContent() {
         onClose={() => setClientSwitcherOpen(false)}
         currentClientId={client.clientId}
         onSelect={(id) => { switchClient(id); setClientSwitcherOpen(false); }}
-      />
-      <Snackbar
-        open={snackbarOpen}
-        onClose={() => setSnackbarOpen(false)}
-        message={snackbarMsg}
-        actionLabel=""
       />
       <TopNavBar
         userType={userType}

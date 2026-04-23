@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { X, CheckCircle2 } from 'lucide-react';
 import { PortalPreviewArea } from './PortalPreviewArea';
 import { PreApprovalForm } from '../pre-approval/PreApprovalForm';
-import { Snackbar } from '../pre-approval/Snackbar';
+import { emitSnackbar } from '@/app/components/Snackbar';
 
 interface PortalPreApprovalDrawerProps {
   open: boolean;
@@ -13,7 +13,6 @@ interface PortalPreApprovalDrawerProps {
 }
 
 export function PortalPreApprovalDrawer({ open, onClose, assets }: PortalPreApprovalDrawerProps) {
-  const [showSnackbar, setShowSnackbar] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
 
@@ -34,11 +33,8 @@ export function PortalPreApprovalDrawer({ open, onClose, assets }: PortalPreAppr
     setTimeout(() => {
       setIsSubmitting(false);
       setIsSubmitted(true);
-      setShowSnackbar(true);
-      
-      // Auto dismiss snackbar and close drawer after delay
+      emitSnackbar('Pre-approval submitted');
       setTimeout(() => {
-        setShowSnackbar(false);
         onClose();
         // Reset state
         setTimeout(() => setIsSubmitted(false), 500);
@@ -145,11 +141,6 @@ export function PortalPreApprovalDrawer({ open, onClose, assets }: PortalPreAppr
         )}
       </AnimatePresence>
       
-      <Snackbar 
-        open={showSnackbar} 
-        onClose={() => setShowSnackbar(false)} 
-        message="Pre-approval request created successfully"
-      />
     </>,
     document.body
   );

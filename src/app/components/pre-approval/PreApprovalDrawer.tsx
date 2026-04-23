@@ -4,7 +4,6 @@ import { motion, AnimatePresence } from 'motion/react';
 import { X, CheckCircle2 } from 'lucide-react';
 import { PreviewArea } from './PreviewArea';
 import { PreApprovalForm } from './PreApprovalForm';
-import { Snackbar } from './Snackbar';
 import { useWorkflow } from '@/app/contexts/WorkflowContext';
 
 interface PreApprovalDrawerProps {
@@ -14,7 +13,6 @@ interface PreApprovalDrawerProps {
 
 export function PreApprovalDrawer({ open, onClose }: PreApprovalDrawerProps) {
   const { submitPreApproval } = useWorkflow();
-  const [showSnackbar, setShowSnackbar] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
 
@@ -25,10 +23,8 @@ export function PreApprovalDrawer({ open, onClose }: PreApprovalDrawerProps) {
       submitPreApproval();
       setIsSubmitting(false);
       setIsSubmitted(true);
-      setShowSnackbar(true);
 
       setTimeout(() => {
-        setShowSnackbar(false);
         onClose();
         setTimeout(() => setIsSubmitted(false), 500);
       }, 3000);
@@ -135,11 +131,6 @@ export function PreApprovalDrawer({ open, onClose }: PreApprovalDrawerProps) {
         )}
       </AnimatePresence>
       
-      <Snackbar 
-        open={showSnackbar} 
-        onClose={() => setShowSnackbar(false)} 
-        message="Pre-approval request created successfully"
-      />
     </>,
     document.body
   );

@@ -15,6 +15,7 @@
  */
 
 import { createContext, useContext, useState, useCallback, ReactNode } from 'react';
+import { emitSnackbar } from '../components/Snackbar';
 
 // ─── Canonical demo data ─────────────────────────────────────────────────────
 
@@ -181,6 +182,12 @@ interface WorkflowContextType {
   // Document management
   addPreApprovalDocument: (doc: WorkflowDocument) => void;
   removePreApprovalDocument: (name: string) => void;
+  addClaimDocument: (doc: WorkflowDocument) => void;
+  removeClaimDocument: (name: string) => void;
+
+  // Dealer can reply to an OEM revision request with a comment + resubmit
+  resubmitPreApprovalWithComment: (comment: string) => void;
+  resubmitClaimWithComment: (comment: string) => void;
 
   // Notifications
   markNotificationRead: (id: string) => void;
@@ -325,6 +332,7 @@ export function WorkflowProvider({ children }: { children: ReactNode }) {
       body: `${WORKFLOW_DEALER.name} (${WORKFLOW_DEALER.code}) submitted a pre-approval for review`,
       referenceId: WORKFLOW_PA_ID,
     });
+    emitSnackbar('Pre-approval submitted');
   }, [pushEvent, pushNotif]);
 
   const resubmitPreApproval = useCallback(() => {
@@ -348,6 +356,7 @@ export function WorkflowProvider({ children }: { children: ReactNode }) {
       body: `${WORKFLOW_DEALER.name} (${WORKFLOW_DEALER.code}) resubmitted the pre-approval for review`,
       referenceId: WORKFLOW_PA_ID,
     });
+    emitSnackbar('Pre-approval resubmitted');
   }, [pushEvent, pushNotif]);
 
   const approvePreApproval = useCallback((comment?: string) => {
@@ -372,6 +381,7 @@ export function WorkflowProvider({ children }: { children: ReactNode }) {
       body: `Your pre-approval for ${WORKFLOW_DEALER.name} has been approved. You may now create a claim.`,
       referenceId: WORKFLOW_PA_ID,
     });
+    emitSnackbar('Pre-approval approved');
   }, [pushEvent, pushNotif]);
 
   const requestPreApprovalRevision = useCallback((comment: string) => {
@@ -396,6 +406,7 @@ export function WorkflowProvider({ children }: { children: ReactNode }) {
       body: `${WORKFLOW_DEALER.name} pre-approval was returned with OEM comments`,
       referenceId: WORKFLOW_PA_ID,
     });
+    emitSnackbar('Revision request sent');
   }, [pushEvent, pushNotif]);
 
   // ── Claim actions ─────────────────────────────────────────────────────────
@@ -430,6 +441,7 @@ export function WorkflowProvider({ children }: { children: ReactNode }) {
       body: `${WORKFLOW_DEALER.name} (${WORKFLOW_DEALER.code}) submitted a claim for $${WORKFLOW_CAMPAIGN.totalAmount.toLocaleString()}`,
       referenceId: WORKFLOW_CL_ID,
     });
+    emitSnackbar('Claim submitted');
   }, [pushEvent, pushNotif]);
 
   const resubmitClaim = useCallback(() => {
@@ -449,6 +461,7 @@ export function WorkflowProvider({ children }: { children: ReactNode }) {
       body: `${WORKFLOW_DEALER.name} (${WORKFLOW_DEALER.code}) resubmitted the claim for review`,
       referenceId: WORKFLOW_CL_ID,
     });
+    emitSnackbar('Claim resubmitted');
   }, [pushEvent, pushNotif]);
 
   const approveClaimAction = useCallback((comment?: string) => {
@@ -469,6 +482,7 @@ export function WorkflowProvider({ children }: { children: ReactNode }) {
       body: `Your claim of $${WORKFLOW_CAMPAIGN.totalAmount.toLocaleString()} for ${WORKFLOW_DEALER.name} has been approved.`,
       referenceId: WORKFLOW_CL_ID,
     });
+    emitSnackbar('Claim approved');
   }, [pushEvent, pushNotif]);
 
   const requestClaimRevision = useCallback((comment: string) => {
@@ -489,6 +503,7 @@ export function WorkflowProvider({ children }: { children: ReactNode }) {
       body: `${WORKFLOW_DEALER.name} claim was returned with OEM comments`,
       referenceId: WORKFLOW_CL_ID,
     });
+    emitSnackbar('Revision request sent');
   }, [pushEvent, pushNotif]);
 
   const processPayment = useCallback(() => {
@@ -508,6 +523,7 @@ export function WorkflowProvider({ children }: { children: ReactNode }) {
       body: `Payment of $${WORKFLOW_CAMPAIGN.totalAmount.toLocaleString()} for ${WORKFLOW_DEALER.name} has been processed successfully.`,
       referenceId: WORKFLOW_CL_ID,
     });
+    emitSnackbar('Payment processed');
   }, [pushEvent, pushNotif]);
 
   // ── Cycle archive + reset ─────────────────────────────────────────────────
@@ -597,6 +613,75 @@ export function WorkflowProvider({ children }: { children: ReactNode }) {
     }));
   }, []);
 
+  const addClaimDocument = useCallback((doc: WorkflowDocument) => {
+    setWorkflow(prev => ({
+      ...prev,
+      claim: { ...prev.claim, documents: [...prev.claim.documents, doc] },
+    }));
+  }, []);
+
+  const removeClaimDocument = useCallback((name: string) => {
+    setWorkflow(prev => ({
+      ...prev,
+      claim: {
+        ...prev.claim,
+        documents: prev.claim.documents.filter(d => d.name !== name),
+      },
+    }));
+  }, []);
+
+  // ── Dealer revision replies ───────────────────────────────────────────────
+  // The dealer can answer an OEM adjustment request with their own comment,
+  // which is appended to the history alongside the resubmit action. This lets
+  // the OEM see the dealer's explanation in the timeline, mirroring how the
+  // OEM's own comments are captured on approve/reject.
+
+  const resubmitPreApprovalWithComment = useCallback((comment: string) => {
+    setWorkflow(prev => ({
+      ...prev,
+      preApproval: {
+        ...prev.preApproval,
+        status: 'Resubmitted',
+        oemComment: null,
+      },
+    }));
+    pushEvent('preApproval', {
+      actor: 'Dealer',
+      actorName: WORKFLOW_DEALER.contact,
+      action: 'Pre-approval resubmitted after revision',
+      comment: comment.trim() || undefined,
+    });
+    pushNotif({
+      targetRole: 'oem',
+      type: 'pre-approval',
+      title: 'Pre-approval resubmitted',
+      body: `${WORKFLOW_DEALER.name} (${WORKFLOW_DEALER.code}) resubmitted the pre-approval for review`,
+      referenceId: WORKFLOW_PA_ID,
+    });
+    emitSnackbar('Pre-approval resubmitted');
+  }, [pushEvent, pushNotif]);
+
+  const resubmitClaimWithComment = useCallback((comment: string) => {
+    setWorkflow(prev => ({
+      ...prev,
+      claim: { ...prev.claim, status: 'Resubmitted', oemComment: null },
+    }));
+    pushEvent('claim', {
+      actor: 'Dealer',
+      actorName: WORKFLOW_DEALER.contact,
+      action: 'Claim resubmitted after revision',
+      comment: comment.trim() || undefined,
+    });
+    pushNotif({
+      targetRole: 'oem',
+      type: 'claim',
+      title: 'Claim resubmitted',
+      body: `${WORKFLOW_DEALER.name} (${WORKFLOW_DEALER.code}) resubmitted the claim for review`,
+      referenceId: WORKFLOW_CL_ID,
+    });
+    emitSnackbar('Claim resubmitted');
+  }, [pushEvent, pushNotif]);
+
   // ── Notification read state ───────────────────────────────────────────────
 
   const markNotificationRead = useCallback((id: string) => {
@@ -643,6 +728,10 @@ export function WorkflowProvider({ children }: { children: ReactNode }) {
         updatePreApprovalData,
         addPreApprovalDocument,
         removePreApprovalDocument,
+        addClaimDocument,
+        removeClaimDocument,
+        resubmitPreApprovalWithComment,
+        resubmitClaimWithComment,
         markNotificationRead,
         markAllRead,
         oemUnreadCount,

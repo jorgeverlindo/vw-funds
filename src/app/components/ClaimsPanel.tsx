@@ -1,9 +1,10 @@
-import { useState } from 'react';
-import { X, Eye, Star, MessageSquare, Banknote, RefreshCw } from 'lucide-react';
+import { useRef, useState } from 'react';
+import { X, Eye, Star, MessageSquare, Banknote, RefreshCw, Paperclip, Trash2 } from 'lucide-react';
 import { StatusChip, ClaimStatus } from './StatusChip';
 import { KeyValueRow } from './ui/KeyValueRow';
 import { useTranslation } from '../contexts/LanguageContext';
 import { WorkflowHistoryTimeline } from './WorkflowHistoryTimeline';
+import { DocumentPreviewModal } from './pre-approval/DocumentPreviewModal';
 import {
   useWorkflow,
   WORKFLOW_CL_ID,
@@ -51,12 +52,28 @@ export function ClaimsPanel({
     submitClaim,
     approveClaimAction,
     requestClaimRevision,
-    resubmitClaim,
+    resubmitClaimWithComment,
     processPayment,
     archiveAndReset,
+    addClaimDocument,
+    removeClaimDocument,
   } = useWorkflow();
 
   const [oemDraftComment, setOemDraftComment] = useState('');
+  const [dealerDraftComment, setDealerDraftComment] = useState('');
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [previewDoc, setPreviewDoc] = useState<typeof wfCL.documents[number] | null>(null);
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const sizeKB = file.size / 1024;
+    const sizeStr = sizeKB >= 1024 ? `${(sizeKB / 1024).toFixed(1)} MB` : `${sizeKB.toFixed(0)} KB`;
+    const ext = file.name.split('.').pop()?.toLowerCase() ?? 'file';
+    const url = URL.createObjectURL(file);
+    addClaimDocument({ name: file.name, size: sizeStr, type: ext, url });
+    e.target.value = '';
+  };
 
   // Detect live workflow item
   const isWorkflowItem = claim.id === WORKFLOW_CL_ID;
@@ -87,7 +104,8 @@ export function ClaimsPanel({
   // ── Dealer action handlers ────────────────────────────────────────────────
 
   const handleResubmit = () => {
-    resubmitClaim();
+    resubmitClaimWithComment(dealerDraftComment.trim());
+    setDealerDraftComment('');
     onClose();
   };
 
@@ -209,20 +227,29 @@ export function ClaimsPanel({
 
     if (liveStatus === 'Revision Requested') {
       return (
-        <div className="flex justify-end gap-3">
-          <button
-            onClick={onClose}
-            className="px-6 py-2 rounded-full text-sm font-medium text-[#111014]/60 hover:bg-black/5 transition-colors cursor-pointer"
-          >
-            {t('Close')}
-          </button>
-          <button
-            onClick={handleResubmit}
-            className="flex items-center gap-2 px-6 py-2 bg-[#473BAB] hover:bg-[#3D3295] text-white rounded-full text-sm font-medium transition-colors shadow-sm cursor-pointer"
-          >
-            <MessageSquare className="w-4 h-4" />
-            Resubmit Claim
-          </button>
+        <div className="space-y-3">
+          <textarea
+            value={dealerDraftComment}
+            onChange={(e) => setDealerDraftComment(e.target.value)}
+            placeholder="Add a reply to the OEM (optional)…"
+            rows={3}
+            className="w-full rounded-xl border border-[#E0E0E0] px-3 py-2 text-[13px] text-[#1f1d25] placeholder:text-[#9C99A9] resize-none focus:outline-none focus:border-[#473BAB] transition-colors"
+          />
+          <div className="flex justify-end gap-3">
+            <button
+              onClick={onClose}
+              className="px-6 py-2 rounded-full text-sm font-medium text-[#111014]/60 hover:bg-black/5 transition-colors cursor-pointer"
+            >
+              {t('Close')}
+            </button>
+            <button
+              onClick={handleResubmit}
+              className="flex items-center gap-2 px-6 py-2 bg-[#473BAB] hover:bg-[#3D3295] text-white rounded-full text-sm font-medium transition-colors shadow-sm cursor-pointer"
+            >
+              <MessageSquare className="w-4 h-4" />
+              Resubmit Claim
+            </button>
+          </div>
         </div>
       );
     }
@@ -322,11 +349,13 @@ export function ClaimsPanel({
           <section>
             <h3 className="text-[#1f1d25] text-[15px] font-medium mb-4">{t('Claim Overview')}</h3>
             <div className="space-y-0">
-              <KeyValueRow
-                label={t('Amount')}
-                value={`$${(isWorkflowItem ? WORKFLOW_CAMPAIGN.totalAmount : claim.amount).toLocaleString()}`}
-                valueClass="font-semibold text-lg"
-              />
+              {!isWorkflowItem && (
+                <KeyValueRow
+                  label={t('Amount')}
+                  value={`$${claim.amount.toLocaleString()}`}
+                  valueClass="font-semibold text-lg"
+                />
+              )}
               <KeyValueRow
                 label={t('Date Submitted')}
                 value={
@@ -369,7 +398,8 @@ export function ClaimsPanel({
             </div>
           </section>
 
-          {/* Channel Breakdown — workflow item only */}
+          {/* Channel Breakdown — workflow item only. Total Amount sits directly
+              underneath, so dealers read "line items → total" in one glance. */}
           {isWorkflowItem && (
             <section>
               <h3 className="text-[#1f1d25] text-[15px] font-medium mb-3">Channel Breakdown</h3>
@@ -377,6 +407,12 @@ export function ClaimsPanel({
                 {Object.entries(WORKFLOW_CAMPAIGN.channelBreakdown).map(([ch, amt]) => (
                   <KeyValueRow key={ch} label={ch} value={`$${amt.toLocaleString()}`} />
                 ))}
+                <div className="flex items-center justify-between py-3 border-t-2 border-[#473BAB]/20 mt-1">
+                  <span className="text-[#1f1d25] text-[13px] font-medium">{t('Total Amount')}</span>
+                  <span className="text-[#473BAB] text-[15px] font-bold">
+                    ${WORKFLOW_CAMPAIGN.totalAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </span>
+                </div>
               </div>
             </section>
           )}
@@ -393,56 +429,150 @@ export function ClaimsPanel({
             </div>
           </section>
 
+          {/* Visual Assets — horizontal thumbnail gallery, same pattern as PreApprovalPanel */}
+          {isWorkflowItem && (() => {
+            const IMAGE_EXTS = new Set(['png', 'jpg', 'jpeg', 'gif', 'webp', 'svg']);
+            const imageDocs = wfCL.documents.filter(
+              d => d.url && IMAGE_EXTS.has(d.type.toLowerCase()),
+            );
+            if (imageDocs.length === 0) return null;
+            return (
+              <section>
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="text-[#1f1d25] text-[15px] font-medium">Visual Assets</h3>
+                  <span className="text-[11px] text-[#686576]">
+                    {imageDocs.length} {imageDocs.length === 1 ? 'item' : 'items'}
+                  </span>
+                </div>
+                <div className="flex overflow-x-auto gap-2 pb-2 custom-scrollbar snap-x">
+                  {imageDocs.map((doc, idx) => (
+                    <div
+                      key={doc.name + idx}
+                      className="w-[118px] h-[118px] rounded-xl overflow-hidden border border-[rgba(0,0,0,0.12)] shrink-0 snap-start relative group bg-[#f4f5f6]"
+                    >
+                      <img
+                        src={doc.url}
+                        alt={doc.name}
+                        className="w-full h-full object-cover cursor-pointer"
+                        onClick={() => setPreviewDoc(doc)}
+                      />
+                      {userType === 'dealer' && (
+                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center pointer-events-none">
+                          <button
+                            onClick={() => removeClaimDocument(doc.name)}
+                            className="p-1.5 bg-white rounded-full text-[#686576] hover:text-red-500 transition-colors shadow pointer-events-auto"
+                            aria-label={`Remove ${doc.name}`}
+                          >
+                            <X className="w-4 h-4" />
+                          </button>
+                        </div>
+                      )}
+                      <div className="absolute top-1 left-1 bg-black/40 text-white text-[9px] font-bold rounded px-1 leading-tight pointer-events-none">
+                        {idx + 1}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </section>
+            );
+          })()}
+
           {/* Documents */}
           <section>
-            <h3 className="text-[#1f1d25] text-[15px] font-medium mb-3">{t('Documents')}</h3>
-            <div className="space-y-2">
-              {(isWorkflowItem ? wfCL.documents : []).map((doc, idx) => (
-                <div
-                  key={idx}
-                  className="border border-[#E0E0E0] rounded-lg p-0 flex overflow-hidden bg-white max-w-md"
-                >
-                  <div className="w-[72px] bg-[#F5F5F5] flex items-center justify-center border-r border-[#E0E0E0] shrink-0">
-                    <div className="w-10 h-12 bg-white border border-[#E0E0E0] shadow-sm flex items-center justify-center">
-                      <span className="text-[9px] font-bold text-[#FF5252]">PDF</span>
-                    </div>
-                  </div>
-                  <div className="flex-1 p-3 flex items-center justify-between min-w-0">
-                    <div className="flex flex-col min-w-0 pr-3">
-                      <span className="text-[#1f1d25] text-[13px] font-medium truncate mb-0.5">
-                        {doc.name}
-                      </span>
-                      <span className="text-[#686576] text-[11px] uppercase tracking-wide">
-                        {doc.type.toUpperCase()} | {doc.size}
-                      </span>
-                    </div>
-                    <button className="text-[#686576] hover:text-[#1f1d25] p-2 hover:bg-gray-50 rounded-full transition-colors cursor-pointer">
-                      <Eye className="w-5 h-5" />
-                    </button>
-                  </div>
-                </div>
-              ))}
-              {!isWorkflowItem && (
-                <div className="border border-[#E0E0E0] rounded-lg p-0 flex overflow-hidden bg-white max-w-md">
-                  <div className="w-[72px] bg-[#F5F5F5] flex items-center justify-center border-r border-[#E0E0E0] shrink-0">
-                    <div className="w-10 h-12 bg-white border border-[#E0E0E0] shadow-sm flex items-center justify-center">
-                      <span className="text-[9px] font-bold text-[#FF5252]">PDF</span>
-                    </div>
-                  </div>
-                  <div className="flex-1 p-3 flex items-center justify-between min-w-0">
-                    <div className="flex flex-col min-w-0 pr-3">
-                      <span className="text-[#1f1d25] text-[13px] font-medium truncate mb-0.5">
-                        Invoice_{claim.id}.pdf
-                      </span>
-                      <span className="text-[#686576] text-[11px] uppercase tracking-wide">PDF | 1.2 MB</span>
-                    </div>
-                    <button className="text-[#686576] hover:text-[#1f1d25] p-2 hover:bg-gray-50 rounded-full transition-colors cursor-pointer">
-                      <Eye className="w-5 h-5" />
-                    </button>
-                  </div>
-                </div>
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-[#1f1d25] text-[15px] font-medium">{t('Documents')}</h3>
+              {isWorkflowItem && userType === 'dealer' && (
+                <>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept=".pdf,.png,.jpg,.jpeg,.doc,.docx"
+                    className="absolute w-0 h-0 opacity-0 overflow-hidden pointer-events-none"
+                    onChange={handleFileChange}
+                    tabIndex={-1}
+                  />
+                  <button
+                    onClick={() => fileInputRef.current?.click()}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-[#E0E0E0] hover:bg-gray-50 text-[13px] text-[#686576] transition-colors cursor-pointer"
+                  >
+                    <Paperclip className="w-3.5 h-3.5" />
+                    {t('Add Document')}
+                  </button>
+                </>
               )}
             </div>
+
+            {(isWorkflowItem ? wfCL.documents.length > 0 : true) ? (
+              <div className="space-y-2">
+                {(isWorkflowItem ? wfCL.documents : []).map((doc, idx) => (
+                  <div
+                    key={idx}
+                    className="border border-[#E0E0E0] rounded-lg p-0 flex overflow-hidden bg-white max-w-md"
+                  >
+                    <div className="w-[72px] bg-[#F5F5F5] flex items-center justify-center border-r border-[#E0E0E0] shrink-0">
+                      <div className="w-10 h-12 bg-white border border-[#E0E0E0] shadow-sm flex items-center justify-center">
+                        <span className="text-[9px] font-bold text-[#FF5252]">{doc.type.toUpperCase().slice(0, 4)}</span>
+                      </div>
+                    </div>
+                    <div className="flex-1 p-3 flex items-center justify-between min-w-0">
+                      <div className="flex flex-col min-w-0 pr-3">
+                        <span className="text-[#1f1d25] text-[13px] font-medium break-all leading-snug mb-0.5">
+                          {doc.name}
+                        </span>
+                        <span className="text-[#686576] text-[11px] uppercase tracking-wide">
+                          {doc.type.toUpperCase()} | {doc.size}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <button
+                          onClick={() => setPreviewDoc(doc)}
+                          className="text-[#686576] hover:text-[#473BAB] p-2 hover:bg-[#473BAB]/8 rounded-full transition-colors cursor-pointer"
+                        >
+                          <Eye className="w-4 h-4" />
+                        </button>
+                        {isWorkflowItem && userType === 'dealer' && (
+                          <button
+                            onClick={() => removeClaimDocument(doc.name)}
+                            className="text-[#9C99A9] hover:text-[#D2323F] p-2 hover:bg-red-50 rounded-full transition-colors cursor-pointer"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+                {!isWorkflowItem && (
+                  <div className="border border-[#E0E0E0] rounded-lg p-0 flex overflow-hidden bg-white max-w-md">
+                    <div className="w-[72px] bg-[#F5F5F5] flex items-center justify-center border-r border-[#E0E0E0] shrink-0">
+                      <div className="w-10 h-12 bg-white border border-[#E0E0E0] shadow-sm flex items-center justify-center">
+                        <span className="text-[9px] font-bold text-[#FF5252]">PDF</span>
+                      </div>
+                    </div>
+                    <div className="flex-1 p-3 flex items-center justify-between min-w-0">
+                      <div className="flex flex-col min-w-0 pr-3">
+                        <span className="text-[#1f1d25] text-[13px] font-medium truncate mb-0.5">
+                          Invoice_{claim.id}.pdf
+                        </span>
+                        <span className="text-[#686576] text-[11px] uppercase tracking-wide">PDF | 1.2 MB</span>
+                      </div>
+                      <button className="text-[#686576] hover:text-[#1f1d25] p-2 hover:bg-gray-50 rounded-full transition-colors cursor-pointer">
+                        <Eye className="w-5 h-5" />
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="flex flex-col items-center gap-2 py-6 border border-dashed border-[#E0E0E0] rounded-xl text-center">
+                <Paperclip className="w-6 h-6 text-[#9C99A9]" />
+                <p className="text-[13px] text-[#9C99A9]">
+                  {isWorkflowItem && userType === 'dealer'
+                    ? 'No documents attached yet. Click Add Document to attach.'
+                    : t('No documents attached')}
+                </p>
+              </div>
+            )}
           </section>
 
           {/* Workflow Activity Timeline */}
@@ -457,6 +587,10 @@ export function ClaimsPanel({
       <div className="p-6 border-t border-[#E0E0E0] bg-white shrink-0">
         {renderFooter()}
       </div>
+
+      {previewDoc && (
+        <DocumentPreviewModal doc={previewDoc} onClose={() => setPreviewDoc(null)} />
+      )}
     </div>
   );
 }

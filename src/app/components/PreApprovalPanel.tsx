@@ -28,7 +28,7 @@ export function PreApprovalPanel({
     workflow,
     approvePreApproval,
     requestPreApprovalRevision,
-    resubmitPreApproval,
+    resubmitPreApprovalWithComment,
     createClaim,
     addPreApprovalDocument,
     removePreApprovalDocument,
@@ -54,6 +54,7 @@ export function PreApprovalPanel({
   const [previewDoc, setPreviewDoc] = useState<typeof wfPA.documents[number] | null>(null);
 
   const [oemDraftComment, setOemDraftComment] = useState('');
+  const [dealerDraftComment, setDealerDraftComment] = useState('');
 
   // Determine whether this is the live workflow item
   // Matches the CURRENT active cycle — ID changes each time archiveAndReset is called
@@ -86,7 +87,8 @@ export function PreApprovalPanel({
   };
 
   const handleResubmit = () => {
-    resubmitPreApproval();
+    resubmitPreApprovalWithComment(dealerDraftComment.trim());
+    setDealerDraftComment('');
     onClose();
   };
 
@@ -186,20 +188,29 @@ export function PreApprovalPanel({
 
     if (liveStatus === 'Revision Requested') {
       return (
-        <div className="flex justify-end gap-3">
-          <button
-            onClick={onClose}
-            className="px-6 py-2 rounded-full text-sm font-medium text-[#111014]/60 hover:bg-black/5 transition-colors cursor-pointer"
-          >
-            {t('Close')}
-          </button>
-          <button
-            onClick={handleResubmit}
-            className="flex items-center gap-2 px-6 py-2 bg-[#473BAB] hover:bg-[#3D3295] text-white rounded-full text-sm font-medium transition-colors shadow-sm cursor-pointer"
-          >
-            <MessageSquare className="w-4 h-4" />
-            Resubmit for Review
-          </button>
+        <div className="space-y-3">
+          <textarea
+            value={dealerDraftComment}
+            onChange={(e) => setDealerDraftComment(e.target.value)}
+            placeholder="Add a reply to the OEM (optional)…"
+            rows={3}
+            className="w-full rounded-xl border border-[#E0E0E0] px-3 py-2 text-[13px] text-[#1f1d25] placeholder:text-[#9C99A9] resize-none focus:outline-none focus:border-[#473BAB] transition-colors"
+          />
+          <div className="flex justify-end gap-3">
+            <button
+              onClick={onClose}
+              className="px-6 py-2 rounded-full text-sm font-medium text-[#111014]/60 hover:bg-black/5 transition-colors cursor-pointer"
+            >
+              {t('Close')}
+            </button>
+            <button
+              onClick={handleResubmit}
+              className="flex items-center gap-2 px-6 py-2 bg-[#473BAB] hover:bg-[#3D3295] text-white rounded-full text-sm font-medium transition-colors shadow-sm cursor-pointer"
+            >
+              <MessageSquare className="w-4 h-4" />
+              Resubmit for Review
+            </button>
+          </div>
         </div>
       );
     }
@@ -295,10 +306,7 @@ export function PreApprovalPanel({
               />
               <KeyValueRow label={t('Initiative Type')} value={t(preApproval.initiativeType)} />
               {isWorkflowItem && (
-                <>
-                  <KeyValueRow label="Activity Period" value={wfPA.activityPeriod} />
-                  <KeyValueRow label="Total Amount" value={`$${wfPA.totalAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`} />
-                </>
+                <KeyValueRow label="Activity Period" value={wfPA.activityPeriod} />
               )}
               <KeyValueRow
                 label={t('How many claims will you be making')}
@@ -327,6 +335,12 @@ export function PreApprovalPanel({
                     />
                   );
                 })}
+                <div className="flex items-center justify-between py-3 border-t-2 border-[#473BAB]/20 mt-1">
+                  <span className="text-[#1f1d25] text-[13px] font-medium">{t('Total Amount')}</span>
+                  <span className="text-[#473BAB] text-[15px] font-bold">
+                    ${wfPA.totalAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </span>
+                </div>
               </div>
             </section>
           )}

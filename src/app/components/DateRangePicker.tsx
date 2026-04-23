@@ -113,7 +113,25 @@ export function DateRangePicker({ initialRange, onApply, onCancel, className }: 
           <DayPicker
             mode="range"
             selected={selectedRange}
-            onSelect={setSelectedRange}
+            onDayClick={(day) => {
+              // Two-click pattern: once the range is complete, the next click
+              // starts a fresh range. react-day-picker's default tries to
+              // extend the existing range, which makes the "from" date feel
+              // stuck — especially when the picker opens pre-populated.
+              if (selectedRange?.from && selectedRange?.to) {
+                setSelectedRange({ from: day, to: undefined });
+                return;
+              }
+              if (selectedRange?.from && !selectedRange.to) {
+                if (day < selectedRange.from) {
+                  setSelectedRange({ from: day, to: undefined });
+                } else {
+                  setSelectedRange({ from: selectedRange.from, to: day });
+                }
+                return;
+              }
+              setSelectedRange({ from: day, to: undefined });
+            }}
             showOutsideDays
             locale={dateLocale}
             components={{

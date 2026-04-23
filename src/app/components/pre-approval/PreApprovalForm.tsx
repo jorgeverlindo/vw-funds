@@ -83,21 +83,39 @@ export function PreApprovalForm({ onClose, onDone }: PreApprovalFormProps) {
   const { t } = useTranslation();
   const { workflow, addPreApprovalDocument, removePreApprovalDocument, updatePreApprovalData } = useWorkflow();
 
+  // Hydrate form defaults from the workflow so reopening the drawer preserves
+  // whatever the dealer already filled in. Without this, the sync effect
+  // dispatches empty defaults and wipes the context on remount.
+  const wfPA = workflow.preApproval;
+  const initialMediaTypeValue = MEDIA_TYPE_OPTIONS.find(o => o.label === wfPA.mediaType)?.value ?? '';
+
   const { control, handleSubmit, watch, setValue, formState: { errors } } = useForm<FormValues>({
     defaultValues: {
       title:        '',
       fund:         '',
       dealershipName: '',
       initiativeType: '',
-      mediaType:    '',
-      claimCount:   '1',
-      details:      '',
+      mediaType:    initialMediaTypeValue,
+      claimCount:   String(Math.max(1, wfPA.claimLines.length)),
+      details:      wfPA.details ?? '',
       contactInfo:  '',
     },
   });
 
   // ── Date range state ──────────────────────────────────────────────────────
-  const [activityRange, setActivityRange] = useState<DateRange | undefined>(DEFAULT_RANGE);
+  // Parse the stored `activityPeriod` string ("Mar 1, 2026 – Mar 31, 2026")
+  // back into a DateRange so the picker opens on the saved selection.
+  const parseActivityPeriod = (s: string): DateRange | undefined => {
+    if (!s) return undefined;
+    const [fromStr, toStr] = s.split(' – ');
+    const from = fromStr ? new Date(fromStr) : undefined;
+    const to   = toStr   ? new Date(toStr)   : undefined;
+    if (!from || isNaN(from.getTime())) return undefined;
+    return { from, to: to && !isNaN(to.getTime()) ? to : undefined };
+  };
+  const [activityRange, setActivityRange] = useState<DateRange | undefined>(
+    () => parseActivityPeriod(wfPA.activityPeriod) ?? DEFAULT_RANGE,
+  );
   const [showDatePicker, setShowDatePicker] = useState(false);
   const activityBtnRef = useRef<HTMLButtonElement>(null);
   // "bottom" positions the picker above the button; "left" aligns it right-edge of the 600px panel
@@ -115,9 +133,14 @@ export function PreApprovalForm({ onClose, onDone }: PreApprovalFormProps) {
   };
 
   // ── Claim lines state ─────────────────────────────────────────────────────
-  // User can freely add/remove rows; the claimCount select below stays in sync
-  // with the actual list length so both surfaces agree.
-  const [claimLines, setClaimLines] = useState<ClaimLine[]>([{ description: '', amount: '' }]);
+  // Hydrate from the workflow so reopening the drawer preserves prior rows —
+  // otherwise Add Activity looks like it "edits the first row" because the
+  // sync effect immediately overwrites context with the empty seed.
+  const [claimLines, setClaimLines] = useState<ClaimLine[]>(() =>
+    workflow.preApproval.claimLines.length > 0
+      ? workflow.preApproval.claimLines
+      : [{ description: '', amount: '' }]
+  );
 
   // Keep the claimCount select mirrored to the current row count
   useEffect(() => {

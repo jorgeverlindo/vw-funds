@@ -35,11 +35,19 @@ export function PaymentStatusTable() {
         </div>
       </div>
 
+      {/* Fixed layout so columns keep their proportions regardless of container
+          width — avoids the "sea of space" when the card is wide. */}
       <div className="border border-[rgba(0,0,0,0.12)] rounded-lg overflow-hidden">
-        <table className="w-full">
+        <table className="w-full table-fixed">
+          <colgroup>
+            <col style={{ width: '22%', minWidth: 120 }} />
+            <col style={{ width: '26%', minWidth: 120 }} />
+            <col style={{ width: '26%', minWidth: 120 }} />
+            <col style={{ width: '26%', minWidth: 120 }} />
+          </colgroup>
           <thead>
             <tr className="bg-[#f9fafa] border-b border-[rgba(0,0,0,0.12)]">
-              <th className="px-4 py-3 text-left w-[120px]">
+              <th className="px-4 py-3 text-left">
                 <span className="text-[12px] font-medium text-[#686576] tracking-[0.15px]">{t('Claim ID')}</span>
               </th>
               <th className="px-4 py-3 text-left">
@@ -74,7 +82,7 @@ export function PaymentStatusTable() {
                 key={row.id || index}
                 className="border-b border-[rgba(0,0,0,0.12)] last:border-0 hover:bg-[#f9fafa]/50 transition-colors"
               >
-                <td className="px-4 py-3 w-[120px]">
+                <td className="px-4 py-3">
                   <span className="text-[12px] text-[#473BAB] font-medium tracking-[0.17px]">{row.id || '—'}</span>
                 </td>
                 <td className="px-4 py-3">

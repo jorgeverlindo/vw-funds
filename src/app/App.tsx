@@ -4,6 +4,7 @@ import { LanguageProvider } from './contexts/LanguageContext';
 import { ClientProvider } from './contexts/ClientContext';
 import { FilterProvider } from './contexts/FilterContext';
 import { WorkflowProvider } from './contexts/WorkflowContext';
+import { SnackbarHost } from './components/Snackbar';
 
 export default function App() {
   return (
@@ -12,6 +13,7 @@ export default function App() {
         <FilterProvider>
           <WorkflowProvider>
             <RouterProvider router={router} />
+            <SnackbarHost />
           </WorkflowProvider>
         </FilterProvider>
       </ClientProvider>

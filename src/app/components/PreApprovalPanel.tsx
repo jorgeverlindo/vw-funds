@@ -10,6 +10,7 @@ import {
   WORKFLOW_PA_ID,
   WORKFLOW_CAMPAIGN,
 } from '../contexts/WorkflowContext';
+import { DocumentPreviewModal } from './pre-approval/DocumentPreviewModal';
 
 interface PreApprovalPanelProps {
   preApproval: PreApproval;
@@ -54,6 +55,7 @@ export function PreApprovalPanel({
 
   // Visual carousel state
   const [carouselIndex, setCarouselIndex] = useState(0);
+  const [previewDoc, setPreviewDoc] = useState<typeof wfPA.documents[number] | null>(null);
 
   const [oemDraftComment, setOemDraftComment] = useState('');
 
@@ -221,6 +223,7 @@ export function PreApprovalPanel({
   // ── Render ────────────────────────────────────────────────────────────────
 
   return (
+    <>
     <div className="flex flex-col h-full bg-white">
       {/* Header */}
       <div className="flex items-center justify-between px-8 py-5 border-b border-[#E0E0E0] shrink-0">
@@ -296,8 +299,8 @@ export function PreApprovalPanel({
               <KeyValueRow label={t('Initiative Type')} value={t(preApproval.initiativeType)} />
               {isWorkflowItem && (
                 <>
-                  <KeyValueRow label="Activity Period" value={`${WORKFLOW_CAMPAIGN.activityStartDate} – ${WORKFLOW_CAMPAIGN.activityEndDate}`} />
-                  <KeyValueRow label="Total Amount" value={`$${WORKFLOW_CAMPAIGN.totalAmount.toLocaleString()}`} />
+                  <KeyValueRow label="Activity Period" value={wfPA.activityPeriod} />
+                  <KeyValueRow label="Total Amount" value={`$${wfPA.totalAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`} />
                 </>
               )}
               <KeyValueRow
@@ -468,13 +471,16 @@ export function PreApprovalPanel({
                     </div>
                     <div className="flex-1 p-3 flex items-center justify-between min-w-0">
                       <div className="flex flex-col min-w-0 pr-3">
-                        <span className="text-[#1f1d25] text-[13px] font-medium truncate mb-0.5">{doc.name}</span>
+                        <span className="text-[#1f1d25] text-[13px] font-medium break-all leading-snug mb-0.5">{doc.name}</span>
                         <span className="text-[#686576] text-[11px] uppercase tracking-wide">
                           {doc.type.toUpperCase()} | {doc.size}
                         </span>
                       </div>
                       <div className="flex items-center gap-1">
-                        <button className="text-[#686576] hover:text-[#1f1d25] p-2 hover:bg-gray-50 rounded-full transition-colors cursor-pointer">
+                        <button
+                          onClick={() => setPreviewDoc(doc)}
+                          className="text-[#686576] hover:text-[#473BAB] p-2 hover:bg-[#473BAB]/8 rounded-full transition-colors cursor-pointer"
+                        >
                           <Eye className="w-4 h-4" />
                         </button>
                         {/* Remove button — dealer on workflow item only */}
@@ -535,5 +541,9 @@ export function PreApprovalPanel({
         {renderFooter()}
       </div>
     </div>
+    {previewDoc && (
+      <DocumentPreviewModal doc={previewDoc} onClose={() => setPreviewDoc(null)} />
+    )}
+    </>
   );
 }

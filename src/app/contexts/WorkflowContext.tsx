@@ -104,6 +104,9 @@ export interface WorkflowPreApprovalState {
   documents: WorkflowDocument[];
   submittedAt: string | null;
   claimsCount: number;
+  /** Dynamic totals set from the pre-approval form */
+  totalAmount: number;
+  activityPeriod: string;
 }
 
 export interface WorkflowClaimState {
@@ -159,6 +162,7 @@ interface WorkflowContextType {
 
   // Cycle management
   archiveAndReset: () => void;
+  updatePreApprovalData: (totalAmount: number, activityPeriod: string) => void;
 
   // Document management
   addPreApprovalDocument: (doc: WorkflowDocument) => void;
@@ -211,6 +215,8 @@ const INITIAL_STATE: WorkflowState = {
     ],
     submittedAt: '2026-04-20T09:30:00.000Z',
     claimsCount: 0,
+    totalAmount: WORKFLOW_CAMPAIGN.totalAmount,
+    activityPeriod: `${WORKFLOW_CAMPAIGN.activityStartDate} – ${WORKFLOW_CAMPAIGN.activityEndDate}`,
   },
 
   claim: {
@@ -515,6 +521,8 @@ export function WorkflowProvider({ children }: { children: ReactNode }) {
         documents: [],
         submittedAt: null,
         claimsCount: 0,
+        totalAmount: WORKFLOW_CAMPAIGN.totalAmount,
+        activityPeriod: `${WORKFLOW_CAMPAIGN.activityStartDate} – ${WORKFLOW_CAMPAIGN.activityEndDate}`,
       };
 
       const freshClaim: WorkflowClaimState = {
@@ -538,6 +546,13 @@ export function WorkflowProvider({ children }: { children: ReactNode }) {
         claim:          freshClaim,
       };
     });
+  }, []);
+
+  const updatePreApprovalData = useCallback((totalAmount: number, activityPeriod: string) => {
+    setWorkflow(prev => ({
+      ...prev,
+      preApproval: { ...prev.preApproval, totalAmount, activityPeriod },
+    }));
   }, []);
 
   // ── Document management ───────────────────────────────────────────────────
@@ -605,6 +620,7 @@ export function WorkflowProvider({ children }: { children: ReactNode }) {
         requestClaimRevision,
         processPayment,
         archiveAndReset,
+        updatePreApprovalData,
         addPreApprovalDocument,
         removePreApprovalDocument,
         markNotificationRead,

@@ -70,7 +70,7 @@ export function DateRangePicker({ initialRange, onApply, onCancel, className }: 
       </div>
 
       {/* Large Range Display */}
-      <div className="text-[32px] font-normal text-[#1f1d25] mb-8">
+      <div className="text-[26px] font-normal text-[#1f1d25] mb-6">
         {formattedRange}
       </div>
 
@@ -125,9 +125,9 @@ export function DateRangePicker({ initialRange, onApply, onCancel, className }: 
               caption_label: "text-base font-medium text-[#1f1d25]",
               nav: "flex items-center gap-1",
               nav_button: "p-1 hover:bg-gray-100 rounded-full",
-              head_cell: "text-[11px] font-medium text-[#686576] w-10 h-10",
+              head_cell: "text-[11px] font-medium text-[#686576] w-10 h-8",
               cell: "text-center text-sm p-0 relative [&:has([aria-selected])]:bg-[#EBE9FE] first:[&:has([aria-selected])]:rounded-l-full last:[&:has([aria-selected])]:rounded-r-full focus-within:relative focus-within:z-20",
-              day: "w-10 h-10 p-0 font-normal aria-selected:opacity-100 rounded-full hover:bg-gray-100",
+              day: "w-10 h-10 p-0 font-normal text-[12px] aria-selected:opacity-100 rounded-full hover:bg-gray-100",
               day_range_start: "day-range-start",
               day_range_end: "day-range-end",
               day_selected: "bg-[#6356E1] text-white hover:bg-[#6356E1] hover:text-white focus:bg-[#6356E1] focus:text-white",

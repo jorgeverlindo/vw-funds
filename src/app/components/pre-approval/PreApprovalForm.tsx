@@ -9,6 +9,7 @@ import { CustomSelect, Option } from '@/app/components/ui/CustomSelect';
 import { useTranslation } from '@/app/contexts/LanguageContext';
 import { useWorkflow } from '@/app/contexts/WorkflowContext';
 import { DateRangePicker } from '../DateRangePicker';
+import type { ClaimLineItem } from '@/app/contexts/WorkflowContext';
 import { DocumentPreviewModal } from './DocumentPreviewModal';
 
 // ─── Types ─────────────────────────────────────────────────────────────────
@@ -24,10 +25,8 @@ interface FormValues {
   contactInfo: string;
 }
 
-interface ClaimLine {
-  description: string;
-  amount: string;
-}
+// Re-use the context type so they're always compatible
+type ClaimLine = ClaimLineItem;
 
 interface PreApprovalFormProps {
   onClose?: () => void;
@@ -93,12 +92,16 @@ export function PreApprovalForm({ onClose, onDone }: PreApprovalFormProps) {
   const [activityRange, setActivityRange] = useState<DateRange | undefined>(DEFAULT_RANGE);
   const [showDatePicker, setShowDatePicker] = useState(false);
   const activityBtnRef = useRef<HTMLButtonElement>(null);
-  const [pickerAnchor, setPickerAnchor] = useState({ top: 0, left: 0 });
+  // "bottom" positions the picker above the button; "left" aligns it right-edge of the 600px panel
+  const [pickerAnchor, setPickerAnchor] = useState({ bottom: 0, left: 0 });
 
   const openDatePicker = () => {
     if (activityBtnRef.current) {
       const rect = activityBtnRef.current.getBoundingClientRect();
-      setPickerAnchor({ top: rect.bottom + 4, left: Math.max(8, rect.right - 380) });
+      setPickerAnchor({
+        bottom: window.innerHeight - rect.top + 6,   // 6px gap above button top
+        left: Math.max(8, rect.right - 600),         // right-align to button, min 8px from left
+      });
     }
     setShowDatePicker(true);
   };
@@ -123,11 +126,23 @@ export function PreApprovalForm({ onClose, onDone }: PreApprovalFormProps) {
   const updateLine = (i: number, field: keyof ClaimLine, value: string) =>
     setClaimLines(prev => prev.map((l, j) => (j === i ? { ...l, [field]: value } : l)));
 
+  // ── Watch extra fields for context sync ──────────────────────────────────
+  const watchedMediaType = watch('mediaType');
+  const watchedDetails   = watch('details');
+
   // ── Sync with WorkflowContext ──────────────────────────────────────────────
   useEffect(() => {
-    updatePreApprovalData(computedTotal, formatRange(activityRange));
+    const mediaTypeLabel =
+      MEDIA_TYPE_OPTIONS.find(o => o.value === watchedMediaType)?.label ?? watchedMediaType ?? '';
+    updatePreApprovalData(
+      computedTotal,
+      formatRange(activityRange),
+      claimLines,
+      mediaTypeLabel,
+      watchedDetails ?? '',
+    );
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [computedTotal, activityRange]);
+  }, [computedTotal, activityRange, claimLines, watchedMediaType, watchedDetails]);
 
   // ── Expanded info ─────────────────────────────────────────────────────────
   const [isExpanded, setIsExpanded] = useState(false);
@@ -574,7 +589,7 @@ export function PreApprovalForm({ onClose, onDone }: PreApprovalFormProps) {
         >
           <div
             className="fixed"
-            style={{ top: pickerAnchor.top, left: pickerAnchor.left }}
+            style={{ bottom: pickerAnchor.bottom, left: pickerAnchor.left }}
             onClick={e => e.stopPropagation()}
           >
             <DateRangePicker

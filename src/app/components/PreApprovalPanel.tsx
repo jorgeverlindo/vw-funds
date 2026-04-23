@@ -8,7 +8,6 @@ import { WorkflowHistoryTimeline } from './WorkflowHistoryTimeline';
 import {
   useWorkflow,
   WORKFLOW_PA_ID,
-  WORKFLOW_CAMPAIGN,
 } from '../contexts/WorkflowContext';
 import { DocumentPreviewModal } from './pre-approval/DocumentPreviewModal';
 
@@ -46,9 +45,9 @@ export function PreApprovalPanel({
       ? `${(sizeKB / 1024).toFixed(1)} MB`
       : `${sizeKB.toFixed(0)} KB`;
     const ext = file.name.split('.').pop()?.toLowerCase() ?? 'file';
-    // For image files, create a blob URL so the carousel can display a preview
-    const imageUrl = file.type.startsWith('image/') ? URL.createObjectURL(file) : undefined;
-    addPreApprovalDocument({ name: file.name, size: sizeStr, type: ext, url: imageUrl });
+    // All file types get a blob URL — images appear in carousel, PDFs open in preview modal
+    const url = URL.createObjectURL(file);
+    addPreApprovalDocument({ name: file.name, size: sizeStr, type: ext, url });
     // Reset so the same file can be re-added if removed
     e.target.value = '';
   };
@@ -315,14 +314,21 @@ export function PreApprovalPanel({
             </div>
           </section>
 
-          {/* Channel Breakdown — workflow item only */}
-          {isWorkflowItem && (
+          {/* Channel Breakdown — dynamic from form claim lines */}
+          {isWorkflowItem && wfPA.claimLines.length > 0 && (
             <section>
               <h3 className="text-[#1f1d25] text-[15px] font-medium mb-3">Channel Breakdown</h3>
               <div className="space-y-0">
-                {Object.entries(WORKFLOW_CAMPAIGN.channelBreakdown).map(([ch, amt]) => (
-                  <KeyValueRow key={ch} label={ch} value={`$${amt.toLocaleString()}`} />
-                ))}
+                {wfPA.claimLines.map((line, idx) => {
+                  const amt = parseFloat(line.amount) || 0;
+                  return (
+                    <KeyValueRow
+                      key={idx}
+                      label={line.description || `Activity ${idx + 1}`}
+                      value={`$${amt.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+                    />
+                  );
+                })}
               </div>
             </section>
           )}
@@ -333,21 +339,21 @@ export function PreApprovalPanel({
               {t('MEDIA TYPE')}
             </h3>
             <div className="flex flex-wrap gap-2">
-              {['SEM', 'Display', 'CRM'].map((type) => {
-                const isActive = preApproval.mediaType.includes(type);
-                return (
+              {(() => {
+                // Workflow item: show the selected media type from the form
+                const mediaLabel = isWorkflowItem ? wfPA.mediaType : preApproval.mediaType;
+                if (!mediaLabel) return null;
+                // If it's a comma-separated list, split; otherwise show as a single chip
+                const chips = mediaLabel.split(',').map(s => s.trim()).filter(Boolean);
+                return chips.map(chip => (
                   <span
-                    key={type}
-                    className={`px-3 py-1.5 rounded-md text-[13px] font-medium transition-colors ${
-                      isActive
-                        ? 'bg-[#F3F4F6] text-[#1f1d25]'
-                        : 'bg-transparent text-[#9C99A9] border border-[#E0E0E0]'
-                    }`}
+                    key={chip}
+                    className="px-3 py-1.5 rounded-md text-[13px] font-medium bg-[#F3F4F6] text-[#1f1d25]"
                   >
-                    {t(type)}
+                    {chip}
                   </span>
-                );
-              })}
+                ));
+              })()}
             </div>
           </section>
 
@@ -358,7 +364,7 @@ export function PreApprovalPanel({
               <div className="flex justify-between items-start py-4">
                 <span className="text-[#686576] text-[13px] font-normal w-1/3">{t('Description')}</span>
                 <span className="text-[#1f1d25] text-[13px] font-normal w-2/3 text-right whitespace-pre-wrap leading-relaxed">
-                  {isWorkflowItem ? WORKFLOW_CAMPAIGN.description : preApproval.description}
+                  {isWorkflowItem ? wfPA.details : preApproval.description}
                 </span>
               </div>
             </div>
@@ -366,7 +372,10 @@ export function PreApprovalPanel({
 
           {/* Visual Assets Carousel — shown when the PA has image documents */}
           {isWorkflowItem && (() => {
-            const imageDocs = wfPA.documents.filter(d => d.url);
+            const IMAGE_EXTS = new Set(['png', 'jpg', 'jpeg', 'gif', 'webp', 'svg']);
+          const imageDocs = wfPA.documents.filter(
+            d => d.url && IMAGE_EXTS.has(d.type.toLowerCase()),
+          );
             if (imageDocs.length === 0) return null;
             const safeIdx = Math.min(carouselIndex, imageDocs.length - 1);
             return (

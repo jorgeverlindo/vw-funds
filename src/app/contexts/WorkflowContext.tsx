@@ -67,6 +67,11 @@ export type ClaimWorkflowStatus =
 
 // ─── Supporting types ────────────────────────────────────────────────────────
 
+export interface ClaimLineItem {
+  description: string;
+  amount: string;
+}
+
 export interface WorkflowDocument {
   name: string;
   size: string;
@@ -104,9 +109,12 @@ export interface WorkflowPreApprovalState {
   documents: WorkflowDocument[];
   submittedAt: string | null;
   claimsCount: number;
-  /** Dynamic totals set from the pre-approval form */
+  /** Dynamic fields set from the pre-approval form */
   totalAmount: number;
   activityPeriod: string;
+  claimLines: ClaimLineItem[];
+  mediaType: string;
+  details: string;
 }
 
 export interface WorkflowClaimState {
@@ -162,7 +170,13 @@ interface WorkflowContextType {
 
   // Cycle management
   archiveAndReset: () => void;
-  updatePreApprovalData: (totalAmount: number, activityPeriod: string) => void;
+  updatePreApprovalData: (
+    totalAmount: number,
+    activityPeriod: string,
+    claimLines: ClaimLineItem[],
+    mediaType: string,
+    details: string,
+  ) => void;
 
   // Document management
   addPreApprovalDocument: (doc: WorkflowDocument) => void;
@@ -217,6 +231,12 @@ const INITIAL_STATE: WorkflowState = {
     claimsCount: 0,
     totalAmount: WORKFLOW_CAMPAIGN.totalAmount,
     activityPeriod: `${WORKFLOW_CAMPAIGN.activityStartDate} – ${WORKFLOW_CAMPAIGN.activityEndDate}`,
+    claimLines: Object.entries(WORKFLOW_CAMPAIGN.channelBreakdown).map(([description, amount]) => ({
+      description,
+      amount: String(amount),
+    })),
+    mediaType: WORKFLOW_CAMPAIGN.mediaType,
+    details: WORKFLOW_CAMPAIGN.description,
   },
 
   claim: {
@@ -521,8 +541,11 @@ export function WorkflowProvider({ children }: { children: ReactNode }) {
         documents: [],
         submittedAt: null,
         claimsCount: 0,
-        totalAmount: WORKFLOW_CAMPAIGN.totalAmount,
-        activityPeriod: `${WORKFLOW_CAMPAIGN.activityStartDate} – ${WORKFLOW_CAMPAIGN.activityEndDate}`,
+        totalAmount: 0,
+        activityPeriod: '',
+        claimLines: [],
+        mediaType: '',
+        details: '',
       };
 
       const freshClaim: WorkflowClaimState = {
@@ -548,10 +571,16 @@ export function WorkflowProvider({ children }: { children: ReactNode }) {
     });
   }, []);
 
-  const updatePreApprovalData = useCallback((totalAmount: number, activityPeriod: string) => {
+  const updatePreApprovalData = useCallback((
+    totalAmount: number,
+    activityPeriod: string,
+    claimLines: ClaimLineItem[],
+    mediaType: string,
+    details: string,
+  ) => {
     setWorkflow(prev => ({
       ...prev,
-      preApproval: { ...prev.preApproval, totalAmount, activityPeriod },
+      preApproval: { ...prev.preApproval, totalAmount, activityPeriod, claimLines, mediaType, details },
     }));
   }, []);
 

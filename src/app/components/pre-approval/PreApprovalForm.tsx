@@ -87,7 +87,14 @@ export function PreApprovalForm({ onClose, onDone }: PreApprovalFormProps) {
   // whatever the dealer already filled in. Without this, the sync effect
   // dispatches empty defaults and wipes the context on remount.
   const wfPA = workflow.preApproval;
-  const initialMediaTypeValue = MEDIA_TYPE_OPTIONS.find(o => o.label === wfPA.mediaType)?.value ?? '';
+  // Hydrate saved state only when the PA is still a Draft — meaning the user
+  // previously started filling the form but closed without submitting. For any
+  // other status (Submitted, Approved, etc.) always start fresh so the Claim
+  // Activities data grid doesn't pre-populate with demo / previous-cycle data.
+  const isDraft = wfPA.status === 'Draft';
+  const initialMediaTypeValue = isDraft
+    ? MEDIA_TYPE_OPTIONS.find(o => o.label === wfPA.mediaType)?.value ?? ''
+    : '';
 
   const { control, handleSubmit, watch, setValue, formState: { errors } } = useForm<FormValues>({
     defaultValues: {
@@ -96,8 +103,8 @@ export function PreApprovalForm({ onClose, onDone }: PreApprovalFormProps) {
       dealershipName: '',
       initiativeType: '',
       mediaType:    initialMediaTypeValue,
-      claimCount:   String(Math.max(1, wfPA.claimLines.length)),
-      details:      wfPA.details ?? '',
+      claimCount:   String(isDraft ? Math.max(1, wfPA.claimLines.length) : 1),
+      details:      isDraft ? wfPA.details ?? '' : '',
       contactInfo:  '',
     },
   });
@@ -114,7 +121,7 @@ export function PreApprovalForm({ onClose, onDone }: PreApprovalFormProps) {
     return { from, to: to && !isNaN(to.getTime()) ? to : undefined };
   };
   const [activityRange, setActivityRange] = useState<DateRange | undefined>(
-    () => parseActivityPeriod(wfPA.activityPeriod) ?? DEFAULT_RANGE,
+    () => isDraft ? parseActivityPeriod(wfPA.activityPeriod) ?? DEFAULT_RANGE : DEFAULT_RANGE,
   );
   const [showDatePicker, setShowDatePicker] = useState(false);
   const activityBtnRef = useRef<HTMLButtonElement>(null);
@@ -137,7 +144,7 @@ export function PreApprovalForm({ onClose, onDone }: PreApprovalFormProps) {
   // otherwise Add Activity looks like it "edits the first row" because the
   // sync effect immediately overwrites context with the empty seed.
   const [claimLines, setClaimLines] = useState<ClaimLine[]>(() =>
-    workflow.preApproval.claimLines.length > 0
+    isDraft && workflow.preApproval.claimLines.length > 0
       ? workflow.preApproval.claimLines
       : [{ description: '', amount: '' }]
   );

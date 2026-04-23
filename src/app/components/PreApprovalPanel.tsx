@@ -270,6 +270,54 @@ export function PreApprovalPanel({
       <div className="flex-1 overflow-y-auto custom-scrollbar">
         <div className="px-8 py-6 space-y-8">
 
+          {/* Visual Assets — horizontal thumbnail gallery (top of panel, both modes) */}
+          {isWorkflowItem && (() => {
+            const IMAGE_EXTS = new Set(['png', 'jpg', 'jpeg', 'gif', 'webp', 'svg']);
+            const imageDocs = wfPA.documents.filter(
+              d => d.url && IMAGE_EXTS.has(d.type.toLowerCase()),
+            );
+            if (imageDocs.length === 0) return null;
+            return (
+              <section>
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="text-[#1f1d25] text-[15px] font-medium">Visual Assets</h3>
+                  <span className="text-[11px] text-[#686576]">
+                    {imageDocs.length} {imageDocs.length === 1 ? 'item' : 'items'}
+                  </span>
+                </div>
+                <div className="flex overflow-x-auto gap-2 pb-2 custom-scrollbar snap-x">
+                  {imageDocs.map((doc, idx) => (
+                    <div
+                      key={doc.name + idx}
+                      className="w-[118px] h-[118px] rounded-xl overflow-hidden border border-[rgba(0,0,0,0.12)] shrink-0 snap-start relative group bg-[#f4f5f6]"
+                    >
+                      <img
+                        src={doc.url}
+                        alt={doc.name}
+                        className="w-full h-full object-cover cursor-pointer"
+                        onClick={() => setPreviewDoc(doc)}
+                      />
+                      {userType === 'dealer' && (
+                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center pointer-events-none">
+                          <button
+                            onClick={() => removePreApprovalDocument(doc.name)}
+                            className="p-1.5 bg-white rounded-full text-[#686576] hover:text-red-500 transition-colors shadow pointer-events-auto"
+                            aria-label={`Remove ${doc.name}`}
+                          >
+                            <X className="w-4 h-4" />
+                          </button>
+                        </div>
+                      )}
+                      <div className="absolute top-1 left-1 bg-black/40 text-white text-[9px] font-bold rounded px-1 leading-tight pointer-events-none">
+                        {idx + 1}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </section>
+            );
+          })()}
+
           {/* OEM comment banner — dealer sees this when revision was requested */}
           {isWorkflowItem && userType === 'dealer' && liveStatus === 'Revision Requested' && liveOemComment && (
             <section className="bg-[rgba(225,118,19,0.06)] -mx-8 px-8 py-4 border-b border-[rgba(225,118,19,0.2)]">
@@ -381,56 +429,6 @@ export function PreApprovalPanel({
               </div>
             </div>
           </section>
-
-          {/* Visual Assets — horizontal thumbnail gallery (same pattern as Planner side pane) */}
-          {isWorkflowItem && (() => {
-            const IMAGE_EXTS = new Set(['png', 'jpg', 'jpeg', 'gif', 'webp', 'svg']);
-            const imageDocs = wfPA.documents.filter(
-              d => d.url && IMAGE_EXTS.has(d.type.toLowerCase()),
-            );
-            if (imageDocs.length === 0) return null;
-            return (
-              <section>
-                <div className="flex items-center justify-between mb-3">
-                  <h3 className="text-[#1f1d25] text-[15px] font-medium">Visual Assets</h3>
-                  <span className="text-[11px] text-[#686576]">
-                    {imageDocs.length} {imageDocs.length === 1 ? 'item' : 'items'}
-                  </span>
-                </div>
-                <div className="flex overflow-x-auto gap-2 pb-2 custom-scrollbar snap-x">
-                  {imageDocs.map((doc, idx) => (
-                    <div
-                      key={doc.name + idx}
-                      className="w-[118px] h-[118px] rounded-xl overflow-hidden border border-[rgba(0,0,0,0.12)] shrink-0 snap-start relative group bg-[#f4f5f6]"
-                    >
-                      <img
-                        src={doc.url}
-                        alt={doc.name}
-                        className="w-full h-full object-cover cursor-pointer"
-                        onClick={() => setPreviewDoc(doc)}
-                      />
-                      {/* Hover overlay — remove for dealer on workflow item only */}
-                      {userType === 'dealer' && (
-                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center pointer-events-none">
-                          <button
-                            onClick={() => removePreApprovalDocument(doc.name)}
-                            className="p-1.5 bg-white rounded-full text-[#686576] hover:text-red-500 transition-colors shadow pointer-events-auto"
-                            aria-label={`Remove ${doc.name}`}
-                          >
-                            <X className="w-4 h-4" />
-                          </button>
-                        </div>
-                      )}
-                      {/* Index badge */}
-                      <div className="absolute top-1 left-1 bg-black/40 text-white text-[9px] font-bold rounded px-1 leading-tight pointer-events-none">
-                        {idx + 1}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </section>
-            );
-          })()}
 
           {/* Supporting Documents */}
           <section>

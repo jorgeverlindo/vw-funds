@@ -409,9 +409,14 @@ export function FundsPreApprovalsContent({
           <ActionButton
             label={t('New Pre-Approval')}
             onClick={() => {
-              // If there's already an active (non-Draft) PA, archive it so the
-              // drawer populates a brand-new cycle (WF-PA-002, WF-PA-003, …)
-              if (workflow.preApproval.status !== 'Draft') {
+              // Only archive + start a new cycle when the OEM has already acted
+              // (Approved) or the full cycle is complete (claim Paid).
+              // For Submitted / In Review / Revision Requested the OEM still needs
+              // to act — do NOT archive or the approve buttons disappear from the panel.
+              const oemActed =
+                workflow.preApproval.status === 'Approved' ||
+                workflow.claim.status === 'Paid';
+              if (oemActed) {
                 archiveAndReset();
               }
               setIsDrawerOpen(true);

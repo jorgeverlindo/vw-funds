@@ -19,8 +19,13 @@ import { emitSnackbar } from '../components/Snackbar';
 
 // ─── Canonical demo data ─────────────────────────────────────────────────────
 
-export const WORKFLOW_PA_ID = 'WF-PA-001';
-export const WORKFLOW_CL_ID = 'WF-CL-001';
+// IDs sequenciais continuando a nomenclatura MFA/MFC existente no mock data
+// MFA386603 é o último PA do mock → novo começa em MFA386604
+// MFC560001 é o último claim do mock → novo começa em MFC560002
+export const WORKFLOW_PA_BASE = 386604;
+export const WORKFLOW_CL_BASE = 560002;
+export const WORKFLOW_PA_ID = `MFA${WORKFLOW_PA_BASE}`;
+export const WORKFLOW_CL_ID = `MFC${WORKFLOW_CL_BASE}`;
 
 export const WORKFLOW_DEALER = {
   name: 'Volkswagen Anytown',
@@ -531,10 +536,8 @@ export function WorkflowProvider({ children }: { children: ReactNode }) {
   const archiveAndReset = useCallback(() => {
     setWorkflow(prev => {
       const newCycleIndex = prev.archivedCycles.length + 1;
-      const newActiveNum  = newCycleIndex + 1;
-      const padded = String(newActiveNum).padStart(3, '0');
-      const newPaId = `WF-PA-${padded}`;
-      const newClId = `WF-CL-${padded}`;
+      const newPaId = `MFA${WORKFLOW_PA_BASE + newCycleIndex}`;
+      const newClId = `MFC${WORKFLOW_CL_BASE + newCycleIndex}`;
 
       const archived: ArchivedCycle = {
         cycleIndex:   newCycleIndex,

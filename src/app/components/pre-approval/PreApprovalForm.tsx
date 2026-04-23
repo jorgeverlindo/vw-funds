@@ -293,6 +293,20 @@ export function PreApprovalForm({ onClose, onDone }: PreApprovalFormProps) {
               />
             </div>
 
+            {/* ID — read-only, auto-assigned, shown between Title and Funds */}
+            <div className="flex flex-col gap-1.5">
+              <label className="text-[12px] text-[#686576] font-medium">
+                {t('ID')}:
+              </label>
+              <input
+                type="text"
+                readOnly
+                disabled
+                value={wfPA.id}
+                className="w-full h-10 px-3 bg-[#F0F2F4] border border-[#CAC9CF] rounded-[4px] text-[13px] text-[#686576] cursor-not-allowed select-none"
+              />
+            </div>
+
             {/* Fund */}
             <div className="flex flex-col gap-1.5" id="field-fund">
               <label className="text-[12px] text-[#686576] font-medium flex items-center gap-1">

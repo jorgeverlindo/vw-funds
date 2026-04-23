@@ -334,7 +334,73 @@ export function FundsClaimsContent({
                   <div className="w-[140px] text-[12px] font-medium text-[#1f1d25]">{t('Pending')}</div>
                </div>
 
-               {/* Archived cycle claims — pinned above active, newest first */}
+               {/* Workflow claim — pinned at top (most recent), bypasses date filter */}
+               {workflowClaimVisible && workflowClaim && (
+                 <div className="group-container">
+                   {/* Month header row — current month, no aggregates */}
+                   <div className="flex items-center bg-white border-b border-gray-200 h-14 px-4 select-none">
+                     <div className="flex items-center gap-2 w-[220px]">
+                       <ChevronDown className="w-5 h-5 text-gray-500/80" />
+                       <span className="text-[14px] font-medium text-[#1f1d25] tracking-[0.17px]">
+                         {new Date().toLocaleString('en-US', { month: 'short', year: 'numeric' })}
+                       </span>
+                     </div>
+                     <div className="flex items-center text-[12px] text-[#686576] gap-0">
+                       <div className="w-[120px]">-</div>
+                       <div className="w-[120px]">-</div>
+                       <div className="w-[120px]">-</div>
+                       <div className="w-[140px]">-</div>
+                       <div className="w-[140px]">-</div>
+                     </div>
+                   </div>
+                   {/* Expanded area */}
+                   <div className="bg-[#F9FAFA] border-b border-gray-100">
+                     {/* Secondary header */}
+                     <div className="flex items-center h-10 px-4 border-b border-gray-200/50 bg-[#F9FAFA]">
+                       <div className="w-[120px] pl-4 text-[11px] font-medium text-gray-500">{t('Date')}</div>
+                       <div className="w-[100px] text-[11px] font-medium text-gray-500">{t('ID')}</div>
+                       <div className="w-[100px] text-[11px] font-medium text-gray-500">{t('Amount')}</div>
+                       <div className="w-[160px] text-[11px] font-medium text-gray-500">{t('Status')}</div>
+                       <div className="w-[100px] text-[11px] font-medium text-gray-500">{t('Time in claim')}</div>
+                       <div className="w-[120px] text-[11px] font-medium text-gray-500">{t('Time in payment')}</div>
+                       <div className="flex-1 min-w-[200px] text-[11px] font-medium text-gray-500">{t('Dealership')}</div>
+                       <div className="w-[140px] text-[11px] font-medium text-gray-500">{t('Fund')}</div>
+                       <div className="w-[160px] text-[11px] font-medium text-gray-500">{t('Submitted by')}</div>
+                     </div>
+                     {/* Claim row */}
+                     <div
+                       onClick={() => onSelectClaim(workflowClaim.id)}
+                       className={cn(
+                         "flex items-center h-[52px] border-b border-gray-100 last:border-0 transition-colors cursor-pointer px-4",
+                         selectedClaimId === workflowClaim.id ? "bg-[#F2F1FF]" : "bg-[#F9FAFA] hover:bg-gray-100"
+                       )}
+                     >
+                       <div className="w-[120px] pl-4 text-[12px] text-[#1f1d25]">
+                         {workflowClaim.date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                       </div>
+                       <div className="w-[100px] text-[12px] text-[#1f1d25] font-medium">{workflowClaim.id}</div>
+                       <div className="w-[100px] text-[12px] text-[#1f1d25]">${workflowClaim.amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+                       <div className="w-[160px] pr-2">
+                         <StatusChip status={workflowClaim.status} />
+                       </div>
+                       <div className="w-[100px] text-[12px] text-[#1f1d25]">{workflowClaim.timeInClaim} days</div>
+                       <div className="w-[120px] text-[12px] text-[#1f1d25]">{workflowClaim.timeInPayment} days</div>
+                       <div className="flex-1 min-w-[200px] text-[12px] text-[#1f1d25] truncate pr-4" title={`${workflowClaim.dealershipCode} - ${workflowClaim.dealershipName} (${workflowClaim.dealershipCity})`}>
+                         {workflowClaim.dealershipCode} - {workflowClaim.dealershipName} ({workflowClaim.dealershipCity})
+                       </div>
+                       <div className="w-[140px] text-[12px] text-[#1f1d25]">{workflowClaim.fund}</div>
+                       <div className="w-[160px] flex items-center gap-2">
+                         <div className="w-6 h-6 rounded-full bg-gray-200 overflow-hidden shrink-0">
+                           <ImageWithFallback src={workflowClaim.submittedBy.avatarUrl} alt={workflowClaim.submittedBy.name} className="w-full h-full object-cover" />
+                         </div>
+                         <span className="text-[12px] text-[#1f1d25] truncate">{workflowClaim.submittedBy.name}</span>
+                       </div>
+                     </div>
+                   </div>
+                 </div>
+               )}
+
+               {/* Archived cycle claims — newest first */}
                {archivedClaimRows
                  .filter(cl => {
                    if (activeFilter && cl.status !== activeFilter) return false;
@@ -404,74 +470,8 @@ export function FundsClaimsContent({
                  </div>
                ))}
 
-               {/* Workflow claim — pinned at top, always expanded, bypasses date filter */}
-               {workflowClaimVisible && workflowClaim && (
-                 <div className="group-container">
-                   {/* Month header row — current month, no aggregates */}
-                   <div className="flex items-center bg-white border-b border-gray-200 h-14 px-4 select-none">
-                     <div className="flex items-center gap-2 w-[220px]">
-                       <ChevronDown className="w-5 h-5 text-gray-500/80" />
-                       <span className="text-[14px] font-medium text-[#1f1d25] tracking-[0.17px]">
-                         {new Date().toLocaleString('en-US', { month: 'short', year: 'numeric' })}
-                       </span>
-                     </div>
-                     <div className="flex items-center text-[12px] text-[#686576] gap-0">
-                       <div className="w-[120px]">-</div>
-                       <div className="w-[120px]">-</div>
-                       <div className="w-[120px]">-</div>
-                       <div className="w-[140px]">-</div>
-                       <div className="w-[140px]">-</div>
-                     </div>
-                   </div>
-                   {/* Expanded area */}
-                   <div className="bg-[#F9FAFA] border-b border-gray-100">
-                     {/* Secondary header */}
-                     <div className="flex items-center h-10 px-4 border-b border-gray-200/50 bg-[#F9FAFA]">
-                       <div className="w-[120px] pl-4 text-[11px] font-medium text-gray-500">{t('Date')}</div>
-                       <div className="w-[100px] text-[11px] font-medium text-gray-500">{t('ID')}</div>
-                       <div className="w-[100px] text-[11px] font-medium text-gray-500">{t('Amount')}</div>
-                       <div className="w-[160px] text-[11px] font-medium text-gray-500">{t('Status')}</div>
-                       <div className="w-[100px] text-[11px] font-medium text-gray-500">{t('Time in claim')}</div>
-                       <div className="w-[120px] text-[11px] font-medium text-gray-500">{t('Time in payment')}</div>
-                       <div className="flex-1 min-w-[200px] text-[11px] font-medium text-gray-500">{t('Dealership')}</div>
-                       <div className="w-[140px] text-[11px] font-medium text-gray-500">{t('Fund')}</div>
-                       <div className="w-[160px] text-[11px] font-medium text-gray-500">{t('Submitted by')}</div>
-                     </div>
-                     {/* Claim row */}
-                     <div
-                       onClick={() => onSelectClaim(workflowClaim.id)}
-                       className={cn(
-                         "flex items-center h-[52px] border-b border-gray-100 last:border-0 transition-colors cursor-pointer px-4",
-                         selectedClaimId === workflowClaim.id ? "bg-[#F2F1FF]" : "bg-[#F9FAFA] hover:bg-gray-100"
-                       )}
-                     >
-                       <div className="w-[120px] pl-4 text-[12px] text-[#1f1d25]">
-                         {workflowClaim.date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-                       </div>
-                       <div className="w-[100px] text-[12px] text-[#1f1d25] font-medium">{workflowClaim.id}</div>
-                       <div className="w-[100px] text-[12px] text-[#1f1d25]">${workflowClaim.amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
-                       <div className="w-[160px] pr-2">
-                         <StatusChip status={workflowClaim.status} />
-                       </div>
-                       <div className="w-[100px] text-[12px] text-[#1f1d25]">{workflowClaim.timeInClaim} days</div>
-                       <div className="w-[120px] text-[12px] text-[#1f1d25]">{workflowClaim.timeInPayment} days</div>
-                       <div className="flex-1 min-w-[200px] text-[12px] text-[#1f1d25] truncate pr-4" title={`${workflowClaim.dealershipCode} - ${workflowClaim.dealershipName} (${workflowClaim.dealershipCity})`}>
-                         {workflowClaim.dealershipCode} - {workflowClaim.dealershipName} ({workflowClaim.dealershipCity})
-                       </div>
-                       <div className="w-[140px] text-[12px] text-[#1f1d25]">{workflowClaim.fund}</div>
-                       <div className="w-[160px] flex items-center gap-2">
-                         <div className="w-6 h-6 rounded-full bg-gray-200 overflow-hidden shrink-0">
-                           <ImageWithFallback src={workflowClaim.submittedBy.avatarUrl} alt={workflowClaim.submittedBy.name} className="w-full h-full object-cover" />
-                         </div>
-                         <span className="text-[12px] text-[#1f1d25] truncate">{workflowClaim.submittedBy.name}</span>
-                       </div>
-                     </div>
-                   </div>
-                 </div>
-               )}
-
-               {/* Group Rows */}
-               {MONTH_AGGREGATES.map(monthData => {
+               {/* Group Rows — reversed so most recent months appear first */}
+               {[...MONTH_AGGREGATES].reverse().map(monthData => {
                   const monthKey = monthData.key;
                   const claims = groupedData[monthKey] || [];
                   const isExpanded = expandedMonths[monthKey];

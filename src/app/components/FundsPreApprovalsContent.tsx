@@ -391,9 +391,10 @@ export function FundsPreApprovalsContent({
       );
     };
 
+    // Active workflow item first (most recent), then archived cycles (newest→oldest)
     const pinnedRows = [
-      ...archivedRows.filter(filterRow),
       ...(showActiveWorkflow && filterRow(workflowPreApproval) ? [workflowPreApproval] : []),
+      ...archivedRows.filter(filterRow),
     ];
 
     return [...pinnedRows, ...filteredMock];

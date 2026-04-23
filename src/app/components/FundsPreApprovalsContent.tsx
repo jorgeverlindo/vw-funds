@@ -2,7 +2,7 @@ import { useState, useRef, useEffect, useMemo } from 'react';
 import { DateRange } from 'react-day-picker';
 import { Search, Plus, MoreVertical } from 'lucide-react';
 import { useTranslation } from '../contexts/LanguageContext';
-import { useWorkflow, WORKFLOW_DEALER, WORKFLOW_CAMPAIGN, WORKFLOW_PA_ID, type PreApprovalWorkflowStatus, type ArchivedCycle } from '../contexts/WorkflowContext';
+import { useWorkflow, WORKFLOW_DEALER, WORKFLOW_CAMPAIGN, type PreApprovalWorkflowStatus, type ArchivedCycle } from '../contexts/WorkflowContext';
 import { DateRangeInput } from './DateRangeInput';
 import { DateRangePicker } from './DateRangePicker';
 import { FilterSelect } from './FilterSelect';
@@ -310,13 +310,14 @@ export function FundsPreApprovalsContent({
   onSelectPreApproval
 }: FundsPreApprovalsContentProps) {
   const { t } = useTranslation();
-  const { workflow } = useWorkflow();
+  const { workflow, archiveAndReset } = useWorkflow();
   const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
 
   // Build the live workflow pre-approval item from shared context
+  // ID is dynamic — changes each cycle after archiveAndReset
   const workflowPreApproval: PreApproval = {
-    id: WORKFLOW_PA_ID,
+    id: workflow.preApproval.id,
     date: new Date(),   // always today — avoids UTC-offset display bug
     dealershipCode: WORKFLOW_DEALER.code,
     dealershipName: WORKFLOW_DEALER.name,
@@ -325,13 +326,13 @@ export function FundsPreApprovalsContent({
     timeInPreApproval: 1,
     submittedBy: { name: WORKFLOW_DEALER.contact, avatarUrl: AVATARS[5] },
     mediaType: WORKFLOW_CAMPAIGN.mediaType,
-    details: 'March 2026 Digital Ad Campaign — Display, Facebook, Search, Video',
+    details: workflow.preApproval.details || 'Digital Ad Campaign',
     lastUpdated: new Date(),
-    submittedAt: new Date('2026-04-20'),
+    submittedAt: workflow.preApproval.submittedAt ? new Date(workflow.preApproval.submittedAt) : new Date('2026-04-20'),
     initiativeType: WORKFLOW_CAMPAIGN.initiativeType,
     claimsCount: workflow.preApproval.claimsCount,
     contactEmail: WORKFLOW_DEALER.email,
-    description: WORKFLOW_CAMPAIGN.description,
+    description: workflow.preApproval.details || WORKFLOW_CAMPAIGN.description,
     documents: workflow.preApproval.documents,
   };
   const datePickerRef = useRef<HTMLDivElement>(null);
@@ -396,7 +397,8 @@ export function FundsPreApprovalsContent({
     ];
 
     return [...pinnedRows, ...filteredMock];
-  }, [dateRange, searchQuery, workflow.preApproval.status, workflow.preApproval.claimsCount, workflow.archivedCycles, workflowPreApproval]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dateRange, searchQuery, workflow.preApproval.status, workflow.preApproval.id, workflow.preApproval.claimsCount, workflow.archivedCycles, workflowPreApproval]);
 
   return (
     <div className="flex flex-col h-full relative overflow-hidden">
@@ -404,7 +406,17 @@ export function FundsPreApprovalsContent({
       <div className="flex-none flex items-end justify-between p-[24px] m-[0px]">
         <div className="flex items-center gap-3">
           {/* New Pre-Approval Button - Fixed Styling */}
-          <ActionButton label={t('New Pre-Approval')} onClick={() => setIsDrawerOpen(true)} />
+          <ActionButton
+            label={t('New Pre-Approval')}
+            onClick={() => {
+              // If there's already an active (non-Draft) PA, archive it so the
+              // drawer populates a brand-new cycle (WF-PA-002, WF-PA-003, …)
+              if (workflow.preApproval.status !== 'Draft') {
+                archiveAndReset();
+              }
+              setIsDrawerOpen(true);
+            }}
+          />
           
           {/* Search Bar - Fixed Styling */}
           <div className="relative">

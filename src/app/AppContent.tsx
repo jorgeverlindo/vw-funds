@@ -26,7 +26,7 @@ import { ClientSwitcher } from './components/ClientSwitcher';
 import { Snackbar } from './components/pre-approval/Snackbar';
 import { useClient } from './contexts/ClientContext';
 import { BreadcrumbBar } from './components/BreadcrumbBar';
-import { useWorkflow, WORKFLOW_PA_ID, WORKFLOW_CL_ID, WORKFLOW_DEALER, WORKFLOW_CAMPAIGN } from './contexts/WorkflowContext';
+import { useWorkflow, WORKFLOW_DEALER, WORKFLOW_CAMPAIGN } from './contexts/WorkflowContext';
 import type { Claim } from './components/ClaimsPanel';
 import type { PreApproval } from './components/FundsPreApprovalsContent';
 import imgMalloryManning from 'figma:asset/f0494d5017440bdc302141d9ab01c7c81e4a339a.png';
@@ -105,11 +105,12 @@ export default function AppContent() {
 
   const selectedPreApproval = useMemo((): PreApproval | null | undefined => {
     if (!selectedPreApprovalId) return null;
-    if (selectedPreApprovalId === WORKFLOW_PA_ID) {
-      // Build PreApproval from live workflow state so the panel always reflects current status
+
+    // ── Active workflow PA (ID changes each cycle after archiveAndReset) ──────
+    if (selectedPreApprovalId === workflow.preApproval.id) {
       const wfPA = workflow.preApproval;
       return {
-        id: WORKFLOW_PA_ID,
+        id: wfPA.id,
         date: new Date(),
         dealershipCode: WORKFLOW_DEALER.code,
         dealershipName: WORKFLOW_DEALER.name,
@@ -126,30 +127,66 @@ export default function AppContent() {
         timeInPreApproval: 1,
         submittedBy: { name: WORKFLOW_DEALER.contact, avatarUrl: '' },
         mediaType: WORKFLOW_CAMPAIGN.mediaType,
-        details: 'March 2026 Digital Ad Campaign — Display, Facebook, Search, Video',
+        details: wfPA.details || 'Digital Ad Campaign',
         lastUpdated: new Date(),
         submittedAt: wfPA.submittedAt ? new Date(wfPA.submittedAt) : new Date('2026-04-20'),
         initiativeType: WORKFLOW_CAMPAIGN.initiativeType,
         claimsCount: wfPA.claimsCount,
         contactEmail: WORKFLOW_DEALER.email,
-        description: WORKFLOW_CAMPAIGN.description,
+        description: wfPA.details || WORKFLOW_CAMPAIGN.description,
         documents: wfPA.documents,
       };
     }
+
+    // ── Archived workflow cycles (shown in the list after archiveAndReset) ────
+    const archived = workflow.archivedCycles.find(c => c.preApproval.id === selectedPreApprovalId);
+    if (archived) {
+      const pa = archived.preApproval;
+      return {
+        id: pa.id,
+        date: new Date(archived.archivedAt),
+        dealershipCode: WORKFLOW_DEALER.code,
+        dealershipName: WORKFLOW_DEALER.name,
+        dealershipCity: WORKFLOW_DEALER.city,
+        status: (() => {
+          switch (pa.status) {
+            case 'Approved':           return 'Approved';
+            case 'Revision Requested': return 'Revision Requested';
+            case 'In Review':
+            case 'Resubmitted':        return 'In Review';
+            default:                   return 'Pending';
+          }
+        })() as PreApproval['status'],
+        timeInPreApproval: 0,
+        submittedBy: { name: WORKFLOW_DEALER.contact, avatarUrl: '' },
+        mediaType: WORKFLOW_CAMPAIGN.mediaType,
+        details: pa.details || 'Digital Ad Campaign',
+        lastUpdated: new Date(archived.archivedAt),
+        submittedAt: pa.submittedAt ? new Date(pa.submittedAt) : new Date(archived.archivedAt),
+        initiativeType: WORKFLOW_CAMPAIGN.initiativeType,
+        claimsCount: pa.claimsCount,
+        contactEmail: WORKFLOW_DEALER.email,
+        description: pa.details || WORKFLOW_CAMPAIGN.description,
+        documents: pa.documents,
+      };
+    }
+
+    // ── Static mock data ─────────────────────────────────────────────────────
     return PRE_APPROVALS_MOCK_DATA.find(i => i.id === selectedPreApprovalId);
-  }, [selectedPreApprovalId, workflow.preApproval]);
+  }, [selectedPreApprovalId, workflow.preApproval, workflow.archivedCycles]);
 
   // Claims Specific State
   const [selectedClaimId, setSelectedClaimId] = useState<string | null>(null);
 
   const selectedClaim = useMemo((): Claim | null | undefined => {
     if (!selectedClaimId) return null;
-    if (selectedClaimId === WORKFLOW_CL_ID) {
-      // Build a Claim object from live workflow state so ClaimsPanel gets fresh data
+
+    // ── Active workflow claim (ID changes each cycle after archiveAndReset) ──
+    if (selectedClaimId === workflow.claim.id) {
       const wfCL = workflow.claim;
       return {
-        id: WORKFLOW_CL_ID,
-        uid: WORKFLOW_CL_ID,
+        id: wfCL.id,
+        uid: wfCL.id,
         date: wfCL.submittedAt ? new Date(wfCL.submittedAt) : new Date(),
         amount: WORKFLOW_CAMPAIGN.totalAmount,
         status: (wfCL.status ?? 'Draft') as Claim['status'],
@@ -165,15 +202,41 @@ export default function AppContent() {
         details: WORKFLOW_CAMPAIGN.description,
       };
     }
+
+    // ── Archived workflow claims ──────────────────────────────────────────────
+    const archivedCl = workflow.archivedCycles.find(c => c.claim.id === selectedClaimId);
+    if (archivedCl) {
+      const cl = archivedCl.claim;
+      return {
+        id: cl.id,
+        uid: cl.id,
+        date: cl.submittedAt ? new Date(cl.submittedAt) : new Date(archivedCl.archivedAt),
+        amount: WORKFLOW_CAMPAIGN.totalAmount,
+        status: (cl.status ?? 'Paid') as Claim['status'],
+        timeInClaim: 0,
+        timeInPayment: 0,
+        dealershipCode: WORKFLOW_DEALER.code,
+        dealershipName: WORKFLOW_DEALER.name,
+        dealershipCity: WORKFLOW_DEALER.city,
+        fund: 'VW Coop Fund 2026',
+        submittedBy: { name: WORKFLOW_DEALER.contact, avatarUrl: imgMalloryManning },
+        type: WORKFLOW_CAMPAIGN.initiativeType,
+        lastUpdated: new Date(archivedCl.archivedAt).toLocaleDateString(),
+        details: WORKFLOW_CAMPAIGN.description,
+      };
+    }
+
+    // ── Static mock data ─────────────────────────────────────────────────────
     return CLAIMS_MOCK_DATA.find(i => i.id === selectedClaimId);
-  }, [selectedClaimId, workflow.claim]);
+  }, [selectedClaimId, workflow.claim, workflow.archivedCycles]);
 
   // Create Claim handler — called by PreApprovalPanel dealer CTA
+  // Uses the current claim ID so it works after archiveAndReset cycles
   const handleCreateClaim = useCallback(() => {
     setActiveTab('claims');
     setSelectedPreApprovalId(null);
-    setSelectedClaimId(WORKFLOW_CL_ID);
-  }, []);
+    setSelectedClaimId(workflow.claim.id);
+  }, [workflow.claim.id]);
 
   // Planner Specific State
   const [selectedCampaignId, setSelectedCampaignId] = useState<string | null>(null);

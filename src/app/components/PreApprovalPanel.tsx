@@ -7,7 +7,6 @@ import { KeyValueRow } from './ui/KeyValueRow';
 import { WorkflowHistoryTimeline } from './WorkflowHistoryTimeline';
 import {
   useWorkflow,
-  WORKFLOW_PA_ID,
 } from '../contexts/WorkflowContext';
 import { DocumentPreviewModal } from './pre-approval/DocumentPreviewModal';
 
@@ -59,7 +58,8 @@ export function PreApprovalPanel({
   const [oemDraftComment, setOemDraftComment] = useState('');
 
   // Determine whether this is the live workflow item
-  const isWorkflowItem = preApproval.id === WORKFLOW_PA_ID;
+  // Matches the CURRENT active cycle — ID changes each time archiveAndReset is called
+  const isWorkflowItem = preApproval.id === workflow.preApproval.id;
   const wfPA = workflow.preApproval;
   const liveStatus = isWorkflowItem ? wfPA.status : preApproval.status;
   const liveOemComment = isWorkflowItem ? wfPA.oemComment : null;

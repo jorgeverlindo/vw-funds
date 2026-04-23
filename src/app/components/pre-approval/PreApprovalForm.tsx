@@ -166,7 +166,7 @@ export function PreApprovalForm({ onClose, onDone }: PreApprovalFormProps) {
     if (!file) return;
     const sizeKB = file.size / 1024;
     const sizeStr = sizeKB >= 1024 ? `${(sizeKB / 1024).toFixed(1)} MB` : `${Math.round(sizeKB)} KB`;
-    const ext = file.name.split('.').pop()?.toUpperCase() ?? 'FILE';
+    const ext = file.name.split('.').pop()?.toLowerCase() ?? 'file';
     // Generate blob URL for ALL file types (enables PDF iframe + image preview)
     const url = URL.createObjectURL(file);
     addPreApprovalDocument({ name: file.name, size: sizeStr, type: ext, url });

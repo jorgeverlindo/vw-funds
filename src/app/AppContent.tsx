@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect, useCallback } from 'react';
+import { useParams, useLocation, useNavigate } from 'react-router';
 import { AppSidebar } from './components/AppSidebar';
 import { TopNavBar } from './components/TopNavBar';
 import { TabNavigation } from './components/TabNavigation';
@@ -49,6 +50,33 @@ const OEM_TABS = [
   { id: 'web-monitoring', label: 'Web Monitoring' },
 ];
 
+// ── URL routing helpers ───────────────────────────────────────────────────────
+
+const TAB_SLUGS: Record<string, string> = {
+  'overview':        'Overview',
+  'pre-approvals':   'Pre-Approvals',
+  'claims':          'Claims',
+  'cases':           'Cases',
+  'planner':         'Planner',
+  'guidelines':      'Guidelines',
+  'web-monitoring':  'Web-Monitoring',
+};
+
+const SLUG_TO_TAB: Record<string, string> = Object.fromEntries(
+  Object.entries(TAB_SLUGS).map(([k, v]) => [v, k]),
+);
+
+function buildUrl(role: UserType, clientId: string, tabId: string): string {
+  const slug = TAB_SLUGS[tabId] ?? tabId;
+  if (role === 'oem') {
+    return clientId === 'vw' ? `/OEM/${slug}` : `/Audi/OEM/${slug}`;
+  }
+  const brand = clientId === 'audi' ? 'Audi' : 'Volkswagen';
+  return `/${brand}/dealership/${slug}`;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+
 const defaultDateRange: DateRange = {
   from: new Date(2025, 0, 1),
   to: new Date(2025, 11, 31),
@@ -59,13 +87,21 @@ export type UserType = 'dealer' | 'oem';
 export default function AppContent() {
   const { t } = useTranslation();
   const { workflow } = useWorkflow();
-  const [activeAppSection, setActiveAppSection] = useState('campaigns'); // 'campaigns' | 'portal'
-  const [activeTab, setActiveTab] = useState('overview');
-  const [userType, setUserType] = useState<UserType>('dealer');
-  const [dateRange, setDateRange] = useState<DateRange | undefined>(defaultDateRange);
-
-  // Client switcher
   const { client, switchClient } = useClient();
+
+  // ── Router hooks (must be before derived state) ───────────────────────────
+  const routeParams = useParams<{ brand?: string; tab?: string }>();
+  const location = useLocation();
+  const navigate = useNavigate();
+
+  // Derive initial tab/role from URL; useState only uses these once on mount
+  const _initRole: UserType = location.pathname.toLowerCase().includes('/dealership/') ? 'dealer' : 'oem';
+  const _initTab = SLUG_TO_TAB[routeParams.tab ?? ''] ?? 'overview';
+
+  const [activeAppSection, setActiveAppSection] = useState('campaigns'); // 'campaigns' | 'portal'
+  const [activeTab, setActiveTab] = useState(_initTab);
+  const [userType, setUserType] = useState<UserType>(_initRole);
+  const [dateRange, setDateRange] = useState<DateRange | undefined>(defaultDateRange);
   const [clientSwitcherOpen, setClientSwitcherOpen] = useState(false);
 
   // Keyboard shortcuts: e → OEM view, d → Dealer view
@@ -75,17 +111,21 @@ export default function AppContent() {
       if (['input', 'textarea', 'select'].includes(tag)) return;
       if (e.metaKey || e.ctrlKey || e.altKey) return;
       if (e.key === 'e') {
+        const nextTab = activeTab === 'guidelines' ? 'overview' : activeTab;
         setUserType('oem');
+        setActiveTab(nextTab);
+        navigate(buildUrl('oem', client.clientId, nextTab), { replace: true });
         emitSnackbar('OEM view (e)');
       }
       if (e.key === 'd') {
         setUserType('dealer');
+        navigate(buildUrl('dealer', client.clientId, activeTab), { replace: true });
         emitSnackbar('Dealer view (d)');
       }
     };
     window.addEventListener('keydown', handleKey);
     return () => window.removeEventListener('keydown', handleKey);
-  }, []);
+  }, [activeTab, client.clientId, navigate]);
   
   // Pre-Approvals Specific State
   const [preApprovalSearchQuery, setPreApprovalSearchQuery] = useState('');
@@ -226,7 +266,8 @@ export default function AppContent() {
     setActiveTab('claims');
     setSelectedPreApprovalId(null);
     setSelectedClaimId(workflow.claim.id);
-  }, [workflow.claim.id]);
+    navigate(buildUrl(userType, client.clientId, 'claims'), { replace: true });
+  }, [workflow.claim.id, userType, client.clientId, navigate]);
 
   // Planner Specific State
   const [selectedCampaignId, setSelectedCampaignId] = useState<string | null>(null);
@@ -289,6 +330,7 @@ export default function AppContent() {
     if (tabId !== 'pre-approvals') setSelectedPreApprovalId(null);
     if (tabId !== 'claims') setSelectedClaimId(null);
     if (tabId !== 'planner') setSelectedCampaignId(null);
+    navigate(buildUrl(userType, client.clientId, tabId), { replace: true });
   };
 
   // Handle Navigation from Sidebar
@@ -300,18 +342,29 @@ export default function AppContent() {
   const handlePortalPreApproval = () => {
     setActiveAppSection('campaigns');
     setActiveTab('pre-approvals');
+    navigate(buildUrl(userType, client.clientId, 'pre-approvals'), { replace: true });
   };
 
   const toggleUserType = () => {
     setUserType(prev => {
       const next = prev === 'dealer' ? 'oem' : 'dealer';
-      // Reset to overview if current tab doesn't exist in the new user type's tab set
-      if (next === 'oem' && activeTab === 'guidelines') {
-        setActiveTab('overview');
-      }
+      const nextTab = next === 'oem' && activeTab === 'guidelines' ? 'overview' : activeTab;
+      if (nextTab !== activeTab) setActiveTab(nextTab);
+      navigate(buildUrl(next, client.clientId, nextTab), { replace: true });
       return next;
     });
   };
+
+  // Sync URL → state on browser back/forward navigation
+  useEffect(() => {
+    const role: UserType = location.pathname.toLowerCase().includes('/dealership/') ? 'dealer' : 'oem';
+    const tabId = SLUG_TO_TAB[routeParams.tab ?? ''] ?? 'overview';
+    const brandParam = routeParams.brand?.toLowerCase();
+    const brandId = brandParam === 'audi' ? 'audi' : 'vw';
+    setUserType(role);
+    setActiveTab(tabId);
+    if (brandId !== client.clientId) switchClient(brandId);
+  }, [location.pathname]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // OEM Drawer State
   const [isOEMDrawerOpen, setIsOEMDrawerOpen] = useState(false);
@@ -348,7 +401,7 @@ export default function AppContent() {
         isOpen={clientSwitcherOpen}
         onClose={() => setClientSwitcherOpen(false)}
         currentClientId={client.clientId}
-        onSelect={(id) => { switchClient(id); setClientSwitcherOpen(false); }}
+        onSelect={(id) => { switchClient(id); setClientSwitcherOpen(false); navigate(buildUrl(userType, id, activeTab), { replace: true }); }}
       />
       <TopNavBar
         userType={userType}
@@ -359,14 +412,17 @@ export default function AppContent() {
         onOpenWebMonitoring={(id) => {
           setActiveTab('web-monitoring');
           setSelectedWebMonitoringId(id);
+          navigate(buildUrl(userType, client.clientId, 'web-monitoring'), { replace: true });
         }}
         onOpenPreApprovalFromNotif={(id) => {
           setActiveTab('pre-approvals');
           setSelectedPreApprovalId(id);
+          navigate(buildUrl(userType, client.clientId, 'pre-approvals'), { replace: true });
         }}
         onOpenClaimFromNotif={(id) => {
           setActiveTab('claims');
           setSelectedClaimId(id);
+          navigate(buildUrl(userType, client.clientId, 'claims'), { replace: true });
         }}
       />
 

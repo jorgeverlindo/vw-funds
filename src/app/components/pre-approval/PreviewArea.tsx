@@ -72,9 +72,9 @@ export function PreviewArea({ initialState = 'dropzone', onFilesAccepted, onDocu
   const [baIndex, setBaIndex] = useState(0);
 
   // ── Derived ───────────────────────────────────────────────────────────────
-  // Merge demo files with uploaded files so there's always content in populated state
+  // Show only uploaded files when the user has uploaded any; fall back to demo files
   const allFiles = state === 'populated'
-    ? [...DEMO_FILES, ...uploadedFiles]
+    ? (uploadedFiles.length > 0 ? uploadedFiles : DEMO_FILES)
     : uploadedFiles;
 
   const currentFile = allFiles[currentIndex] ?? allFiles[0];
@@ -92,7 +92,7 @@ export function PreviewArea({ initialState = 'dropzone', onFilesAccepted, onDocu
     setTimeout(() => {
       setState('populated');
       setShowOnboarding(true);
-      setCurrentIndex(DEMO_FILES.length + uploadedFiles.length);
+      setCurrentIndex(uploadedFiles.length); // first newly uploaded file
     }, 1500);
     onFilesAccepted?.(files);
     // Sync image files to the workflow document store so the panel carousel shows them
@@ -111,14 +111,11 @@ export function PreviewArea({ initialState = 'dropzone', onFilesAccepted, onDocu
   });
 
   const handleDelete = () => {
-    // Only allow deleting user-uploaded files (not demo files)
-    const uploadedIdx = currentIndex - DEMO_FILES.length;
-    if (uploadedIdx < 0) return; // demo files are not deletable
     const next = [...uploadedFiles];
-    next.splice(uploadedIdx, 1);
+    next.splice(currentIndex, 1);
     setUploadedFiles(next);
     setCurrentIndex(Math.max(0, currentIndex - 1));
-    if (next.length === 0 && DEMO_FILES.length === 0) setState('dropzone');
+    if (next.length === 0) setState('dropzone');
   };
 
   const handleZoomIn  = () => setZoom(z => Math.min(z + 0.25, 3));
@@ -146,7 +143,7 @@ export function PreviewArea({ initialState = 'dropzone', onFilesAccepted, onDocu
     setActiveAnnotationId(null);
   };
 
-  const isUserFile = currentIndex >= DEMO_FILES.length;
+  const isUserFile = uploadedFiles.length > 0;
 
   return (
     <div className="relative h-full w-full bg-[#F0F2F4] rounded-[12px] overflow-hidden flex flex-col">
@@ -231,16 +228,16 @@ export function PreviewArea({ initialState = 'dropzone', onFilesAccepted, onDocu
                           {idx + 1}
                         </div>
                         {/* Delete overlay for user-uploaded files */}
-                        {idx >= DEMO_FILES.length && (
+                        {uploadedFiles.length > 0 && (
                           <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();
-                                const uIdx = idx - DEMO_FILES.length;
                                 const next = [...uploadedFiles];
-                                next.splice(uIdx, 1);
+                                next.splice(idx, 1);
                                 setUploadedFiles(next);
-                                if (currentIndex >= allFiles.length - 1) setCurrentIndex(Math.max(0, currentIndex - 1));
+                                if (next.length === 0) setState('dropzone');
+                                else if (currentIndex >= next.length) setCurrentIndex(Math.max(0, next.length - 1));
                               }}
                               className="p-1.5 bg-white rounded-full text-[#686576] hover:text-[#D2323F] shadow transition-colors"
                             >

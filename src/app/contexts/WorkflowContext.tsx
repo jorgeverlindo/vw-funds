@@ -105,6 +105,7 @@ export interface WorkflowNotification {
   isRead: boolean;
   createdAt: string;       // ISO string
   time: string;            // display string e.g. "just now"
+  user?: { name: string; initials?: string; avatarUrl?: string };
 }
 
 export interface WorkflowPreApprovalState {
@@ -274,11 +275,12 @@ const INITIAL_STATE: WorkflowState = {
       targetRole: 'oem',
       type: 'pre-approval',
       title: 'New pre-approval submitted',
-      body: `${WORKFLOW_DEALER.name} (${WORKFLOW_DEALER.code}) submitted a pre-approval for review`,
+      body: `submitted a pre-approval for ${WORKFLOW_DEALER.name} ${WORKFLOW_DEALER.code}`,
       referenceId: WORKFLOW_PA_ID,
       isRead: false,
       createdAt: '2026-04-20T09:30:00.000Z',
       time: 'just now',
+      user: { name: WORKFLOW_DEALER.contact, initials: 'MM' },
     },
   ],
 };
@@ -340,8 +342,9 @@ export function WorkflowProvider({ children }: { children: ReactNode }) {
       targetRole: 'oem',
       type: 'pre-approval',
       title: 'New pre-approval submitted',
-      body: `${WORKFLOW_DEALER.name} (${WORKFLOW_DEALER.code}) submitted a pre-approval for review`,
+      body: `submitted a pre-approval for ${WORKFLOW_DEALER.name} ${WORKFLOW_DEALER.code}`,
       referenceId: workflow.preApproval.id,
+      user: { name: WORKFLOW_DEALER.contact, initials: 'MM' },
     });
     emitSnackbar('Pre-approval submitted');
   }, [pushEvent, pushNotif, workflow.preApproval.id]);
@@ -364,8 +367,9 @@ export function WorkflowProvider({ children }: { children: ReactNode }) {
       targetRole: 'oem',
       type: 'pre-approval',
       title: 'Pre-approval resubmitted',
-      body: `${WORKFLOW_DEALER.name} (${WORKFLOW_DEALER.code}) resubmitted the pre-approval for review`,
+      body: `resubmitted the pre-approval for ${WORKFLOW_DEALER.name} ${WORKFLOW_DEALER.code}`,
       referenceId: workflow.preApproval.id,
+      user: { name: WORKFLOW_DEALER.contact, initials: 'MM' },
     });
     emitSnackbar('Pre-approval resubmitted');
   }, [pushEvent, pushNotif, workflow.preApproval.id]);
@@ -389,8 +393,9 @@ export function WorkflowProvider({ children }: { children: ReactNode }) {
       targetRole: 'dealer',
       type: 'pre-approval',
       title: 'Pre-Approval Approved',
-      body: `Your pre-approval for ${WORKFLOW_DEALER.name} has been approved. You may now create a claim.`,
+      body: `approved your pre-approval for ${WORKFLOW_DEALER.name}. You may now create a claim.`,
       referenceId: workflow.preApproval.id,
+      user: { name: 'OEM Reviewer', initials: 'OR' },
     });
     emitSnackbar('Pre-approval approved');
   }, [pushEvent, pushNotif, workflow.preApproval.id]);
@@ -414,8 +419,9 @@ export function WorkflowProvider({ children }: { children: ReactNode }) {
       targetRole: 'dealer',
       type: 'pre-approval',
       title: 'Pre-Approval requires adjustments',
-      body: `${WORKFLOW_DEALER.name} pre-approval was returned with OEM comments`,
+      body: `requested revisions on your pre-approval for ${WORKFLOW_DEALER.name}`,
       referenceId: workflow.preApproval.id,
+      user: { name: 'OEM Reviewer', initials: 'OR' },
     });
     emitSnackbar('Revision request sent');
   }, [pushEvent, pushNotif, workflow.preApproval.id]);
@@ -454,8 +460,9 @@ export function WorkflowProvider({ children }: { children: ReactNode }) {
       targetRole: 'oem',
       type: 'claim',
       title: 'New claim submitted',
-      body: `${WORKFLOW_DEALER.name} (${WORKFLOW_DEALER.code}) submitted a claim for $${WORKFLOW_CAMPAIGN.totalAmount.toLocaleString()}`,
+      body: `submitted a claim for $${WORKFLOW_CAMPAIGN.totalAmount.toLocaleString()} — ${WORKFLOW_DEALER.name} ${WORKFLOW_DEALER.code}`,
       referenceId: workflow.claim.id,
+      user: { name: WORKFLOW_DEALER.contact, initials: 'MM' },
     });
     emitSnackbar('Claim submitted');
   }, [pushEvent, pushNotif, workflow.claim.id]);
@@ -474,8 +481,9 @@ export function WorkflowProvider({ children }: { children: ReactNode }) {
       targetRole: 'oem',
       type: 'claim',
       title: 'Claim resubmitted',
-      body: `${WORKFLOW_DEALER.name} (${WORKFLOW_DEALER.code}) resubmitted the claim for review`,
+      body: `resubmitted the claim for ${WORKFLOW_DEALER.name} ${WORKFLOW_DEALER.code}`,
       referenceId: workflow.claim.id,
+      user: { name: WORKFLOW_DEALER.contact, initials: 'MM' },
     });
     emitSnackbar('Claim resubmitted');
   }, [pushEvent, pushNotif, workflow.claim.id]);
@@ -495,8 +503,9 @@ export function WorkflowProvider({ children }: { children: ReactNode }) {
       targetRole: 'dealer',
       type: 'claim',
       title: 'Claim Approved',
-      body: `Your claim of $${WORKFLOW_CAMPAIGN.totalAmount.toLocaleString()} for ${WORKFLOW_DEALER.name} has been approved.`,
+      body: `approved your claim of $${WORKFLOW_CAMPAIGN.totalAmount.toLocaleString()} for ${WORKFLOW_DEALER.name}.`,
       referenceId: workflow.claim.id,
+      user: { name: 'OEM Reviewer', initials: 'OR' },
     });
     emitSnackbar('Claim approved');
   }, [pushEvent, pushNotif, workflow.claim.id]);
@@ -516,8 +525,9 @@ export function WorkflowProvider({ children }: { children: ReactNode }) {
       targetRole: 'dealer',
       type: 'claim',
       title: 'Claim requires adjustments',
-      body: `${WORKFLOW_DEALER.name} claim was returned with OEM comments`,
+      body: `requested revisions on your claim for ${WORKFLOW_DEALER.name}`,
       referenceId: workflow.claim.id,
+      user: { name: 'OEM Reviewer', initials: 'OR' },
     });
     emitSnackbar('Revision request sent');
   }, [pushEvent, pushNotif, workflow.claim.id]);
@@ -536,8 +546,9 @@ export function WorkflowProvider({ children }: { children: ReactNode }) {
       targetRole: 'dealer',
       type: 'claim',
       title: 'Payment Processed',
-      body: `Payment of $${WORKFLOW_CAMPAIGN.totalAmount.toLocaleString()} for ${WORKFLOW_DEALER.name} has been processed successfully.`,
+      body: `processed payment of $${WORKFLOW_CAMPAIGN.totalAmount.toLocaleString()} for ${WORKFLOW_DEALER.name}.`,
       referenceId: workflow.claim.id,
+      user: { name: 'OEM Reviewer', initials: 'OR' },
     });
     emitSnackbar('Payment processed');
   }, [pushEvent, pushNotif, workflow.claim.id]);
@@ -673,8 +684,9 @@ export function WorkflowProvider({ children }: { children: ReactNode }) {
       targetRole: 'oem',
       type: 'pre-approval',
       title: 'Pre-approval resubmitted',
-      body: `${WORKFLOW_DEALER.name} (${WORKFLOW_DEALER.code}) resubmitted the pre-approval for review`,
+      body: `resubmitted the pre-approval for ${WORKFLOW_DEALER.name} ${WORKFLOW_DEALER.code}`,
       referenceId: workflow.preApproval.id,
+      user: { name: WORKFLOW_DEALER.contact, initials: 'MM' },
     });
     emitSnackbar('Pre-approval resubmitted');
   }, [pushEvent, pushNotif, workflow.preApproval.id]);
@@ -694,8 +706,9 @@ export function WorkflowProvider({ children }: { children: ReactNode }) {
       targetRole: 'oem',
       type: 'claim',
       title: 'Claim resubmitted',
-      body: `${WORKFLOW_DEALER.name} (${WORKFLOW_DEALER.code}) resubmitted the claim for review`,
+      body: `resubmitted the claim for ${WORKFLOW_DEALER.name} ${WORKFLOW_DEALER.code}`,
       referenceId: workflow.claim.id,
+      user: { name: WORKFLOW_DEALER.contact, initials: 'MM' },
     });
     emitSnackbar('Claim resubmitted');
   }, [pushEvent, pushNotif, workflow.claim.id]);

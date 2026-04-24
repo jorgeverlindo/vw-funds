@@ -61,12 +61,13 @@ export function NotificationOverlay({ isOpen, onClose, onOpenPreApproval, onOpen
       type: n.type,
       message: (
         <div className="flex flex-col items-start gap-0.5">
-          <span className="font-normal text-[#1f1d25]">{n.title}</span>
+          <span className="font-normal text-[#1f1d25]">{n.user?.name ?? n.title}</span>
           <span className="font-normal text-[#1f1d25] text-[12px]">{n.body}</span>
         </div>
       ),
       time: n.time,
       isRead: n.isRead,
+      user: n.user ? { ...n.user, name: '' } : undefined,
     }));
 
   const handleWorkflowClick = (id: string) => {

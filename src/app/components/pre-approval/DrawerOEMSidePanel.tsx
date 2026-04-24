@@ -122,9 +122,9 @@ export function DrawerOEMSidePanel({
                     </div>
                   );
                 })}
-                <div className="flex justify-between items-center pt-2 mt-1 border-t-2 border-[#473BAB]/20">
+                <div className="flex justify-between items-center pt-2 mt-1 border-t-2 border-[var(--brand-accent)]/20">
                   <span className="text-[13px] font-medium text-[#1F1D25]">{t('Total Amount')}</span>
-                  <span className="text-[14px] font-bold text-[#473BAB]">${total.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                  <span className="text-[14px] font-bold text-[var(--brand-accent)]">${total.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                 </div>
               </div>
             );
@@ -171,7 +171,7 @@ export function DrawerOEMSidePanel({
           <textarea
             value={comment}
             onChange={(e) => onCommentChange(e.target.value)}
-            className="flex-1 w-full p-3 bg-[#F9FAFA] border border-[#CAC9CF] rounded-[4px] text-[13px] text-[#1F1D25] focus:outline-none focus:ring-1 focus:ring-[#473BAB] transition-all resize-none min-h-0"
+            className="flex-1 w-full p-3 bg-[#F9FAFA] border border-[#CAC9CF] rounded-[4px] text-[13px] text-[#1F1D25] focus:outline-none focus:ring-1 focus:ring-[var(--brand-accent)] transition-all resize-none min-h-0"
             placeholder={t('Add your comments here...')}
           />
 
@@ -179,7 +179,7 @@ export function DrawerOEMSidePanel({
             <button
               type="button"
               onClick={onClose}
-              className="px-5 py-2 rounded-full text-sm font-medium text-[#473BAB] hover:bg-[#473BAB]/5 transition-colors cursor-pointer"
+              className="px-5 py-2 rounded-full text-sm font-medium text-[var(--brand-accent)] hover:bg-[var(--brand-accent)]/5 transition-colors cursor-pointer"
             >
               {t('Cancel')}
             </button>
@@ -194,7 +194,7 @@ export function DrawerOEMSidePanel({
             <button
               type="button"
               onClick={() => onApprove(comment)}
-              className="px-6 py-2 bg-[#473BAB] hover:bg-[#3D3295] text-white rounded-full text-sm font-medium transition-colors shadow-sm cursor-pointer"
+              className="px-6 py-2 bg-[var(--brand-accent)] hover:bg-[var(--brand-accent-hover)] text-white rounded-full text-sm font-medium transition-colors shadow-sm cursor-pointer"
             >
               {t('Approve')}
             </button>

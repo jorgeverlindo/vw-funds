@@ -388,7 +388,7 @@ export default function AppContent() {
   })), [t, showLanguageToggle, userType]);
 
   return (
-    <div className="min-h-screen bg-[#F9FAFA] overflow-hidden">
+    <div className="min-h-screen bg-[#F9FAFA] overflow-hidden" data-mode={userType}>
       <AppSidebar
         activeRoute={activeAppSection}
         onNavigate={handleNavigate}

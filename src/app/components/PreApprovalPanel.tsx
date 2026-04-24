@@ -108,7 +108,7 @@ export function PreApprovalPanel({
           >
             {t('Cancel')}
           </button>
-          <button className="px-6 py-2 bg-[#473BAB] hover:bg-[#3D3295] text-white rounded-full text-sm font-medium transition-colors shadow-sm cursor-pointer">
+          <button className="px-6 py-2 bg-[var(--brand-accent)] hover:bg-[var(--brand-accent-hover)] text-white rounded-full text-sm font-medium transition-colors shadow-sm cursor-pointer">
             {t('Submit')}
           </button>
         </div>
@@ -128,7 +128,7 @@ export function PreApprovalPanel({
               onChange={(e) => setOemDraftComment(e.target.value)}
               placeholder="Add a comment (required for Request Adjustments)…"
               rows={3}
-              className="w-full rounded-xl border border-[#E0E0E0] px-3 py-2 text-[13px] text-[#1f1d25] placeholder:text-[#9C99A9] resize-none focus:outline-none focus:border-[#473BAB] transition-colors"
+              className="w-full rounded-xl border border-[#E0E0E0] px-3 py-2 text-[13px] text-[#1f1d25] placeholder:text-[#9C99A9] resize-none focus:outline-none focus:border-[var(--brand-accent)] transition-colors"
             />
             <div className="flex justify-end gap-3">
               <button
@@ -146,7 +146,7 @@ export function PreApprovalPanel({
               </button>
               <button
                 onClick={handleApprove}
-                className="px-6 py-2 bg-[#473BAB] hover:bg-[#3D3295] text-white rounded-full text-sm font-medium transition-colors shadow-sm cursor-pointer"
+                className="px-6 py-2 bg-[var(--brand-accent)] hover:bg-[var(--brand-accent-hover)] text-white rounded-full text-sm font-medium transition-colors shadow-sm cursor-pointer"
               >
                 Approve
               </button>
@@ -180,7 +180,7 @@ export function PreApprovalPanel({
           </button>
           <button
             onClick={handleCreateClaim}
-            className="flex items-center gap-2 px-6 py-2 bg-[#473BAB] hover:bg-[#3D3295] text-white rounded-full text-sm font-medium transition-colors shadow-sm cursor-pointer"
+            className="flex items-center gap-2 px-6 py-2 bg-[var(--brand-accent)] hover:bg-[var(--brand-accent-hover)] text-white rounded-full text-sm font-medium transition-colors shadow-sm cursor-pointer"
           >
             <CheckCircle2 className="w-4 h-4" />
             Create Claim
@@ -197,7 +197,7 @@ export function PreApprovalPanel({
             onChange={(e) => setDealerDraftComment(e.target.value)}
             placeholder="Add a reply to the OEM (optional)…"
             rows={3}
-            className="w-full rounded-xl border border-[#E0E0E0] px-3 py-2 text-[13px] text-[#1f1d25] placeholder:text-[#9C99A9] resize-none focus:outline-none focus:border-[#473BAB] transition-colors"
+            className="w-full rounded-xl border border-[#E0E0E0] px-3 py-2 text-[13px] text-[#1f1d25] placeholder:text-[#9C99A9] resize-none focus:outline-none focus:border-[var(--brand-accent)] transition-colors"
           />
           <div className="flex justify-end gap-3">
             <button
@@ -208,7 +208,7 @@ export function PreApprovalPanel({
             </button>
             <button
               onClick={handleResubmit}
-              className="flex items-center gap-2 px-6 py-2 bg-[#473BAB] hover:bg-[#3D3295] text-white rounded-full text-sm font-medium transition-colors shadow-sm cursor-pointer"
+              className="flex items-center gap-2 px-6 py-2 bg-[var(--brand-accent)] hover:bg-[var(--brand-accent-hover)] text-white rounded-full text-sm font-medium transition-colors shadow-sm cursor-pointer"
             >
               <MessageSquare className="w-4 h-4" />
               Resubmit for Review
@@ -279,7 +279,7 @@ export function PreApprovalPanel({
               <button
                 type="button"
                 onClick={onOpenAIReview}
-                className="flex items-center gap-1.5 px-4 py-2 rounded-full bg-[#473BAB] text-white text-[13px] font-medium hover:bg-[#3D3295] transition-colors cursor-pointer shadow-sm"
+                className="flex items-center gap-1.5 px-4 py-2 rounded-full bg-[var(--brand-accent)] text-white text-[13px] font-medium hover:bg-[var(--brand-accent-hover)] transition-colors cursor-pointer shadow-sm"
               >
                 <Sparkles className="w-4 h-4" />
                 AI Review {OEM_ANNOTATIONS.length} Items
@@ -390,9 +390,9 @@ export function PreApprovalPanel({
                     />
                   );
                 })}
-                <div className="flex items-center justify-between py-3 border-t-2 border-[#473BAB]/20 mt-1">
+                <div className="flex items-center justify-between py-3 border-t-2 border-[var(--brand-accent)]/20 mt-1">
                   <span className="text-[#1f1d25] text-[13px] font-medium">{t('Total Amount')}</span>
-                  <span className="text-[#473BAB] text-[15px] font-bold">
+                  <span className="text-[var(--brand-accent)] text-[15px] font-bold">
                     ${wfPA.totalAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </span>
                 </div>
@@ -486,7 +486,7 @@ export function PreApprovalPanel({
                       <div className="flex items-center gap-1">
                         <button
                           onClick={() => setPreviewDoc(doc)}
-                          className="text-[#686576] hover:text-[#473BAB] p-2 hover:bg-[#473BAB]/8 rounded-full transition-colors cursor-pointer"
+                          className="text-[#686576] hover:text-[var(--brand-accent)] p-2 hover:bg-[var(--brand-accent)]/8 rounded-full transition-colors cursor-pointer"
                         >
                           <Eye className="w-4 h-4" />
                         </button>

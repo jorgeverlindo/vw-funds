@@ -1,5 +1,27 @@
 @custom-variant dark (&:is(.dark *));
 
+/* ── Brand accent tokens — overridden per user mode ──────────────────────── */
+:root {
+  --brand-accent: #473BAB;
+  --brand-accent-hover: #3D3295;
+  --rail-bg: #1E1A42;
+  --rail-active: #2F2775;
+  --rail-icon: #ACABFF;
+  --rail-icon-inactive: #ACABFF;
+  --rail-icon-active: #ACABFF;
+}
+
+[data-mode="oem"] {
+  --brand-accent: #1D4FA8;
+  --brand-accent-hover: #153E87;
+  --rail-bg: #001E50;
+  --rail-active: #0A3A8C;
+  --rail-icon: #8AA3CC;
+  --rail-icon-inactive: #8AA3CC;
+  --rail-icon-active: #B8D0F5;
+}
+/* ─────────────────────────────────────────────────────────────────────────── */
+
 :root {
   --font-size: 16px;
   --background: #ffffff;

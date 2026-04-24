@@ -98,7 +98,7 @@ export function TopNavBar({ userType = 'dealer', onOpenOEMDrawer, languageToggle
           onClick={userType === 'dealer' ? onOpenAgentPane : undefined}
           className={cn(
             "p-1.5 rounded-full hover:bg-black/5 transition-colors cursor-pointer relative group",
-            isAgentPaneOpen && userType === 'dealer' && "bg-[#473bab]/10"
+            isAgentPaneOpen && "bg-[var(--brand-accent)]/10"
           )}
           aria-label="AI Agent"
           aria-expanded={isAgentPaneOpen}
@@ -111,7 +111,7 @@ export function TopNavBar({ userType = 'dealer', onOpenOEMDrawer, languageToggle
             </svg>
           </div>
           {/* Badge: Primary Color (#473bab) with number */}
-          <div className="absolute top-[2px] right-[2px] size-[18px] bg-[#473bab] rounded-full border border-white flex items-center justify-center transform translate-x-[25%] -translate-y-[25%]">
+          <div className="absolute top-[2px] right-[2px] size-[18px] bg-[var(--brand-accent)] rounded-full border border-white flex items-center justify-center transform translate-x-[25%] -translate-y-[25%]">
             <span className="text-white text-[10px] font-medium leading-none">1</span>
           </div>
         </button>
@@ -142,7 +142,7 @@ export function TopNavBar({ userType = 'dealer', onOpenOEMDrawer, languageToggle
             </div>
             {/* Badge — driven by WorkflowContext unread count */}
             {badgeCount > 0 && (
-              <div className="absolute top-[2px] right-[2px] size-[18px] bg-[#473bab] rounded-full border border-white flex items-center justify-center transform translate-x-[25%] -translate-y-[25%]">
+              <div className="absolute top-[2px] right-[2px] size-[18px] bg-[var(--brand-accent)] rounded-full border border-white flex items-center justify-center transform translate-x-[25%] -translate-y-[25%]">
                 <span className="text-white text-[10px] font-medium leading-none">
                   {badgeCount > 9 ? '9+' : badgeCount}
                 </span>

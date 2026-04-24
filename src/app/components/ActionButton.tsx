@@ -10,7 +10,7 @@ export function ActionButton({ label, className, ...props }: ActionButtonProps) 
   return (
     <button 
       className={cn(
-        "bg-[#473bab] h-10 flex items-center justify-center overflow-hidden px-4 rounded-[100px] shrink-0 transition-colors hover:bg-[#3d329b] cursor-pointer",
+        "bg-[var(--brand-accent)] h-10 flex items-center justify-center overflow-hidden px-4 rounded-[100px] shrink-0 transition-colors hover:bg-[var(--brand-accent-hover)] cursor-pointer",
         className
       )}
       {...props}

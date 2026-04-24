@@ -320,7 +320,7 @@ export function FundsClaimsContent({
                    onClick={() => setIsDatePickerOpen(!isDatePickerOpen)}
                    onReset={(e) => {
                      e.stopPropagation();
-                     onDateRangeChange({ from: new Date(2025, 0, 1), to: new Date(2025, 11, 31) });
+                     onDateRangeChange({ from: new Date(2025, 0, 1), to: new Date(2026, 11, 31) });
                    }}
                  />
                  {isDatePickerOpen && (

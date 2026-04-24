@@ -79,7 +79,7 @@ function buildUrl(role: UserType, clientId: string, tabId: string): string {
 
 const defaultDateRange: DateRange = {
   from: new Date(2025, 0, 1),
-  to: new Date(2025, 11, 31),
+  to: new Date(2026, 11, 31),
 };
 
 export type UserType = 'dealer' | 'oem';

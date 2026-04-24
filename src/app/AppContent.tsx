@@ -86,7 +86,7 @@ export type UserType = 'dealer' | 'oem';
 
 export default function AppContent() {
   const { t } = useTranslation();
-  const { workflow } = useWorkflow();
+  const { workflow, approvePreApproval, requestPreApprovalRevision } = useWorkflow();
   const { client, switchClient } = useClient();
 
   // ── Router hooks (must be before derived state) ───────────────────────────
@@ -561,6 +561,7 @@ export default function AppContent() {
                     onClose={() => setSelectedPreApprovalId(null)}
                     userType={userType}
                     onCreateClaim={handleCreateClaim}
+                    onOpenAIReview={() => setIsOEMDrawerOpen(true)}
                   />
                 </RightPane>
               </div>
@@ -619,7 +620,21 @@ export default function AppContent() {
         )}
       </main>
 
-      <DrawerOEM open={isOEMDrawerOpen} onClose={() => setIsOEMDrawerOpen(false)} />
+      <DrawerOEM
+        open={isOEMDrawerOpen}
+        onClose={() => setIsOEMDrawerOpen(false)}
+        preApproval={selectedPreApproval ?? undefined}
+        onApprove={(comment) => {
+          approvePreApproval(comment.trim() || undefined);
+          setIsOEMDrawerOpen(false);
+          setSelectedPreApprovalId(null);
+        }}
+        onRequestRevision={(comment) => {
+          requestPreApprovalRevision(comment.trim());
+          setIsOEMDrawerOpen(false);
+          setSelectedPreApprovalId(null);
+        }}
+      />
 
       {isWebMonitoringModalOpen && selectedWCMItem && (
         <WebMonitoringModal

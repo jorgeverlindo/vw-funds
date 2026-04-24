@@ -55,11 +55,17 @@ interface DrawerOEMMainPaneProps {
   checkedIds: Set<string>;
   onToggleCheck: (id: string, checked: boolean) => void;
   onIncludeAll: () => void;
+  images?: string[];
 }
 
-export function DrawerOEMMainPane({ checkedIds, onToggleCheck, onIncludeAll }: DrawerOEMMainPaneProps) {
+export function DrawerOEMMainPane({ checkedIds, onToggleCheck, onIncludeAll, images }: DrawerOEMMainPaneProps) {
   const [activeAnnotationId, setActiveAnnotationId] = useState<string | null>(null);
   const [annotations] = useState<AnnotationItem[]>(OEM_ANNOTATIONS);
+
+  // Use provided images when available; fall back to the demo Figma assets
+  const displayImages = (images && images.length > 0)
+    ? images
+    : [imgCardImage, imgCardImage1, imgCardImage2];
   const [showOnboarding, setShowOnboarding] = useState(true);
 
   return (
@@ -83,20 +89,11 @@ export function DrawerOEMMainPane({ checkedIds, onToggleCheck, onIncludeAll }: D
                {/* Image Container - Scrollable Canvas */}
                <div className="flex-1 w-full overflow-y-auto custom-scrollbar relative p-8">
                    <div className="relative w-full max-w-[800px] mx-auto flex flex-col gap-8 pb-20">
-                      {/* Image 1 */}
-                      <div className="relative shadow-sm bg-white p-2">
-                        <img src={imgCardImage} alt="Asset 1" className="w-full h-auto block" />
-                      </div>
-                      
-                      {/* Image 2 */}
-                      <div className="relative shadow-sm bg-white p-2">
-                        <img src={imgCardImage1} alt="Asset 2" className="w-full h-auto block" />
-                      </div>
-
-                      {/* Image 3 */}
-                      <div className="relative shadow-sm bg-white p-2">
-                        <img src={imgCardImage2} alt="Asset 3" className="w-full h-auto block" />
-                      </div>
+                      {displayImages.map((src, idx) => (
+                        <div key={idx} className="relative shadow-sm bg-white p-2">
+                          <img src={src} alt={`Asset ${idx + 1}`} className="w-full h-auto block" />
+                        </div>
+                      ))}
 
                       {/* Pins Overlay - Absolute over the entire scrollable content area? 
                           Or fixed over the viewport? 

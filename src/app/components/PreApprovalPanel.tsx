@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react';
-import { X, Eye, Star, Users, CheckCircle2, MessageSquare, Paperclip, Trash2 } from 'lucide-react';
+import { X, Eye, Star, Users, CheckCircle2, MessageSquare, Paperclip, Trash2, Sparkles } from 'lucide-react';
 import { PreApproval } from './FundsPreApprovalsContent';
+import { OEM_ANNOTATIONS } from './pre-approval/DrawerOEMMainPane';
 import { StatusChip } from './StatusChip';
 import { useTranslation } from '../contexts/LanguageContext';
 import { KeyValueRow } from './ui/KeyValueRow';
@@ -15,6 +16,7 @@ interface PreApprovalPanelProps {
   onClose: () => void;
   userType?: 'dealer' | 'oem';
   onCreateClaim?: () => void;
+  onOpenAIReview?: () => void;
 }
 
 export function PreApprovalPanel({
@@ -22,6 +24,7 @@ export function PreApprovalPanel({
   onClose,
   userType = 'dealer',
   onCreateClaim,
+  onOpenAIReview,
 }: PreApprovalPanelProps) {
   const { t } = useTranslation();
   const {
@@ -281,9 +284,21 @@ export function PreApprovalPanel({
               <section>
                 <div className="flex items-center justify-between mb-3">
                   <h3 className="text-[#1f1d25] text-[15px] font-medium">Visual Assets</h3>
-                  <span className="text-[11px] text-[#686576]">
-                    {imageDocs.length} {imageDocs.length === 1 ? 'item' : 'items'}
-                  </span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-[11px] text-[#686576]">
+                      {imageDocs.length} {imageDocs.length === 1 ? 'item' : 'items'}
+                    </span>
+                    {userType === 'oem' && onOpenAIReview && (
+                      <button
+                        type="button"
+                        onClick={onOpenAIReview}
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#473BAB] text-white text-[12px] font-medium hover:bg-[#3D3295] transition-colors cursor-pointer shadow-sm"
+                      >
+                        <Sparkles className="w-3.5 h-3.5" />
+                        AI Review {OEM_ANNOTATIONS.length} Items
+                      </button>
+                    )}
+                  </div>
                 </div>
                 <div className="flex overflow-x-auto gap-2 pb-2 custom-scrollbar snap-x">
                   {imageDocs.map((doc, idx) => (

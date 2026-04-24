@@ -1,47 +1,38 @@
 import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'motion/react';
-import { X, CheckCircle2 } from 'lucide-react';
 import { DrawerOEMMainPane, OEM_ANNOTATIONS } from './DrawerOEMMainPane';
 import { DrawerOEMSidePanel } from './DrawerOEMSidePanel';
-import { emitSnackbar } from '@/app/components/Snackbar';
+import type { PreApproval } from '@/app/components/FundsPreApprovalsContent';
 
 interface DrawerOEMProps {
   open: boolean;
   onClose: () => void;
+  preApproval?: PreApproval;
+  onApprove?: (comment: string) => void;
+  onRequestRevision?: (comment: string) => void;
 }
 
 const INTRO_SENTENCE = "Please address the following feedback:";
+const IMAGE_EXTS = new Set(['png', 'jpg', 'jpeg', 'gif', 'webp', 'svg']);
 
-export function DrawerOEM({ open, onClose }: DrawerOEMProps) {
+export function DrawerOEM({ open, onClose, preApproval, onApprove, onRequestRevision }: DrawerOEMProps) {
   const [checkedIds, setCheckedIds] = useState<Set<string>>(new Set());
   const [comment, setComment] = useState("");
-  
-  // Helper to generate comment text from ids
+
   const generateComment = (ids: Set<string>) => {
     if (ids.size === 0) return "";
-    
-    // Maintain insertion order consistent with the scroller order (which matches OEM_ANNOTATIONS order)
     const activeAnnotations = OEM_ANNOTATIONS.filter(ann => ids.has(ann.id));
-    
     const textList = activeAnnotations.map(ann => {
-      // Exclude numbering/rule labels (e.g. "1", "3A", "2D")
-      // The content in OEM_ANNOTATIONS already has title/desc separated from category/number.
-      // We just need to join Title and Description.
       const parts = [ann.title, ann.description].filter(Boolean);
       return parts.join("\n");
     });
-    
     return `${INTRO_SENTENCE}\n\n${textList.join("\n\n")}`;
   };
 
   const handleToggleCheck = (id: string, checked: boolean) => {
     const next = new Set(checkedIds);
-    if (checked) {
-      next.add(id);
-    } else {
-      next.delete(id);
-    }
+    if (checked) next.add(id); else next.delete(id);
     setCheckedIds(next);
     setComment(generateComment(next));
   };
@@ -52,18 +43,28 @@ export function DrawerOEM({ open, onClose }: DrawerOEMProps) {
     setComment(generateComment(allIds));
   };
 
-  const handleSend = () => {
-    emitSnackbar('Review submitted successfully');
-    setTimeout(() => onClose(), 500);
+  const handleApprove = () => {
+    onApprove?.(comment);
+    onClose();
   };
 
-  // Reset state when opening/closing
+  const handleRequestRevision = () => {
+    if (!comment.trim()) return;
+    onRequestRevision?.(comment);
+    onClose();
+  };
+
   useEffect(() => {
     if (open) {
       setCheckedIds(new Set());
       setComment("");
     }
   }, [open]);
+
+  // Extract image URLs from the preApproval documents (if provided)
+  const images = preApproval?.documents
+    .filter(d => d.url && IMAGE_EXTS.has(d.type.toLowerCase()))
+    .map(d => d.url!) ?? [];
 
   return createPortal(
     <>
@@ -87,37 +88,30 @@ export function DrawerOEM({ open, onClose }: DrawerOEMProps) {
               transition={{ type: "tween", duration: 0.2 }}
               className="relative flex w-[95vw] h-[90vh] bg-white rounded-[16px] shadow-2xl overflow-hidden"
             >
-               {/* We don't need a top header here because DrawerOEMSidePanel has its own header and MainPane is full height */}
-               {/* But wait, the SidePanel header has the 'X' to close. */}
-               {/* The design shows Main Pane (Left) and Side Panel (Right) taking up the full space. */}
-               {/* And "Drawer Title" in the top left? Annex 2 shows "{Drawer Title}"... */}
-               {/* Actually Annex 2 shows a header bar across the top? No, "Review Pre-approval request" is on the right panel. */}
-               {/* Left panel seems to be just the canvas. */}
-               {/* I'll stick to split view. */}
-
               <div className="flex-1 min-w-0 bg-[#F0F2F4] p-4">
-                 <DrawerOEMMainPane 
-                   checkedIds={checkedIds} 
-                   onToggleCheck={handleToggleCheck} 
-                   onIncludeAll={handleIncludeAll}
-                 />
+                <DrawerOEMMainPane
+                  checkedIds={checkedIds}
+                  onToggleCheck={handleToggleCheck}
+                  onIncludeAll={handleIncludeAll}
+                  images={images}
+                />
               </div>
 
               {/* Right Panel */}
               <div className="w-[400px] flex-none border-l border-[rgba(0,0,0,0.08)] bg-white h-full">
-                 <DrawerOEMSidePanel 
-                   onClose={onClose} 
-                   onSend={handleSend} 
-                   comment={comment}
-                   onCommentChange={setComment}
-                 />
+                <DrawerOEMSidePanel
+                  onClose={onClose}
+                  onApprove={handleApprove}
+                  onRequestRevision={handleRequestRevision}
+                  comment={comment}
+                  onCommentChange={setComment}
+                  preApproval={preApproval}
+                />
               </div>
-
             </motion.div>
           </div>
         )}
       </AnimatePresence>
-      
     </>,
     document.body
   );

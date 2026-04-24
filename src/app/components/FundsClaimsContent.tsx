@@ -115,6 +115,23 @@ function formatDays(n: number): string {
   return `${n} days`;
 }
 
+function parseAmount(s: string | undefined): number | null {
+  if (!s || s === '-') return null;
+  const negative = s.startsWith('(');
+  const num = parseFloat(s.replace(/[^0-9.]/g, ''));
+  if (isNaN(num)) return null;
+  return negative ? -num : num;
+}
+
+function fmtUSD(n: number): string {
+  return '$' + Math.abs(n).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+function stripPct(s: string | undefined): string {
+  if (!s) return '-';
+  return s.replace(/\s*\(\d+%\)/, '');
+}
+
 /** Build a displayable Claim row from an archived cycle snapshot */
 function archivedCycleToClaimRow(cycle: ArchivedCycle): Claim {
   const cl = cycle.claim;
@@ -373,6 +390,25 @@ export function FundsClaimsContent({
                   const claims = groupedData[monthKey] || [];
                   const isExpanded = expandedMonths[monthKey];
 
+                  // Compute aggregates from actual claim rows when present
+                  const computedSubmissionNum = claims.length > 0
+                    ? claims.reduce((sum, c) => sum + c.amount, 0)
+                    : null;
+                  const accrualNum = parseAmount(monthData?.accrual);
+                  const submissionNum = computedSubmissionNum ?? parseAmount(monthData?.submission);
+                  const differenceNum = (accrualNum !== null && submissionNum !== null)
+                    ? accrualNum - submissionNum
+                    : null;
+
+                  const accrualDisplay = accrualNum !== null ? fmtUSD(accrualNum) : '-';
+                  const submissionDisplay = submissionNum !== null ? fmtUSD(submissionNum) : '-';
+                  const differenceDisplay = differenceNum !== null
+                    ? differenceNum < 0 ? `(${fmtUSD(differenceNum)})` : fmtUSD(differenceNum)
+                    : '-';
+                  const differenceColor = differenceNum !== null && differenceNum < 0 ? 'text-red-600' : 'text-gray-900';
+                  const paidDisplay = stripPct(monthData?.paid);
+                  const pendingDisplay = stripPct(monthData?.pending);
+
                   return (
                     <div key={monthKey} className="group-container">
                       <div
@@ -386,11 +422,11 @@ export function FundsClaimsContent({
                           <span className="text-[14px] font-medium text-[#1f1d25] tracking-[0.17px]">{monthKey}</span>
                         </div>
                         <div className="flex items-center text-[12px] text-[#1f1d25] gap-0">
-                          <div className={`w-[120px] font-normal ${monthData ? '' : 'text-[#686576]'}`}>{monthData?.accrual ?? '-'}</div>
-                          <div className={`w-[120px] font-normal ${monthData ? '' : 'text-[#686576]'}`}>{monthData?.submission ?? '-'}</div>
-                          <div className={`w-[120px] font-normal ${monthData?.diffColor ?? 'text-[#686576]'}`}>{monthData?.difference ?? '-'}</div>
-                          <div className={`w-[140px] font-normal ${monthData ? '' : 'text-[#686576]'}`}>{monthData?.paid ?? '-'}</div>
-                          <div className={`w-[140px] font-normal ${monthData ? '' : 'text-[#686576]'}`}>{monthData?.pending ?? '-'}</div>
+                          <div className={`w-[120px] font-normal ${accrualNum !== null ? '' : 'text-[#686576]'}`}>{accrualDisplay}</div>
+                          <div className={`w-[120px] font-normal ${submissionNum !== null ? '' : 'text-[#686576]'}`}>{submissionDisplay}</div>
+                          <div className={`w-[120px] font-normal ${differenceNum !== null ? differenceColor : 'text-[#686576]'}`}>{differenceDisplay}</div>
+                          <div className={`w-[140px] font-normal ${monthData?.paid ? '' : 'text-[#686576]'}`}>{paidDisplay}</div>
+                          <div className={`w-[140px] font-normal ${monthData?.pending ? '' : 'text-[#686576]'}`}>{pendingDisplay}</div>
                         </div>
                       </div>
 

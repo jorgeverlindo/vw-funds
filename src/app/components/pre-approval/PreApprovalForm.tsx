@@ -169,8 +169,10 @@ export function PreApprovalForm({ onClose, onDone }: PreApprovalFormProps) {
     setClaimLines(prev => (prev.length <= 1 ? prev : prev.filter((_, j) => j !== i)));
 
   // ── Watch extra fields for context sync ──────────────────────────────────
-  const watchedMediaType = watch('mediaType');
-  const watchedDetails   = watch('details');
+  const watchedTitle       = watch('title');
+  const watchedMediaType   = watch('mediaType');
+  const watchedDetails     = watch('details');
+  const watchedContactInfo = watch('contactInfo');
 
   // ── Sync with WorkflowContext ──────────────────────────────────────────────
   // hasMounted prevents the first fire from overwriting context pre-populated data
@@ -183,14 +185,16 @@ export function PreApprovalForm({ onClose, onDone }: PreApprovalFormProps) {
     const mediaTypeLabel =
       MEDIA_TYPE_OPTIONS.find(o => o.value === watchedMediaType)?.label ?? watchedMediaType ?? '';
     updatePreApprovalData(
+      watchedTitle ?? '',
       computedTotal,
       formatRange(activityRange),
       claimLines,
       mediaTypeLabel,
       watchedDetails ?? '',
+      watchedContactInfo ?? '',
     );
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [computedTotal, activityRange, claimLines, watchedMediaType, watchedDetails]);
+  }, [computedTotal, activityRange, claimLines, watchedTitle, watchedMediaType, watchedDetails, watchedContactInfo]);
 
   // ── Expanded info ─────────────────────────────────────────────────────────
   const [isExpanded, setIsExpanded] = useState(false);
@@ -506,10 +510,12 @@ export function PreApprovalForm({ onClose, onDone }: PreApprovalFormProps) {
                     <span className="absolute left-2 top-1/2 -translate-y-1/2 text-[12px] text-[#686576] pointer-events-none">$</span>
                     <input
                       value={line.amount}
-                      onChange={e => updateLine(i, 'amount', e.target.value)}
-                      type="number"
-                      min="0"
-                      step="0.01"
+                      onChange={e => {
+                        const raw = e.target.value.replace(/[^0-9.]/g, '');
+                        updateLine(i, 'amount', raw);
+                      }}
+                      type="text"
+                      inputMode="decimal"
                       placeholder="0.00"
                       className="w-full h-8 pl-6 pr-2 bg-white border border-[#E0E0E0] rounded-[4px] text-[12px] text-[#1F1D25] focus:outline-none focus:ring-1 focus:ring-[#473BAB] focus:border-transparent"
                     />
@@ -518,7 +524,7 @@ export function PreApprovalForm({ onClose, onDone }: PreApprovalFormProps) {
                     type="button"
                     onClick={() => removeLine(i)}
                     disabled={claimLines.length <= 1}
-                    className="shrink-0 p-1.5 rounded-full text-[#9C99A9] hover:text-[#D2323F] hover:bg-red-50 disabled:opacity-30 disabled:cursor-not-allowed transition-colors cursor-pointer"
+                    className="shrink-0 self-center p-1.5 rounded-full text-[#9C99A9] hover:text-[#D2323F] hover:bg-red-50 disabled:opacity-30 disabled:cursor-not-allowed transition-colors cursor-pointer"
                     aria-label={t('Remove activity')}
                   >
                     <X className="w-3.5 h-3.5" />

@@ -163,14 +163,8 @@ export function BeforeAfter({
   // Use external props if provided (Portal Mode), otherwise internal (Legacy/Demo Mode)
   const isExternal = image !== undefined;
   
-  // HACK: For the first item in the flow, enforce the specific Before/After pair
-  // This matches the "Projects-PreApproval" requirement to reuse specific assets
-  const isFirstItem = isExternal && (currentIndex === 0);
-  
   const currentCreative = isExternal
-    ? (isFirstItem
-        ? { id: 0, original: imgOriginal1, enhanced: imgEnhanced1, annotations: annotations }
-        : { id: 0, original: image!, enhanced: image!, annotations: annotations })
+    ? { id: 0, original: image!, enhanced: image!, annotations: annotations }
     : (CREATIVES[internalIndex] || CREATIVES[0]);
     
   const displayIndex = isExternal ? (currentIndex ?? 0) : internalIndex;
@@ -261,15 +255,17 @@ export function BeforeAfter({
       <div className="relative flex-1 w-full flex flex-col items-center justify-center min-h-0">
         
         {/* Navigation Arrows */}
-        <button 
+        <button
+            type="button"
             onClick={handlePrev}
             className="absolute left-0 p-2 bg-white rounded-full shadow-md hover:bg-gray-50 z-20 top-1/2 -translate-y-1/2 cursor-pointer disabled:opacity-30"
             disabled={!canGoPrev}
         >
             <ChevronLeft />
         </button>
-        
-        <button 
+
+        <button
+            type="button"
             onClick={handleNext}
             className="absolute right-0 p-2 bg-white rounded-full shadow-md hover:bg-gray-50 z-20 top-1/2 -translate-y-1/2 cursor-pointer disabled:opacity-30"
             disabled={!canGoNext}
@@ -282,16 +278,18 @@ export function BeforeAfter({
             
             {/* Top Chips (Original / Enhanced) */}
             <div className="absolute top-[-12px] left-0 z-30 transform -translate-y-full">
-                <button 
-                    onClick={() => animateSlider(0)} // Reveals Original (Bottom)
+                <button
+                    type="button"
+                    onClick={() => animateSlider(0)}
                     className="bg-[#e3f2fd] text-[#01579b] px-3 py-1 rounded-[8px] text-[11px] font-normal tracking-[0.16px] hover:bg-[#bbdefb] transition-colors cursor-pointer"
                 >
                     Original
                 </button>
             </div>
             <div className="absolute top-[-12px] right-0 z-30 transform -translate-y-full">
-                <button 
-                    onClick={() => animateSlider(100)} // Reveals Enhanced (Top)
+                <button
+                    type="button"
+                    onClick={() => animateSlider(100)}
                     className="bg-[#e8f5e9] text-[#1b5e20] px-3 py-1 rounded-[8px] text-[11px] font-normal tracking-[0.16px] hover:bg-[#c8e6c9] transition-colors cursor-pointer"
                 >
                     Enhanced
@@ -374,7 +372,8 @@ export function BeforeAfter({
 
             {/* View Annotations Chip */}
             <div className="absolute bottom-[-12px] left-1/2 transform -translate-x-1/2 translate-y-full z-30">
-                <button 
+                <button
+                    type="button"
                     onClick={() => setShowAnnotations(!showAnnotations)}
                     className={cn(
                         "px-3 py-1 rounded-[8px] text-[11px] font-normal tracking-[0.16px] transition-colors cursor-pointer",
@@ -390,13 +389,15 @@ export function BeforeAfter({
 
       {/* 3. Footer Actions */}
       <div className="mt-8 flex gap-4 shrink-0">
-          <button 
+          <button
+            type="button"
             onClick={onCancel}
             className="px-6 py-2 rounded-full border border-transparent text-[#473bab] font-medium text-[13px] tracking-[0.46px] hover:bg-gray-50 transition-colors uppercase cursor-pointer"
           >
             Cancel
           </button>
-          <button 
+          <button
+            type="button"
             onClick={handleAcceptClick}
             className="px-6 py-2 rounded-full bg-[#473bab] text-white font-medium text-[13px] tracking-[0.46px] hover:bg-[#3d3293] transition-colors flex items-center gap-2 uppercase cursor-pointer"
           >

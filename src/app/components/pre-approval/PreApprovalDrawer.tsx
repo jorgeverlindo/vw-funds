@@ -12,7 +12,7 @@ interface PreApprovalDrawerProps {
 }
 
 export function PreApprovalDrawer({ open, onClose }: PreApprovalDrawerProps) {
-  const { submitPreApproval } = useWorkflow();
+  const { submitPreApproval, addPreApprovalDocument } = useWorkflow();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
 
@@ -74,7 +74,7 @@ export function PreApprovalDrawer({ open, onClose }: PreApprovalDrawerProps) {
               <div className="flex-1 flex min-h-0 relative">
                 {/* Left Pane: Preview Area */}
                 <div className="flex-1 p-4 bg-white min-w-0">
-                  <PreviewArea onSubmit={() => handleSubmit({})} />
+                  <PreviewArea onDocumentAdded={addPreApprovalDocument} />
                 </div>
 
                 {/* Divider */}

@@ -45,6 +45,19 @@ export function ScrollerAnnotations({
       `}</style>
       {/* Scrollable Content */}
       <div className="flex-1 overflow-y-auto px-3 py-3 space-y-4 custom-scrollbar">
+        {annotations.length === 0 && (
+          <div className="flex flex-col items-center justify-center h-full gap-3 pb-8">
+            <div className="w-10 h-10 rounded-full bg-[#E8F5E9] flex items-center justify-center">
+              <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                <path d="M4 10L8 14L16 6" stroke="#43A047" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            </div>
+            <div className="text-center">
+              <p className="text-[12px] font-semibold text-[#1F1D25]">No Issues Found</p>
+              <p className="text-[10px] text-[#686576] mt-1 leading-relaxed">All brand guidelines<br/>have been accepted.</p>
+            </div>
+          </div>
+        )}
         {annotations.map((item) => (
           <div
             key={item.id}

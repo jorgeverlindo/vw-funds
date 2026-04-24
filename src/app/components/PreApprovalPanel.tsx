@@ -331,23 +331,30 @@ export function PreApprovalPanel({
             </section>
           )}
 
-          {/* Approval Request Section */}
+          {/* Approval Request Section — ordered to match the form */}
           <section>
             <h3 className="text-[#1f1d25] text-[15px] font-medium mb-4">{t('Approval Request')}</h3>
             <div className="space-y-0">
-              <KeyValueRow
-                label={t('Last updated')}
-                value={preApproval.lastUpdated.toLocaleDateString('en-US', {
-                  month: 'short', day: 'numeric', year: 'numeric',
-                })}
-              />
+              {/* Title — first field in the form */}
+              {(isWorkflowItem ? wfPA.title : preApproval.title) && (
+                <KeyValueRow
+                  label={t('Title')}
+                  value={isWorkflowItem ? wfPA.title : (preApproval.title ?? '')}
+                />
+              )}
+              <KeyValueRow label={t('Submitted by')} value={preApproval.submittedBy.name} />
               <KeyValueRow
                 label={t('Submitted at')}
                 value={preApproval.submittedAt.toLocaleDateString('en-US', {
                   month: 'short', day: 'numeric', year: 'numeric',
                 })}
               />
-              <KeyValueRow label={t('Submitted by')} value={preApproval.submittedBy.name} />
+              <KeyValueRow
+                label={t('Last updated')}
+                value={preApproval.lastUpdated.toLocaleDateString('en-US', {
+                  month: 'short', day: 'numeric', year: 'numeric',
+                })}
+              />
               <KeyValueRow
                 label={t('Dealership')}
                 value={`${preApproval.dealershipCode} - ${preApproval.dealershipName} (${preApproval.dealershipCity})`}
@@ -356,10 +363,6 @@ export function PreApprovalPanel({
               {isWorkflowItem && (
                 <KeyValueRow label="Activity Period" value={wfPA.activityPeriod} />
               )}
-              <KeyValueRow
-                label={t('How many claims will you be making')}
-                value={preApproval.claimsCount.toString()}
-              />
               <KeyValueRow
                 label={t('Contact Information')}
                 value={preApproval.contactEmail}
@@ -393,6 +396,19 @@ export function PreApprovalPanel({
             </section>
           )}
 
+          {/* Details Section — before Media Type to match form order */}
+          <section>
+            <h3 className="text-[#1f1d25] text-[15px] font-medium mb-3">{t('Details')}</h3>
+            <div className="border-t border-[#E0E0E0]">
+              <div className="flex justify-between items-start py-4">
+                <span className="text-[#686576] text-[13px] font-normal w-1/3">{t('Description')}</span>
+                <span className="text-[#1f1d25] text-[13px] font-normal w-2/3 text-right whitespace-pre-wrap leading-relaxed">
+                  {isWorkflowItem ? wfPA.details : preApproval.description}
+                </span>
+              </div>
+            </div>
+          </section>
+
           {/* Media Type Section */}
           <section>
             <h3 className="text-[#1f1d25] text-xs font-bold uppercase mb-3 tracking-[0.8px] text-[#686576]">
@@ -400,10 +416,8 @@ export function PreApprovalPanel({
             </h3>
             <div className="flex flex-wrap gap-2">
               {(() => {
-                // Workflow item: show the selected media type from the form
                 const mediaLabel = isWorkflowItem ? wfPA.mediaType : preApproval.mediaType;
                 if (!mediaLabel) return null;
-                // If it's a comma-separated list, split; otherwise show as a single chip
                 const chips = mediaLabel.split(',').map(s => s.trim()).filter(Boolean);
                 return chips.map(chip => (
                   <span
@@ -414,19 +428,6 @@ export function PreApprovalPanel({
                   </span>
                 ));
               })()}
-            </div>
-          </section>
-
-          {/* Details Section */}
-          <section>
-            <h3 className="text-[#1f1d25] text-[15px] font-medium mb-3">{t('Details')}</h3>
-            <div className="border-t border-[#E0E0E0]">
-              <div className="flex justify-between items-start py-4">
-                <span className="text-[#686576] text-[13px] font-normal w-1/3">{t('Description')}</span>
-                <span className="text-[#1f1d25] text-[13px] font-normal w-2/3 text-right whitespace-pre-wrap leading-relaxed">
-                  {isWorkflowItem ? wfPA.details : preApproval.description}
-                </span>
-              </div>
             </div>
           </section>
 

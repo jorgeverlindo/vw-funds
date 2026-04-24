@@ -7,7 +7,6 @@ import { WorkflowHistoryTimeline } from './WorkflowHistoryTimeline';
 import { DocumentPreviewModal } from './pre-approval/DocumentPreviewModal';
 import {
   useWorkflow,
-  WORKFLOW_CL_ID,
   WORKFLOW_PA_ID,
   WORKFLOW_CAMPAIGN,
   WORKFLOW_DEALER,
@@ -75,8 +74,8 @@ export function ClaimsPanel({
     e.target.value = '';
   };
 
-  // Detect live workflow item
-  const isWorkflowItem = claim.id === WORKFLOW_CL_ID;
+  // Detect live workflow item — ID changes each cycle, never hardcode
+  const isWorkflowItem = claim.id === workflow.claim.id;
   const wfCL = workflow.claim;
   const liveStatus = isWorkflowItem ? (wfCL.status as ClaimStatus) : claim.status;
   const liveOemComment = isWorkflowItem ? wfCL.oemComment : null;

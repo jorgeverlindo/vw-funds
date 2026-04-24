@@ -13,7 +13,7 @@ import { StatusChip, ClaimStatus } from './StatusChip';
 import { Claim } from './ClaimsPanel';
 import { cn } from '../../lib/utils';
 import { ActionButton } from './ActionButton';
-import { useWorkflow, WORKFLOW_DEALER, WORKFLOW_CAMPAIGN, WORKFLOW_CL_ID, type ClaimWorkflowStatus, type ArchivedCycle } from '../contexts/WorkflowContext';
+import { useWorkflow, WORKFLOW_DEALER, WORKFLOW_CAMPAIGN, type ClaimWorkflowStatus, type ArchivedCycle } from '../contexts/WorkflowContext';
 
 // People portraits — Figma source of truth
 import imgFabioVeloso from 'figma:asset/175d81a7864ae50d37ddf9a160e546af1d2a8ee8.png';
@@ -109,6 +109,12 @@ function mapWorkflowClaimStatus(s: ClaimWorkflowStatus): ClaimStatus {
   }
 }
 
+function formatDays(n: number): string {
+  if (n <= 0) return 'just now';
+  if (n === 1) return '1 day';
+  return `${n} days`;
+}
+
 /** Build a displayable Claim row from an archived cycle snapshot */
 function archivedCycleToClaimRow(cycle: ArchivedCycle): Claim {
   const cl = cycle.claim;
@@ -157,12 +163,14 @@ export function FundsClaimsContent({
   // Build workflow claim item as soon as claim is created (any status, including Draft)
   const workflowClaim: Claim | null = workflow.claim.status !== null
     ? {
-        id: WORKFLOW_CL_ID,
-        uid: WORKFLOW_CL_ID,
+        id: workflow.claim.id,
+        uid: workflow.claim.id,
         date: new Date(),
-        amount: WORKFLOW_CAMPAIGN.totalAmount,
+        amount: workflow.claim.invoiceTotal || WORKFLOW_CAMPAIGN.totalAmount,
         status: mapWorkflowClaimStatus(workflow.claim.status),
-        timeInClaim: 1,
+        timeInClaim: workflow.claim.submittedAt
+          ? Math.round((Date.now() - new Date(workflow.claim.submittedAt).getTime()) / 86_400_000)
+          : 0,
         timeInPayment: workflow.claim.status === 'Paid' ? 2 : 0,
         dealershipCode: WORKFLOW_DEALER.code,
         dealershipName: WORKFLOW_DEALER.name,
@@ -383,8 +391,8 @@ export function FundsClaimsContent({
                        <div className="w-[160px] pr-2">
                          <StatusChip status={workflowClaim.status} />
                        </div>
-                       <div className="w-[100px] text-[12px] text-[#1f1d25]">{workflowClaim.timeInClaim} days</div>
-                       <div className="w-[120px] text-[12px] text-[#1f1d25]">{workflowClaim.timeInPayment} days</div>
+                       <div className="w-[100px] text-[12px] text-[#1f1d25]">{formatDays(workflowClaim.timeInClaim)}</div>
+                       <div className="w-[120px] text-[12px] text-[#1f1d25]">{formatDays(workflowClaim.timeInPayment)}</div>
                        <div className="flex-1 min-w-[200px] text-[12px] text-[#1f1d25] truncate pr-4" title={`${workflowClaim.dealershipCode} - ${workflowClaim.dealershipName} (${workflowClaim.dealershipCity})`}>
                          {workflowClaim.dealershipCode} - {workflowClaim.dealershipName} ({workflowClaim.dealershipCity})
                        </div>
@@ -453,8 +461,8 @@ export function FundsClaimsContent({
                        <div className="w-[100px] text-[12px] text-[#1f1d25] font-medium">{archivedCl.id}</div>
                        <div className="w-[100px] text-[12px] text-[#1f1d25]">${archivedCl.amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
                        <div className="w-[160px] pr-2"><StatusChip status={archivedCl.status} /></div>
-                       <div className="w-[100px] text-[12px] text-[#1f1d25]">{archivedCl.timeInClaim} days</div>
-                       <div className="w-[120px] text-[12px] text-[#1f1d25]">{archivedCl.timeInPayment} days</div>
+                       <div className="w-[100px] text-[12px] text-[#1f1d25]">{formatDays(archivedCl.timeInClaim)}</div>
+                       <div className="w-[120px] text-[12px] text-[#1f1d25]">{formatDays(archivedCl.timeInPayment)}</div>
                        <div className="flex-1 min-w-[200px] text-[12px] text-[#1f1d25] truncate pr-4">
                          {archivedCl.dealershipCode} - {archivedCl.dealershipName} ({archivedCl.dealershipCity})
                        </div>
@@ -542,8 +550,8 @@ export function FundsClaimsContent({
                                      <div className="w-[160px] pr-2">
                                        <StatusChip status={claim.status} />
                                      </div>
-                                     <div className="w-[100px] text-[12px] text-[#1f1d25]">{claim.timeInClaim} days</div>
-                                     <div className="w-[120px] text-[12px] text-[#1f1d25]">{claim.timeInPayment} days</div>
+                                     <div className="w-[100px] text-[12px] text-[#1f1d25]">{formatDays(claim.timeInClaim)}</div>
+                                     <div className="w-[120px] text-[12px] text-[#1f1d25]">{formatDays(claim.timeInPayment)}</div>
                                      <div className="flex-1 min-w-[200px] text-[12px] text-[#1f1d25] truncate pr-4" title={`${claim.dealershipCode} - ${claim.dealershipName} (${claim.dealershipCity})`}>
                                        {claim.dealershipCode} - {claim.dealershipName} ({claim.dealershipCity})
                                      </div>

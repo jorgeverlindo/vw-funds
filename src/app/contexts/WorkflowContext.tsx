@@ -116,11 +116,13 @@ export interface WorkflowPreApprovalState {
   submittedAt: string | null;
   claimsCount: number;
   /** Dynamic fields set from the pre-approval form */
+  title: string;
   totalAmount: number;
   activityPeriod: string;
   claimLines: ClaimLineItem[];
   mediaType: string;
   details: string;
+  contactEmail: string;
 }
 
 export interface WorkflowClaimState {
@@ -177,11 +179,13 @@ interface WorkflowContextType {
   // Cycle management
   archiveAndReset: () => void;
   updatePreApprovalData: (
+    title: string,
     totalAmount: number,
     activityPeriod: string,
     claimLines: ClaimLineItem[],
     mediaType: string,
     details: string,
+    contactEmail: string,
   ) => void;
 
   // Document management
@@ -238,6 +242,7 @@ const INITIAL_STATE: WorkflowState = {
     documents: [],
     submittedAt: '2026-04-20T09:30:00.000Z',
     claimsCount: 0,
+    title: 'March 2026 Digital Ad Campaign',
     totalAmount: WORKFLOW_CAMPAIGN.totalAmount,
     activityPeriod: `${WORKFLOW_CAMPAIGN.activityStartDate} – ${WORKFLOW_CAMPAIGN.activityEndDate}`,
     claimLines: Object.entries(WORKFLOW_CAMPAIGN.channelBreakdown).map(([description, amount]) => ({
@@ -246,6 +251,7 @@ const INITIAL_STATE: WorkflowState = {
     })),
     mediaType: WORKFLOW_CAMPAIGN.mediaType,
     details: WORKFLOW_CAMPAIGN.description,
+    contactEmail: WORKFLOW_DEALER.email,
   },
 
   claim: {
@@ -335,10 +341,10 @@ export function WorkflowProvider({ children }: { children: ReactNode }) {
       type: 'pre-approval',
       title: 'New pre-approval submitted',
       body: `${WORKFLOW_DEALER.name} (${WORKFLOW_DEALER.code}) submitted a pre-approval for review`,
-      referenceId: WORKFLOW_PA_ID,
+      referenceId: workflow.preApproval.id,
     });
     emitSnackbar('Pre-approval submitted');
-  }, [pushEvent, pushNotif]);
+  }, [pushEvent, pushNotif, workflow.preApproval.id]);
 
   const resubmitPreApproval = useCallback(() => {
     setWorkflow(prev => ({
@@ -359,10 +365,10 @@ export function WorkflowProvider({ children }: { children: ReactNode }) {
       type: 'pre-approval',
       title: 'Pre-approval resubmitted',
       body: `${WORKFLOW_DEALER.name} (${WORKFLOW_DEALER.code}) resubmitted the pre-approval for review`,
-      referenceId: WORKFLOW_PA_ID,
+      referenceId: workflow.preApproval.id,
     });
     emitSnackbar('Pre-approval resubmitted');
-  }, [pushEvent, pushNotif]);
+  }, [pushEvent, pushNotif, workflow.preApproval.id]);
 
   const approvePreApproval = useCallback((comment?: string) => {
     setWorkflow(prev => ({
@@ -384,10 +390,10 @@ export function WorkflowProvider({ children }: { children: ReactNode }) {
       type: 'pre-approval',
       title: 'Pre-Approval Approved',
       body: `Your pre-approval for ${WORKFLOW_DEALER.name} has been approved. You may now create a claim.`,
-      referenceId: WORKFLOW_PA_ID,
+      referenceId: workflow.preApproval.id,
     });
     emitSnackbar('Pre-approval approved');
-  }, [pushEvent, pushNotif]);
+  }, [pushEvent, pushNotif, workflow.preApproval.id]);
 
   const requestPreApprovalRevision = useCallback((comment: string) => {
     setWorkflow(prev => ({
@@ -409,10 +415,10 @@ export function WorkflowProvider({ children }: { children: ReactNode }) {
       type: 'pre-approval',
       title: 'Pre-Approval requires adjustments',
       body: `${WORKFLOW_DEALER.name} pre-approval was returned with OEM comments`,
-      referenceId: WORKFLOW_PA_ID,
+      referenceId: workflow.preApproval.id,
     });
     emitSnackbar('Revision request sent');
-  }, [pushEvent, pushNotif]);
+  }, [pushEvent, pushNotif, workflow.preApproval.id]);
 
   // ── Claim actions ─────────────────────────────────────────────────────────
 
@@ -420,7 +426,12 @@ export function WorkflowProvider({ children }: { children: ReactNode }) {
     setWorkflow(prev => ({
       ...prev,
       preApproval: { ...prev.preApproval, claimsCount: 1 },
-      claim: { ...prev.claim, status: 'Draft' },
+      claim: {
+        ...prev.claim,
+        status: 'Draft',
+        invoiceTotal: prev.preApproval.totalAmount,
+        linkedPreApprovalId: prev.preApproval.id,
+      },
     }));
     pushEvent('claim', {
       actor: 'Dealer',
@@ -444,10 +455,10 @@ export function WorkflowProvider({ children }: { children: ReactNode }) {
       type: 'claim',
       title: 'New claim submitted',
       body: `${WORKFLOW_DEALER.name} (${WORKFLOW_DEALER.code}) submitted a claim for $${WORKFLOW_CAMPAIGN.totalAmount.toLocaleString()}`,
-      referenceId: WORKFLOW_CL_ID,
+      referenceId: workflow.claim.id,
     });
     emitSnackbar('Claim submitted');
-  }, [pushEvent, pushNotif]);
+  }, [pushEvent, pushNotif, workflow.claim.id]);
 
   const resubmitClaim = useCallback(() => {
     setWorkflow(prev => ({
@@ -464,10 +475,10 @@ export function WorkflowProvider({ children }: { children: ReactNode }) {
       type: 'claim',
       title: 'Claim resubmitted',
       body: `${WORKFLOW_DEALER.name} (${WORKFLOW_DEALER.code}) resubmitted the claim for review`,
-      referenceId: WORKFLOW_CL_ID,
+      referenceId: workflow.claim.id,
     });
     emitSnackbar('Claim resubmitted');
-  }, [pushEvent, pushNotif]);
+  }, [pushEvent, pushNotif, workflow.claim.id]);
 
   const approveClaimAction = useCallback((comment?: string) => {
     setWorkflow(prev => ({
@@ -485,10 +496,10 @@ export function WorkflowProvider({ children }: { children: ReactNode }) {
       type: 'claim',
       title: 'Claim Approved',
       body: `Your claim of $${WORKFLOW_CAMPAIGN.totalAmount.toLocaleString()} for ${WORKFLOW_DEALER.name} has been approved.`,
-      referenceId: WORKFLOW_CL_ID,
+      referenceId: workflow.claim.id,
     });
     emitSnackbar('Claim approved');
-  }, [pushEvent, pushNotif]);
+  }, [pushEvent, pushNotif, workflow.claim.id]);
 
   const requestClaimRevision = useCallback((comment: string) => {
     setWorkflow(prev => ({
@@ -506,10 +517,10 @@ export function WorkflowProvider({ children }: { children: ReactNode }) {
       type: 'claim',
       title: 'Claim requires adjustments',
       body: `${WORKFLOW_DEALER.name} claim was returned with OEM comments`,
-      referenceId: WORKFLOW_CL_ID,
+      referenceId: workflow.claim.id,
     });
     emitSnackbar('Revision request sent');
-  }, [pushEvent, pushNotif]);
+  }, [pushEvent, pushNotif, workflow.claim.id]);
 
   const processPayment = useCallback(() => {
     setWorkflow(prev => ({
@@ -526,10 +537,10 @@ export function WorkflowProvider({ children }: { children: ReactNode }) {
       type: 'claim',
       title: 'Payment Processed',
       body: `Payment of $${WORKFLOW_CAMPAIGN.totalAmount.toLocaleString()} for ${WORKFLOW_DEALER.name} has been processed successfully.`,
-      referenceId: WORKFLOW_CL_ID,
+      referenceId: workflow.claim.id,
     });
     emitSnackbar('Payment processed');
-  }, [pushEvent, pushNotif]);
+  }, [pushEvent, pushNotif, workflow.claim.id]);
 
   // ── Cycle archive + reset ─────────────────────────────────────────────────
 
@@ -554,11 +565,13 @@ export function WorkflowProvider({ children }: { children: ReactNode }) {
         documents: [],
         submittedAt: null,
         claimsCount: 0,
+        title: '',
         totalAmount: 0,
         activityPeriod: '',
         claimLines: [],
         mediaType: '',
         details: '',
+        contactEmail: '',
       };
 
       const freshClaim: WorkflowClaimState = {
@@ -582,15 +595,17 @@ export function WorkflowProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const updatePreApprovalData = useCallback((
+    title: string,
     totalAmount: number,
     activityPeriod: string,
     claimLines: ClaimLineItem[],
     mediaType: string,
     details: string,
+    contactEmail: string,
   ) => {
     setWorkflow(prev => ({
       ...prev,
-      preApproval: { ...prev.preApproval, totalAmount, activityPeriod, claimLines, mediaType, details },
+      preApproval: { ...prev.preApproval, title, totalAmount, activityPeriod, claimLines, mediaType, details, contactEmail },
     }));
   }, []);
 
@@ -659,10 +674,10 @@ export function WorkflowProvider({ children }: { children: ReactNode }) {
       type: 'pre-approval',
       title: 'Pre-approval resubmitted',
       body: `${WORKFLOW_DEALER.name} (${WORKFLOW_DEALER.code}) resubmitted the pre-approval for review`,
-      referenceId: WORKFLOW_PA_ID,
+      referenceId: workflow.preApproval.id,
     });
     emitSnackbar('Pre-approval resubmitted');
-  }, [pushEvent, pushNotif]);
+  }, [pushEvent, pushNotif, workflow.preApproval.id]);
 
   const resubmitClaimWithComment = useCallback((comment: string) => {
     setWorkflow(prev => ({
@@ -680,10 +695,10 @@ export function WorkflowProvider({ children }: { children: ReactNode }) {
       type: 'claim',
       title: 'Claim resubmitted',
       body: `${WORKFLOW_DEALER.name} (${WORKFLOW_DEALER.code}) resubmitted the claim for review`,
-      referenceId: WORKFLOW_CL_ID,
+      referenceId: workflow.claim.id,
     });
     emitSnackbar('Claim resubmitted');
-  }, [pushEvent, pushNotif]);
+  }, [pushEvent, pushNotif, workflow.claim.id]);
 
   // ── Notification read state ───────────────────────────────────────────────
 

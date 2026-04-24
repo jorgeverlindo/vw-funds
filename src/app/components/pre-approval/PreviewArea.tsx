@@ -26,7 +26,7 @@ type ViewMode = 'single' | 'grid';
 interface PreviewAreaProps {
   initialState?: PreviewState;
   onFilesAccepted?: (files: File[]) => void;
-  onSubmit?: () => void;
+  onDocumentAdded?: (doc: { name: string; size: string; type: string; url: string }) => void;
 }
 
 // Mock Annotations
@@ -49,7 +49,7 @@ const DEMO_FILES = [
   { url: imgNextAd,   annotations: NEXT_AD_ANNOTATIONS },
 ];
 
-export function PreviewArea({ initialState = 'dropzone', onFilesAccepted, onSubmit }: PreviewAreaProps) {
+export function PreviewArea({ initialState = 'dropzone', onFilesAccepted, onDocumentAdded }: PreviewAreaProps) {
   const [state, setState] = useState<PreviewState>(initialState);
   const [viewMode, setViewMode] = useState<ViewMode>('single');
   const [activeAnnotationId, setActiveAnnotationId] = useState<string | null>(null);
@@ -65,6 +65,12 @@ export function PreviewArea({ initialState = 'dropzone', onFilesAccepted, onSubm
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [showBeforeAfter, setShowBeforeAfter] = useState(false);
 
+  // Tracks which file indices have been accepted via autocorrect
+  const [acceptedIndices, setAcceptedIndices] = useState<Set<number>>(new Set());
+
+  // BeforeAfter navigation index — independent of the main carousel index
+  const [baIndex, setBaIndex] = useState(0);
+
   // ── Derived ───────────────────────────────────────────────────────────────
   // Merge demo files with uploaded files so there's always content in populated state
   const allFiles = state === 'populated'
@@ -72,7 +78,8 @@ export function PreviewArea({ initialState = 'dropzone', onFilesAccepted, onSubm
     : uploadedFiles;
 
   const currentFile = allFiles[currentIndex] ?? allFiles[0];
-  const annotations = currentFile?.annotations ?? MOCK_ANNOTATIONS;
+  const isCurrentAccepted = acceptedIndices.has(currentIndex);
+  const annotations = isCurrentAccepted ? [] : (currentFile?.annotations ?? MOCK_ANNOTATIONS);
   const canGoPrev = currentIndex > 0;
   const canGoNext = currentIndex < allFiles.length - 1;
 
@@ -85,10 +92,16 @@ export function PreviewArea({ initialState = 'dropzone', onFilesAccepted, onSubm
     setTimeout(() => {
       setState('populated');
       setShowOnboarding(true);
-      // Navigate to the first newly added file
       setCurrentIndex(DEMO_FILES.length + uploadedFiles.length);
     }, 1500);
     onFilesAccepted?.(files);
+    // Sync image files to the workflow document store so the panel carousel shows them
+    files.forEach((f, i) => {
+      const ext = f.name.split('.').pop()?.toLowerCase() ?? 'file';
+      const sizeKB = f.size / 1024;
+      const sizeStr = sizeKB >= 1024 ? `${(sizeKB / 1024).toFixed(1)} MB` : `${sizeKB.toFixed(0)} KB`;
+      onDocumentAdded?.({ name: f.name, size: sizeStr, type: ext, url: newEntries[i].url });
+    });
   };
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
@@ -112,12 +125,24 @@ export function PreviewArea({ initialState = 'dropzone', onFilesAccepted, onSubm
   const handleZoomOut = () => setZoom(z => Math.max(z - 0.25, 0.5));
   const handleReset   = () => setZoom(1);
 
+  // Opens BeforeAfter starting from the currently visible file
+  const handleOpenAutocorrect = () => {
+    setBaIndex(currentIndex);
+    setShowOnboarding(false);
+    setShowBeforeAfter(true);
+  };
+
+  // Called by BeforeAfter "Accept & Next" — marks current baIndex and advances
+  const handleBANext = () => {
+    setAcceptedIndices(prev => new Set(prev).add(baIndex));
+    setBaIndex(i => i + 1);
+  };
+
+  // Called by BeforeAfter "Accept" on the last file — marks and closes
   const handleAcceptAutocorrect = () => {
-    onSubmit?.();
+    setAcceptedIndices(prev => new Set(prev).add(baIndex));
+    setCurrentIndex(baIndex);
     setShowBeforeAfter(false);
-    if (canGoNext) {
-      setCurrentIndex(i => i + 1);
-    }
     setActiveAnnotationId(null);
   };
 
@@ -296,7 +321,7 @@ export function PreviewArea({ initialState = 'dropzone', onFilesAccepted, onSubm
                       <OnboardingBubble
                         isVisible={true}
                         onSkip={() => setShowOnboarding(false)}
-                        onAutocorrect={() => setShowBeforeAfter(true)}
+                        onAutocorrect={handleOpenAutocorrect}
                         className="absolute left-0 top-16 z-[1005]"
                       />
                     )}
@@ -307,7 +332,7 @@ export function PreviewArea({ initialState = 'dropzone', onFilesAccepted, onSubm
               {/* Toolbar — always visible at the bottom */}
               <div className="w-full max-w-[600px] mt-2 mb-1 shrink-0 z-10">
                 <PreviewControlsZoom
-                  onAutocorrect={() => setShowBeforeAfter(true)}
+                  onAutocorrect={handleOpenAutocorrect}
                   onReset={handleReset}
                   onDelete={isUserFile ? handleDelete : undefined}
                   onZoomIn={handleZoomIn}
@@ -327,6 +352,14 @@ export function PreviewArea({ initialState = 'dropzone', onFilesAccepted, onSubm
                 >
                   <BeforeAfter
                     isVisible={true}
+                    image={allFiles[baIndex]?.url ?? ''}
+                    annotations={acceptedIndices.has(baIndex) ? [] : (allFiles[baIndex]?.annotations ?? MOCK_ANNOTATIONS)}
+                    currentIndex={baIndex}
+                    totalCount={allFiles.length}
+                    hasPrevious={baIndex > 0}
+                    hasNext={baIndex < allFiles.length - 1}
+                    onNext={handleBANext}
+                    onPrev={() => setBaIndex(i => Math.max(0, i - 1))}
                     onAccept={handleAcceptAutocorrect}
                     onCancel={() => setShowBeforeAfter(false)}
                   />

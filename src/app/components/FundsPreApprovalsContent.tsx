@@ -21,6 +21,7 @@ import imgMalloryManning from 'figma:asset/f0494d5017440bdc302141d9ab01c7c81e4a3
 // --- Types ---
 export interface PreApproval {
   id: string;
+  title?: string;
   date: Date;
   dealershipCode: string;
   dealershipName: string;
@@ -277,11 +278,18 @@ function mapWorkflowPAStatus(s: PreApprovalWorkflowStatus): PreApproval['status'
   }
 }
 
+function formatDays(n: number): string {
+  if (n <= 0) return 'just now';
+  if (n === 1) return '1 day';
+  return `${n} days`;
+}
+
 /** Build a displayable PreApproval row from an archived cycle snapshot */
 function archivedCycleToPA(cycle: ArchivedCycle): PreApproval {
   const pa = cycle.preApproval;
   return {
     id: pa.id,
+    title: pa.title,
     date: new Date(cycle.archivedAt),
     dealershipCode: WORKFLOW_DEALER.code,
     dealershipName: WORKFLOW_DEALER.name,
@@ -295,7 +303,7 @@ function archivedCycleToPA(cycle: ArchivedCycle): PreApproval {
     submittedAt: pa.submittedAt ? new Date(pa.submittedAt) : new Date(cycle.archivedAt),
     initiativeType: WORKFLOW_CAMPAIGN.initiativeType,
     claimsCount: pa.claimsCount,
-    contactEmail: WORKFLOW_DEALER.email,
+    contactEmail: pa.contactEmail || WORKFLOW_DEALER.email,
     description: WORKFLOW_CAMPAIGN.description,
     documents: pa.documents,
   };
@@ -318,12 +326,15 @@ export function FundsPreApprovalsContent({
   // ID is dynamic — changes each cycle after archiveAndReset
   const workflowPreApproval: PreApproval = {
     id: workflow.preApproval.id,
+    title: workflow.preApproval.title,
     date: new Date(),   // always today — avoids UTC-offset display bug
     dealershipCode: WORKFLOW_DEALER.code,
     dealershipName: WORKFLOW_DEALER.name,
     dealershipCity: WORKFLOW_DEALER.city,
     status: mapWorkflowPAStatus(workflow.preApproval.status),
-    timeInPreApproval: 1,
+    timeInPreApproval: workflow.preApproval.submittedAt
+      ? Math.round((Date.now() - new Date(workflow.preApproval.submittedAt).getTime()) / 86_400_000)
+      : 0,
     submittedBy: { name: WORKFLOW_DEALER.contact, avatarUrl: AVATARS[5] },
     mediaType: WORKFLOW_CAMPAIGN.mediaType,
     details: workflow.preApproval.details || 'Digital Ad Campaign',
@@ -331,7 +342,7 @@ export function FundsPreApprovalsContent({
     submittedAt: workflow.preApproval.submittedAt ? new Date(workflow.preApproval.submittedAt) : new Date('2026-04-20'),
     initiativeType: WORKFLOW_CAMPAIGN.initiativeType,
     claimsCount: workflow.preApproval.claimsCount,
-    contactEmail: WORKFLOW_DEALER.email,
+    contactEmail: workflow.preApproval.contactEmail || WORKFLOW_DEALER.email,
     description: workflow.preApproval.details || WORKFLOW_CAMPAIGN.description,
     documents: workflow.preApproval.documents,
   };
@@ -512,7 +523,7 @@ export function FundsPreApprovalsContent({
                        <StatusChip status={row.status} />
                      </td>
                      <td className="px-4 py-3.5 text-xs text-[#1f1d25] whitespace-nowrap">
-                       {row.timeInPreApproval} days
+                       {formatDays(row.timeInPreApproval)}
                      </td>
                      <td className="px-4 py-3.5 whitespace-nowrap">
                        <div className="flex items-center gap-2">

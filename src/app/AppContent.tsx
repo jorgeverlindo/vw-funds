@@ -99,6 +99,7 @@ export default function AppContent() {
       const wfPA = workflow.preApproval;
       return {
         id: wfPA.id,
+        title: wfPA.title,
         date: new Date(),
         dealershipCode: WORKFLOW_DEALER.code,
         dealershipName: WORKFLOW_DEALER.name,
@@ -120,7 +121,7 @@ export default function AppContent() {
         submittedAt: wfPA.submittedAt ? new Date(wfPA.submittedAt) : new Date('2026-04-20'),
         initiativeType: WORKFLOW_CAMPAIGN.initiativeType,
         claimsCount: wfPA.claimsCount,
-        contactEmail: WORKFLOW_DEALER.email,
+        contactEmail: wfPA.contactEmail || WORKFLOW_DEALER.email,
         description: wfPA.details || WORKFLOW_CAMPAIGN.description,
         documents: wfPA.documents,
       };
@@ -132,6 +133,7 @@ export default function AppContent() {
       const pa = archived.preApproval;
       return {
         id: pa.id,
+        title: pa.title,
         date: new Date(archived.archivedAt),
         dealershipCode: WORKFLOW_DEALER.code,
         dealershipName: WORKFLOW_DEALER.name,
@@ -153,7 +155,7 @@ export default function AppContent() {
         submittedAt: pa.submittedAt ? new Date(pa.submittedAt) : new Date(archived.archivedAt),
         initiativeType: WORKFLOW_CAMPAIGN.initiativeType,
         claimsCount: pa.claimsCount,
-        contactEmail: WORKFLOW_DEALER.email,
+        contactEmail: pa.contactEmail || WORKFLOW_DEALER.email,
         description: pa.details || WORKFLOW_CAMPAIGN.description,
         documents: pa.documents,
       };

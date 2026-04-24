@@ -11,15 +11,6 @@
   --rail-icon-active: #ACABFF;
 }
 
-[data-mode="oem"] {
-  --brand-accent: #1D4FA8;
-  --brand-accent-hover: #153E87;
-  --rail-bg: #001E50;
-  --rail-active: #0A3A8C;
-  --rail-icon: #8AA3CC;
-  --rail-icon-inactive: #8AA3CC;
-  --rail-icon-active: #B8D0F5;
-}
 /* ─────────────────────────────────────────────────────────────────────────── */
 
 :root {

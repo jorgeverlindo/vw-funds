@@ -93,12 +93,7 @@ export function AppSidebar({
   const { t } = useTranslation();
   const { client } = useClient();
 
-  // Icon colors vary between active/inactive in OEM mode; dealer uses one value
-  const getIconColor = (route: string) => {
-    const active = activeRoute === route;
-    if (userType === 'oem') return active ? '#B8D0F5' : '#8AA3CC';
-    return '#ACABFF';
-  };
+  const getIconColor = (_route: string) => '#ACABFF';
 
   // Client + role → correct logo PNG
   const clientLogo = client.clientId === 'audi' ? (
@@ -270,7 +265,7 @@ export function AppSidebar({
       {/* Help button */}
       <div className="content-stretch flex flex-col gap-4 items-center justify-center relative shrink-0 w-full z-[1] pb-6">
         <svg className="size-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5"
-             style={{ color: userType === 'oem' ? '#8AA3CC' : '#ACABFF' }}>
+             style={{ color: '#ACABFF' }}>
           <path d={svgPaths.p25dcf140} strokeLinecap="round" strokeLinejoin="round" />
         </svg>
       </div>

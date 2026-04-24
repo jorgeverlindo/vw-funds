@@ -104,6 +104,11 @@ export default function AppContent() {
   const [dateRange, setDateRange] = useState<DateRange | undefined>(defaultDateRange);
   const [clientSwitcherOpen, setClientSwitcherOpen] = useState(false);
 
+  // Sync data-mode to <html> so portals (rendered outside the wrapper div) also inherit CSS vars
+  useEffect(() => {
+    document.documentElement.setAttribute('data-mode', userType);
+  }, [userType]);
+
   // Keyboard shortcuts: e → OEM view, d → Dealer view
   useEffect(() => {
     const handleKey = (e: KeyboardEvent) => {

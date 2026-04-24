@@ -273,6 +273,20 @@ export function PreApprovalPanel({
       <div className="flex-1 overflow-y-auto custom-scrollbar">
         <div className="px-8 py-6 space-y-8">
 
+          {/* AI Review button — OEM only, always visible on workflow items */}
+          {isWorkflowItem && userType === 'oem' && onOpenAIReview && (
+            <div className="flex justify-end">
+              <button
+                type="button"
+                onClick={onOpenAIReview}
+                className="flex items-center gap-1.5 px-4 py-2 rounded-full bg-[#473BAB] text-white text-[13px] font-medium hover:bg-[#3D3295] transition-colors cursor-pointer shadow-sm"
+              >
+                <Sparkles className="w-4 h-4" />
+                AI Review {OEM_ANNOTATIONS.length} Items
+              </button>
+            </div>
+          )}
+
           {/* Visual Assets — horizontal thumbnail gallery (top of panel, both modes) */}
           {isWorkflowItem && (() => {
             const IMAGE_EXTS = new Set(['png', 'jpg', 'jpeg', 'gif', 'webp', 'svg']);
@@ -284,21 +298,9 @@ export function PreApprovalPanel({
               <section>
                 <div className="flex items-center justify-between mb-3">
                   <h3 className="text-[#1f1d25] text-[15px] font-medium">Visual Assets</h3>
-                  <div className="flex items-center gap-2">
-                    <span className="text-[11px] text-[#686576]">
-                      {imageDocs.length} {imageDocs.length === 1 ? 'item' : 'items'}
-                    </span>
-                    {userType === 'oem' && onOpenAIReview && (
-                      <button
-                        type="button"
-                        onClick={onOpenAIReview}
-                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#473BAB] text-white text-[12px] font-medium hover:bg-[#3D3295] transition-colors cursor-pointer shadow-sm"
-                      >
-                        <Sparkles className="w-3.5 h-3.5" />
-                        AI Review {OEM_ANNOTATIONS.length} Items
-                      </button>
-                    )}
-                  </div>
+                  <span className="text-[11px] text-[#686576]">
+                    {imageDocs.length} {imageDocs.length === 1 ? 'item' : 'items'}
+                  </span>
                 </div>
                 <div className="flex overflow-x-auto gap-2 pb-2 custom-scrollbar snap-x">
                   {imageDocs.map((doc, idx) => (

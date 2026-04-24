@@ -335,19 +335,6 @@ export function PreApprovalPanel({
             );
           })()}
 
-          {/* OEM comment banner — dealer sees this when revision was requested */}
-          {isWorkflowItem && userType === 'dealer' && liveStatus === 'Revision Requested' && liveOemComment && (
-            <section className="bg-[rgba(225,118,19,0.06)] -mx-8 px-8 py-4 border-b border-[rgba(225,118,19,0.2)]">
-              <h3 className="text-[#E17613] text-[13px] font-medium mb-1.5 flex items-center gap-2">
-                <span className="w-2 h-2 rounded-full bg-[#E17613]" />
-                Adjustments Requested by OEM
-              </h3>
-              <p className="text-[13px] text-[#1f1d25] leading-relaxed pl-4 border-l-2 border-[rgba(225,118,19,0.3)]">
-                {liveOemComment}
-              </p>
-            </section>
-          )}
-
           {/* Approval Request Section — ordered to match the form */}
           <section>
             <h3 className="text-[#1f1d25] text-[15px] font-medium mb-4">{t('Approval Request')}</h3>

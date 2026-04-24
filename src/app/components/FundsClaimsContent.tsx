@@ -68,22 +68,22 @@ const createClaim = (id: string, date: Date, amount: number, status: ClaimStatus
 });
 
 export const CLAIMS_MOCK_DATA: Claim[] = [
-  createClaim('MFC539881', new Date(2025, 0, 25), 4070.05, 'Approved',          6,  6, '408252', 'Jack Daniels Volkswagen (Paramus)',     'Paramus',  'DMP - Hard Costs', 0, 'Fabio Veloso'),
-  createClaim('MFC540978', new Date(2025, 0, 22), 3069.56, 'Pending',           8, 22, '423063', 'Armstrong Volkswagen of Gladstone',     'Gladstone','DMP - Hard Costs', 1, 'Zak Flaten'),
-  createClaim('MFC540989', new Date(2025, 0, 21), 3114.47, 'Pending',           9,  7, '408252', 'Jack Daniels Volkswagen (Paramus)',     'Paramus',  'DMP - Hard Costs', 2, 'Jenny Eckart'),
-  createClaim('MFC540992', new Date(2025, 0, 21), 2268.56, 'Approved',          6,  7, '409210', 'Paramount Volkswagen of Hickory',       'Hickory',  'DMP - Hard Costs', 3, 'Ryan Ledger'),
-  createClaim('MFC541000', new Date(2025, 0, 19), 2269.56, 'Approved',         10,  4, '402165', 'Volkswagen of Downtown Chicago',        'Chicago',  'DMP - Hard Costs', 4, 'Garry Schwietert'),
-  createClaim('MFC539882', new Date(2025, 0, 18), 4070.05, 'Approved',          5,  4, '408252', 'Jack Daniels Volkswagen (Paramus)',     'Paramus',  'DMP - Hard Costs', 5, 'Mallory Manning'),
-  createClaim('MFC540979', new Date(2025, 0, 18), 3069.56, 'Revision Requested',6,  3, '402165', 'Volkswagen of Downtown Chicago',        'Chicago',  'DMP - Hard Costs', 0, 'Fabio Veloso'),
-  createClaim('MFC540990', new Date(2025, 0, 15), 3114.47, 'In Review',         4,  7, '402165', 'Volkswagen of Downtown Chicago',        'Chicago',  'DMP - Hard Costs', 1, 'Zak Flaten'),
-  createClaim('MFC539883', new Date(2025, 0, 9),  4070.05, 'Approved',          8,  7, '408253', 'Jack Daniels Volkswagen (Paramus)',     'Paramus',  'DMP - Hard Costs', 2, 'Jenny Eckart'),
-  createClaim('MFC540980', new Date(2025, 0, 9),  3069.56, 'Pending',           8,  8, '423063', 'Armstrong Volkswagen of Gladstone',     'Gladstone','DMP - Hard Costs', 3, 'Ryan Ledger'),
-  createClaim('MFC540991', new Date(2025, 0, 8),  3114.47, 'Pending',          10,  3, '408252', 'Jack Daniels Volkswagen (Paramus)',     'Paramus',  'DMP - Hard Costs', 4, 'Garry Schwietert'),
-  createClaim('MFC540993', new Date(2025, 0, 7),  2268.56, 'Approved',         10,  6, '409210', 'Paramount Volkswagen of Hickory',       'Hickory',  'DMP - Hard Costs', 5, 'Mallory Manning'),
-  createClaim('MFC541001', new Date(2025, 0, 4),  2269.56, 'Approved',          4,  3, '402165', 'Volkswagen of Downtown Chicago',        'Chicago',  'DMP - Hard Costs', 0, 'Fabio Veloso'),
-  createClaim('MFC539884', new Date(2025, 0, 4),  4070.05, 'Approved',          5,  4, '408252', 'Jack Daniels Volkswagen (Paramus)',     'Paramus',  'DMP - Hard Costs', 1, 'Zak Flaten'),
-  createClaim('MFC540981', new Date(2025, 0, 3),  3069.56, 'Revision Requested',6,  7, '402165', 'Volkswagen of Downtown Chicago',        'Chicago',  'DMP - Hard Costs', 2, 'Jenny Eckart'),
-  createClaim('MFC540994', new Date(2025, 0, 2),  3114.47, 'In Review',        10,  7, '402165', 'Volkswagen of Downtown Chicago',        'Chicago',  'DMP - Hard Costs', 3, 'Ryan Ledger'),
+  createClaim('MFC539881', new Date(2026, 0, 25), 4070.05, 'Approved',          6,  6, '408252', 'Jack Daniels Volkswagen (Paramus)',     'Paramus',  'DMP - Hard Costs', 0, 'Fabio Veloso'),
+  createClaim('MFC540978', new Date(2026, 0, 22), 3069.56, 'Pending',           8, 22, '423063', 'Armstrong Volkswagen of Gladstone',     'Gladstone','DMP - Hard Costs', 1, 'Zak Flaten'),
+  createClaim('MFC540989', new Date(2026, 0, 21), 3114.47, 'Pending',           9,  7, '408252', 'Jack Daniels Volkswagen (Paramus)',     'Paramus',  'DMP - Hard Costs', 2, 'Jenny Eckart'),
+  createClaim('MFC540992', new Date(2026, 0, 21), 2268.56, 'Approved',          6,  7, '409210', 'Paramount Volkswagen of Hickory',       'Hickory',  'DMP - Hard Costs', 3, 'Ryan Ledger'),
+  createClaim('MFC541000', new Date(2026, 0, 19), 2269.56, 'Approved',         10,  4, '402165', 'Volkswagen of Downtown Chicago',        'Chicago',  'DMP - Hard Costs', 4, 'Garry Schwietert'),
+  createClaim('MFC539882', new Date(2026, 0, 18), 4070.05, 'Approved',          5,  4, '408252', 'Jack Daniels Volkswagen (Paramus)',     'Paramus',  'DMP - Hard Costs', 5, 'Mallory Manning'),
+  createClaim('MFC540979', new Date(2026, 0, 18), 3069.56, 'Revision Requested',6,  3, '402165', 'Volkswagen of Downtown Chicago',        'Chicago',  'DMP - Hard Costs', 0, 'Fabio Veloso'),
+  createClaim('MFC540990', new Date(2026, 0, 15), 3114.47, 'In Review',         4,  7, '402165', 'Volkswagen of Downtown Chicago',        'Chicago',  'DMP - Hard Costs', 1, 'Zak Flaten'),
+  createClaim('MFC539883', new Date(2026, 0, 9),  4070.05, 'Approved',          8,  7, '408253', 'Jack Daniels Volkswagen (Paramus)',     'Paramus',  'DMP - Hard Costs', 2, 'Jenny Eckart'),
+  createClaim('MFC540980', new Date(2026, 0, 9),  3069.56, 'Pending',           8,  8, '423063', 'Armstrong Volkswagen of Gladstone',     'Gladstone','DMP - Hard Costs', 3, 'Ryan Ledger'),
+  createClaim('MFC540991', new Date(2026, 0, 8),  3114.47, 'Pending',          10,  3, '408252', 'Jack Daniels Volkswagen (Paramus)',     'Paramus',  'DMP - Hard Costs', 4, 'Garry Schwietert'),
+  createClaim('MFC540993', new Date(2026, 0, 7),  2268.56, 'Approved',         10,  6, '409210', 'Paramount Volkswagen of Hickory',       'Hickory',  'DMP - Hard Costs', 5, 'Mallory Manning'),
+  createClaim('MFC541001', new Date(2026, 0, 4),  2269.56, 'Approved',          4,  3, '402165', 'Volkswagen of Downtown Chicago',        'Chicago',  'DMP - Hard Costs', 0, 'Fabio Veloso'),
+  createClaim('MFC539884', new Date(2026, 0, 4),  4070.05, 'Approved',          5,  4, '408252', 'Jack Daniels Volkswagen (Paramus)',     'Paramus',  'DMP - Hard Costs', 1, 'Zak Flaten'),
+  createClaim('MFC540981', new Date(2026, 0, 3),  3069.56, 'Revision Requested',6,  7, '402165', 'Volkswagen of Downtown Chicago',        'Chicago',  'DMP - Hard Costs', 2, 'Jenny Eckart'),
+  createClaim('MFC540994', new Date(2026, 0, 2),  3114.47, 'In Review',        10,  7, '402165', 'Volkswagen of Downtown Chicago',        'Chicago',  'DMP - Hard Costs', 3, 'Ryan Ledger'),
   createClaim('MFC550001', new Date(2025, 1, 15), 5500.00, 'Approved',          5,  5, '408252', 'Jack Daniels Volkswagen (Paramus)',     'Paramus',  'DMP - Hard Costs', 4, 'Garry Schwietert'),
   createClaim('MFC560001', new Date(2025, 2, 20), 6200.00, 'Approved',          4,  3, '402165', 'Volkswagen of Downtown Chicago',        'Chicago',  'DMP - Hard Costs', 5, 'Mallory Manning'),
 ];
@@ -155,9 +155,10 @@ export function FundsClaimsContent({
 
   const [activeFilter, setActiveFilter] = useState<ClaimStatus | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
-  const [expandedMonths, setExpandedMonths] = useState<Record<string, boolean>>({
-    'Jan 2025': true,
-  });
+  const [expandedMonths, setExpandedMonths] = useState<Record<string, boolean>>(() => ({
+    'Jan 2026': true,
+    [new Date().toLocaleString('en-US', { month: 'short', year: 'numeric' })]: true,
+  }));
   const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
 
   // Build workflow claim item as soon as claim is created (any status, including Draft)
@@ -183,22 +184,7 @@ export function FundsClaimsContent({
       }
     : null;
 
-  // Workflow claim visibility — respects status filter + search, bypasses date range
-  const workflowClaimVisible = useMemo(() => {
-    if (!workflowClaim) return false;
-    if (activeFilter && workflowClaim.status !== activeFilter) return false;
-    if (searchQuery) {
-      const q = searchQuery.toLowerCase();
-      return (
-        workflowClaim.id.toLowerCase().includes(q) ||
-        workflowClaim.dealershipName.toLowerCase().includes(q) ||
-        workflowClaim.status.toLowerCase().includes(q)
-      );
-    }
-    return true;
-  }, [workflowClaim, activeFilter, searchQuery]);
-
-  // Filter mock claims only — full filter including date range
+  // Filter mock claims — full filter including date range
   const filteredData = useMemo(() => {
     return CLAIMS_MOCK_DATA.filter(item => {
       if (dateRange?.from && item.date < dateRange.from) return false;
@@ -215,6 +201,33 @@ export function FundsClaimsContent({
       return true;
     });
   }, [dateRange, activeFilter, searchQuery]);
+
+  // Filter archived claims — respects status/search, bypasses date range
+  const filteredArchivedRows = useMemo(() => {
+    return archivedClaimRows.filter(cl => {
+      if (activeFilter && cl.status !== activeFilter) return false;
+      if (searchQuery) {
+        const q = searchQuery.toLowerCase();
+        return cl.id.toLowerCase().includes(q) || cl.dealershipName.toLowerCase().includes(q) || cl.status.toLowerCase().includes(q);
+      }
+      return true;
+    });
+  }, [archivedClaimRows, activeFilter, searchQuery]);
+
+  // Workflow claim visibility — respects status/search, bypasses date range
+  const workflowClaimVisible = useMemo(() => {
+    if (!workflowClaim) return false;
+    if (activeFilter && workflowClaim.status !== activeFilter) return false;
+    if (searchQuery) {
+      const q = searchQuery.toLowerCase();
+      return (
+        workflowClaim.id.toLowerCase().includes(q) ||
+        workflowClaim.dealershipName.toLowerCase().includes(q) ||
+        workflowClaim.status.toLowerCase().includes(q)
+      );
+    }
+    return true;
+  }, [workflowClaim, activeFilter, searchQuery]);
 
   // Stats for BANs
   const statsData = useMemo(() => {
@@ -246,17 +259,29 @@ export function FundsClaimsContent({
     });
   }, [dateRange, searchQuery]);
 
-  // Group by Month
+  // Group all claims (workflow + archived + mock) by month, newest first within each group
   const groupedData = useMemo(() => {
-    const groups: Record<string, typeof filteredData> = {};
-    const sorted = [...filteredData].sort((a, b) => b.date.getTime() - a.date.getTime());
-    sorted.forEach(claim => {
-      const monthKey = claim.date.toLocaleString('en-US', { month: 'short', year: 'numeric' });
-      if (!groups[monthKey]) groups[monthKey] = [];
-      groups[monthKey].push(claim);
+    const all: Claim[] = [
+      ...(workflowClaimVisible && workflowClaim ? [workflowClaim] : []),
+      ...filteredArchivedRows,
+      ...filteredData,
+    ].sort((a, b) => b.date.getTime() - a.date.getTime());
+    const groups: Record<string, Claim[]> = {};
+    all.forEach(claim => {
+      const key = claim.date.toLocaleString('en-US', { month: 'short', year: 'numeric' });
+      if (!groups[key]) groups[key] = [];
+      groups[key].push(claim);
     });
     return groups;
-  }, [filteredData]);
+  }, [workflowClaim, workflowClaimVisible, filteredArchivedRows, filteredData]);
+
+  // All month keys to render: union of MONTH_AGGREGATES + claim months, sorted newest first
+  const allMonthKeys = useMemo(() => {
+    const aggregateKeys = MONTH_AGGREGATES.map(m => m.key);
+    const claimKeys = Object.keys(groupedData);
+    const union = [...new Set([...claimKeys, ...aggregateKeys])];
+    return union.sort((a, b) => new Date(b).getTime() - new Date(a).getTime());
+  }, [groupedData]);
 
   const toggleMonth = (month: string) => {
     setExpandedMonths(prev => ({ ...prev, [month]: !prev[month] }));
@@ -342,172 +367,33 @@ export function FundsClaimsContent({
                   <div className="w-[140px] text-[12px] font-medium text-[#1f1d25]">{t('Pending')}</div>
                </div>
 
-               {/* Workflow claim — pinned at top (most recent), bypasses date filter */}
-               {workflowClaimVisible && workflowClaim && (
-                 <div className="group-container">
-                   {/* Month header row — current month, no aggregates */}
-                   <div className="flex items-center bg-white border-b border-gray-200 h-14 px-4 select-none">
-                     <div className="flex items-center gap-2 w-[220px]">
-                       <ChevronDown className="w-5 h-5 text-gray-500/80" />
-                       <span className="text-[14px] font-medium text-[#1f1d25] tracking-[0.17px]">
-                         {new Date().toLocaleString('en-US', { month: 'short', year: 'numeric' })}
-                       </span>
-                     </div>
-                     <div className="flex items-center text-[12px] text-[#686576] gap-0">
-                       <div className="w-[120px]">-</div>
-                       <div className="w-[120px]">-</div>
-                       <div className="w-[120px]">-</div>
-                       <div className="w-[140px]">-</div>
-                       <div className="w-[140px]">-</div>
-                     </div>
-                   </div>
-                   {/* Expanded area */}
-                   <div className="bg-[#F9FAFA] border-b border-gray-100">
-                     {/* Secondary header */}
-                     <div className="flex items-center h-10 px-4 border-b border-gray-200/50 bg-[#F9FAFA]">
-                       <div className="w-[120px] pl-4 text-[11px] font-medium text-gray-500">{t('Date')}</div>
-                       <div className="w-[100px] text-[11px] font-medium text-gray-500">{t('ID')}</div>
-                       <div className="w-[100px] text-[11px] font-medium text-gray-500">{t('Amount')}</div>
-                       <div className="w-[160px] text-[11px] font-medium text-gray-500">{t('Status')}</div>
-                       <div className="w-[100px] text-[11px] font-medium text-gray-500">{t('Time in claim')}</div>
-                       <div className="w-[120px] text-[11px] font-medium text-gray-500">{t('Time in payment')}</div>
-                       <div className="flex-1 min-w-[200px] text-[11px] font-medium text-gray-500">{t('Dealership')}</div>
-                       <div className="w-[140px] text-[11px] font-medium text-gray-500">{t('Fund')}</div>
-                       <div className="w-[160px] text-[11px] font-medium text-gray-500">{t('Submitted by')}</div>
-                     </div>
-                     {/* Claim row */}
-                     <div
-                       onClick={() => onSelectClaim(workflowClaim.id)}
-                       className={cn(
-                         "flex items-center h-[52px] border-b border-gray-100 last:border-0 transition-colors cursor-pointer px-4",
-                         selectedClaimId === workflowClaim.id ? "bg-[#F2F1FF]" : "bg-[#F9FAFA] hover:bg-gray-100"
-                       )}
-                     >
-                       <div className="w-[120px] pl-4 text-[12px] text-[#1f1d25]">
-                         {workflowClaim.date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-                       </div>
-                       <div className="w-[100px] text-[12px] text-[#1f1d25] font-medium">{workflowClaim.id}</div>
-                       <div className="w-[100px] text-[12px] text-[#1f1d25]">${workflowClaim.amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
-                       <div className="w-[160px] pr-2">
-                         <StatusChip status={workflowClaim.status} />
-                       </div>
-                       <div className="w-[100px] text-[12px] text-[#1f1d25]">{formatDays(workflowClaim.timeInClaim)}</div>
-                       <div className="w-[120px] text-[12px] text-[#1f1d25]">{formatDays(workflowClaim.timeInPayment)}</div>
-                       <div className="flex-1 min-w-[200px] text-[12px] text-[#1f1d25] truncate pr-4" title={`${workflowClaim.dealershipCode} - ${workflowClaim.dealershipName} (${workflowClaim.dealershipCity})`}>
-                         {workflowClaim.dealershipCode} - {workflowClaim.dealershipName} ({workflowClaim.dealershipCity})
-                       </div>
-                       <div className="w-[140px] text-[12px] text-[#1f1d25]">{workflowClaim.fund}</div>
-                       <div className="w-[160px] flex items-center gap-2">
-                         <div className="w-6 h-6 rounded-full bg-gray-200 overflow-hidden shrink-0">
-                           <ImageWithFallback src={workflowClaim.submittedBy.avatarUrl} alt={workflowClaim.submittedBy.name} className="w-full h-full object-cover" />
-                         </div>
-                         <span className="text-[12px] text-[#1f1d25] truncate">{workflowClaim.submittedBy.name}</span>
-                       </div>
-                     </div>
-                   </div>
-                 </div>
-               )}
-
-               {/* Archived cycle claims — newest first */}
-               {archivedClaimRows
-                 .filter(cl => {
-                   if (activeFilter && cl.status !== activeFilter) return false;
-                   if (searchQuery) {
-                     const q = searchQuery.toLowerCase();
-                     return cl.id.toLowerCase().includes(q) || cl.dealershipName.toLowerCase().includes(q) || cl.status.toLowerCase().includes(q);
-                   }
-                   return true;
-                 })
-                 .map(archivedCl => (
-                 <div key={archivedCl.id} className="group-container">
-                   <div className="flex items-center bg-white border-b border-gray-200 h-14 px-4 select-none">
-                     <div className="flex items-center gap-2 w-[220px]">
-                       <ChevronDown className="w-5 h-5 text-gray-500/80" />
-                       <span className="text-[14px] font-medium text-[#1f1d25] tracking-[0.17px]">
-                         {archivedCl.date.toLocaleString('en-US', { month: 'short', year: 'numeric' })}
-                         <span className="ml-2 text-[11px] font-normal text-[#9C99A9] bg-[#F0F2F4] px-2 py-0.5 rounded-full">archived</span>
-                       </span>
-                     </div>
-                     <div className="flex items-center text-[12px] text-[#686576] gap-0">
-                       <div className="w-[120px]">-</div>
-                       <div className="w-[120px]">-</div>
-                       <div className="w-[120px]">-</div>
-                       <div className="w-[140px]">-</div>
-                       <div className="w-[140px]">-</div>
-                     </div>
-                   </div>
-                   <div className="bg-[#F9FAFA] border-b border-gray-100">
-                     <div className="flex items-center h-10 px-4 border-b border-gray-200/50 bg-[#F9FAFA]">
-                       <div className="w-[120px] pl-4 text-[11px] font-medium text-gray-500">{t('Date')}</div>
-                       <div className="w-[100px] text-[11px] font-medium text-gray-500">{t('ID')}</div>
-                       <div className="w-[100px] text-[11px] font-medium text-gray-500">{t('Amount')}</div>
-                       <div className="w-[160px] text-[11px] font-medium text-gray-500">{t('Status')}</div>
-                       <div className="w-[100px] text-[11px] font-medium text-gray-500">{t('Time in claim')}</div>
-                       <div className="w-[120px] text-[11px] font-medium text-gray-500">{t('Time in payment')}</div>
-                       <div className="flex-1 min-w-[200px] text-[11px] font-medium text-gray-500">{t('Dealership')}</div>
-                       <div className="w-[140px] text-[11px] font-medium text-gray-500">{t('Fund')}</div>
-                       <div className="w-[160px] text-[11px] font-medium text-gray-500">{t('Submitted by')}</div>
-                     </div>
-                     <div
-                       onClick={() => onSelectClaim(archivedCl.id)}
-                       className={cn(
-                         "flex items-center h-[52px] border-b border-gray-100 last:border-0 transition-colors cursor-pointer px-4",
-                         selectedClaimId === archivedCl.id ? "bg-[#F2F1FF]" : "bg-[#F9FAFA] hover:bg-gray-100"
-                       )}
-                     >
-                       <div className="w-[120px] pl-4 text-[12px] text-[#1f1d25]">
-                         {archivedCl.date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-                       </div>
-                       <div className="w-[100px] text-[12px] text-[#1f1d25] font-medium">{archivedCl.id}</div>
-                       <div className="w-[100px] text-[12px] text-[#1f1d25]">${archivedCl.amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
-                       <div className="w-[160px] pr-2"><StatusChip status={archivedCl.status} /></div>
-                       <div className="w-[100px] text-[12px] text-[#1f1d25]">{formatDays(archivedCl.timeInClaim)}</div>
-                       <div className="w-[120px] text-[12px] text-[#1f1d25]">{formatDays(archivedCl.timeInPayment)}</div>
-                       <div className="flex-1 min-w-[200px] text-[12px] text-[#1f1d25] truncate pr-4">
-                         {archivedCl.dealershipCode} - {archivedCl.dealershipName} ({archivedCl.dealershipCity})
-                       </div>
-                       <div className="w-[140px] text-[12px] text-[#1f1d25]">{archivedCl.fund}</div>
-                       <div className="w-[160px] flex items-center gap-2">
-                         <div className="w-6 h-6 rounded-full bg-gray-200 overflow-hidden shrink-0">
-                           <ImageWithFallback src={archivedCl.submittedBy.avatarUrl} alt={archivedCl.submittedBy.name} className="w-full h-full object-cover" />
-                         </div>
-                         <span className="text-[12px] text-[#1f1d25] truncate">{archivedCl.submittedBy.name}</span>
-                       </div>
-                     </div>
-                   </div>
-                 </div>
-               ))}
-
-               {/* Group Rows — reversed so most recent months appear first */}
-               {[...MONTH_AGGREGATES].reverse().map(monthData => {
-                  const monthKey = monthData.key;
+               {/* Unified accordion — workflow + archived + mock claims, grouped by month */}
+               {allMonthKeys.map(monthKey => {
+                  const monthData = MONTH_AGGREGATES.find(m => m.key === monthKey);
                   const claims = groupedData[monthKey] || [];
                   const isExpanded = expandedMonths[monthKey];
-                  
+
                   return (
                     <div key={monthKey} className="group-container">
-                      {/* Month Row - White background, Clean */}
-                      <div 
+                      <div
                         onClick={() => toggleMonth(monthKey)}
                         className="flex items-center bg-white border-b border-gray-200 h-14 px-4 cursor-pointer hover:bg-gray-50 transition-colors select-none"
                       >
-                         <div className="flex items-center gap-2 w-[220px]">
-                            <div className={`transition-transform duration-200 ${isExpanded ? 'rotate-0' : '-rotate-90'}`}>
-                                <ChevronDown className="w-5 h-5 text-gray-500/80" />
-                            </div>
-                            <span className="text-[14px] font-medium text-[#1f1d25] tracking-[0.17px]">{monthKey}</span>
-                         </div>
-                         
-                         <div className="flex items-center text-[12px] text-[#1f1d25] gap-0">
-                            <div className="w-[120px] font-normal">{monthData.accrual}</div>
-                            <div className="w-[120px] font-normal">{monthData.submission}</div>
-                            <div className={`w-[120px] font-normal ${monthData.diffColor}`}>{monthData.difference}</div>
-                            <div className="w-[140px] font-normal">{monthData.paid}</div>
-                            <div className="w-[140px] font-normal">{monthData.pending}</div>
-                         </div>
+                        <div className="flex items-center gap-2 w-[220px]">
+                          <div className={`transition-transform duration-200 ${isExpanded ? 'rotate-0' : '-rotate-90'}`}>
+                            <ChevronDown className="w-5 h-5 text-gray-500/80" />
+                          </div>
+                          <span className="text-[14px] font-medium text-[#1f1d25] tracking-[0.17px]">{monthKey}</span>
+                        </div>
+                        <div className="flex items-center text-[12px] text-[#1f1d25] gap-0">
+                          <div className={`w-[120px] font-normal ${monthData ? '' : 'text-[#686576]'}`}>{monthData?.accrual ?? '-'}</div>
+                          <div className={`w-[120px] font-normal ${monthData ? '' : 'text-[#686576]'}`}>{monthData?.submission ?? '-'}</div>
+                          <div className={`w-[120px] font-normal ${monthData?.diffColor ?? 'text-[#686576]'}`}>{monthData?.difference ?? '-'}</div>
+                          <div className={`w-[140px] font-normal ${monthData ? '' : 'text-[#686576]'}`}>{monthData?.paid ?? '-'}</div>
+                          <div className={`w-[140px] font-normal ${monthData ? '' : 'text-[#686576]'}`}>{monthData?.pending ?? '-'}</div>
+                        </div>
                       </div>
 
-                      {/* Expandable Area */}
                       <AnimatePresence>
                         {isExpanded && claims.length > 0 && (
                           <motion.div
@@ -517,60 +403,53 @@ export function FundsClaimsContent({
                             transition={{ duration: 0.3, ease: 'easeInOut' }}
                             className="overflow-hidden bg-[#F9FAFA] border-b border-gray-100"
                           >
-                             {/* Secondary Header (Claims) */}
-                             <div className="flex items-center h-10 px-4 border-b border-gray-200/50 bg-[#F9FAFA]">
-                                <div className="w-[120px] pl-4 text-[11px] font-medium text-gray-500">{t('Date')}</div>
-                                <div className="w-[100px] text-[11px] font-medium text-gray-500">{t('ID')}</div>
-                                <div className="w-[100px] text-[11px] font-medium text-gray-500">{t('Amount')}</div>
-                                <div className="w-[160px] text-[11px] font-medium text-gray-500">{t('Status')}</div>
-                                <div className="w-[100px] text-[11px] font-medium text-gray-500">{t('Time in claim')}</div>
-                                <div className="w-[120px] text-[11px] font-medium text-gray-500">{t('Time in payment')}</div>
-                                <div className="flex-1 min-w-[200px] text-[11px] font-medium text-gray-500">{t('Dealership')}</div>
-                                <div className="w-[140px] text-[11px] font-medium text-gray-500">{t('Fund')}</div>
-                                <div className="w-[160px] text-[11px] font-medium text-gray-500">{t('Submitted by')}</div>
-                             </div>
-
-                             {/* Claim Rows */}
-                             {claims.map(claim => {
-                                const isSelected = selectedClaimId === claim.id;
-                                return (
-                                  <div 
-                                    key={`${claim.id}-${claim.date.getTime()}`}
-                                    onClick={() => onSelectClaim(claim.id)}
-                                    className={cn(
-                                      "flex items-center h-[52px] border-b border-gray-100 last:border-0 transition-colors cursor-pointer px-4",
-                                      isSelected ? "bg-[#F2F1FF]" : "bg-[#F9FAFA] hover:bg-gray-100"
-                                    )}
-                                  >
-                                     <div className="w-[120px] pl-4 text-[12px] text-[#1f1d25]">
-                                         {claim.date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-                                     </div>
-                                     <div className="w-[100px] text-[12px] text-[#1f1d25] font-medium">{claim.id}</div>
-                                     <div className="w-[100px] text-[12px] text-[#1f1d25]">${claim.amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
-                                     <div className="w-[160px] pr-2">
-                                       <StatusChip status={claim.status} />
-                                     </div>
-                                     <div className="w-[100px] text-[12px] text-[#1f1d25]">{formatDays(claim.timeInClaim)}</div>
-                                     <div className="w-[120px] text-[12px] text-[#1f1d25]">{formatDays(claim.timeInPayment)}</div>
-                                     <div className="flex-1 min-w-[200px] text-[12px] text-[#1f1d25] truncate pr-4" title={`${claim.dealershipCode} - ${claim.dealershipName} (${claim.dealershipCity})`}>
-                                       {claim.dealershipCode} - {claim.dealershipName} ({claim.dealershipCity})
-                                     </div>
-                                     <div className="w-[140px] text-[12px] text-[#1f1d25]">{claim.fund}</div>
-                                     <div className="w-[160px] flex items-center gap-2">
-                                       <div className="w-6 h-6 rounded-full bg-gray-200 overflow-hidden shrink-0">
-                                         <ImageWithFallback src={claim.submittedBy.avatarUrl} alt={claim.submittedBy.name} className="w-full h-full object-cover" />
-                                       </div>
-                                       <span className="text-[12px] text-[#1f1d25] truncate">{claim.submittedBy.name}</span>
-                                     </div>
+                            <div className="flex items-center h-10 px-4 border-b border-gray-200/50 bg-[#F9FAFA]">
+                              <div className="w-[120px] pl-4 text-[11px] font-medium text-gray-500">{t('Date')}</div>
+                              <div className="w-[100px] text-[11px] font-medium text-gray-500">{t('ID')}</div>
+                              <div className="w-[100px] text-[11px] font-medium text-gray-500">{t('Amount')}</div>
+                              <div className="w-[160px] text-[11px] font-medium text-gray-500">{t('Status')}</div>
+                              <div className="w-[100px] text-[11px] font-medium text-gray-500">{t('Time in claim')}</div>
+                              <div className="w-[120px] text-[11px] font-medium text-gray-500">{t('Time in payment')}</div>
+                              <div className="flex-1 min-w-[200px] text-[11px] font-medium text-gray-500">{t('Dealership')}</div>
+                              <div className="w-[140px] text-[11px] font-medium text-gray-500">{t('Fund')}</div>
+                              <div className="w-[160px] text-[11px] font-medium text-gray-500">{t('Submitted by')}</div>
+                            </div>
+                            {claims.map(claim => (
+                              <div
+                                key={`${claim.id}-${claim.date.getTime()}`}
+                                onClick={() => onSelectClaim(claim.id)}
+                                className={cn(
+                                  "flex items-center h-[52px] border-b border-gray-100 last:border-0 transition-colors cursor-pointer px-4",
+                                  selectedClaimId === claim.id ? "bg-[#F2F1FF]" : "bg-[#F9FAFA] hover:bg-gray-100"
+                                )}
+                              >
+                                <div className="w-[120px] pl-4 text-[12px] text-[#1f1d25]">
+                                  {claim.date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                                </div>
+                                <div className="w-[100px] text-[12px] text-[#1f1d25] font-medium">{claim.id}</div>
+                                <div className="w-[100px] text-[12px] text-[#1f1d25]">${claim.amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+                                <div className="w-[160px] pr-2"><StatusChip status={claim.status} /></div>
+                                <div className="w-[100px] text-[12px] text-[#1f1d25]">{formatDays(claim.timeInClaim)}</div>
+                                <div className="w-[120px] text-[12px] text-[#1f1d25]">{formatDays(claim.timeInPayment)}</div>
+                                <div className="flex-1 min-w-[200px] text-[12px] text-[#1f1d25] truncate pr-4" title={`${claim.dealershipCode} - ${claim.dealershipName} (${claim.dealershipCity})`}>
+                                  {claim.dealershipCode} - {claim.dealershipName} ({claim.dealershipCity})
+                                </div>
+                                <div className="w-[140px] text-[12px] text-[#1f1d25]">{claim.fund}</div>
+                                <div className="w-[160px] flex items-center gap-2">
+                                  <div className="w-6 h-6 rounded-full bg-gray-200 overflow-hidden shrink-0">
+                                    <ImageWithFallback src={claim.submittedBy.avatarUrl} alt={claim.submittedBy.name} className="w-full h-full object-cover" />
                                   </div>
-                                );
-                             })}
+                                  <span className="text-[12px] text-[#1f1d25] truncate">{claim.submittedBy.name}</span>
+                                </div>
+                              </div>
+                            ))}
                           </motion.div>
                         )}
                       </AnimatePresence>
                     </div>
                   );
                })}
+
              </div>
            </div>
         </div>

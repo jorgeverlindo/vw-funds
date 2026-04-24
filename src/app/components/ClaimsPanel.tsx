@@ -77,6 +77,7 @@ export function ClaimsPanel({
   // Detect live workflow item — ID changes each cycle, never hardcode
   const isWorkflowItem = claim.id === workflow.claim.id;
   const wfCL = workflow.claim;
+  const wfPA = workflow.preApproval;
   const liveStatus = isWorkflowItem ? (wfCL.status as ClaimStatus) : claim.status;
   const liveOemComment = isWorkflowItem ? wfCL.oemComment : null;
 
@@ -403,13 +404,23 @@ export function ClaimsPanel({
             <section>
               <h3 className="text-[#1f1d25] text-[15px] font-medium mb-3">Channel Breakdown</h3>
               <div className="space-y-0">
-                {Object.entries(WORKFLOW_CAMPAIGN.channelBreakdown).map(([ch, amt]) => (
-                  <KeyValueRow key={ch} label={ch} value={`$${amt.toLocaleString()}`} />
-                ))}
+                {(wfPA.claimLines.length > 0
+                  ? wfPA.claimLines
+                  : Object.entries(WORKFLOW_CAMPAIGN.channelBreakdown).map(([description, amount]) => ({ description, amount: String(amount) }))
+                ).map((line, idx) => {
+                  const amt = parseFloat(line.amount) || 0;
+                  return (
+                    <KeyValueRow
+                      key={idx}
+                      label={line.description || `Activity ${idx + 1}`}
+                      value={`$${amt.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+                    />
+                  );
+                })}
                 <div className="flex items-center justify-between py-3 border-t-2 border-[#473BAB]/20 mt-1">
                   <span className="text-[#1f1d25] text-[13px] font-medium">{t('Total Amount')}</span>
                   <span className="text-[#473BAB] text-[15px] font-bold">
-                    ${WORKFLOW_CAMPAIGN.totalAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    ${(wfCL.invoiceTotal || WORKFLOW_CAMPAIGN.totalAmount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </span>
                 </div>
               </div>

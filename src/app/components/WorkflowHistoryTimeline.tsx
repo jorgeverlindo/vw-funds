@@ -1,5 +1,9 @@
 import { WorkflowEvent } from '../contexts/WorkflowContext';
 
+function isRevisionEvent(evt: WorkflowEvent): boolean {
+  return evt.action.toLowerCase().includes('revision') || evt.action.toLowerCase().includes('requested');
+}
+
 function formatTimestamp(iso: string): string {
   const d = new Date(iso);
   return (
@@ -27,8 +31,7 @@ export function WorkflowHistoryTimeline({ history }: WorkflowHistoryTimelineProp
               <div
                 className="w-2 h-2 rounded-full flex-shrink-0 mt-[5px]"
                 style={{
-                  backgroundColor:
-                    evt.actor === 'OEM' ? '#473BAB' : '#1f1d25',
+                  backgroundColor: isRevisionEvent(evt) ? '#E17613' : evt.actor === 'OEM' ? '#473BAB' : '#1f1d25',
                 }}
               />
               {i < history.length - 1 && (
@@ -48,7 +51,13 @@ export function WorkflowHistoryTimeline({ history }: WorkflowHistoryTimelineProp
               </div>
               <p className="text-[13px] text-[#686576] mt-0.5">{evt.action}</p>
               {evt.comment && (
-                <p className="text-[13px] text-[#1f1d25] mt-1.5 bg-[#F9FAFA] rounded-lg px-3 py-2 border border-[#E0E0E0] leading-relaxed">
+                <p
+                  className="text-[13px] mt-1.5 rounded-lg px-3 py-2 border leading-relaxed"
+                  style={isRevisionEvent(evt)
+                    ? { background: 'rgba(225,118,19,0.06)', borderColor: 'rgba(225,118,19,0.3)', color: '#1f1d25' }
+                    : { background: '#F9FAFA', borderColor: '#E0E0E0', color: '#1f1d25' }
+                  }
+                >
                   &ldquo;{evt.comment}&rdquo;
                 </p>
               )}

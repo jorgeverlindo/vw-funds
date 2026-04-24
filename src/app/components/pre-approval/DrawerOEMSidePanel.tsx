@@ -1,6 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { X } from 'lucide-react';
 import { useTranslation } from '@/app/contexts/LanguageContext';
+import { useWorkflow, WORKFLOW_CAMPAIGN } from '@/app/contexts/WorkflowContext';
 import type { PreApproval } from '@/app/components/FundsPreApprovalsContent';
 
 interface DrawerOEMSidePanelProps {
@@ -21,6 +22,8 @@ export function DrawerOEMSidePanel({
   preApproval,
 }: DrawerOEMSidePanelProps) {
   const { t } = useTranslation();
+  const { workflow } = useWorkflow();
+  const wfPA = workflow.preApproval;
   const [commentBoxHeight, setCommentBoxHeight] = useState(200);
   const isResizing = useRef(false);
   const startY = useRef(0);
@@ -98,6 +101,34 @@ export function DrawerOEMSidePanel({
           <Row label={t('Initiative Type')}                        value={t(initiativeType)} />
           <Row label={t('How many claims will you be making')}     value={claimsCount} />
           <Row label={t('Contact Information')}                    value={contactEmail} />
+
+          {/* Channel Breakdown */}
+          {(() => {
+            const lines = wfPA.claimLines.length > 0
+              ? wfPA.claimLines
+              : Object.entries(WORKFLOW_CAMPAIGN.channelBreakdown).map(([description, amount]) => ({ description, amount: String(amount) }));
+            const total = wfPA.claimLines.length > 0
+              ? wfPA.totalAmount
+              : WORKFLOW_CAMPAIGN.totalAmount;
+            return (
+              <div className="py-2 border-b border-[rgba(0,0,0,0.04)]">
+                <span className="text-[12px] font-bold text-[#1F1D25] block mb-2">{t('CHANNEL BREAKDOWN')}</span>
+                {lines.map((line, idx) => {
+                  const amt = parseFloat(line.amount) || 0;
+                  return (
+                    <div key={idx} className="flex justify-between items-start py-2 border-b border-[rgba(0,0,0,0.04)] last:border-0">
+                      <span className="text-[13px] text-[#686576] font-normal">{line.description || `Activity ${idx + 1}`}</span>
+                      <span className="text-[13px] text-[#1F1D25] font-medium">${amt.toLocaleString('en-US', { minimumFractionDigits: 2 })}</span>
+                    </div>
+                  );
+                })}
+                <div className="flex justify-between items-center pt-2 mt-1 border-t-2 border-[#473BAB]/20">
+                  <span className="text-[13px] font-medium text-[#1F1D25]">{t('Total Amount')}</span>
+                  <span className="text-[14px] font-bold text-[#473BAB]">${total.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                </div>
+              </div>
+            );
+          })()}
 
           <div className="py-4 border-b border-[rgba(0,0,0,0.04)]">
             <span className="text-[12px] font-bold text-[#1F1D25] block mb-2">{t('MEDIA TYPE')}</span>

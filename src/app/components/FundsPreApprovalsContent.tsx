@@ -159,7 +159,7 @@ export const MOCK_DATA: PreApproval[] = [
   {
     id: 'MFA386595',
     date: new Date(2026, 2, 15),
-    dealershipCode: '408258',
+    dealershipCode: '12345',
     dealershipName: 'Volkswagen Any Town',
     dealershipCity: 'Any Town',
     status: 'Approved',
@@ -178,7 +178,7 @@ export const MOCK_DATA: PreApproval[] = [
   {
     id: 'MFA386596',
     date: new Date(2026, 1, 20),
-    dealershipCode: '408258',
+    dealershipCode: '12345',
     dealershipName: 'Volkswagen Any Town',
     dealershipCity: 'Any Town',
     status: 'Approved',
@@ -197,7 +197,7 @@ export const MOCK_DATA: PreApproval[] = [
   {
     id: 'MFA386597',
     date: new Date(2026, 0, 10),
-    dealershipCode: '408258',
+    dealershipCode: '12345',
     dealershipName: 'Volkswagen Any Town',
     dealershipCity: 'Any Town',
     status: 'Approved',
@@ -216,7 +216,7 @@ export const MOCK_DATA: PreApproval[] = [
   {
     id: 'MFA386598',
     date: new Date(2025, 11, 5),
-    dealershipCode: '408258',
+    dealershipCode: '12345',
     dealershipName: 'Volkswagen Any Town',
     dealershipCity: 'Any Town',
     status: 'In Review',
@@ -235,7 +235,7 @@ export const MOCK_DATA: PreApproval[] = [
   {
     id: 'MFA386599',
     date: new Date(2025, 10, 2),
-    dealershipCode: '408258',
+    dealershipCode: '12345',
     dealershipName: 'Volkswagen Any Town',
     dealershipCity: 'Any Town',
     status: 'Revision Requested',
@@ -254,7 +254,7 @@ export const MOCK_DATA: PreApproval[] = [
   {
     id: 'MFA386601',
     date: new Date(2025, 8, 18),
-    dealershipCode: '408258',
+    dealershipCode: '12345',
     dealershipName: 'Volkswagen Any Town',
     dealershipCity: 'Any Town',
     status: 'Approved',
@@ -614,7 +614,7 @@ export function FundsPreApprovalsContent({
                        {row.date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                      </td>
                      <td className="px-4 py-3.5 text-xs text-[#1f1d25] whitespace-nowrap">
-                       {row.dealershipCode} - {row.dealershipName} ({row.dealershipCity})
+                       {row.dealershipCode} - {row.dealershipName}
                      </td>
                      <td className="px-4 py-3.5 text-xs text-[#1f1d25] whitespace-nowrap">
                        {row.id}

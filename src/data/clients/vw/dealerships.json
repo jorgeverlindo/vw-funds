@@ -13,5 +13,5 @@
   { "code": "421099", "name": "Luther Westside Volkswagen", "city": "Golden Valley", "state": "MN", "area": "Midwest", "region": "Upper Midwest", "active": true },
   { "code": "414072", "name": "Emich Volkswagen", "city": "Denver", "state": "CO", "area": "West", "region": "Mountain", "active": true },
   { "code": "418091", "name": "Hendrick Volkswagen Frisco", "city": "Frisco", "state": "TX", "area": "South Central", "region": "Texas", "active": true },
-  { "code": "408258", "name": "Volkswagen Any Town", "city": "Any Town", "state": "TX", "area": "South Central", "region": "Texas", "active": true }
+  { "code": "12345", "name": "Volkswagen Any Town", "city": "Any Town", "state": "TX", "area": "South Central", "region": "Texas", "active": true }
 ]

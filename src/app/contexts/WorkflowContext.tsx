@@ -29,7 +29,7 @@ export const WORKFLOW_CL_ID = `MFC${WORKFLOW_CL_BASE}`;
 
 export const WORKFLOW_DEALER = {
   name: 'Volkswagen Any Town',
-  code: '408258',
+  code: '12345',
   city: 'Any Town',
   contact: 'Mallory Manning',
   email: 'mallory@vwanytown.com',

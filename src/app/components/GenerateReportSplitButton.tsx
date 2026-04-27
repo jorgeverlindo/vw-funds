@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { GenerateReportMenu } from './GenerateReportMenu';
 import { ShareReportModal } from './ShareReportModal';
-import { useReportDownload } from '../reports/useReportDownload';
+import { useReportDownload } from '../reports-pdf/useReportDownload';
 import { useTranslation } from '../contexts/LanguageContext';
 
 export function GenerateReportSplitButton() {

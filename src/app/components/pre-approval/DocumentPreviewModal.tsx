@@ -1,5 +1,5 @@
 import { createPortal } from 'react-dom';
-import { X, FileText } from 'lucide-react';
+import { X, FileText, Download } from 'lucide-react';
 import { WorkflowDocument } from '@/app/contexts/WorkflowContext';
 
 interface DocumentPreviewModalProps {
@@ -31,12 +31,24 @@ export function DocumentPreviewModal({ doc, onClose }: DocumentPreviewModalProps
               <p className="text-[11px] text-[#686576] mt-0.5">{doc.type.toUpperCase()} · {doc.size}</p>
             </div>
           </div>
-          <button
-            onClick={onClose}
-            className="shrink-0 ml-4 p-2 hover:bg-gray-100 rounded-full transition-colors cursor-pointer"
-          >
-            <X className="w-5 h-5 text-[#686576]" />
-          </button>
+          <div className="flex items-center gap-1 shrink-0 ml-4">
+            {doc.url && (
+              <a
+                href={doc.url}
+                download={doc.name}
+                className="p-2 hover:bg-gray-100 rounded-full transition-colors cursor-pointer text-[#686576]"
+                title="Download"
+              >
+                <Download className="w-5 h-5" />
+              </a>
+            )}
+            <button
+              onClick={onClose}
+              className="p-2 hover:bg-gray-100 rounded-full transition-colors cursor-pointer"
+            >
+              <X className="w-5 h-5 text-[#686576]" />
+            </button>
+          </div>
         </div>
 
         {/* Preview body */}
@@ -47,10 +59,12 @@ export function DocumentPreviewModal({ doc, onClose }: DocumentPreviewModalProps
             </div>
           )}
           {isPDF && (
-            <iframe
+            // <embed> is more reliable than <iframe> for blob-URL PDFs across
+            // Safari and Chrome — iframes can silently fail to render PDF blobs.
+            <embed
               src={doc.url}
-              title={doc.name}
-              className="w-full h-full border-0"
+              type="application/pdf"
+              className="w-full h-full"
             />
           )}
           {!hasPreview && (

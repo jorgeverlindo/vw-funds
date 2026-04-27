@@ -1,8 +1,8 @@
 import type { CSSProperties } from 'react';
-import { C, F, LOGO_ICON_PATHS } from '../tokens';
+import { C, F, LOGO_PATHS } from '../tokens';
 
 interface ReportCoverProps {
-  title: string[];          // lines of the title, last word gets .accent
+  title: string[];          // lines of the title, last line gets accent style
   subtitle: string;
   brand?: string;
   period?: string;
@@ -12,29 +12,6 @@ interface ReportCoverProps {
 
 const FONT_IMPORT = `@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500;1,600&display=swap');`;
 
-/** Icon + wordmark lockup, used at the top of every cover page. */
-function CoverLogo() {
-  return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: '9px' }}>
-      <svg width="14" height="26" viewBox="0 0 18 33" fill="none" xmlns="http://www.w3.org/2000/svg"
-        style={{ flexShrink: 0 }}
-        dangerouslySetInnerHTML={{ __html: LOGO_ICON_PATHS }}
-      />
-      <span style={{
-        fontFamily:    F.poppins,
-        fontWeight:    700,
-        fontSize:      '13px',
-        letterSpacing: '0.14em',
-        textTransform: 'uppercase',
-        color:         C.text,
-        lineHeight:    1,
-      }}>
-        Constellation
-      </span>
-    </div>
-  );
-}
-
 export function ReportCover({
   title,
   subtitle,
@@ -43,11 +20,8 @@ export function ReportCover({
   generated = 'April 27, 2026',
   docTag = 'AI · Performance Report',
 }: ReportCoverProps) {
-  // Use rgba(r,g,b,0) instead of `transparent` for gradient stops.
-  // CSS `transparent` = rgba(0,0,0,0) — black with 0 alpha — which causes
-  // gradients to interpolate through grey/dark tones when rendered by
-  // html2canvas. Explicit rgba with the same hue as the start color fades
-  // cleanly to white.
+  // Use rgba(r,g,b,0) instead of `transparent` for gradient fade stops so that
+  // html2canvas interpolates through the same hue rather than through black.
   const coverStyle: CSSProperties = {
     width: '820px',
     minHeight: '1100px',
@@ -88,7 +62,10 @@ export function ReportCover({
 
       {/* Top bar */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <CoverLogo />
+        {/* Full wordmark SVG sourced from Constellation Logo 2024.svg */}
+        <svg width="176" height="33" viewBox="0 0 176 33" fill="none" xmlns="http://www.w3.org/2000/svg"
+          dangerouslySetInnerHTML={{ __html: LOGO_PATHS }}
+        />
         <div style={{
           fontFamily:    F.poppins,
           fontSize:      '10px',

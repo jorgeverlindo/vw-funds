@@ -1,5 +1,5 @@
 import type { CSSProperties, ReactNode } from 'react';
-import { C, F, LOGO_ICON_PATHS } from '../tokens';
+import { C, F, LOGO_PATHS } from '../tokens';
 
 interface ReportPageProps {
   children: ReactNode;
@@ -39,26 +39,12 @@ const runnerStyle: CSSProperties = {
   fontFamily: F.inter,
 };
 
-/** Small icon + wordmark lockup used in page headers. */
+/** Scaled-down wordmark for page headers (54% of original 176×33). */
 function LogoSm() {
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: '7px' }}>
-      <svg width="9" height="17" viewBox="0 0 18 33" fill="none" xmlns="http://www.w3.org/2000/svg"
-        style={{ flexShrink: 0 }}
-        dangerouslySetInnerHTML={{ __html: LOGO_ICON_PATHS }}
-      />
-      <span style={{
-        fontFamily:    F.poppins,
-        fontWeight:    700,
-        fontSize:      '9px',
-        letterSpacing: '0.14em',
-        textTransform: 'uppercase',
-        color:         C.muted,
-        lineHeight:    1,
-      }}>
-        Constellation
-      </span>
-    </div>
+    <svg width="96" height="18" viewBox="0 0 176 33" fill="none" xmlns="http://www.w3.org/2000/svg"
+      dangerouslySetInnerHTML={{ __html: LOGO_PATHS }}
+    />
   );
 }
 

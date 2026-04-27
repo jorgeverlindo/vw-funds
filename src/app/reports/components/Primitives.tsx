@@ -15,8 +15,9 @@ export function SectionTag({ num, label }: { num: string; label: string }) {
       fontFamily: F.poppins, fontSize: '11px', letterSpacing: '0.22em',
       textTransform: 'uppercase', color: C.purple, fontWeight: 600, marginBottom: '18px',
     }}>
-      <span style={{ display: 'inline-block', width: '28px', height: '1.5px', background: C.purple }} />
-      {num} &nbsp;·&nbsp; {label}
+      {/* Use a block div (not inline-block span) so html2canvas flex-aligns it correctly */}
+      <div style={{ width: '28px', height: '1.5px', background: C.purple, flexShrink: 0 }} />
+      <span>{num} &nbsp;·&nbsp; {label}</span>
     </div>
   );
 }
@@ -318,10 +319,10 @@ export function DonutSvg({
       {paths.map((p, i) => <path key={i} d={p.path} fill={p.color} />)}
       <circle cx={cx} cy={cy} r={innerR} fill="#ffffff" />
       {centerLabel && (
-        <text x={cx} y={cy - 8} textAnchor="middle" fontFamily="Poppins" fontSize="9" fill={C.muted} fontWeight="600" letterSpacing="1.4">{centerLabel}</text>
+        <text x={cx} y={cy - 8} textAnchor="middle" style={{ fontFamily: "'Poppins', sans-serif" }} fontSize="9" fill={C.muted} fontWeight="600" letterSpacing="1.4">{centerLabel}</text>
       )}
       {centerValue && (
-        <text x={cx} y={cy + 10} textAnchor="middle" fontFamily="Poppins" fontSize="13" fill={C.text} fontWeight="600">{centerValue}</text>
+        <text x={cx} y={cy + 10} textAnchor="middle" style={{ fontFamily: "'Poppins', sans-serif" }} fontSize="13" fill={C.text} fontWeight="600">{centerValue}</text>
       )}
     </svg>
   );
@@ -360,7 +361,7 @@ export function BarChartSvg({
         const groupX = padL + i * groupW;
         return (
           <text key={lbl} x={groupX + groupW / 2} y={height - 4}
-            textAnchor="middle" fontFamily="Inter" fontSize="9" fill={C.muted2}>
+            textAnchor="middle" style={{ fontFamily: "'Inter', sans-serif" }} fontSize="9" fill={C.muted2}>
             {lbl}
           </text>
         );

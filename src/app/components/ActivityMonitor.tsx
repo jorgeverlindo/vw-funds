@@ -31,12 +31,25 @@ const T = {
   white:       '#ffffff',
 } as const;
 
+// ─── Keyframes (injected once into <head>) ────────────────────────────────────
+
+const CSS = `
+  @keyframes amSlideIn {
+    from { transform: translateY(110%); }
+    to   { transform: translateY(0);    }
+  }
+  @keyframes amSlideOut {
+    from { transform: translateY(0);    }
+    to   { transform: translateY(110%); }
+  }
+`;
+
 // ─── Icons ────────────────────────────────────────────────────────────────────
 
 function ChevronIcon({ up }: { up: boolean }) {
   return (
     <svg width="16" height="16" viewBox="0 0 16 16" fill="none"
-      style={{ transform: up ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }}>
+      style={{ transform: up ? 'rotate(180deg)' : 'none', transition: 'transform 0.4s cubic-bezier(0.4,0,0.2,1)' }}>
       <path d="M4 6L8 10L12 6" stroke={T.textMuted} strokeWidth="1.5"
         strokeLinecap="round" strokeLinejoin="round"/>
     </svg>
@@ -103,10 +116,18 @@ const iconBtn: React.CSSProperties = {
 // ─── Main component ───────────────────────────────────────────────────────────
 
 export function ActivityMonitor({ stage, displayName, blobUrl, onClose }: ActivityMonitorProps) {
-  const [collapsed, setCollapsed] = useState(false);
+  const [collapsed,  setCollapsed]  = useState(false);
+  const [isExiting,  setIsExiting]  = useState(false);
 
-  // Reset collapsed when a new download starts
+  // Reset collapsed state whenever a new download stage begins
   useEffect(() => { setCollapsed(false); }, [stage]);
+
+  // Intercept close: play exit animation, then call real onClose
+  const handleClose = () => {
+    if (isExiting) return;
+    setIsExiting(true);
+    setTimeout(onClose, 400);
+  };
 
   const isCancelled = stage === 'cancelled';
   const isError     = stage === 'error';
@@ -120,107 +141,123 @@ export function ActivityMonitor({ stage, displayName, blobUrl, onClose }: Activi
   };
 
   const node = (
-    <div style={{
-      position:    'fixed',
-      bottom:      0,
-      left:        24,
-      zIndex:      9999,
-      width:       340,
-      borderRadius: '12px 12px 0 0',
-      overflow:    'hidden',
-      boxShadow:   '0 -2px 20px rgba(0,0,0,0.12)',
-      fontFamily:  "'Inter', system-ui, -apple-system, sans-serif",
-      WebkitFontSmoothing: 'antialiased',
-      ...(isCancelled
-        ? { background: T.cancelledBg }
-        : { border: `2px solid ${borderColor}`, borderBottom: 'none', background: T.bodyBg }),
-    }}>
+    <>
+      {/* Inject keyframes once */}
+      <style>{CSS}</style>
 
-      {/* ── Cancelled ──────────────────────────────────────────────────────── */}
-      {isCancelled ? (
-        <div style={{
-          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          padding: '0 10px 0 16px', height: 46,
-        }}>
-          <span style={{ color: T.white, fontSize: 13, fontWeight: 500 }}>
-            {stageLabel.cancelled}
-          </span>
-          <button onClick={onClose} style={iconBtn} aria-label="Close">
-            <XIcon color={T.white} />
-          </button>
-        </div>
+      <div style={{
+        position:    'fixed',
+        bottom:      0,
+        left:        24,
+        zIndex:      9999,
+        width:       340,
+        borderRadius: '12px 12px 0 0',
+        overflow:    'hidden',
+        boxShadow:   '0 -2px 20px rgba(0,0,0,0.12)',
+        fontFamily:  "'Inter', system-ui, -apple-system, sans-serif",
+        WebkitFontSmoothing: 'antialiased',
+        // Slide-in on mount, slide-out on dismiss
+        animation: isExiting
+          ? 'amSlideOut 0.4s cubic-bezier(0.4,0,1,1) forwards'
+          : 'amSlideIn  0.4s cubic-bezier(0,0,0.2,1) forwards',
+        ...(isCancelled
+          ? { background: T.cancelledBg }
+          : { border: `2px solid ${borderColor}`, borderBottom: 'none', background: T.bodyBg }),
+      }}>
 
-      /* ── Default / Error / Complete ────────────────────────────────────── */
-      ) : (
-        <>
-          {/* Header */}
+        {/* ── Cancelled ──────────────────────────────────────────────────────── */}
+        {isCancelled ? (
           <div style={{
-            display:        'flex',
-            alignItems:     'center',
-            justifyContent: 'space-between',
-            padding:        '0 10px 0 16px',
-            height:         46,
-            background:     T.headerBg,
-            gap:            4,
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+            padding: '0 10px 0 16px', height: 46,
           }}>
-            <span style={{ flex: 1, fontSize: 12, fontWeight: 500, color: T.textDark, lineHeight: 1 }}>
-              {stageLabel[stage]}
+            <span style={{ color: T.white, fontSize: 13, fontWeight: 500 }}>
+              {stageLabel.cancelled}
             </span>
-
-            <button
-              onClick={() => setCollapsed(c => !c)}
-              style={iconBtn}
-              aria-label={collapsed ? 'Expand' : 'Collapse'}
-            >
-              <ChevronIcon up={collapsed} />
-            </button>
-
-            <button onClick={onClose} style={iconBtn} aria-label="Close">
-              <XIcon />
+            <button onClick={handleClose} style={iconBtn} aria-label="Close">
+              <XIcon color={T.white} />
             </button>
           </div>
 
-          {/* File row — hidden when collapsed */}
-          {!collapsed && (
-            <div
-              role={blobUrl ? 'button' : undefined}
-              tabIndex={blobUrl ? 0 : undefined}
-              onClick={() => blobUrl && window.open(blobUrl, '_blank')}
-              onKeyDown={e => e.key === 'Enter' && blobUrl && window.open(blobUrl, '_blank')}
-              style={{
-                display:     'flex',
-                alignItems:  'center',
-                padding:     '0 14px',
-                height:      56,
-                gap:         12,
-                background:  T.bodyBg,
-                cursor:      blobUrl ? 'pointer' : 'default',
-              }}
-            >
-              <PdfFileIcon />
-
-              <span style={{
-                flex:       1,
-                fontSize:   13,
-                color:      T.textDark,
-                fontWeight: 400,
-                lineHeight: 1.4,
-                overflow:   'hidden',
-                textOverflow: 'ellipsis',
-                whiteSpace: 'nowrap',
-              }}>
-                {displayName}
+        /* ── Default / Error / Complete ────────────────────────────────────── */
+        ) : (
+          <>
+            {/* Header */}
+            <div style={{
+              display:        'flex',
+              alignItems:     'center',
+              justifyContent: 'space-between',
+              padding:        '0 10px 0 16px',
+              height:         46,
+              background:     T.headerBg,
+              gap:            4,
+            }}>
+              <span style={{ flex: 1, fontSize: 12, fontWeight: 500, color: T.textDark, lineHeight: 1 }}>
+                {stageLabel[stage]}
               </span>
 
-              {/* Status icon: spinner / check / warning */}
-              {stage === 'preparing' && <Spinner />}
-              {stage === 'complete'  && <CheckIcon />}
-              {stage === 'error'     && <WarningIcon />}
+              <button
+                onClick={() => setCollapsed(c => !c)}
+                style={iconBtn}
+                aria-label={collapsed ? 'Expand' : 'Collapse'}
+              >
+                <ChevronIcon up={collapsed} />
+              </button>
+
+              <button onClick={handleClose} style={iconBtn} aria-label="Close">
+                <XIcon />
+              </button>
             </div>
-          )}
-        </>
-      )}
-    </div>
+
+            {/* File row — slides out/in when collapsing/expanding */}
+            <div style={{
+              overflow:   'hidden',
+              height:     collapsed ? 0 : 56,
+              transition: 'height 0.4s cubic-bezier(0.4,0,0.2,1)',
+            }}>
+              <div
+                role={blobUrl ? 'button' : undefined}
+                tabIndex={blobUrl ? 0 : undefined}
+                onClick={() => blobUrl && window.open(blobUrl, '_blank')}
+                onKeyDown={e => e.key === 'Enter' && blobUrl && window.open(blobUrl, '_blank')}
+                style={{
+                  display:    'flex',
+                  alignItems: 'center',
+                  padding:    '0 14px',
+                  height:     56,
+                  gap:        12,
+                  background: T.bodyBg,
+                  cursor:     blobUrl ? 'pointer' : 'default',
+                  // Slides down when collapsing, up when expanding
+                  transform:  collapsed ? 'translateY(100%)' : 'translateY(0)',
+                  transition: 'transform 0.4s cubic-bezier(0.4,0,0.2,1)',
+                }}
+              >
+                <PdfFileIcon />
+
+                <span style={{
+                  flex:         1,
+                  fontSize:     13,
+                  color:        T.textDark,
+                  fontWeight:   400,
+                  lineHeight:   1.4,
+                  overflow:     'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace:   'nowrap',
+                }}>
+                  {displayName}
+                </span>
+
+                {/* Status icon: spinner / check / warning */}
+                {stage === 'preparing' && <Spinner />}
+                {stage === 'complete'  && <CheckIcon />}
+                {stage === 'error'     && <WarningIcon />}
+              </div>
+            </div>
+          </>
+        )}
+      </div>
+    </>
   );
 
   return createPortal(node, document.body);

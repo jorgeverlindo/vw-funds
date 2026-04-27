@@ -6,23 +6,32 @@ import { useTranslation } from '../contexts/LanguageContext';
 
 export function GenerateReportSplitButton() {
   const { t } = useTranslation();
-  const [isOpen, setIsOpen] = useState(false);
-  const [shareReport, setShareReport] = useState<string | null>(null);
+  const [isOpen,       setIsOpen]       = useState(false);
+  const [shareReport,  setShareReport]  = useState<string | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
   const { triggerDownload, renderContainer, isDownloading, downloadingReport } = useReportDownload();
 
+  // Close menu once a download finishes (isDownloading flips false)
+  const prevDownloading = useRef(false);
+  useEffect(() => {
+    if (prevDownloading.current && !isDownloading) {
+      setIsOpen(false);
+    }
+    prevDownloading.current = isDownloading;
+  }, [isDownloading]);
+
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
-      // Don't close while the share modal or a download is active
-      if (shareReport !== null) return;
+      // Don't close while the share modal OR a download is in progress
+      if (shareReport !== null || isDownloading) return;
       if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
         setIsOpen(false);
       }
     }
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [shareReport]);
+  }, [shareReport, isDownloading]);
 
   const handlePrimaryClick = () => {
     setIsOpen(v => !v);
@@ -30,7 +39,7 @@ export function GenerateReportSplitButton() {
 
   return (
     <>
-      {/* Off-screen report render target (invisible — needed for PDF generation) */}
+      {/* Off-screen report render target — invisible to users, visible to html2canvas */}
       {renderContainer}
 
       <div className="relative inline-block" ref={containerRef}>
@@ -59,7 +68,8 @@ export function GenerateReportSplitButton() {
           </button>
         </div>
 
-        {/* Dropdown Menu */}
+        {/* Dropdown Menu — stays open while a download is in progress so the
+            spinner is visible and the user has feedback */}
         {isOpen && (
           <GenerateReportMenu
             onClose={() => setIsOpen(false)}
@@ -69,8 +79,8 @@ export function GenerateReportSplitButton() {
               setIsOpen(false);
             }}
             onDownload={(report) => {
+              // Don't close the menu here — keep it open to show the spinner
               triggerDownload(report);
-              setIsOpen(false);
             }}
             downloadingReport={downloadingReport}
           />

@@ -1,7 +1,6 @@
-import { useRef, useState } from 'react';
+import { useRef, useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { X, Eye, Star, MessageSquare, Banknote, RefreshCw, Paperclip, Trash2, AlertTriangle, ShieldAlert } from 'lucide-react';
-import { Switch } from './ui/switch';
 import { CustomSelect } from './ui/CustomSelect';
 import { SingleDatePicker } from './ui/SingleDatePicker';
 import { StatusChip, ClaimStatus } from './StatusChip';
@@ -125,7 +124,18 @@ export function ClaimsPanel({
   const [previewDoc, setPreviewDoc] = useState<typeof wfCL.documents[number] | null>(null);
 
   // ── Penalty form state ────────────────────────────────────────────────────
+  const penaltyFormRef = useRef<HTMLDivElement>(null);
   const [penaltyFormOpen, setPenaltyFormOpen] = useState(false);
+
+  // Auto-scroll to form when it opens
+  useEffect(() => {
+    if (penaltyFormOpen) {
+      const t = setTimeout(() => {
+        penaltyFormRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }, 80);
+      return () => clearTimeout(t);
+    }
+  }, [penaltyFormOpen]);
   const [selectedViolationType, setSelectedViolationType] = useState('');
   const [penaltyDetails, setPenaltyDetails] = useState('');
   const [selectedStrike, setSelectedStrike] = useState<1 | 2 | 3 | null>(null);
@@ -730,17 +740,9 @@ export function ClaimsPanel({
                 </AnimatePresence>
               </div>
 
-              {/* Strike history — hidden while form is open */}
-              <AnimatePresence>
-                {(claim.strikes ?? []).length > 0 && !penaltyFormOpen && (
-                  <motion.div
-                    key="strike-history"
-                    initial={{ opacity: 0, height: 0 }}
-                    animate={{ opacity: 1, height: 'auto' }}
-                    exit={{ opacity: 0, height: 0 }}
-                    transition={{ duration: 0.22, ease: 'easeInOut' }}
-                    className="overflow-hidden space-y-2 mb-4"
-                  >
+              {/* Strike history — always visible */}
+              {(claim.strikes ?? []).length > 0 && (
+                <div className="space-y-2 mb-4">
                     {(claim.strikes ?? []).slice().reverse().map((strike, idx) => {
                       const dotColor = strike.level === 3 ? '#D2323F' : strike.level === 2 ? '#E17613' : '#F59E0B';
                       return (
@@ -757,15 +759,15 @@ export function ClaimsPanel({
                         </div>
                       );
                     })}
-                  </motion.div>
-                )}
-              </AnimatePresence>
+                </div>
+              )}
 
               {/* Penalty assignment form — accordion open/close */}
               <AnimatePresence>
                 {penaltyFormOpen && (
                   <motion.div
                     key="penalty-form"
+                    ref={penaltyFormRef}
                     initial={{ opacity: 0, height: 0 }}
                     animate={{ opacity: 1, height: 'auto' }}
                     exit={{ opacity: 0, height: 0 }}
@@ -849,11 +851,23 @@ export function ClaimsPanel({
                               <p className="text-[13px] font-semibold text-[#1f1d25]">Suspend Co-op Funding Eligibility</p>
                               <p className="text-[12px] text-[#686576] mt-0.5">This blocks new funding claims and flags active claims for manual review.</p>
                             </div>
-                            <Switch
-                              checked={suspendEligibility}
-                              onCheckedChange={setSuspendEligibility}
-                              className="shrink-0 data-[state=checked]:bg-[var(--brand-accent)] data-[state=unchecked]:bg-[#CAC9CF] h-6 w-11"
-                            />
+                            {/* Accessible toggle switch */}
+                            <button
+                              type="button"
+                              role="switch"
+                              aria-checked={suspendEligibility}
+                              onClick={() => setSuspendEligibility(v => !v)}
+                              className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full border-2 border-transparent transition-colors duration-200 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-accent)] focus-visible:ring-offset-2 ${
+                                suspendEligibility ? 'bg-[var(--brand-accent)]' : 'bg-[#CAC9CF]'
+                              }`}
+                            >
+                              <span
+                                aria-hidden="true"
+                                className={`pointer-events-none block h-5 w-5 rounded-full bg-white shadow-sm ring-0 transition-transform duration-200 ${
+                                  suspendEligibility ? 'translate-x-5' : 'translate-x-0'
+                                }`}
+                              />
+                            </button>
                           </div>
 
                           <AnimatePresence>

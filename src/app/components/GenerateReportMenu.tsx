@@ -1,12 +1,14 @@
 import { useState } from 'react';
 import * as TooltipPrimitive from '@radix-ui/react-tooltip';
-import { Download, Share2 } from 'lucide-react';
+import { Download, Share2, Loader2 } from 'lucide-react';
 import { useTranslation } from '../contexts/LanguageContext';
 
 interface GenerateReportMenuProps {
   onClose: () => void;
   onSelect: (item: string) => void;
   onShare: (reportName: string) => void;
+  onDownload: (reportName: string) => void;
+  downloadingReport: string | null;
 }
 
 const REPORT_ITEMS = [
@@ -18,7 +20,7 @@ const REPORT_ITEMS = [
   'Payment Processing Report',
 ];
 
-export function GenerateReportMenu({ onClose, onSelect, onShare }: GenerateReportMenuProps) {
+export function GenerateReportMenu({ onClose, onSelect, onShare, onDownload, downloadingReport }: GenerateReportMenuProps) {
   const { t } = useTranslation();
   const [hoveredItem, setHoveredItem] = useState<string | null>(null);
 
@@ -62,10 +64,13 @@ export function GenerateReportMenu({ onClose, onSelect, onShare }: GenerateRepor
               <TooltipPrimitive.Root>
                 <TooltipPrimitive.Trigger asChild>
                   <button
-                    onClick={() => { onSelect(item); onClose(); }}
-                    className="w-7 h-7 flex items-center justify-center rounded-md hover:bg-gray-200 text-[#686576] hover:text-[#1f1d25] transition-colors"
+                    onClick={() => { onDownload(item); }}
+                    disabled={downloadingReport !== null}
+                    className="w-7 h-7 flex items-center justify-center rounded-md hover:bg-gray-200 text-[#686576] hover:text-[#1f1d25] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    <Download size={14} />
+                    {downloadingReport === item
+                      ? <Loader2 size={14} className="animate-spin" />
+                      : <Download size={14} />}
                   </button>
                 </TooltipPrimitive.Trigger>
                 <TooltipPrimitive.Portal>

@@ -1,0 +1,124 @@
+import type { CSSProperties } from 'react';
+
+// ─── Color palette (extracted from vw-funds-report.html) ─────────────────────
+export const C = {
+  purple:     '#6050E0',
+  purpleLight:'#A8A8F8',
+  purpleSoft: '#EFEDFF',
+  coral:      'rgba(247,134,100,0.9)',
+  coralSolid: '#F78664',
+  coralSoft:  '#FDEEE7',
+  green:      '#51B994',
+  greenSoft:  '#E2F4EC',
+  text:       '#14141B',
+  textSoft:   '#2D2D38',
+  muted:      '#6B6B78',
+  muted2:     '#95959F',
+  border:     '#E8E8EE',
+  borderSoft: '#F1F1F5',
+  bgSoft:     '#FAFAFD',
+  bgPage:     '#E6E6EC',
+  white:      '#ffffff',
+} as const;
+
+// ─── Font stacks ─────────────────────────────────────────────────────────────
+export const F = {
+  poppins: "'Poppins', -apple-system, BlinkMacSystemFont, sans-serif",
+  inter:   "'Inter', -apple-system, BlinkMacSystemFont, system-ui, sans-serif",
+} as const;
+
+// ─── Shared style objects ─────────────────────────────────────────────────────
+
+export const S = {
+  // Section tag line + label
+  sectionTag: {
+    display:       'flex',
+    alignItems:    'center',
+    gap:           '12px',
+    fontFamily:    F.poppins,
+    fontSize:      '11px',
+    letterSpacing: '0.22em',
+    textTransform: 'uppercase' as const,
+    color:         C.purple,
+    fontWeight:    600,
+    marginBottom:  '18px',
+  } satisfies CSSProperties,
+
+  // Section titles (40px / Poppins 600)
+  sectionTitle: {
+    fontFamily:    F.poppins,
+    fontSize:      '40px',
+    fontWeight:    600,
+    letterSpacing: '-0.035em',
+    lineHeight:    1.1,
+    marginBottom:  '28px',
+    color:         C.text,
+    maxWidth:      '580px',
+  } satisfies CSSProperties,
+
+  // Sub-heading (h2)
+  subHeading: {
+    fontFamily:    F.poppins,
+    fontSize:      '16px',
+    fontWeight:    600,
+    letterSpacing: '-0.005em',
+    color:         C.text,
+    margin:        '32px 0 12px',
+  } satisfies CSSProperties,
+
+  // Lead text
+  lead: {
+    fontSize:   '16px',
+    lineHeight: 1.7,
+    color:      C.textSoft,
+    maxWidth:   '640px',
+    fontFamily: F.inter,
+  } satisfies CSSProperties,
+
+  // Body text
+  body: {
+    fontFamily:    F.inter,
+    fontSize:      '14px',
+    lineHeight:    1.65,
+    color:         C.textSoft,
+    marginBottom:  '12px',
+  } satisfies CSSProperties,
+
+  // Uppercase label (KPI, cover meta, etc.)
+  label: {
+    fontFamily:    F.poppins,
+    fontSize:      '10px',
+    letterSpacing: '0.14em',
+    textTransform: 'uppercase' as const,
+    color:         C.muted,
+    fontWeight:    600,
+    marginBottom:  '8px',
+  } satisfies CSSProperties,
+
+  // Horizontal divider
+  divider: {
+    height:     '1px',
+    background: C.border,
+    margin:     '44px 0',
+  } satisfies CSSProperties,
+} as const;
+
+// ─── Chart color sequences ────────────────────────────────────────────────────
+export const CHART_COLORS = [C.purple, C.coral, C.green, C.purpleLight, C.coralSolid] as const;
+
+// ─── Constellation logo SVG paths ─────────────────────────────────────────────
+// Wordmark paths from the HTML template (viewBox 0 0 176 33)
+export const LOGO_PATHS = `
+  <path d="M2.22422 16.0471C2.22422 7.57204 8.61025 0.631495 16.6988 0.0413128C16.332 0.0118036 15.9594 0 15.5867 0C6.97648 0 0 7.18252 0 16.0471C0 24.9116 6.97648 32.0941 15.5867 32.0941C15.9594 32.0941 16.332 32.0823 16.6988 32.0528C8.61025 31.4626 2.22422 24.5221 2.22422 16.0471Z" fill="#1F1D25"/>
+  <path d="M6.12234 16.0471C6.12234 9.69079 10.909 4.48539 16.9797 4.04275C16.7046 4.02504 16.4237 4.01324 16.1428 4.01324C9.68797 4.01324 4.45417 9.4016 4.45417 16.0471C4.45417 22.6925 9.68797 28.0809 16.1428 28.0809C16.4237 28.0809 16.7046 28.0691 16.9797 28.0514C10.9147 27.6087 6.12234 22.4033 6.12234 16.0471Z" fill="#1F1D25"/>
+  <path d="M17.2606 8.04418C17.0772 8.03238 16.8938 8.02648 16.7046 8.02648C12.3995 8.02648 8.90834 11.6207 8.90834 16.053C8.90834 20.4852 12.3995 24.0794 16.7046 24.0794C16.8938 24.0794 17.0772 24.0735 17.2606 24.0558C13.2135 23.7607 10.0262 20.2905 10.0262 16.053C10.0262 11.8155 13.2192 8.34518 17.2606 8.05009V8.04418Z" fill="#1F1D25"/>
+  <path d="M37.0149 18.0891C36.3671 19.5882 35.0372 20.4144 33.2601 20.4144C30.6346 20.4144 28.7314 18.2957 28.7314 15.3802C28.7314 11.9453 31.0359 10.3872 33.1741 10.3872C34.8939 10.3872 36.2296 11.1485 36.8429 12.4765L36.9232 12.6476H39.2162L39.0442 12.2345C38.4595 10.818 36.9175 8.43371 33.1971 8.43371C29.4766 8.43371 26.6276 11.4141 26.6276 15.3624C26.6276 19.3108 29.3907 22.362 33.1971 22.362C36.006 22.362 37.978 21.0459 39.2162 18.337L39.4111 17.9179H37.0952L37.0207 18.095L37.0149 18.0891Z" fill="#1F1D25"/>
+  <path d="M48.1819 8.43371C44.3984 8.43371 41.4347 11.4909 41.4347 15.3979C41.4347 18.8563 43.7506 22.362 48.1819 22.362C51.9539 22.362 54.9119 19.3049 54.9119 15.3979C54.9119 12.022 52.5558 8.43371 48.1819 8.43371ZM52.8023 15.3979C52.8023 18.2543 50.8074 20.4144 48.1647 20.4144C45.522 20.4144 43.5443 18.2602 43.5443 15.3979C43.5443 12.5355 45.5277 10.3813 48.1647 10.3813C50.8016 10.3813 52.8023 12.4883 52.8023 15.3979Z" fill="#1F1D25"/>
+  <path d="M65.8552 16.6077C65.8552 17.0091 65.8553 17.6169 65.861 18.2012C65.431 17.4871 64.789 16.4897 63.8087 14.9906L59.7616 8.83503H57.9329V21.9548H59.8992V14.1644C59.8992 13.7749 59.8934 13.1729 59.882 12.6004C60.289 13.2732 60.8966 14.2057 61.9399 15.7992L65.9871 21.9548H67.8158V8.83503H65.8495V16.6077H65.8552Z" fill="#1F1D25"/>
+  <path d="M81.2643 10.8239H84.4573V21.9548H86.5095V10.8239H89.7026V8.83503H81.2643V10.8239Z" fill="#1F1D25"/>
+  <path d="M94.1911 16.171H99.1842V14.1821H94.1911V10.8239H99.3848V8.83503H92.1389V21.9548H99.5797V19.9718H94.1911V16.171Z" fill="#1F1D25"/>
+  <path d="M126.93 8.83503L121.736 21.9548H123.931L125.198 18.573H130.191L131.441 21.9548H133.682L128.638 8.83503H126.93ZM129.475 16.6254H125.915L127.084 13.5152C127.274 13.0076 127.514 12.3289 127.721 11.7033C127.927 12.3407 128.162 13.0371 128.328 13.4916L129.469 16.6195L129.475 16.6254Z" fill="#1F1D25"/>
+  <path d="M146.609 8.83503H144.557V21.9548H146.609V8.83503Z" fill="#1F1D25"/>
+  <path d="M156.366 8.43371C152.583 8.43371 149.619 11.4909 149.619 15.3979C149.619 18.8563 151.935 22.362 156.366 22.362C160.138 22.362 163.096 19.3049 163.096 15.3979C163.096 12.022 160.74 8.43371 156.366 8.43371ZM160.986 15.3979C160.986 18.2543 158.992 20.4144 156.349 20.4144C153.706 20.4144 151.728 18.2602 151.728 15.3979C151.728 12.5355 153.712 10.3813 156.349 10.3813C158.986 10.3813 160.986 12.4883 160.986 15.3979Z" fill="#1F1D25"/>
+  <path d="M174.039 8.83503V16.6077C174.039 17.0091 174.039 17.6169 174.045 18.2012C173.621 17.4989 172.985 16.5074 171.993 14.9965L167.946 8.84093H166.117V21.9607H168.083V14.1703C168.083 13.7808 168.078 13.1788 168.066 12.6063C168.473 13.2791 169.081 14.2116 170.124 15.8051L174.171 21.9607H176V8.83503H174.034H174.039Z" fill="#1F1D25"/>
+`;

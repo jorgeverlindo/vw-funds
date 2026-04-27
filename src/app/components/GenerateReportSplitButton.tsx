@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { GenerateReportMenu } from './GenerateReportMenu';
 import { ShareReportModal } from './ShareReportModal';
+import { useReportDownload } from '../reports/useReportDownload';
 import { useTranslation } from '../contexts/LanguageContext';
 
 export function GenerateReportSplitButton() {
@@ -9,9 +10,11 @@ export function GenerateReportSplitButton() {
   const [shareReport, setShareReport] = useState<string | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
+  const { triggerDownload, renderContainer, isDownloading, downloadingReport } = useReportDownload();
+
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
-      // Don't close while the share modal is open — its portal lives outside containerRef
+      // Don't close while the share modal or a download is active
       if (shareReport !== null) return;
       if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
         setIsOpen(false);
@@ -27,6 +30,9 @@ export function GenerateReportSplitButton() {
 
   return (
     <>
+      {/* Off-screen report render target (invisible — needed for PDF generation) */}
+      {renderContainer}
+
       <div className="relative inline-block" ref={containerRef}>
         <div className="flex items-stretch rounded-full border border-[rgba(99,86,225,0.5)] overflow-hidden bg-white hover:bg-[#F9FAFA] transition-colors h-10">
           {/* Left Segment: Primary Action */}
@@ -62,6 +68,11 @@ export function GenerateReportSplitButton() {
               setShareReport(report);
               setIsOpen(false);
             }}
+            onDownload={(report) => {
+              triggerDownload(report);
+              setIsOpen(false);
+            }}
+            downloadingReport={downloadingReport}
           />
         )}
       </div>

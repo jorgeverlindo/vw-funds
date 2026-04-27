@@ -117,7 +117,10 @@ export function PreApprovalPanel({
 
     // ── OEM view ────────────────────────────────────────────────────────────
     if (userType === 'oem') {
-      const canAct = liveStatus === 'Submitted' || liveStatus === 'Resubmitted';
+      // OEM can review any PA that hasn't been finally approved/declined yet.
+      // For the live workflow item this maps to 'Submitted'/'Resubmitted';
+      // for static mock items it maps to 'Pending'/'In Review'/'Revision Requested'.
+      const canAct = liveStatus !== 'Approved';
 
       if (canAct) {
         return (
@@ -273,8 +276,8 @@ export function PreApprovalPanel({
       <div className="flex-1 overflow-y-auto custom-scrollbar">
         <div className="px-8 py-6 space-y-8">
 
-          {/* AI Review button — OEM only, always visible on workflow items */}
-          {isWorkflowItem && userType === 'oem' && onOpenAIReview && (
+          {/* AI Review button — OEM only, visible on any selected PA */}
+          {userType === 'oem' && onOpenAIReview && (
             <div className="flex justify-end">
               <button
                 type="button"

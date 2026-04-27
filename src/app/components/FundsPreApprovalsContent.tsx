@@ -360,6 +360,7 @@ export interface FundsPreApprovalsContentProps {
   onSearchQueryChange: (query: string) => void;
   selectedPreApprovalId: string | null;
   onSelectPreApproval: (id: string | null) => void;
+  userType?: 'dealer' | 'dealer-singular' | 'oem';
 }
 
 import { PreApprovalDrawer } from './pre-approval/PreApprovalDrawer';
@@ -412,7 +413,8 @@ export function FundsPreApprovalsContent({
   searchQuery,
   onSearchQueryChange,
   selectedPreApprovalId,
-  onSelectPreApproval
+  onSelectPreApproval,
+  userType = 'dealer',
 }: FundsPreApprovalsContentProps) {
   const { t } = useTranslation();
   const { workflow, archiveAndReset } = useWorkflow();
@@ -517,20 +519,22 @@ export function FundsPreApprovalsContent({
       {/* Controls Row */}
       <div className="flex-none flex items-end justify-between p-[24px] m-[0px]">
         <div className="flex items-center gap-3">
-          {/* New Pre-Approval Button - Fixed Styling */}
-          <ActionButton
-            label={t('New Pre-Approval')}
-            onClick={() => {
-              // Archive the current PA whenever it has been submitted at least
-              // once (any status other than Draft). This makes the list dynamic:
-              // each "New Pre-Approval" flow produces a fresh entry in the grid.
-              // Draft PAs are not archived — the user hadn't submitted yet.
-              if (workflow.preApproval.status !== 'Draft') {
-                archiveAndReset();
-              }
-              setIsDrawerOpen(true);
-            }}
-          />
+          {/* New Pre-Approval Button — dealer-only, OEM only reviews */}
+          {userType !== 'oem' && (
+            <ActionButton
+              label={t('New Pre-Approval')}
+              onClick={() => {
+                // Archive the current PA whenever it has been submitted at least
+                // once (any status other than Draft). This makes the list dynamic:
+                // each "New Pre-Approval" flow produces a fresh entry in the grid.
+                // Draft PAs are not archived — the user hadn't submitted yet.
+                if (workflow.preApproval.status !== 'Draft') {
+                  archiveAndReset();
+                }
+                setIsDrawerOpen(true);
+              }}
+            />
+          )}
           
           {/* Search Bar - Fixed Styling */}
           <div className="relative">

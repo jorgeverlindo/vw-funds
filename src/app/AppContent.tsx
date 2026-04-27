@@ -501,13 +501,14 @@ export default function AppContent() {
                 )}
                 
                 {activeTab === 'pre-approvals' && (
-                  <FundsPreApprovalsContent 
-                    dateRange={dateRange} 
+                  <FundsPreApprovalsContent
+                    dateRange={dateRange}
                     onDateRangeChange={setDateRange}
                     searchQuery={preApprovalSearchQuery}
                     onSearchQueryChange={setPreApprovalSearchQuery}
                     selectedPreApprovalId={selectedPreApprovalId}
                     onSelectPreApproval={setSelectedPreApprovalId}
+                    userType={userType}
                   />
                 )}
                 

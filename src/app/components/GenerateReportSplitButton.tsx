@@ -10,7 +10,7 @@ export function GenerateReportSplitButton() {
   const [shareReport,  setShareReport]  = useState<string | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  const { triggerDownload, renderContainer, isDownloading, downloadingReport } = useReportDownload();
+  const { triggerDownload, isDownloading, downloadingReport } = useReportDownload();
 
   // Close menu once a download finishes (isDownloading flips false)
   const prevDownloading = useRef(false);
@@ -39,9 +39,6 @@ export function GenerateReportSplitButton() {
 
   return (
     <>
-      {/* Off-screen report render target — invisible to users, visible to html2canvas */}
-      {renderContainer}
-
       <div className="relative inline-block" ref={containerRef}>
         <div className="flex items-stretch rounded-full border border-[rgba(99,86,225,0.5)] overflow-hidden bg-white hover:bg-[#F9FAFA] transition-colors h-10">
           {/* Left Segment: Primary Action */}

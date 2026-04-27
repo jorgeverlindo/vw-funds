@@ -92,6 +92,8 @@ export interface Claim {
   details?: string;
   strikes?: Strike[];
   violationSummary?: string;
+  /** Real status shown to dealers when OEM has flagged the claim as 'At risk' */
+  underlyingStatus?: ClaimStatus;
 }
 
 interface ClaimsPanelProps {
@@ -190,7 +192,12 @@ export function ClaimsPanel({
   const isWorkflowItem = claim.id === workflow.claim.id;
   const wfCL = workflow.claim;
   const wfPA = workflow.preApproval;
-  const liveStatus = isWorkflowItem ? (wfCL.status as ClaimStatus) : claim.status;
+  const rawStatus = isWorkflowItem ? (wfCL.status as ClaimStatus) : claim.status;
+  // Dealers never see 'At risk' — show the underlying status instead
+  const liveStatus: ClaimStatus =
+    rawStatus === 'At risk' && userType !== 'oem'
+      ? (claim.underlyingStatus ?? 'Pending')
+      : rawStatus;
   const liveOemComment = isWorkflowItem ? wfCL.oemComment : null;
 
   // ── OEM action handlers ───────────────────────────────────────────────────

@@ -72,6 +72,7 @@ export const CLAIMS_MOCK_DATA: Claim[] = [
   createClaim('MFC540978', new Date(2026, 0, 22), 3069.56, 'Pending',           8, 22, '423063', 'Armstrong Volkswagen of Gladstone',     'Gladstone','DMP - Hard Costs', 1, 'Zak Flaten'),
   {
     ...createClaim('MFC540989', new Date(2026, 0, 21), 3114.47, 'At risk', 9, 7, '408252', 'Jack Daniels Volkswagen (Paramus)', 'Paramus', 'DMP - Hard Costs', 2, 'Jenny Eckart'),
+    underlyingStatus: 'Pending' as ClaimStatus,
     violationSummary: 'Dealer is At Risk due to 2 recent violations: missing APR disclaimer and incorrect logo usage.',
     strikes: [
       { level: 1, type: 'Incentive / Legal Violation', date: 'Jan 10, 2026', description: 'Missing APR disclaimer in lease ad.' } as Strike,
@@ -471,7 +472,15 @@ export function FundsClaimsContent({
                                 </div>
                                 <div className="w-[100px] text-[12px] text-[#1f1d25] font-medium">{claim.id}</div>
                                 <div className="w-[100px] text-[12px] text-[#1f1d25]">${claim.amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
-                                <div className="w-[160px] pr-2"><StatusChip status={claim.status} /></div>
+                                <div className="w-[160px] pr-2">
+                                  <StatusChip
+                                    status={
+                                      claim.status === 'At risk' && userType !== 'oem'
+                                        ? (claim.underlyingStatus ?? 'Pending')
+                                        : claim.status
+                                    }
+                                  />
+                                </div>
                                 <div className="w-[100px] text-[12px] text-[#1f1d25]">{formatDays(claim.timeInClaim)}</div>
                                 <div className="w-[120px] text-[12px] text-[#1f1d25]">{formatDays(claim.timeInPayment)}</div>
                                 <div className="flex-1 min-w-[200px] text-[12px] text-[#1f1d25] truncate pr-4" title={`${claim.dealershipCode} - ${claim.dealershipName} (${claim.dealershipCity})`}>

@@ -1,4 +1,4 @@
-import { Check, MoreHorizontal, Eye, Hourglass, XCircle, FileCheck, Banknote, CreditCard } from 'lucide-react';
+import { Check, MoreHorizontal, Eye, Hourglass, XCircle, FileCheck, Banknote, CreditCard, AlertTriangle } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { useTranslation } from '../contexts/LanguageContext';
 
@@ -37,7 +37,8 @@ export type ClaimStatus =
   | 'Finished'
   | 'Penalty Applied'
   | 'Ready for Payment'
-  | 'Paid';
+  | 'Paid'
+  | 'At risk';
 
 interface StatusChipProps {
   status: ClaimStatus | string; // Allow string to support flexible API data, but type strongly where possible
@@ -114,6 +115,10 @@ export function StatusChip({ status, className }: StatusChipProps) {
     case 'Paid':
       styles = "bg-[#E8F5E9] text-[#1b5e20]"; // Green
       icon = <CreditCard className="w-3.5 h-3.5 mr-1.5 text-[#4CAF50]" />;
+      break;
+    case 'At risk':
+      styles = "bg-[rgba(225,118,19,0.10)] text-[#E17613]"; // Amber/orange
+      icon = <AlertTriangle className="w-3.5 h-3.5 mr-1.5 text-[#E17613]" />;
       break;
     default:
       // Fallback for unknown statuses

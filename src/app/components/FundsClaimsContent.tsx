@@ -10,7 +10,7 @@ import { BudgetForecastCard } from './BudgetForecastCard';
 import { ClaimsSubmittedBans } from './ClaimsSubmittedBans';
 import { ImageWithFallback } from './figma/ImageWithFallback';
 import { StatusChip, ClaimStatus } from './StatusChip';
-import { Claim } from './ClaimsPanel';
+import { Claim, Strike } from './ClaimsPanel';
 import { cn } from '../../lib/utils';
 import { ActionButton } from './ActionButton';
 import { useWorkflow, WORKFLOW_DEALER, WORKFLOW_CAMPAIGN, type ClaimWorkflowStatus, type ArchivedCycle } from '../contexts/WorkflowContext';
@@ -70,7 +70,14 @@ const createClaim = (id: string, date: Date, amount: number, status: ClaimStatus
 export const CLAIMS_MOCK_DATA: Claim[] = [
   createClaim('MFC539881', new Date(2026, 0, 25), 4070.05, 'Approved',          6,  6, '408252', 'Jack Daniels Volkswagen (Paramus)',     'Paramus',  'DMP - Hard Costs', 0, 'Fabio Veloso'),
   createClaim('MFC540978', new Date(2026, 0, 22), 3069.56, 'Pending',           8, 22, '423063', 'Armstrong Volkswagen of Gladstone',     'Gladstone','DMP - Hard Costs', 1, 'Zak Flaten'),
-  createClaim('MFC540989', new Date(2026, 0, 21), 3114.47, 'Pending',           9,  7, '408252', 'Jack Daniels Volkswagen (Paramus)',     'Paramus',  'DMP - Hard Costs', 2, 'Jenny Eckart'),
+  {
+    ...createClaim('MFC540989', new Date(2026, 0, 21), 3114.47, 'At risk', 9, 7, '408252', 'Jack Daniels Volkswagen (Paramus)', 'Paramus', 'DMP - Hard Costs', 2, 'Jenny Eckart'),
+    violationSummary: 'Dealer is At Risk due to 2 recent violations: missing APR disclaimer and incorrect logo usage.',
+    strikes: [
+      { level: 1, type: 'Incentive / Legal Violation', date: 'Jan 10, 2026', description: 'Missing APR disclaimer in lease ad.' } as Strike,
+      { level: 2, type: 'Brand Misuse',                date: 'Jan 18, 2026', description: 'Incorrect Volkswagen logo usage and non-approved typography.' } as Strike,
+    ],
+  },
   createClaim('MFC540992', new Date(2026, 0, 21), 2268.56, 'Approved',          6,  7, '409210', 'Paramount Volkswagen of Hickory',       'Hickory',  'DMP - Hard Costs', 3, 'Ryan Ledger'),
   createClaim('MFC541000', new Date(2026, 0, 19), 2269.56, 'Approved',         10,  4, '402165', 'Volkswagen of Downtown Chicago',        'Chicago',  'DMP - Hard Costs', 4, 'Garry Schwietert'),
   createClaim('MFC539882', new Date(2026, 0, 18), 4070.05, 'Approved',          5,  4, '408252', 'Jack Daniels Volkswagen (Paramus)',     'Paramus',  'DMP - Hard Costs', 5, 'Mallory Manning'),

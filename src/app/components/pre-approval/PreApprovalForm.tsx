@@ -1,13 +1,15 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { useForm, Controller } from 'react-hook-form';
-import { Info, Upload, Eye, Trash2, Calendar, Plus, X } from 'lucide-react';
+import { Info, Upload, Eye, Trash2, Calendar, Plus, X, CheckCircle2, AlertTriangle } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { DateRange } from 'react-day-picker';
 import { cn } from '@/lib/utils';
 import { CustomSelect, Option } from '@/app/components/ui/CustomSelect';
 import { useTranslation } from '@/app/contexts/LanguageContext';
-import { useWorkflow } from '@/app/contexts/WorkflowContext';
+import { useWorkflow, WORKFLOW_DEALER } from '@/app/contexts/WorkflowContext';
+import { useFilters } from '@/app/contexts/FilterContext';
+import { useOverviewData } from '@/data/access/useOverviewData';
 import { DateRangePicker } from '../DateRangePicker';
 import type { ClaimLineItem } from '@/app/contexts/WorkflowContext';
 import { DocumentPreviewModal } from './DocumentPreviewModal';
@@ -41,17 +43,18 @@ const FUND_OPTIONS: Option[] = [
 ];
 
 const INITIATIVE_OPTIONS: Option[] = [
-  { value: 'dmp-hard-costs',  label: 'DMP - Hard Costs' },
+  { value: 'cpo-activity',   label: 'CPO Activity' },
   { value: 'dmp-media-costs', label: 'DMP - Media Costs' },
 ];
 
 // Fund → eligible Initiative values (filters the dropdown so Media funds
 // only show Media initiatives, and vice versa).
 const FUND_TO_INITIATIVES: Record<string, string[]> = {
-  'dmf-hard-costs':  ['dmp-hard-costs'],
+  'dmf-hard-costs':  ['cpo-activity'],
   'dmf-media-costs': ['dmp-media-costs'],
 };
 
+// Hard-costs media types (shown when CPO Activity is selected)
 const MEDIA_TYPE_OPTIONS: Option[] = [
   { value: 'auto-shows',           label: 'Auto Shows/Offsite Displays' },
   { value: 'crm',                  label: 'CRM' },
@@ -66,6 +69,32 @@ const MEDIA_TYPE_OPTIONS: Option[] = [
   { value: 'promotional-events',   label: 'Promotional Events & Sponsorships' },
   { value: 'translation-software', label: 'Translation Software' },
 ];
+
+// Media-costs media types (shown when DMP - Media Costs is selected)
+const MEDIA_COST_TYPE_OPTIONS: Option[] = [
+  { value: 'broadcast-radio',          label: 'Broadcast Radio' },
+  { value: 'broadcast-tv',             label: 'Broadcast TV/Cable' },
+  { value: 'cds-ev',                   label: 'CDS - EV Digital Ad Campaign' },
+  { value: 'cpo-15pct',                label: 'Certified Pre-Owned @ 15% Capped Spending' },
+  { value: 'digital-audio',            label: 'Digital Audio/Podcast' },
+  { value: 'direct-mail',              label: 'Direct Mail' },
+  { value: 'display-banners',          label: 'Display/Internet Banners' },
+  { value: 'email-campaigns-mc',       label: 'Email Campaigns' },
+  { value: 'inventory-listing',        label: 'Inventory Listing/3rd Party Leads' },
+  { value: 'non-certified-digital',    label: 'Non-Certified Digital Advertising' },
+  { value: 'online-video',             label: 'Online Video Marketing/Pre-Roll/Connected TV/OTT' },
+  { value: 'organic-social',           label: 'Organic Social/Online Reputation Management' },
+  { value: 'promotional-events-mc',    label: 'Promotional Events & Sponsorships' },
+  { value: 'search-sem',               label: 'Search (SEM)' },
+  { value: 'search-seo',               label: 'Search (SEO)' },
+  { value: 'sms',                      label: 'SMS' },
+  { value: 'social-media-advertising', label: 'Social Media Advertising' },
+  { value: 'social-influencers',       label: 'Social Media Influencers/Blog' },
+  { value: 'website-banner',           label: 'Website Dashboard Banner' },
+];
+
+// All options combined — used for label lookup across both lists
+const ALL_MEDIA_TYPE_OPTIONS = [...MEDIA_TYPE_OPTIONS, ...MEDIA_COST_TYPE_OPTIONS];
 
 const DEFAULT_RANGE: DateRange = { from: new Date(2026, 2, 1), to: new Date(2026, 2, 31) };
 
@@ -82,6 +111,8 @@ function formatRange(range: DateRange | undefined): string {
 export function PreApprovalForm({ onClose, onDone }: PreApprovalFormProps) {
   const { t } = useTranslation();
   const { workflow, addPreApprovalDocument, removePreApprovalDocument, updatePreApprovalData } = useWorkflow();
+  const { isLockedDealership } = useFilters();
+  const { kpis } = useOverviewData();
 
   // Hydrate form defaults from the workflow so reopening the drawer preserves
   // whatever the dealer already filled in. Without this, the sync effect
@@ -183,7 +214,7 @@ export function PreApprovalForm({ onClose, onDone }: PreApprovalFormProps) {
       return;
     }
     const mediaTypeLabel =
-      MEDIA_TYPE_OPTIONS.find(o => o.value === watchedMediaType)?.label ?? watchedMediaType ?? '';
+      ALL_MEDIA_TYPE_OPTIONS.find(o => o.value === watchedMediaType)?.label ?? watchedMediaType ?? '';
     updatePreApprovalData(
       watchedTitle ?? '',
       computedTotal,
@@ -220,6 +251,25 @@ export function PreApprovalForm({ onClose, onDone }: PreApprovalFormProps) {
       setValue('initiativeType', '');
     }
   }, [fundValue, initiativeValue, eligibleInitiatives, setValue]);
+
+  // Media Type options change based on the selected initiative:
+  // DMP - Media Costs → 19-item media cost list; otherwise hard-costs list.
+  const mediaTypeOptions = useMemo(() =>
+    initiativeValue === 'dmp-media-costs' ? MEDIA_COST_TYPE_OPTIONS : MEDIA_TYPE_OPTIONS,
+  [initiativeValue]);
+
+  // Clear media type selection when the initiative changes (the options change)
+  const prevInitiativeRef = useRef(initiativeValue);
+  useEffect(() => {
+    if (prevInitiativeRef.current !== initiativeValue) {
+      prevInitiativeRef.current = initiativeValue;
+      setValue('mediaType', '');
+    }
+  }, [initiativeValue, setValue]);
+
+  // Available funds from overview data (dealer-scoped when locked, aggregate otherwise)
+  const availableFunds = kpis.availableFunds;
+  const isOverBudget = computedTotal > 0 && availableFunds > 0 && computedTotal > availableFunds;
 
   // ── File upload ───────────────────────────────────────────────────────────
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -337,25 +387,35 @@ export function PreApprovalForm({ onClose, onDone }: PreApprovalFormProps) {
               <label className="text-[12px] text-[#686576] font-medium flex items-center gap-1">
                 <span className="text-[#D2323F]">*</span> {t('Dealership Name')}
               </label>
-              <Controller
-                name="dealershipName"
-                control={control}
-                rules={{ required: true }}
-                render={({ field }) => (
-                  <CustomSelect
-                    value={field.value}
-                    onChange={field.onChange}
-                    options={[
-                      { value: '12345',  label: '12345 - Volkswagen Anytown' },
-                      { value: '408253', label: '408253 - Rick Case VW' },
-                      { value: '408254', label: '408254 - Gunther VW' },
-                      { value: '408255', label: '408255 - Emich VW' },
-                    ]}
-                    placeholder={t('Select Dealership')}
-                    error={!!errors.dealershipName}
-                  />
-                )}
-              />
+              {isLockedDealership ? (
+                <input
+                  type="text"
+                  readOnly
+                  disabled
+                  value={`${WORKFLOW_DEALER.code} - ${WORKFLOW_DEALER.name}`}
+                  className="w-full h-10 px-3 bg-[#F0F2F4] border border-[#CAC9CF] rounded-[4px] text-[13px] text-[#686576] cursor-not-allowed select-none"
+                />
+              ) : (
+                <Controller
+                  name="dealershipName"
+                  control={control}
+                  rules={{ required: true }}
+                  render={({ field }) => (
+                    <CustomSelect
+                      value={field.value}
+                      onChange={field.onChange}
+                      options={[
+                        { value: '12345',  label: '12345 - Volkswagen Any Town' },
+                        { value: '408253', label: '408253 - Rick Case VW' },
+                        { value: '408254', label: '408254 - Gunther VW' },
+                        { value: '408255', label: '408255 - Emich VW' },
+                      ]}
+                      placeholder={t('Select Dealership')}
+                      error={!!errors.dealershipName}
+                    />
+                  )}
+                />
+              )}
             </div>
 
             {/* Initiative Type */}
@@ -552,6 +612,41 @@ export function PreApprovalForm({ onClose, onDone }: PreApprovalFormProps) {
                   ${computedTotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </span>
               </div>
+
+              {/* Cost and claim details card */}
+              {availableFunds > 0 && (
+                <div className="flex flex-col gap-2 px-3 py-3 bg-[#F9FAFA] border border-[#E0E0E0] rounded-[6px] mt-1">
+                  <span className="text-[11px] font-semibold text-[#686576] uppercase tracking-[0.4px]">
+                    {t('Cost & Claim Details')}
+                  </span>
+                  <div className="flex justify-between items-center text-[11px] text-[#1F1D25]">
+                    <span>{t('Available Funds')}</span>
+                    <span className="font-medium">
+                      ${availableFunds.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-start text-[11px] text-[#1F1D25]">
+                    <span>{t('Expenditure threshold')}</span>
+                    {isOverBudget ? (
+                      <div className="flex flex-col items-end gap-0.5">
+                        <div className="flex items-center gap-1 text-[#D2323F]">
+                          <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
+                          <span className="font-medium">{t('Limit exceeded')}</span>
+                        </div>
+                        <span className="text-[10px] text-[#D2323F] text-right max-w-[140px] leading-snug">
+                          {t('Total exceeds available funds by')}{' '}
+                          ${(computedTotal - availableFunds).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        </span>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-1 text-[#51B994]">
+                        <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />
+                        <span className="font-medium">{t('Within limit')}</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Details */}
@@ -611,7 +706,7 @@ export function PreApprovalForm({ onClose, onDone }: PreApprovalFormProps) {
                   <CustomSelect
                     value={field.value}
                     onChange={field.onChange}
-                    options={MEDIA_TYPE_OPTIONS.map(o => ({ ...o, label: t(o.label) }))}
+                    options={mediaTypeOptions.map(o => ({ ...o, label: t(o.label) }))}
                     placeholder={t('Select Media Type')}
                     error={!!errors.mediaType}
                   />

@@ -256,7 +256,8 @@ const INITIAL_STATE: WorkflowState = {
   },
 
   claim: {
-    id: WORKFLOW_CL_ID,
+    // Unified ID: claim uses the same ID as its parent pre-approval.
+    id: WORKFLOW_PA_ID,
     status: null, // not yet created
     oemComment: null,
     history: [],
@@ -434,6 +435,9 @@ export function WorkflowProvider({ children }: { children: ReactNode }) {
       preApproval: { ...prev.preApproval, claimsCount: 1 },
       claim: {
         ...prev.claim,
+        // Unified ID: claim inherits the same ID as the pre-approval so the
+        // same reference number flows through the entire PA → Claim → Payment lifecycle.
+        id: prev.preApproval.id,
         status: 'Draft',
         invoiceTotal: prev.preApproval.totalAmount,
         linkedPreApprovalId: prev.preApproval.id,
@@ -559,7 +563,7 @@ export function WorkflowProvider({ children }: { children: ReactNode }) {
     setWorkflow(prev => {
       const newCycleIndex = prev.archivedCycles.length + 1;
       const newPaId = `MFA${WORKFLOW_PA_BASE + newCycleIndex}`;
-      const newClId = `MFC${WORKFLOW_CL_BASE + newCycleIndex}`;
+      // Claim shares the same ID as its parent pre-approval (unified ID lifecycle)
 
       const archived: ArchivedCycle = {
         cycleIndex:   newCycleIndex,
@@ -586,7 +590,8 @@ export function WorkflowProvider({ children }: { children: ReactNode }) {
       };
 
       const freshClaim: WorkflowClaimState = {
-        id: newClId,
+        // Unified ID: claim uses the same ID as the pre-approval for the new cycle.
+        id: newPaId,
         status: null,
         oemComment: null,
         history: [],

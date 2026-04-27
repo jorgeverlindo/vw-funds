@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { GenerateReportMenu } from './GenerateReportMenu';
 import { ShareReportModal } from './ShareReportModal';
+import { ActivityMonitor } from './ActivityMonitor';
 import { useReportDownload } from '../reports-pdf/useReportDownload';
 import { useTranslation } from '../contexts/LanguageContext';
 
@@ -10,7 +11,7 @@ export function GenerateReportSplitButton() {
   const [shareReport,  setShareReport]  = useState<string | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  const { triggerDownload, isDownloading, downloadingReport } = useReportDownload();
+  const { triggerDownload, isDownloading, downloadingReport, monitor, closeMonitor } = useReportDownload();
 
   // Close menu once a download finishes (isDownloading flips false)
   const prevDownloading = useRef(false);
@@ -76,8 +77,8 @@ export function GenerateReportSplitButton() {
               setIsOpen(false);
             }}
             onDownload={(report) => {
-              // Don't close the menu here — keep it open to show the spinner
               triggerDownload(report);
+              setIsOpen(false); // monitor takes over as feedback
             }}
             downloadingReport={downloadingReport}
           />
@@ -90,6 +91,11 @@ export function GenerateReportSplitButton() {
         reportName={shareReport ?? ''}
         onClose={() => setShareReport(null)}
       />
+
+      {/* Activity Monitor — fixed bottom-left, portal to body */}
+      {monitor && (
+        <ActivityMonitor {...monitor} onClose={closeMonitor} />
+      )}
     </>
   );
 }

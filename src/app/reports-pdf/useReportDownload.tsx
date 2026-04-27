@@ -1,19 +1,27 @@
 import { useState, useCallback } from 'react';
-import { REPORT_MAP, downloadReport } from './index';
+import { REPORT_MAP, generateReport } from './index';
+import type { MonitorState } from '../components/ActivityMonitor';
 
 interface UseReportDownloadReturn {
   triggerDownload:   (reportName: string) => void;
   isDownloading:     boolean;
   downloadingReport: string | null;
+  monitor:           MonitorState | null;
+  closeMonitor:      () => void;
 }
 
-/**
- * Hook that manages download state and delegates PDF generation
- * to `downloadReport` from @react-pdf/renderer.
- */
 export function useReportDownload(): UseReportDownloadReturn {
-  const [isDownloading,     setIsDownloading]     = useState(false);
-  const [downloadingReport, setDownloadingReport] = useState<string | null>(null);
+  const [monitor, setMonitor] = useState<MonitorState | null>(null);
+
+  const isDownloading     = monitor?.stage === 'preparing';
+  const downloadingReport = isDownloading ? monitor?.reportName ?? null : null;
+
+  const closeMonitor = useCallback(() => {
+    setMonitor(prev => {
+      if (prev?.blobUrl) URL.revokeObjectURL(prev.blobUrl);
+      return null;
+    });
+  }, []);
 
   const triggerDownload = useCallback((reportName: string) => {
     if (isDownloading) return;
@@ -22,16 +30,26 @@ export function useReportDownload(): UseReportDownloadReturn {
       return;
     }
 
-    setIsDownloading(true);
-    setDownloadingReport(reportName);
+    // Revoke any previous blob URL
+    setMonitor(prev => {
+      if (prev?.blobUrl) URL.revokeObjectURL(prev.blobUrl);
+      return {
+        stage:       'preparing',
+        reportName,
+        displayName: `${reportName}.pdf`,
+        blobUrl:     null,
+      };
+    });
 
-    downloadReport(reportName)
-      .catch(err => console.error('[useReportDownload] PDF failed:', err))
-      .finally(() => {
-        setIsDownloading(false);
-        setDownloadingReport(null);
+    generateReport(reportName)
+      .then(({ url }) => {
+        setMonitor(prev => prev ? { ...prev, stage: 'complete', blobUrl: url } : null);
+      })
+      .catch(err => {
+        console.error('[useReportDownload] PDF failed:', err);
+        setMonitor(prev => prev ? { ...prev, stage: 'error' } : null);
       });
   }, [isDownloading]);
 
-  return { triggerDownload, isDownloading, downloadingReport };
+  return { triggerDownload, isDownloading, downloadingReport, monitor, closeMonitor };
 }

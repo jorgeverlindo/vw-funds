@@ -29,27 +29,33 @@ const LOADERS: Record<string, () => Promise<React.ComponentType>> = {
   'Payment Processing Report':   () => import('./generators/PaymentProcessingReport').then(m => m.PaymentProcessingReport),
 };
 
-export async function downloadReport(reportName: string): Promise<void> {
+/**
+ * Generates the PDF and returns a blob URL + filename — does NOT trigger a download.
+ * The caller is responsible for calling URL.revokeObjectURL(url) when done.
+ */
+export async function generateReport(reportName: string): Promise<{ url: string; filename: string }> {
   const entry = REPORT_MAP[reportName];
   if (!entry) throw new Error(`Unknown report: "${reportName}"`);
 
-  // 1. Load fonts first — must be registered before pdf() is called.
-  //    fonts.ts statically imports @react-pdf/renderer, so it also initialises the renderer.
+  // 1. Load fonts first (also initialises the renderer).
   await import('./fonts');
 
-  // 2. Load renderer + specific generator in parallel (renderer already cached from step 1).
+  // 2. Load renderer + generator in parallel.
   const [{ pdf }, Component] = await Promise.all([
     import('@react-pdf/renderer').then(m => ({ pdf: m.pdf })),
     LOADERS[reportName](),
   ]);
 
   const blob = await pdf(createElement(Component)).toBlob();
-  const url  = URL.createObjectURL(blob);
-  const a    = document.createElement('a');
-  a.href     = url;
-  a.download = entry.filename;
-  document.body.appendChild(a);
-  a.click();
+  return { url: URL.createObjectURL(blob), filename: entry.filename };
+}
+
+/** Legacy helper — generates and immediately triggers browser download. */
+export async function downloadReport(reportName: string): Promise<void> {
+  const { url, filename } = await generateReport(reportName);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click();
   document.body.removeChild(a);
   URL.revokeObjectURL(url);
 }

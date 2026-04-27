@@ -95,8 +95,14 @@ export const CLAIMS_MOCK_DATA: Claim[] = [
   createClaim('MFC540994', new Date(2026, 0, 2),  3114.47, 'In Review',        10,  7, '402165', 'Volkswagen of Downtown Chicago',        'Chicago',  'DMP - Hard Costs', 3, 'Ryan Ledger'),
   createClaim('MFC550001', new Date(2025, 1, 15), 5500.00, 'Approved',          5,  5, '408252', 'Jack Daniels Volkswagen (Paramus)',     'Paramus',  'DMP - Hard Costs', 4, 'Garry Schwietert'),
   createClaim('MFC560001', new Date(2025, 2, 20), 6200.00, 'Approved',          4,  3, '402165', 'Volkswagen of Downtown Chicago',        'Chicago',  'DMP - Hard Costs', 5, 'Mallory Manning'),
-  createClaim('MFC541010', new Date(2026, 0, 20), 3500.00, 'Approved',          6,  4, '408258', 'Volkswagen Any Town',                  'Any Town', 'VW Coop Fund 2026', 5, 'Mallory Manning'),
-  createClaim('MFC541011', new Date(2025, 11, 15),2800.00, 'Approved',          8,  5, '408258', 'Volkswagen Any Town',                  'Any Town', 'VW Coop Fund 2026', 5, 'Mallory Manning'),
+  // ── Volkswagen Any Town (408258) claims ───────────────────────────────────
+  createClaim('MFC541010', new Date(2026, 1, 18), 4250.00, 'Approved',          5,  4, '408258', 'Volkswagen Any Town', 'Any Town', 'DMF - Media Costs', 5, 'Mallory Manning'),
+  createClaim('MFC541012', new Date(2026, 0, 22), 2190.00, 'Pending',           7,  0, '408258', 'Volkswagen Any Town', 'Any Town', 'DMF - Hard Costs',  5, 'Mallory Manning'),
+  createClaim('MFC541013', new Date(2026, 0, 10), 3780.00, 'In Review',         9,  0, '408258', 'Volkswagen Any Town', 'Any Town', 'DMP - Hard Costs',  5, 'Mallory Manning'),
+  createClaim('MFC541011', new Date(2025, 11, 15),2800.00, 'Approved',          8,  5, '408258', 'Volkswagen Any Town', 'Any Town', 'DMF - Media Costs', 5, 'Mallory Manning'),
+  createClaim('MFC541014', new Date(2025, 10, 20),3100.00, 'Approved',          6,  4, '408258', 'Volkswagen Any Town', 'Any Town', 'DMF - Media Costs', 5, 'Mallory Manning'),
+  createClaim('MFC541015', new Date(2025, 9, 12), 1950.00, 'Approved',          5,  6, '408258', 'Volkswagen Any Town', 'Any Town', 'DMF - Hard Costs',  5, 'Mallory Manning'),
+  createClaim('MFC541016', new Date(2025, 8, 8),  4600.00, 'Approved',          4,  3, '408258', 'Volkswagen Any Town', 'Any Town', 'DMP - Hard Costs',  5, 'Mallory Manning'),
 ];
 
 interface FundsClaimsContentProps {

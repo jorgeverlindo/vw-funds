@@ -14,6 +14,7 @@ import { Claim, Strike } from './ClaimsPanel';
 import { cn } from '../../lib/utils';
 import { ActionButton } from './ActionButton';
 import { useWorkflow, WORKFLOW_DEALER, WORKFLOW_CAMPAIGN, type ClaimWorkflowStatus, type ArchivedCycle } from '../contexts/WorkflowContext';
+import { useFilters } from '../contexts/FilterContext';
 
 // People portraits — Figma source of truth
 import imgFabioVeloso from 'figma:asset/175d81a7864ae50d37ddf9a160e546af1d2a8ee8.png';
@@ -94,6 +95,8 @@ export const CLAIMS_MOCK_DATA: Claim[] = [
   createClaim('MFC540994', new Date(2026, 0, 2),  3114.47, 'In Review',        10,  7, '402165', 'Volkswagen of Downtown Chicago',        'Chicago',  'DMP - Hard Costs', 3, 'Ryan Ledger'),
   createClaim('MFC550001', new Date(2025, 1, 15), 5500.00, 'Approved',          5,  5, '408252', 'Jack Daniels Volkswagen (Paramus)',     'Paramus',  'DMP - Hard Costs', 4, 'Garry Schwietert'),
   createClaim('MFC560001', new Date(2025, 2, 20), 6200.00, 'Approved',          4,  3, '402165', 'Volkswagen of Downtown Chicago',        'Chicago',  'DMP - Hard Costs', 5, 'Mallory Manning'),
+  createClaim('MFC541010', new Date(2026, 0, 20), 3500.00, 'Approved',          6,  4, '408258', 'Volkswagen Any Town',                  'Any Town', 'VW Coop Fund 2026', 5, 'Mallory Manning'),
+  createClaim('MFC541011', new Date(2025, 11, 15),2800.00, 'Approved',          8,  5, '408258', 'Volkswagen Any Town',                  'Any Town', 'VW Coop Fund 2026', 5, 'Mallory Manning'),
 ];
 
 interface FundsClaimsContentProps {
@@ -101,7 +104,7 @@ interface FundsClaimsContentProps {
   onDateRangeChange: (range: DateRange | undefined) => void;
   selectedClaimId: string | null;
   onSelectClaim: (id: string | null) => void;
-  userType?: 'dealer' | 'oem';
+  userType?: 'dealer' | 'dealer-singular' | 'oem';
 }
 
 // Maps workflow claim status to ClaimStatus for display
@@ -171,6 +174,7 @@ export function FundsClaimsContent({
 }: FundsClaimsContentProps) {
   const { t } = useTranslation();
   const { workflow } = useWorkflow();
+  const { filters: filterCtx, isLockedDealership } = useFilters();
 
   // Archived cycle rows — newest first
   const archivedClaimRows = useMemo(
@@ -212,6 +216,8 @@ export function FundsClaimsContent({
   // Filter mock claims — full filter including date range
   const filteredData = useMemo(() => {
     return CLAIMS_MOCK_DATA.filter(item => {
+      // In dealer-singular mode only show records belonging to the locked dealer
+      if (isLockedDealership && filterCtx.dealershipCode && item.dealershipCode !== filterCtx.dealershipCode) return false;
       if (dateRange?.from && item.date < dateRange.from) return false;
       if (dateRange?.to && item.date > dateRange.to) return false;
       if (activeFilter && item.status !== activeFilter) return false;
@@ -225,7 +231,7 @@ export function FundsClaimsContent({
       }
       return true;
     });
-  }, [dateRange, activeFilter, searchQuery]);
+  }, [dateRange, activeFilter, searchQuery, isLockedDealership, filterCtx.dealershipCode]);
 
   // Filter archived claims — respects status/search, bypasses date range
   const filteredArchivedRows = useMemo(() => {

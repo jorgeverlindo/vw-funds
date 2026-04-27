@@ -19,20 +19,37 @@ interface FilterContextValue {
   setDealership: (code: string | null) => void;
   setDateRange: (from: Date, to: Date) => void;
   resetFilters: () => void;
+  /** Lock to a single dealer — hides selectors and pins dealershipCode */
+  lockDealership: (code: string) => void;
+  /** Unlock — restores free selection */
+  unlockDealership: () => void;
+  /** True while locked to a single dealer (dealer-singular mode) */
+  isLockedDealership: boolean;
 }
 
 const FilterContext = createContext<FilterContextValue | null>(null);
 
 export function FilterProvider({ children }: { children: ReactNode }) {
   const [filters, setFilters] = useState<FilterState>(defaultFilters);
+  const [isLockedDealership, setIsLockedDealership] = useState(false);
 
   return (
     <FilterContext.Provider value={{
       filters,
-      setArea: (area) => setFilters(f => ({ ...f, area, dealershipCode: null })),
-      setDealership: (code) => setFilters(f => ({ ...f, dealershipCode: code })),
+      // Blocked while locked so the UI can't override the pinned dealer
+      setArea:    (area) => { if (isLockedDealership) return; setFilters(f => ({ ...f, area, dealershipCode: null })); },
+      setDealership: (code) => { if (isLockedDealership) return; setFilters(f => ({ ...f, dealershipCode: code })); },
       setDateRange: (from, to) => setFilters(f => ({ ...f, dateFrom: from, dateTo: to })),
-      resetFilters: () => setFilters(defaultFilters),
+      resetFilters: () => { setIsLockedDealership(false); setFilters(defaultFilters); },
+      lockDealership: (code) => {
+        setIsLockedDealership(true);
+        setFilters(f => ({ ...f, area: null, dealershipCode: code }));
+      },
+      unlockDealership: () => {
+        setIsLockedDealership(false);
+        setFilters(f => ({ ...f, area: null, dealershipCode: null }));
+      },
+      isLockedDealership,
     }}>
       {children}
     </FilterContext.Provider>

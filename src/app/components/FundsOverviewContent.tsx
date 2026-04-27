@@ -18,9 +18,10 @@ import { PreApprovalsPieCard } from './PreApprovalsPieCard';
 import { BudgetForecastCard } from './BudgetForecastCard';
 import { useFilters } from '../contexts/FilterContext';
 import { useDealerships } from '../../data/access/useDealerships';
+import type { UserType } from '../AppContent';
 
-export function FundsOverviewContent() {
-  const { filters, setArea, setDealership, setDateRange, resetFilters } = useFilters();
+export function FundsOverviewContent({ userType = 'dealer' }: { userType?: UserType }) {
+  const { filters, setArea, setDealership, setDateRange, resetFilters, isLockedDealership } = useFilters();
   const { areas, dealerships } = useDealerships();
   const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
   const datePickerRef = useRef<HTMLDivElement>(null);
@@ -54,18 +55,22 @@ export function FundsOverviewContent() {
           <GenerateReportSplitButton />
         </div>
         <div className="content-stretch flex gap-3 items-end justify-end overflow-visible relative shrink-0 z-40">
-          <FilterSelect
-            label="Area"
-            value={filters.area}
-            options={areas.map(a => ({ value: a === 'All Areas' ? null : a, label: a }))}
-            onChange={setArea}
-          />
-          <FilterSelect
-            label="Dealership"
-            value={filters.dealershipCode}
-            options={dealerships.map(d => ({ value: d.code, label: d.name }))}
-            onChange={setDealership}
-          />
+          {!isLockedDealership && (
+            <>
+              <FilterSelect
+                label="Area"
+                value={filters.area}
+                options={areas.map(a => ({ value: a === 'All Areas' ? null : a, label: a }))}
+                onChange={setArea}
+              />
+              <FilterSelect
+                label="Dealership"
+                value={filters.dealershipCode}
+                options={dealerships.map(d => ({ value: d.code, label: d.name }))}
+                onChange={setDealership}
+              />
+            </>
+          )}
           <div className="relative" ref={datePickerRef}>
             <DateRangeInput
               startDate={filters.dateFrom}

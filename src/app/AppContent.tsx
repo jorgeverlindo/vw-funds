@@ -26,6 +26,7 @@ import { useTranslation } from './contexts/LanguageContext';
 import { ClientSwitcher } from './components/ClientSwitcher';
 import { emitSnackbar } from './components/Snackbar';
 import { useClient } from './contexts/ClientContext';
+import { useFilters } from './contexts/FilterContext';
 import { BreadcrumbBar } from './components/BreadcrumbBar';
 import { useWorkflow, WORKFLOW_DEALER, WORKFLOW_CAMPAIGN } from './contexts/WorkflowContext';
 import type { Claim } from './components/ClaimsPanel';
@@ -72,6 +73,7 @@ function buildUrl(role: UserType, clientId: string, tabId: string): string {
     return clientId === 'vw' ? `/OEM/${slug}` : `/Audi/OEM/${slug}`;
   }
   const brand = clientId === 'audi' ? 'Audi' : 'Volkswagen';
+  if (role === 'dealer-singular') return `/${brand}/dealership-singular/${slug}`;
   return `/${brand}/dealership/${slug}`;
 }
 
@@ -82,12 +84,13 @@ const defaultDateRange: DateRange = {
   to: new Date(2026, 11, 31),
 };
 
-export type UserType = 'dealer' | 'oem';
+export type UserType = 'dealer' | 'dealer-singular' | 'oem';
 
 export default function AppContent() {
   const { t } = useTranslation();
   const { workflow, approvePreApproval, requestPreApprovalRevision } = useWorkflow();
   const { client, switchClient } = useClient();
+  const { lockDealership, unlockDealership } = useFilters();
 
   // ── Router hooks (must be before derived state) ───────────────────────────
   const routeParams = useParams<{ brand?: string; tab?: string }>();
@@ -95,7 +98,9 @@ export default function AppContent() {
   const navigate = useNavigate();
 
   // Derive initial tab/role from URL; useState only uses these once on mount
-  const _initRole: UserType = location.pathname.toLowerCase().includes('/dealership/') ? 'dealer' : 'oem';
+  const _initPath = location.pathname.toLowerCase();
+  const _initRole: UserType = _initPath.includes('/dealership-singular/') ? 'dealer-singular'
+    : _initPath.includes('/dealership/') ? 'dealer' : 'oem';
   const _initTab = SLUG_TO_TAB[routeParams.tab ?? ''] ?? 'overview';
 
   const [activeAppSection, setActiveAppSection] = useState('campaigns'); // 'campaigns' | 'portal'
@@ -105,11 +110,13 @@ export default function AppContent() {
   const [clientSwitcherOpen, setClientSwitcherOpen] = useState(false);
 
   // Sync data-mode to <html> so portals (rendered outside the wrapper div) also inherit CSS vars
+  // dealer-singular uses the same CSS vars as dealer
+  const cssMode = userType === 'dealer-singular' ? 'dealer' : userType;
   useEffect(() => {
-    document.documentElement.setAttribute('data-mode', userType);
-  }, [userType]);
+    document.documentElement.setAttribute('data-mode', cssMode);
+  }, [cssMode]);
 
-  // Keyboard shortcuts: e → OEM view, d → Dealer view
+  // Keyboard shortcuts: e → OEM  |  a → Agency (multi-dealer)  |  d → Dealer singular
   useEffect(() => {
     const handleKey = (e: KeyboardEvent) => {
       const tag = (e.target as HTMLElement)?.tagName?.toLowerCase();
@@ -117,20 +124,28 @@ export default function AppContent() {
       if (e.metaKey || e.ctrlKey || e.altKey) return;
       if (e.key === 'e') {
         const nextTab = activeTab === 'guidelines' ? 'overview' : activeTab;
+        unlockDealership();
         setUserType('oem');
         setActiveTab(nextTab);
         navigate(buildUrl('oem', client.clientId, nextTab), { replace: true });
         emitSnackbar('OEM view (e)');
       }
-      if (e.key === 'd') {
+      if (e.key === 'a') {
+        unlockDealership();
         setUserType('dealer');
         navigate(buildUrl('dealer', client.clientId, activeTab), { replace: true });
-        emitSnackbar('Dealer view (d)');
+        emitSnackbar('Agency view (a)');
+      }
+      if (e.key === 'd') {
+        lockDealership(WORKFLOW_DEALER.code);
+        setUserType('dealer-singular');
+        navigate(buildUrl('dealer-singular', client.clientId, activeTab), { replace: true });
+        emitSnackbar(`${WORKFLOW_DEALER.name} (d)`);
       }
     };
     window.addEventListener('keydown', handleKey);
     return () => window.removeEventListener('keydown', handleKey);
-  }, [activeTab, client.clientId, navigate]);
+  }, [activeTab, client.clientId, navigate, lockDealership, unlockDealership]);
   
   // Pre-Approvals Specific State
   const [preApprovalSearchQuery, setPreApprovalSearchQuery] = useState('');
@@ -352,9 +367,11 @@ export default function AppContent() {
 
   const toggleUserType = () => {
     setUserType(prev => {
-      const next = prev === 'dealer' ? 'oem' : 'dealer';
+      // Sidebar toggle cycles: oem → dealer → oem (dealer-singular stays in dealer territory)
+      const next: UserType = prev === 'oem' ? 'dealer' : 'oem';
       const nextTab = next === 'oem' && activeTab === 'guidelines' ? 'overview' : activeTab;
       if (nextTab !== activeTab) setActiveTab(nextTab);
+      if (next === 'dealer') unlockDealership(); else unlockDealership();
       navigate(buildUrl(next, client.clientId, nextTab), { replace: true });
       return next;
     });
@@ -362,13 +379,18 @@ export default function AppContent() {
 
   // Sync URL → state on browser back/forward navigation
   useEffect(() => {
-    const role: UserType = location.pathname.toLowerCase().includes('/dealership/') ? 'dealer' : 'oem';
+    const path = location.pathname.toLowerCase();
+    const role: UserType = path.includes('/dealership-singular/') ? 'dealer-singular'
+      : path.includes('/dealership/') ? 'dealer' : 'oem';
     const tabId = SLUG_TO_TAB[routeParams.tab ?? ''] ?? 'overview';
     const brandParam = routeParams.brand?.toLowerCase();
     const brandId = brandParam === 'audi' ? 'audi' : 'vw';
     setUserType(role);
     setActiveTab(tabId);
     if (brandId !== client.clientId) switchClient(brandId);
+    // Re-sync the lock state when navigating back/forward
+    if (role === 'dealer-singular') lockDealership(WORKFLOW_DEALER.code);
+    else unlockDealership();
   }, [location.pathname]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // OEM Drawer State
@@ -387,13 +409,13 @@ export default function AppContent() {
   const showLanguageToggle = activeAppSection === 'campaigns';
 
   // userType added to dep array so tabs recompute when switching Dealer ↔ OEM
-  const translatedTabs = useMemo(() => (userType === 'dealer' ? DEALER_TABS : OEM_TABS).map(tab => ({
+  const translatedTabs = useMemo(() => (userType !== 'oem' ? DEALER_TABS : OEM_TABS).map(tab => ({
     ...tab,
     label: showLanguageToggle ? t(tab.label) : tab.label
   })), [t, showLanguageToggle, userType]);
 
   return (
-    <div className="min-h-screen bg-[#F9FAFA] overflow-hidden" data-mode={userType}>
+    <div className="min-h-screen bg-[#F9FAFA] overflow-hidden" data-mode={cssMode}>
       <AppSidebar
         activeRoute={activeAppSection}
         onNavigate={handleNavigate}
@@ -470,8 +492,8 @@ export default function AppContent() {
               <div className="flex-1 overflow-hidden relative">
                 {activeTab === 'overview' && (
                   <div className="h-full overflow-y-auto custom-scrollbar p-6">
-                     {userType === 'dealer' ? (
-                       <FundsOverviewContent />
+                     {userType !== 'oem' ? (
+                       <FundsOverviewContent userType={userType} />
                      ) : (
                        <FundsOverviewOEMContent />
                      )}
@@ -616,8 +638,8 @@ export default function AppContent() {
           </>
         )}
 
-        {/* Agent Pane — dealer-only, global (any tab / section) */}
-        {userType === 'dealer' && (
+        {/* Agent Pane — dealer + dealer-singular, global (any tab / section) */}
+        {(userType === 'dealer' || userType === 'dealer-singular') && (
           <AgentPane
             isOpen={isAgentPaneOpen}
             onClose={() => setIsAgentPaneOpen(false)}

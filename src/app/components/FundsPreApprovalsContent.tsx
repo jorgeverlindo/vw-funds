@@ -6,6 +6,7 @@ import { useWorkflow, WORKFLOW_DEALER, WORKFLOW_CAMPAIGN, type PreApprovalWorkfl
 import { DateRangeInput } from './DateRangeInput';
 import { DateRangePicker } from './DateRangePicker';
 import { FilterSelect } from './FilterSelect';
+import { useFilters } from '../contexts/FilterContext';
 import { ActionButton } from './ActionButton';
 import { ImageWithFallback } from './figma/ImageWithFallback';
 import { StatusChip } from './StatusChip';
@@ -158,8 +159,8 @@ export const MOCK_DATA: PreApproval[] = [
     id: 'MFA386599',
     date: new Date(2025, 10, 2),
     dealershipCode: '408258',
-    dealershipName: 'Volkswagen Clear Lake',
-    dealershipCity: 'Webster',
+    dealershipName: 'Volkswagen Any Town',
+    dealershipCity: 'Any Town',
     status: 'Revision Requested',
     timeInPreApproval: 5,
     submittedBy: { name: 'Mallory Manning', avatarUrl: AVATARS[5] },
@@ -319,6 +320,7 @@ export function FundsPreApprovalsContent({
 }: FundsPreApprovalsContentProps) {
   const { t } = useTranslation();
   const { workflow, archiveAndReset } = useWorkflow();
+  const { filters: filterCtx, isLockedDealership } = useFilters();
   const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
 
@@ -365,6 +367,8 @@ export function FundsPreApprovalsContent({
     const showActiveWorkflow = workflow.preApproval.status !== 'Draft';
 
     const filteredMock = MOCK_DATA.filter((item) => {
+      // In dealer-singular mode only show records belonging to the locked dealer
+      if (isLockedDealership && filterCtx.dealershipCode && item.dealershipCode !== filterCtx.dealershipCode) return false;
       if (dateRange?.from && item.date < dateRange.from) return false;
       if (dateRange?.to && item.date > dateRange.to) return false;
       if (searchQuery) {
@@ -410,7 +414,7 @@ export function FundsPreApprovalsContent({
 
     return [...pinnedRows, ...filteredMock];
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [dateRange, searchQuery, workflow.preApproval.status, workflow.preApproval.id, workflow.preApproval.claimsCount, workflow.archivedCycles, workflowPreApproval]);
+  }, [dateRange, searchQuery, workflow.preApproval.status, workflow.preApproval.id, workflow.preApproval.claimsCount, workflow.archivedCycles, workflowPreApproval, isLockedDealership, filterCtx.dealershipCode]);
 
   return (
     <div className="flex flex-col h-full relative overflow-hidden">

@@ -117,8 +117,8 @@ export function StatusChip({ status, className }: StatusChipProps) {
       icon = <CreditCard className="w-3.5 h-3.5 mr-1.5 text-[#4CAF50]" />;
       break;
     case 'At risk':
-      styles = "bg-[rgba(225,118,19,0.10)] text-[#E17613]"; // Amber/orange
-      icon = <AlertTriangle className="w-3.5 h-3.5 mr-1.5 text-[#E17613]" />;
+      styles = "bg-[rgba(210,50,63,0.08)] text-[#be0e1c]"; // Red error pattern
+      icon = <AlertTriangle className="w-3.5 h-3.5 mr-1.5 text-[#D2323F]" />;
       break;
     default:
       // Fallback for unknown statuses

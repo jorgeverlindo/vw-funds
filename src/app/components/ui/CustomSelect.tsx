@@ -15,15 +15,17 @@ interface CustomSelectProps {
   placeholder?: string;
   className?: string;
   error?: boolean;
+  openUpward?: boolean;
 }
 
-export function CustomSelect({ 
-  value, 
-  onChange, 
-  options, 
-  placeholder = "Select...", 
+export function CustomSelect({
+  value,
+  onChange,
+  options,
+  placeholder = "Select...",
   className,
-  error 
+  error,
+  openUpward = false,
 }: CustomSelectProps) {
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -48,7 +50,7 @@ export function CustomSelect({
         className={cn(
           "w-full h-10 pl-3 pr-10 bg-[#F9FAFA] border rounded-[4px] text-[13px] flex items-center cursor-pointer transition-all select-none",
           error ? "border-[#D2323F]" : "border-[#CAC9CF]",
-          isOpen ? "ring-1 ring-[#473BAB] border-[#473BAB]" : "hover:border-[#B0B0B5]"
+          isOpen ? "ring-1 ring-[var(--brand-accent)] border-[var(--brand-accent)]" : "hover:border-[#B0B0B5]"
         )}
       >
         <span className={cn("truncate", !selectedOption && "text-[#686576]/60")}>
@@ -60,11 +62,14 @@ export function CustomSelect({
       <AnimatePresence>
         {isOpen && (
           <motion.div
-            initial={{ opacity: 0, scale: 0.95, y: -5 }}
+            initial={{ opacity: 0, scale: 0.97, y: openUpward ? 4 : -4 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.95, y: -5 }}
-            transition={{ duration: 0.1 }}
-            className="absolute top-full left-0 mt-1 w-full bg-white rounded-md shadow-lg border border-[rgba(0,0,0,0.12)] py-2 z-50 max-h-[240px] overflow-y-auto custom-scrollbar"
+            exit={{ opacity: 0, scale: 0.97, y: openUpward ? 4 : -4 }}
+            transition={{ duration: 0.12 }}
+            className={cn(
+              "absolute left-0 w-full bg-white rounded-lg shadow-lg border border-[rgba(0,0,0,0.12)] py-1 z-[200] max-h-[240px] overflow-y-auto custom-scrollbar",
+              openUpward ? "bottom-full mb-1" : "top-full mt-1"
+            )}
           >
             {options.map((option) => (
               <div
@@ -74,8 +79,10 @@ export function CustomSelect({
                   setIsOpen(false);
                 }}
                 className={cn(
-                  "w-full text-left px-4 py-2 text-[14px] hover:bg-gray-50 transition-colors tracking-[0.15px] leading-[1.5] cursor-pointer",
-                  value === option.value ? "text-[#473BAB] font-medium bg-[#473BAB]/5" : "text-[#1f1d25]"
+                  "w-full text-left px-4 py-2 text-[13px] hover:bg-gray-50 transition-colors tracking-[0.15px] leading-[1.5] cursor-pointer",
+                  value === option.value
+                    ? "text-[var(--brand-accent)] font-medium bg-[var(--brand-accent)]/5"
+                    : "text-[#1f1d25]"
                 )}
               >
                 {option.label}

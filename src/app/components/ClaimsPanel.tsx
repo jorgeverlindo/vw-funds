@@ -1,6 +1,9 @@
 import { useRef, useState } from 'react';
-import { X, Eye, Star, MessageSquare, Banknote, RefreshCw, Paperclip, Trash2, AlertTriangle, ShieldAlert, ChevronDown } from 'lucide-react';
-import { CalendarDays } from 'lucide-react';
+import { motion, AnimatePresence } from 'motion/react';
+import { X, Eye, Star, MessageSquare, Banknote, RefreshCw, Paperclip, Trash2, AlertTriangle, ShieldAlert } from 'lucide-react';
+import { Switch } from './ui/switch';
+import { CustomSelect } from './ui/CustomSelect';
+import { SingleDatePicker } from './ui/SingleDatePicker';
 import { StatusChip, ClaimStatus } from './StatusChip';
 import { KeyValueRow } from './ui/KeyValueRow';
 import { useTranslation } from '../contexts/LanguageContext';
@@ -127,7 +130,7 @@ export function ClaimsPanel({
   const [penaltyDetails, setPenaltyDetails] = useState('');
   const [selectedStrike, setSelectedStrike] = useState<1 | 2 | 3 | null>(null);
   const [suspendEligibility, setSuspendEligibility] = useState(false);
-  const [suspendStartDate, setSuspendStartDate] = useState('');
+  const [suspendStartDate, setSuspendStartDate] = useState<Date | undefined>(undefined);
   const [suspendDuration, setSuspendDuration] = useState('');
 
   const handleViolationTypeChange = (value: string) => {
@@ -148,7 +151,7 @@ export function ClaimsPanel({
     setPenaltyDetails('');
     setSelectedStrike(null);
     setSuspendEligibility(false);
-    setSuspendStartDate('');
+    setSuspendStartDate(undefined);
     setSuspendDuration('');
   };
 
@@ -158,7 +161,7 @@ export function ClaimsPanel({
     setPenaltyDetails('');
     setSelectedStrike(null);
     setSuspendEligibility(false);
-    setSuspendStartDate('');
+    setSuspendStartDate(undefined);
     setSuspendDuration('');
   };
 
@@ -708,192 +711,206 @@ export function ClaimsPanel({
                   <h3 className="text-[#1f1d25] text-[15px] font-medium">Compliance &amp; Penalties</h3>
                   <p className="text-[12px] text-[#686576] mt-0.5">Track prior violations and apply strikes directly from the claim review flow.</p>
                 </div>
-                {!penaltyFormOpen && (
-                  <button
-                    onClick={() => setPenaltyFormOpen(true)}
-                    className="flex items-center gap-1.5 px-4 py-2 rounded-full bg-[var(--brand-accent)] hover:bg-[var(--brand-accent-hover)] text-white text-[13px] font-medium transition-colors cursor-pointer shrink-0"
-                  >
-                    <ShieldAlert className="w-4 h-4" />
-                    Assign Penalty
-                  </button>
-                )}
+
+                {/* Assign Penalty button — dissolves out when form opens */}
+                <AnimatePresence>
+                  {!penaltyFormOpen && (
+                    <motion.button
+                      key="assign-btn"
+                      initial={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                      transition={{ duration: 0.18 }}
+                      onClick={() => setPenaltyFormOpen(true)}
+                      className="flex items-center gap-1.5 px-4 py-2 rounded-full bg-[var(--brand-accent)] hover:bg-[var(--brand-accent-hover)] text-white text-[13px] font-medium transition-colors cursor-pointer shrink-0"
+                    >
+                      <ShieldAlert className="w-4 h-4" />
+                      Assign Penalty
+                    </motion.button>
+                  )}
+                </AnimatePresence>
               </div>
 
-              {/* Strike history */}
-              {(claim.strikes ?? []).length > 0 && !penaltyFormOpen && (
-                <div className="space-y-2 mb-4">
-                  {(claim.strikes ?? []).slice().reverse().map((strike, idx) => {
-                    const dotColor = strike.level === 3 ? '#D2323F' : strike.level === 2 ? '#E17613' : '#F59E0B';
-                    return (
-                      <div key={idx} className="border border-[rgba(0,0,0,0.08)] rounded-xl p-4 bg-white">
-                        <div className="flex items-center justify-between mb-1">
-                          <div className="flex items-center gap-2">
-                            <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: dotColor }} />
-                            <span className="text-[13px] font-semibold text-[#1f1d25]">Strike {strike.level}</span>
-                            <span className="text-[12px] text-[#686576]">{strike.type}</span>
+              {/* Strike history — hidden while form is open */}
+              <AnimatePresence>
+                {(claim.strikes ?? []).length > 0 && !penaltyFormOpen && (
+                  <motion.div
+                    key="strike-history"
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: 'auto' }}
+                    exit={{ opacity: 0, height: 0 }}
+                    transition={{ duration: 0.22, ease: 'easeInOut' }}
+                    className="overflow-hidden space-y-2 mb-4"
+                  >
+                    {(claim.strikes ?? []).slice().reverse().map((strike, idx) => {
+                      const dotColor = strike.level === 3 ? '#D2323F' : strike.level === 2 ? '#E17613' : '#F59E0B';
+                      return (
+                        <div key={idx} className="border border-[rgba(0,0,0,0.08)] rounded-xl p-4 bg-white">
+                          <div className="flex items-center justify-between mb-1">
+                            <div className="flex items-center gap-2">
+                              <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: dotColor }} />
+                              <span className="text-[13px] font-semibold text-[#1f1d25]">Strike {strike.level}</span>
+                              <span className="text-[12px] text-[#686576]">{strike.type}</span>
+                            </div>
+                            <span className="text-[12px] text-[#686576] shrink-0">{strike.date}</span>
                           </div>
-                          <span className="text-[12px] text-[#686576] shrink-0">{strike.date}</span>
+                          <p className="text-[12px] text-[#686576] pl-4">{strike.description}</p>
                         </div>
-                        <p className="text-[12px] text-[#686576] pl-4">{strike.description}</p>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
+                      );
+                    })}
+                  </motion.div>
+                )}
+              </AnimatePresence>
 
-              {/* Penalty assignment form */}
-              {penaltyFormOpen && (
-                <div className="border border-[rgba(0,0,0,0.10)] rounded-xl overflow-hidden">
-                  {/* Form header */}
-                  <div className="flex items-center justify-between px-5 py-4 border-b border-[rgba(0,0,0,0.06)]">
-                    <div>
-                      <p className="text-[13px] font-semibold text-[#1f1d25]">Compliance &amp; Penalties</p>
-                      <p className="text-[11px] text-[#686576] mt-0.5">Track prior violations and apply strikes directly from the claim review flow.</p>
-                    </div>
-                    <button onClick={handleCancelPenalty} className="p-1.5 hover:bg-gray-100 rounded-full transition-colors cursor-pointer">
-                      <X className="w-4 h-4 text-[#686576]" />
-                    </button>
-                  </div>
-
-                  <div className="px-5 py-5 space-y-5">
-                    {/* Violation Type */}
-                    <div>
-                      <label className="text-[12px] font-medium text-[#D2323F] mb-1.5 block">* Violation Type</label>
-                      <div className="relative">
-                        <select
-                          value={selectedViolationType}
-                          onChange={(e) => handleViolationTypeChange(e.target.value)}
-                          className="w-full appearance-none border border-[#CAC9CF] rounded-lg px-3 py-2.5 text-[13px] text-[#1f1d25] bg-white focus:outline-none focus:border-[var(--brand-accent)] transition-colors cursor-pointer pr-8"
-                        >
-                          <option value="" disabled>Select a violation type…</option>
-                          {VIOLATION_TYPES.map(vt => (
-                            <option key={vt.value} value={vt.value}>{vt.label}</option>
-                          ))}
-                        </select>
-                        <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[#686576] pointer-events-none" />
-                      </div>
-                    </div>
-
-                    {/* Details */}
-                    <div>
-                      <label className="text-[12px] font-medium text-[#D2323F] mb-1.5 block">* Details</label>
-                      <textarea
-                        value={penaltyDetails}
-                        onChange={(e) => setPenaltyDetails(e.target.value)}
-                        rows={4}
-                        placeholder="Describe the violation in detail…"
-                        className="w-full border border-[#CAC9CF] rounded-lg px-3 py-2.5 text-[13px] text-[#1f1d25] bg-white focus:outline-none focus:border-[var(--brand-accent)] transition-colors resize-none"
-                      />
-                    </div>
-
-                    {/* Assign Strike */}
-                    <div>
-                      <p className="text-[13px] font-semibold text-[#1f1d25] mb-3">Assign Strike</p>
-                      <div className="grid grid-cols-3 gap-3">
-                        {STRIKE_OPTIONS.map(opt => {
-                          const isSelected = selectedStrike === opt.level;
-                          return (
-                            <button
-                              key={opt.level}
-                              type="button"
-                              onClick={() => handleStrikeSelect(opt.level)}
-                              className={`flex items-center gap-3 p-3 rounded-xl border-2 transition-colors cursor-pointer text-left ${
-                                isSelected
-                                  ? 'border-[var(--brand-accent)] bg-[var(--brand-accent)]/5'
-                                  : 'border-[#E0E0E0] hover:border-[#CAC9CF] bg-white'
-                              }`}
-                            >
-                              <div className={`w-4 h-4 rounded-full border-2 shrink-0 flex items-center justify-center ${
-                                isSelected ? 'border-[var(--brand-accent)]' : 'border-[#CAC9CF]'
-                              }`}>
-                                {isSelected && <div className="w-2 h-2 rounded-full bg-[var(--brand-accent)]" />}
-                              </div>
-                              <div>
-                                <p className="text-[12px] font-semibold text-[#1f1d25] leading-tight">{opt.label}</p>
-                                <p className="text-[11px] text-[#686576] leading-tight">{opt.sublabel}</p>
-                              </div>
-                            </button>
-                          );
-                        })}
-                      </div>
-                    </div>
-
-                    {/* Suspend Co-op Funding Eligibility */}
-                    <div className={`rounded-xl border-2 p-4 transition-colors ${
-                      suspendEligibility ? 'border-[rgba(210,50,63,0.4)] bg-[rgba(210,50,63,0.03)]' : 'border-[#E0E0E0] bg-white'
-                    }`}>
-                      <div className="flex items-start justify-between gap-3 mb-3">
-                        <div>
-                          <p className="text-[13px] font-semibold text-[#1f1d25]">Suspend Co-op Funding Eligibility</p>
-                          <p className="text-[12px] text-[#686576] mt-0.5">This blocks new funding claims and flags active claims for manual review.</p>
-                        </div>
-                        {/* Toggle */}
+              {/* Penalty assignment form — accordion open/close */}
+              <AnimatePresence>
+                {penaltyFormOpen && (
+                  <motion.div
+                    key="penalty-form"
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: 'auto' }}
+                    exit={{ opacity: 0, height: 0 }}
+                    transition={{ duration: 0.25, ease: 'easeInOut' }}
+                    className="overflow-hidden"
+                  >
+                    <div className="border border-[rgba(0,0,0,0.10)] rounded-xl overflow-visible">
+                      {/* Form header — only X, no title */}
+                      <div className="flex items-center justify-end px-4 pt-3 pb-0">
                         <button
-                          type="button"
-                          onClick={() => setSuspendEligibility(v => !v)}
-                          className={`relative shrink-0 w-10 h-6 rounded-full transition-colors cursor-pointer ${
-                            suspendEligibility ? 'bg-[var(--brand-accent)]' : 'bg-[#CAC9CF]'
-                          }`}
+                          onClick={handleCancelPenalty}
+                          className="p-1.5 hover:bg-gray-100 rounded-full transition-colors cursor-pointer"
                         >
-                          <span className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${
-                            suspendEligibility ? 'translate-x-4' : 'translate-x-0.5'
-                          }`} />
+                          <X className="w-4 h-4 text-[#686576]" />
                         </button>
                       </div>
 
-                      {suspendEligibility && (
-                        <div className="grid grid-cols-2 gap-3 mt-3">
-                          <div>
-                            <label className="text-[11px] font-medium text-[#D2323F] mb-1 block">* Start date</label>
-                            <div className="relative">
-                              <input
-                                type="date"
-                                value={suspendStartDate}
-                                onChange={(e) => setSuspendStartDate(e.target.value)}
-                                className="w-full border border-[#CAC9CF] rounded-lg px-3 py-2 text-[13px] text-[#1f1d25] bg-white focus:outline-none focus:border-[var(--brand-accent)] transition-colors pr-8"
-                              />
-                              <CalendarDays className="absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[#686576] pointer-events-none" />
-                            </div>
-                          </div>
-                          <div>
-                            <label className="text-[11px] font-medium text-[#D2323F] mb-1 block">* Duration (days)</label>
-                            <div className="relative">
-                              <select
-                                value={suspendDuration}
-                                onChange={(e) => setSuspendDuration(e.target.value)}
-                                className="w-full appearance-none border border-[#CAC9CF] rounded-lg px-3 py-2 text-[13px] text-[#1f1d25] bg-white focus:outline-none focus:border-[var(--brand-accent)] transition-colors cursor-pointer pr-8"
-                              >
-                                <option value="" disabled>Select…</option>
-                                {DURATION_OPTIONS.map(d => (
-                                  <option key={d} value={d}>{d}</option>
-                                ))}
-                              </select>
-                              <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[#686576] pointer-events-none" />
-                            </div>
+                      <div className="px-5 pb-5 pt-2 space-y-5">
+                        {/* Violation Type */}
+                        <div>
+                          <label className="text-[12px] font-medium text-[#D2323F] mb-1.5 block">* Violation Type</label>
+                          <CustomSelect
+                            value={selectedViolationType}
+                            onChange={handleViolationTypeChange}
+                            options={VIOLATION_TYPES.map(v => ({ value: v.value, label: v.label }))}
+                            placeholder="Select a violation type…"
+                            error={false}
+                          />
+                        </div>
+
+                        {/* Details */}
+                        <div>
+                          <label className="text-[12px] font-medium text-[#D2323F] mb-1.5 block">* Details</label>
+                          <textarea
+                            value={penaltyDetails}
+                            onChange={(e) => setPenaltyDetails(e.target.value)}
+                            rows={4}
+                            placeholder="Describe the violation in detail…"
+                            className="w-full border border-[#CAC9CF] rounded-lg px-3 py-2.5 text-[13px] text-[#1f1d25] bg-[#F9FAFA] focus:outline-none focus:border-[var(--brand-accent)] focus:ring-1 focus:ring-[var(--brand-accent)] transition-colors resize-none"
+                          />
+                        </div>
+
+                        {/* Assign Strike */}
+                        <div>
+                          <p className="text-[13px] font-semibold text-[#1f1d25] mb-3">Assign Strike</p>
+                          <div className="grid grid-cols-3 gap-3">
+                            {STRIKE_OPTIONS.map(opt => {
+                              const isSelected = selectedStrike === opt.level;
+                              return (
+                                <button
+                                  key={opt.level}
+                                  type="button"
+                                  onClick={() => handleStrikeSelect(opt.level)}
+                                  className={`flex items-center gap-3 p-3 rounded-xl border-2 transition-all cursor-pointer text-left ${
+                                    isSelected
+                                      ? 'border-[var(--brand-accent)] bg-[var(--brand-accent)]/5'
+                                      : 'border-[#E0E0E0] hover:border-[#CAC9CF] bg-white'
+                                  }`}
+                                >
+                                  <div className={`w-4 h-4 rounded-full border-2 shrink-0 flex items-center justify-center transition-colors ${
+                                    isSelected ? 'border-[var(--brand-accent)]' : 'border-[#CAC9CF]'
+                                  }`}>
+                                    {isSelected && <div className="w-2 h-2 rounded-full bg-[var(--brand-accent)]" />}
+                                  </div>
+                                  <div>
+                                    <p className="text-[12px] font-semibold text-[#1f1d25] leading-tight">{opt.label}</p>
+                                    <p className="text-[11px] text-[#686576] leading-tight">{opt.sublabel}</p>
+                                  </div>
+                                </button>
+                              );
+                            })}
                           </div>
                         </div>
-                      )}
-                    </div>
 
-                    {/* Form actions */}
-                    <div className="flex justify-end gap-3 pt-1">
-                      <button
-                        onClick={handleCancelPenalty}
-                        className="px-5 py-2 rounded-full text-[13px] font-medium text-[#111014]/60 hover:bg-black/5 transition-colors cursor-pointer"
-                      >
-                        Cancel
-                      </button>
-                      <button
-                        onClick={handleApplyPenalty}
-                        disabled={!selectedViolationType || !penaltyDetails.trim() || selectedStrike === null}
-                        className="px-6 py-2 bg-[var(--brand-accent)] hover:bg-[var(--brand-accent-hover)] text-white rounded-full text-[13px] font-medium transition-colors shadow-sm cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
-                      >
-                        Apply Penalty
-                      </button>
+                        {/* Suspend Co-op Funding Eligibility */}
+                        <div className={`rounded-xl border-2 p-4 transition-colors ${
+                          suspendEligibility ? 'border-[rgba(210,50,63,0.4)] bg-[rgba(210,50,63,0.03)]' : 'border-[#E0E0E0] bg-white'
+                        }`}>
+                          <div className="flex items-start justify-between gap-3">
+                            <div>
+                              <p className="text-[13px] font-semibold text-[#1f1d25]">Suspend Co-op Funding Eligibility</p>
+                              <p className="text-[12px] text-[#686576] mt-0.5">This blocks new funding claims and flags active claims for manual review.</p>
+                            </div>
+                            <Switch
+                              checked={suspendEligibility}
+                              onCheckedChange={setSuspendEligibility}
+                              className="shrink-0 data-[state=checked]:bg-[var(--brand-accent)] data-[state=unchecked]:bg-[#CAC9CF] h-6 w-11"
+                            />
+                          </div>
+
+                          <AnimatePresence>
+                            {suspendEligibility && (
+                              <motion.div
+                                initial={{ opacity: 0, height: 0 }}
+                                animate={{ opacity: 1, height: 'auto' }}
+                                exit={{ opacity: 0, height: 0 }}
+                                transition={{ duration: 0.2, ease: 'easeInOut' }}
+                                className="overflow-visible"
+                              >
+                                <div className="grid grid-cols-2 gap-3 mt-4">
+                                  <div>
+                                    <label className="text-[11px] font-medium text-[#D2323F] mb-1 block">* Start date</label>
+                                    <SingleDatePicker
+                                      value={suspendStartDate}
+                                      onChange={setSuspendStartDate}
+                                      placeholder="Select date…"
+                                    />
+                                  </div>
+                                  <div>
+                                    <label className="text-[11px] font-medium text-[#D2323F] mb-1 block">* Duration (days)</label>
+                                    <CustomSelect
+                                      value={suspendDuration}
+                                      onChange={setSuspendDuration}
+                                      options={DURATION_OPTIONS.map(d => ({ value: d, label: d }))}
+                                      placeholder="Select…"
+                                      openUpward
+                                    />
+                                  </div>
+                                </div>
+                              </motion.div>
+                            )}
+                          </AnimatePresence>
+                        </div>
+
+                        {/* Form actions */}
+                        <div className="flex justify-end gap-3 pt-1">
+                          <button
+                            onClick={handleCancelPenalty}
+                            className="px-5 py-2 rounded-full text-[13px] font-medium text-[#111014]/60 hover:bg-black/5 transition-colors cursor-pointer"
+                          >
+                            Cancel
+                          </button>
+                          <button
+                            onClick={handleApplyPenalty}
+                            disabled={!selectedViolationType || !penaltyDetails.trim() || selectedStrike === null}
+                            className="px-6 py-2 bg-[var(--brand-accent)] hover:bg-[var(--brand-accent-hover)] text-white rounded-full text-[13px] font-medium transition-colors shadow-sm cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+                          >
+                            Apply Penalty
+                          </button>
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                </div>
-              )}
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </section>
           )}
 

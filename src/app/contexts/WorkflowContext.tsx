@@ -28,11 +28,11 @@ export const WORKFLOW_PA_ID = `MFA${WORKFLOW_PA_BASE}`;
 export const WORKFLOW_CL_ID = `MFC${WORKFLOW_CL_BASE}`;
 
 export const WORKFLOW_DEALER = {
-  name: 'Volkswagen Anytown',
-  code: '12345',
-  city: 'Anytown',
+  name: 'Volkswagen Any Town',
+  code: '408258',
+  city: 'Any Town',
   contact: 'Mallory Manning',
-  email: 'mallory.manning@vw-anytown.com',
+  email: 'mallory@vwanytown.com',
 };
 
 export const WORKFLOW_CAMPAIGN = {

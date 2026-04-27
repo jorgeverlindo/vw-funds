@@ -32,6 +32,60 @@ const PAGE_W = 820;
 const PAGE_H = 1100;
 const SCALE  = 2;
 
+// Regex that matches any oklch() token — used to sanitise computed styles.
+const OKLCH_RE = /oklch\([^)]*\)/g;
+
+/**
+ * Replaces every oklch() occurrence in a CSS value string with a safe
+ * rgba(0,0,0,0) fallback.  Called only when the string actually contains
+ * "oklch" so hot-path callers can short-circuit cheaply.
+ */
+function stripOklch(v: string): string {
+  return v.replace(OKLCH_RE, 'rgba(0,0,0,0)');
+}
+
+/**
+ * Wraps window.getComputedStyle so that every property access (both
+ * element["color"] style and getPropertyValue("color") style) returns a
+ * value that html2canvas 1.4.x can parse.
+ *
+ * Tailwind v4 emits oklch() for ALL CSS colors — including custom
+ * properties, SVG fill/stroke, box-shadow, outline-color, etc. — and
+ * html2canvas 1.4.x throws an Error on any oklch() token it encounters
+ * while building its internal style map.  onclone-based inline-style
+ * overrides only fix properties we explicitly enumerate; this proxy is a
+ * catch-all that intercepts every possible property access.
+ *
+ * The patch is installed immediately before html2canvas() is called and
+ * removed in the finally block so it never leaks outside this function.
+ */
+function patchGetComputedStyle(): () => void {
+  const orig = window.getComputedStyle;
+
+  (window as unknown as Record<string, unknown>).getComputedStyle =
+    function patchedGCS(el: Element, pseudo?: string | null) {
+      const cs = orig.call(window, el, pseudo);
+      return new Proxy(cs, {
+        get(t: CSSStyleDeclaration, p: string | symbol) {
+          // Intercept getPropertyValue() calls (html2canvas uses both access patterns)
+          if (p === 'getPropertyValue') {
+            return (name: string) => {
+              const v = t.getPropertyValue(name);
+              return typeof v === 'string' && v.includes('oklch') ? stripOklch(v) : v;
+            };
+          }
+          const v = (t as Record<string | symbol, unknown>)[p];
+          if (typeof v === 'string' && v.includes('oklch')) return stripOklch(v);
+          if (typeof v === 'function') return v.bind(t);
+          return v;
+        },
+      });
+    };
+
+  // Return a restore function
+  return () => { (window as unknown as Record<string, unknown>).getComputedStyle = orig; };
+}
+
 /**
  * Renders a report component to PDF and triggers a browser download.
  *
@@ -40,6 +94,8 @@ const SCALE  = 2;
  *     so html2canvas sees a fully-laid-out element at x=0, y=negative.
  *   - Uses createRoot + flushSync for a guaranteed synchronous DOM commit —
  *     no timers, no async React reconciliation guesswork.
+ *   - Monkey-patches window.getComputedStyle for the duration of the html2canvas
+ *     call to neutralise oklch() values that html2canvas 1.4.x cannot parse.
  *   - html2canvas + jsPDF are dynamically imported (lazy chunks).
  *   - After capture the container is unmounted and removed.
  */
@@ -63,6 +119,7 @@ export async function downloadReport(reportName: string): Promise<void> {
   document.body.appendChild(wrapper);
 
   const root = createRoot(wrapper);
+  let restoreGCS: (() => void) | null = null;
 
   try {
     // ── 2. Render synchronously ─────────────────────────────────────────────
@@ -77,6 +134,10 @@ export async function downloadReport(reportName: string): Promise<void> {
 
     // ── 4. Capture ──────────────────────────────────────────────────────────
     const { default: html2canvas } = await import('html2canvas');
+
+    // Install the getComputedStyle patch RIGHT before calling html2canvas so
+    // it is active for the entire synchronous parse phase inside html2canvas.
+    restoreGCS = patchGetComputedStyle();
 
     const canvas = await html2canvas(wrapper, {
       scale:           SCALE,
@@ -118,6 +179,7 @@ export async function downloadReport(reportName: string): Promise<void> {
 
   } finally {
     // ── 6. Always clean up ──────────────────────────────────────────────────
+    restoreGCS?.();   // un-patch getComputedStyle before anything else touches the DOM
     root.unmount();
     if (document.body.contains(wrapper)) document.body.removeChild(wrapper);
   }

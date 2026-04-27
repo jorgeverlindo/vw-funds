@@ -592,5 +592,140 @@
     "phase1Days": 23,
     "phase2Days": 13,
     "phase3Days": 9
+  },
+  {
+    "claimId": "MFC541016",
+    "dealershipCode": "12345",
+    "area": "South Central",
+    "month": "2025-09",
+    "phase1Days": 18,
+    "phase2Days": 9,
+    "phase3Days": 6
+  },
+  {
+    "claimId": "MFC541015",
+    "dealershipCode": "12345",
+    "area": "South Central",
+    "month": "2025-10",
+    "phase1Days": 15,
+    "phase2Days": 8,
+    "phase3Days": 5
+  },
+  {
+    "claimId": "MFC541014",
+    "dealershipCode": "12345",
+    "area": "South Central",
+    "month": "2025-11",
+    "phase1Days": 20,
+    "phase2Days": 10,
+    "phase3Days": 7
+  },
+  {
+    "claimId": "MFC541011",
+    "dealershipCode": "12345",
+    "area": "South Central",
+    "month": "2025-12",
+    "phase1Days": 17,
+    "phase2Days": 9,
+    "phase3Days": 6
+  },
+  {
+    "claimId": "MFC541012",
+    "dealershipCode": "12345",
+    "area": "South Central",
+    "month": "2026-01",
+    "phase1Days": 22,
+    "phase2Days": 11,
+    "phase3Days": 7
+  },
+  {
+    "claimId": "MFC541013",
+    "dealershipCode": "12345",
+    "area": "South Central",
+    "month": "2026-01",
+    "phase1Days": 16,
+    "phase2Days": 8,
+    "phase3Days": 5
+  },
+  {
+    "claimId": "MFC541010",
+    "dealershipCode": "12345",
+    "area": "South Central",
+    "month": "2026-02",
+    "phase1Days": 14,
+    "phase2Days": 8,
+    "phase3Days": 5
+  },
+  {
+    "claimId": "MFC560010",
+    "dealershipCode": "12345",
+    "area": "South Central",
+    "month": "2026-04",
+    "phase1Days": 3,
+    "phase2Days": 0,
+    "phase3Days": 0
+  },
+  {
+    "claimId": "MFC560011",
+    "dealershipCode": "12345",
+    "area": "South Central",
+    "month": "2026-04",
+    "phase1Days": 5,
+    "phase2Days": 2,
+    "phase3Days": 0
+  },
+  {
+    "claimId": "MFC560012",
+    "dealershipCode": "12345",
+    "area": "South Central",
+    "month": "2026-04",
+    "phase1Days": 9,
+    "phase2Days": 5,
+    "phase3Days": 3
+  },
+  {
+    "claimId": "MFC560013",
+    "dealershipCode": "12345",
+    "area": "South Central",
+    "month": "2026-04",
+    "phase1Days": 7,
+    "phase2Days": 0,
+    "phase3Days": 0
+  },
+  {
+    "claimId": "MFC560014",
+    "dealershipCode": "12345",
+    "area": "South Central",
+    "month": "2026-04",
+    "phase1Days": 11,
+    "phase2Days": 4,
+    "phase3Days": 0
+  },
+  {
+    "claimId": "MFC560015",
+    "dealershipCode": "12345",
+    "area": "South Central",
+    "month": "2026-04",
+    "phase1Days": 15,
+    "phase2Days": 7,
+    "phase3Days": 4
+  },
+  {
+    "claimId": "MFC560016",
+    "dealershipCode": "12345",
+    "area": "South Central",
+    "month": "2026-04",
+    "phase1Days": 19,
+    "phase2Days": 8,
+    "phase3Days": 5
+  },
+  {
+    "claimId": "MFC560017",
+    "dealershipCode": "12345",
+    "area": "South Central",
+    "month": "2026-04",
+    "phase1Days": 13,
+    "phase2Days": 6,
+    "phase3Days": 0
   }
 ]

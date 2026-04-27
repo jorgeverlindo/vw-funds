@@ -15,6 +15,7 @@ import { cn } from '../../lib/utils';
 import { ActionButton } from './ActionButton';
 import { useWorkflow, WORKFLOW_DEALER, WORKFLOW_CAMPAIGN, type ClaimWorkflowStatus, type ArchivedCycle } from '../contexts/WorkflowContext';
 import { useFilters } from '../contexts/FilterContext';
+import { useOverviewData } from '../../data/access/useOverviewData';
 
 // People portraits — Figma source of truth
 import imgFabioVeloso from 'figma:asset/175d81a7864ae50d37ddf9a160e546af1d2a8ee8.png';
@@ -95,14 +96,29 @@ export const CLAIMS_MOCK_DATA: Claim[] = [
   createClaim('MFC540994', new Date(2026, 0, 2),  3114.47, 'In Review',        10,  7, '402165', 'Volkswagen of Downtown Chicago',        'Chicago',  'DMP - Hard Costs', 3, 'Ryan Ledger'),
   createClaim('MFC550001', new Date(2025, 1, 15), 5500.00, 'Approved',          5,  5, '408252', 'Jack Daniels Volkswagen (Paramus)',     'Paramus',  'DMP - Hard Costs', 4, 'Garry Schwietert'),
   createClaim('MFC560001', new Date(2025, 2, 20), 6200.00, 'Approved',          4,  3, '402165', 'Volkswagen of Downtown Chicago',        'Chicago',  'DMP - Hard Costs', 5, 'Mallory Manning'),
-  // ── Volkswagen Any Town (408258) claims ───────────────────────────────────
-  createClaim('MFC541010', new Date(2026, 1, 18), 4250.00, 'Approved',          5,  4, '12345',  'Volkswagen Any Town', 'Any Town', 'DMF - Media Costs', 5, 'Mallory Manning'),
-  createClaim('MFC541012', new Date(2026, 0, 22), 2190.00, 'Pending',           7,  0, '12345',  'Volkswagen Any Town', 'Any Town', 'DMF - Hard Costs',  5, 'Mallory Manning'),
-  createClaim('MFC541013', new Date(2026, 0, 10), 3780.00, 'In Review',         9,  0, '12345',  'Volkswagen Any Town', 'Any Town', 'DMP - Hard Costs',  5, 'Mallory Manning'),
-  createClaim('MFC541011', new Date(2025, 11, 15),2800.00, 'Approved',          8,  5, '12345',  'Volkswagen Any Town', 'Any Town', 'DMF - Media Costs', 5, 'Mallory Manning'),
-  createClaim('MFC541014', new Date(2025, 10, 20),3100.00, 'Approved',          6,  4, '12345',  'Volkswagen Any Town', 'Any Town', 'DMF - Media Costs', 5, 'Mallory Manning'),
-  createClaim('MFC541015', new Date(2025, 9, 12), 1950.00, 'Approved',          5,  6, '12345',  'Volkswagen Any Town', 'Any Town', 'DMF - Hard Costs',  5, 'Mallory Manning'),
-  createClaim('MFC541016', new Date(2025, 8, 8),  4600.00, 'Approved',          4,  3, '12345',  'Volkswagen Any Town', 'Any Town', 'DMP - Hard Costs',  5, 'Mallory Manning'),
+  // ── Volkswagen Any Town (12345) claims ───────────────────────────────────
+  // April 2026 — mix of statuses (newest first within month)
+  createClaim('MFC560010', new Date(2026, 3, 27), 2850.00, 'Pending',            2,  0, '12345', 'Volkswagen Any Town', 'Any Town', 'DMF - Media Costs', 5, 'Mallory Manning'),
+  createClaim('MFC560011', new Date(2026, 3, 25), 1780.00, 'In Review',          4,  0, '12345', 'Volkswagen Any Town', 'Any Town', 'DMF - Hard Costs',  5, 'Mallory Manning'),
+  createClaim('MFC560012', new Date(2026, 3, 22), 3420.00, 'Approved',           7,  3, '12345', 'Volkswagen Any Town', 'Any Town', 'DMP - Hard Costs',  5, 'Mallory Manning'),
+  createClaim('MFC560013', new Date(2026, 3, 20), 2100.00, 'Pending',            9,  0, '12345', 'Volkswagen Any Town', 'Any Town', 'DMF - Media Costs', 5, 'Mallory Manning'),
+  createClaim('MFC560014', new Date(2026, 3, 18), 4150.00, 'In Review',         11,  0, '12345', 'Volkswagen Any Town', 'Any Town', 'DMF - Media Costs', 5, 'Mallory Manning'),
+  createClaim('MFC560015', new Date(2026, 3, 15), 1890.00, 'Approved',          14,  4, '12345', 'Volkswagen Any Town', 'Any Town', 'DMF - Hard Costs',  5, 'Mallory Manning'),
+  createClaim('MFC560016', new Date(2026, 3, 12), 3670.00, 'Ready for Payment', 17,  5, '12345', 'Volkswagen Any Town', 'Any Town', 'DMP - Hard Costs',  5, 'Mallory Manning'),
+  createClaim('MFC560017', new Date(2026, 3, 8),  2240.00, 'Revision Requested',21,  0, '12345', 'Volkswagen Any Town', 'Any Town', 'DMF - Media Costs', 5, 'Mallory Manning'),
+  // Feb 2026
+  createClaim('MFC541010', new Date(2026, 1, 18), 4250.00, 'Approved',           5,  4, '12345', 'Volkswagen Any Town', 'Any Town', 'DMF - Media Costs', 5, 'Mallory Manning'),
+  // Jan 2026 — old enough to be fully paid
+  createClaim('MFC541013', new Date(2026, 0, 10), 3780.00, 'Paid',              16, 14, '12345', 'Volkswagen Any Town', 'Any Town', 'DMP - Hard Costs',  5, 'Mallory Manning'),
+  createClaim('MFC541012', new Date(2026, 0, 22), 2190.00, 'Approved',          14, 12, '12345', 'Volkswagen Any Town', 'Any Town', 'DMF - Hard Costs',  5, 'Mallory Manning'),
+  // Dec 2025
+  createClaim('MFC541011', new Date(2025, 11, 15),2800.00, 'Approved',           8,  5, '12345', 'Volkswagen Any Town', 'Any Town', 'DMF - Media Costs', 5, 'Mallory Manning'),
+  // Nov 2025
+  createClaim('MFC541014', new Date(2025, 10, 20),3100.00, 'Approved',           6,  4, '12345', 'Volkswagen Any Town', 'Any Town', 'DMF - Media Costs', 5, 'Mallory Manning'),
+  // Oct 2025
+  createClaim('MFC541015', new Date(2025, 9, 12), 1950.00, 'Approved',           5,  6, '12345', 'Volkswagen Any Town', 'Any Town', 'DMF - Hard Costs',  5, 'Mallory Manning'),
+  // Sep 2025
+  createClaim('MFC541016', new Date(2025, 8, 8),  4600.00, 'Approved',           4,  3, '12345', 'Volkswagen Any Town', 'Any Town', 'DMP - Hard Costs',  5, 'Mallory Manning'),
 ];
 
 interface FundsClaimsContentProps {
@@ -181,6 +197,19 @@ export function FundsClaimsContent({
   const { t } = useTranslation();
   const { workflow } = useWorkflow();
   const { filters: filterCtx, isLockedDealership } = useFilters();
+  const { monthlyChart } = useOverviewData();
+
+  // Build month-key → accrual map from filtered overview data (used in dealer-singular mode)
+  const overviewAccruals = useMemo(() => {
+    const map = new Map<string, number>();
+    monthlyChart.forEach(row => {
+      // row.month = "Jan 25" → convert to "Jan 2025"
+      const [mon, yr] = row.month.split(' ');
+      const fullYear = parseInt(yr) + 2000;
+      map.set(`${mon} ${fullYear}`, row.accruals);
+    });
+    return map;
+  }, [monthlyChart]);
 
   // Archived cycle rows — newest first
   const archivedClaimRows = useMemo(
@@ -414,7 +443,10 @@ export function FundsClaimsContent({
                   const computedSubmissionNum = claims.length > 0
                     ? claims.reduce((sum, c) => sum + c.amount, 0)
                     : null;
-                  const accrualNum = parseAmount(monthData?.accrual);
+                  // In dealer-singular mode use per-dealer overview accruals; otherwise use static table
+                  const accrualNum = isLockedDealership
+                    ? (overviewAccruals.get(monthKey) ?? null)
+                    : parseAmount(monthData?.accrual);
                   const submissionNum = computedSubmissionNum ?? parseAmount(monthData?.submission);
                   const differenceNum = (accrualNum !== null && submissionNum !== null)
                     ? accrualNum - submissionNum
@@ -426,8 +458,9 @@ export function FundsClaimsContent({
                     ? differenceNum < 0 ? `(${fmtUSD(differenceNum)})` : fmtUSD(differenceNum)
                     : '-';
                   const differenceColor = differenceNum !== null && differenceNum < 0 ? 'text-red-600' : 'text-gray-900';
-                  const paidDisplay = stripPct(monthData?.paid);
-                  const pendingDisplay = stripPct(monthData?.pending);
+                  // Paid/Pending static values are multi-dealer aggregates — hide in dealer-singular mode
+                  const paidDisplay    = isLockedDealership ? '-' : stripPct(monthData?.paid);
+                  const pendingDisplay = isLockedDealership ? '-' : stripPct(monthData?.pending);
 
                   return (
                     <div key={monthKey} className="group-container">

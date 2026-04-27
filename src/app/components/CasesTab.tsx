@@ -9,6 +9,7 @@ import { ActionButton } from './ActionButton';
 import { StatusChip } from './StatusChip';
 import { cn } from '../../lib/utils';
 import { TableHeader, TableBody, TableRow, TableHead, TableCell } from './ui/table';
+import { useFilters } from '../contexts/FilterContext';
 
 export interface Case {
   id: string;
@@ -19,22 +20,38 @@ export interface Case {
   lastUpdated: string;
 }
 
-const CASES_DATA: Case[] = [
-  { id: 'MFC539881', date: new Date(2025, 0, 2), status: 'Approved', dealership: '408252 - Jack Daniels Volkswagen (Paramus)', type: 'CRM AUGUST', lastUpdated: '3 days ago' },
-  { id: 'MFC539881', date: new Date(2025, 0, 2), status: 'Pending', dealership: '423063 - Armstrong Volkswagen of Gladstone (Gladstone)', type: 'CRM AUGUST', lastUpdated: '3 days ago' },
-  { id: 'MFC539881', date: new Date(2025, 0, 2), status: 'Revision Requested', dealership: '408252 - Jack Daniels Volkswagen (Paramus)', type: 'CRM AUGUST', lastUpdated: '3 days ago' },
-  { id: 'MFC539881', date: new Date(2025, 0, 2), status: 'Approved', dealership: '409210 - Paramount Volkswagen of Hickory (Hickory)', type: 'CRM AUGUST', lastUpdated: '3 days ago' },
-  { id: 'MFC539881', date: new Date(2025, 0, 2), status: 'Approved', dealership: '402165 - Volkswagen of Downtown Chicago (Chicago)', type: 'CRM AUGUST', lastUpdated: '3 days ago' },
-  { id: 'MFC539881', date: new Date(2025, 0, 2), status: 'Approved', dealership: '423063 - Armstrong Volkswagen of Gladstone (Gladstone)', type: 'CRM AUGUST', lastUpdated: '3 days ago' },
-  { id: 'MFC539881', date: new Date(2025, 0, 2), status: 'Pending', dealership: '408252 - Jack Daniels Volkswagen (Paramus)', type: 'CRM AUGUST', lastUpdated: '3 days ago' },
-  { id: 'MFC539881', date: new Date(2025, 0, 2), status: 'Approved', dealership: '408252 - Jack Daniels Volkswagen (Paramus)', type: 'CRM AUGUST', lastUpdated: '3 days ago' },
-  { id: 'MFC539881', date: new Date(2025, 0, 2), status: 'Pending', dealership: '423063 - Armstrong Volkswagen of Gladstone (Gladstone)', type: 'CRM AUGUST', lastUpdated: '3 days ago' },
-  { id: 'MFC539881', date: new Date(2025, 0, 2), status: 'Revision Requested', dealership: '408252 - Jack Daniels Volkswagen (Paramus)', type: 'CRM AUGUST', lastUpdated: '3 days ago' },
-  { id: 'MFC539881', date: new Date(2025, 0, 2), status: 'Approved', dealership: '409210 - Paramount Volkswagen of Hickory (Hickory)', type: 'CRM AUGUST', lastUpdated: '3 days ago' },
-  { id: 'MFC539881', date: new Date(2025, 0, 2), status: 'Approved', dealership: '402165 - Volkswagen of Downtown Chicago (Chicago)', type: 'CRM AUGUST', lastUpdated: '3 days ago' },
-  { id: 'MFC539881', date: new Date(2025, 0, 2), status: 'Pending', dealership: '408252 - Jack Daniels Volkswagen (Paramus)', type: 'CRM AUGUST', lastUpdated: '3 days ago' },
-  { id: 'MFC539881', date: new Date(2025, 0, 2), status: 'Revision Requested', dealership: '408252 - Jack Daniels Volkswagen (Paramus)', type: 'CRM AUGUST', lastUpdated: '3 days ago' },
+// ── Agency (multi-dealer) cases ───────────────────────────────────────────────
+const AGENCY_CASES: Case[] = [
+  { id: 'MFC539881', date: new Date(2025, 0, 2), status: 'Approved',           dealership: '408252 - Jack Daniels Volkswagen',          type: 'CRM AUGUST',        lastUpdated: '3 days ago' },
+  { id: 'MFC539882', date: new Date(2025, 0, 2), status: 'Pending',            dealership: '423063 - Armstrong Volkswagen of Gladstone', type: 'CRM AUGUST',        lastUpdated: '3 days ago' },
+  { id: 'MFC539883', date: new Date(2025, 0, 2), status: 'Revision Requested', dealership: '408252 - Jack Daniels Volkswagen',          type: 'CRM AUGUST',        lastUpdated: '3 days ago' },
+  { id: 'MFC539884', date: new Date(2025, 0, 2), status: 'Approved',           dealership: '409210 - Paramount Volkswagen of Hickory',  type: 'CRM AUGUST',        lastUpdated: '3 days ago' },
+  { id: 'MFC539885', date: new Date(2025, 0, 2), status: 'Approved',           dealership: '402165 - Volkswagen of Downtown Chicago',   type: 'CRM AUGUST',        lastUpdated: '3 days ago' },
+  { id: 'MFC539886', date: new Date(2025, 0, 2), status: 'Approved',           dealership: '423063 - Armstrong Volkswagen of Gladstone', type: 'CRM AUGUST',       lastUpdated: '3 days ago' },
+  { id: 'MFC539887', date: new Date(2025, 0, 2), status: 'Pending',            dealership: '408252 - Jack Daniels Volkswagen',          type: 'CRM AUGUST',        lastUpdated: '3 days ago' },
+  { id: 'MFC539888', date: new Date(2025, 0, 2), status: 'Approved',           dealership: '408252 - Jack Daniels Volkswagen',          type: 'CRM AUGUST',        lastUpdated: '3 days ago' },
+  { id: 'MFC539889', date: new Date(2025, 0, 2), status: 'Pending',            dealership: '423063 - Armstrong Volkswagen of Gladstone', type: 'BRAND COMPLIANCE', lastUpdated: '3 days ago' },
+  { id: 'MFC539890', date: new Date(2025, 0, 2), status: 'Revision Requested', dealership: '408252 - Jack Daniels Volkswagen',          type: 'BRAND COMPLIANCE',  lastUpdated: '3 days ago' },
+  { id: 'MFC539891', date: new Date(2025, 0, 2), status: 'Approved',           dealership: '409210 - Paramount Volkswagen of Hickory',  type: 'CRM AUGUST',        lastUpdated: '3 days ago' },
+  { id: 'MFC539892', date: new Date(2025, 0, 2), status: 'Approved',           dealership: '402165 - Volkswagen of Downtown Chicago',   type: 'CRM AUGUST',        lastUpdated: '3 days ago' },
+  { id: 'MFC539893', date: new Date(2025, 0, 2), status: 'Pending',            dealership: '408252 - Jack Daniels Volkswagen',          type: 'BRAND COMPLIANCE',  lastUpdated: '3 days ago' },
+  { id: 'MFC539894', date: new Date(2025, 0, 2), status: 'Revision Requested', dealership: '408252 - Jack Daniels Volkswagen',          type: 'CRM AUGUST',        lastUpdated: '3 days ago' },
 ];
+
+// ── Volkswagen Any Town (12345) cases ─────────────────────────────────────────
+const ANY_TOWN_CASES: Case[] = [
+  { id: 'MFC560020', date: new Date(2026, 3, 20), status: 'Pending',            dealership: '12345 - Volkswagen Any Town', type: 'SPRING DIGITAL 2026',    lastUpdated: '1 week ago'  },
+  { id: 'MFC560021', date: new Date(2026, 3, 10), status: 'Revision Requested', dealership: '12345 - Volkswagen Any Town', type: 'BRAND COMPLIANCE',        lastUpdated: '2 weeks ago' },
+  { id: 'MFC560022', date: new Date(2026, 2, 5),  status: 'Approved',           dealership: '12345 - Volkswagen Any Town', type: 'SPRING DIGITAL 2026',    lastUpdated: '3 weeks ago' },
+  { id: 'MFC560023', date: new Date(2026, 1, 18), status: 'Approved',           dealership: '12345 - Volkswagen Any Town', type: 'SOCIAL MEDIA FEB 2026',   lastUpdated: '1 month ago' },
+  { id: 'MFC560024', date: new Date(2026, 0, 12), status: 'Approved',           dealership: '12345 - Volkswagen Any Town', type: 'GOOGLE SEM JAN 2026',     lastUpdated: '3 months ago'},
+  { id: 'MFC560025', date: new Date(2025, 11, 8), status: 'Approved',           dealership: '12345 - Volkswagen Any Town', type: 'HOLIDAY OTT 2025',        lastUpdated: '4 months ago'},
+  { id: 'MFC560026', date: new Date(2025, 10, 3), status: 'Revision Requested', dealership: '12345 - Volkswagen Any Town', type: 'BRAND COMPLIANCE',        lastUpdated: '5 months ago'},
+  { id: 'MFC560027', date: new Date(2025, 8, 20), status: 'Approved',           dealership: '12345 - Volkswagen Any Town', type: 'FALL DISPLAY 2025',       lastUpdated: '7 months ago'},
+];
+
+// Merged dataset for agency view — includes all dealers including Any Town
+const CASES_DATA: Case[] = [...AGENCY_CASES, ...ANY_TOWN_CASES];
 
 export function CasesTab({
   dateRange: propDateRange,
@@ -44,6 +61,7 @@ export function CasesTab({
   onDateRangeChange?: (range: DateRange | undefined) => void;
 }) {
   const { t } = useTranslation();
+  const { isLockedDealership } = useFilters();
   const [internalDateRange, setInternalDateRange] = useState<DateRange | undefined>({
     from: new Date(2025, 0, 1),
     to: new Date(2025, 11, 31),
@@ -68,7 +86,9 @@ export function CasesTab({
   }, []);
 
   const filteredData = useMemo(() => {
-    return CASES_DATA.filter((item) => {
+    // In dealer-singular mode use only Any Town cases
+    const source = isLockedDealership ? ANY_TOWN_CASES : CASES_DATA;
+    return source.filter((item) => {
       if (dateRange?.from && item.date < dateRange.from) return false;
       if (dateRange?.to && item.date > dateRange.to) return false;
       if (searchQuery) {

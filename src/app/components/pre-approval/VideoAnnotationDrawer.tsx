@@ -654,14 +654,25 @@ export function VideoAnnotationDrawer({ doc, onClose }: VideoAnnotationDrawerPro
 
               {/* Left Panel — ScrollerAnnotations (same width/bg as existing image flow) */}
               <div className="w-[220px] shrink-0 flex flex-col bg-[#f0f2f4] border-r border-[rgba(0,0,0,0.08)]">
-                {/* Panel header — no bottom border; tooltip shows full filename on hover */}
+                {/* Panel header — custom hover tooltip for truncated filename */}
                 <div className="px-3 py-3 shrink-0">
-                  <p
-                    className="text-[11px] font-semibold text-[#1F1D25] font-['Roboto'] truncate cursor-default"
-                    title={doc.name}
-                  >
-                    {doc.name}
-                  </p>
+                  {/* Tooltip wrapper — relative so tooltip can anchor here */}
+                  <div className="relative group">
+                    <p className="text-[11px] font-semibold text-[#1F1D25] font-['Roboto'] truncate cursor-default">
+                      {doc.name}
+                    </p>
+                    {/* Custom tooltip: appears below on hover */}
+                    <div
+                      className="pointer-events-none absolute left-0 top-full mt-1 z-[200]
+                                 opacity-0 group-hover:opacity-100
+                                 transition-opacity duration-150
+                                 bg-[#1F1D25] text-white text-[10px] leading-snug
+                                 rounded-md px-2 py-1.5 shadow-lg
+                                 max-w-[190px] break-all whitespace-normal"
+                    >
+                      {doc.name}
+                    </div>
+                  </div>
                   {annotations.length > 0 && (
                     <p className="text-[10px] text-[#473BAB] mt-0.5 font-medium font-['Roboto']">
                       {annotations.length} annotation{annotations.length !== 1 ? 's' : ''} · {includedCount} in report
@@ -669,7 +680,7 @@ export function VideoAnnotationDrawer({ doc, onClose }: VideoAnnotationDrawerPro
                   )}
                 </div>
 
-                {/* Scroller — reuses existing component */}
+                {/* Scroller — dealer view: timecode only, no Include/Delete (OEM role activates those) */}
                 <div className="flex-1 min-h-0">
                   <ScrollerAnnotations
                     annotations={annotationItems}
@@ -679,10 +690,8 @@ export function VideoAnnotationDrawer({ doc, onClose }: VideoAnnotationDrawerPro
                       const ann = annotations.find(a => a.id === id);
                       if (ann) seekTo(ann.timestamp);
                     }}
-                    onToggleInclude={toggleInclude}
-                    onDelete={deleteAnnotation}
                     emptyMessage="No annotations yet"
-                    className="h-full w-full rounded-none"
+                    className="h-full w-full rounded-none bg-[#f0f2f4]"
                   />
                 </div>
               </div>

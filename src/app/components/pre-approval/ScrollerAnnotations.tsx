@@ -127,8 +127,8 @@ export function ScrollerAnnotations({
               </div>
             </div>
 
-            {/* Include checkbox + timestamp + delete — shown only for video annotations */}
-            {(onToggleInclude || onDelete) && (
+            {/* Bottom row: timecode always shown when present; Include + Delete only when handlers passed */}
+            {(onToggleInclude || onDelete || item.timestamp !== undefined) && (
               <div
                 className="flex items-center justify-between border-t border-[rgba(0,0,0,0.08)] pt-[4px] mt-1 mx-[8px] mb-[4px]"
                 onClick={(e) => e.stopPropagation()}
@@ -155,7 +155,7 @@ export function ScrollerAnnotations({
                     </button>
                   )}
                   {item.timestamp !== undefined && (
-                    <span className="text-[9px] text-[#9C99A9] font-['Roboto'] ml-1">
+                    <span className="text-[9px] text-[#9C99A9] font-['Roboto']" style={{ marginLeft: onToggleInclude ? 4 : 0 }}>
                       {fmtTime(item.timestamp)}
                     </span>
                   )}

@@ -55,7 +55,7 @@ export function PreviewArea({ initialState = 'dropzone', onFilesAccepted, onDocu
   const [activeAnnotationId, setActiveAnnotationId] = useState<string | null>(null);
 
   // Multi-file: store uploaded blob URLs + per-file annotation overrides
-  const [uploadedFiles, setUploadedFiles] = useState<{ url: string; annotations: AnnotationItem[] }[]>([]);
+  const [uploadedFiles, setUploadedFiles] = useState<{ url: string; annotations: AnnotationItem[]; mimeType?: string }[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
 
   // Zoom state
@@ -86,7 +86,7 @@ export function PreviewArea({ initialState = 'dropzone', onFilesAccepted, onDocu
   // ── Handlers ──────────────────────────────────────────────────────────────
   const handleDrop = (files: File[]) => {
     if (files.length === 0) return;
-    const newEntries = files.map(f => ({ url: URL.createObjectURL(f), annotations: MOCK_ANNOTATIONS }));
+    const newEntries = files.map(f => ({ url: URL.createObjectURL(f), annotations: MOCK_ANNOTATIONS, mimeType: f.type }));
     setUploadedFiles(prev => [...prev, ...newEntries]);
     setState('loading');
     setTimeout(() => {
@@ -106,7 +106,7 @@ export function PreviewArea({ initialState = 'dropzone', onFilesAccepted, onDocu
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop: handleDrop,
-    accept: { 'image/*': [], 'application/pdf': [] },
+    accept: { 'image/*': [], 'application/pdf': [], 'video/*': [] },
     maxSize: 10485760,
   });
 
@@ -216,7 +216,11 @@ export function PreviewArea({ initialState = 'dropzone', onFilesAccepted, onDocu
                           currentIndex === idx ? "border-[#473BAB] shadow-md" : "border-transparent hover:border-[#473BAB]/40"
                         )}
                       >
-                        <img src={file.url} alt={`Asset ${idx + 1}`} className="w-full h-full object-contain bg-white" />
+                        {file.mimeType?.startsWith('video/') ? (
+                          <video src={file.url} className="w-full h-full object-contain bg-black" muted playsInline preload="metadata" />
+                        ) : (
+                          <img src={file.url} alt={`Asset ${idx + 1}`} className="w-full h-full object-contain bg-white" />
+                        )}
                         {/* Annotation count badge */}
                         {file.annotations.length > 0 && (
                           <div className="absolute top-2 right-2 bg-[#D2323F] text-white text-[10px] font-bold rounded-full w-5 h-5 flex items-center justify-center">
@@ -284,32 +288,43 @@ export function PreviewArea({ initialState = 'dropzone', onFilesAccepted, onDocu
                     </button>
                   )}
 
-                  {/* Image Container */}
+                  {/* Image / Video Container */}
                   <div className="flex-1 min-h-0 w-full flex items-center justify-center overflow-hidden">
-                    <motion.div
-                      className="relative shadow-lg overflow-visible"
-                      style={{ scale: zoom }}
-                      transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-                    >
-                      <img
-                        src={currentFile?.url ?? ''}
-                        alt="Preview"
-                        className="max-h-[calc(100vh-320px)] max-w-full object-contain block"
+                    {currentFile?.mimeType?.startsWith('video/') ? (
+                      /* ── Video player ── */
+                      <video
+                        key={currentFile.url}
+                        src={currentFile.url}
+                        controls
+                        className="max-h-[calc(100vh-320px)] max-w-full rounded-lg shadow-lg block bg-black"
                       />
-                      {/* Annotation pins */}
-                      <div className="absolute inset-0" style={{ overflow: 'visible' }}>
-                        {annotations.map((ann, index) => (
-                          <InteractiveAnnotation
-                            key={ann.id}
-                            {...ann}
-                            isOpen={activeAnnotationId === ann.id}
-                            onToggle={() => setActiveAnnotationId(activeAnnotationId === ann.id ? null : ann.id)}
-                            delay={index * 0.15}
-                            direction="bottom-right"
-                          />
-                        ))}
-                      </div>
-                    </motion.div>
+                    ) : (
+                      /* ── Image + annotation pins ── */
+                      <motion.div
+                        className="relative shadow-lg overflow-visible"
+                        style={{ scale: zoom }}
+                        transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+                      >
+                        <img
+                          src={currentFile?.url ?? ''}
+                          alt="Preview"
+                          className="max-h-[calc(100vh-320px)] max-w-full object-contain block"
+                        />
+                        {/* Annotation pins */}
+                        <div className="absolute inset-0" style={{ overflow: 'visible' }}>
+                          {annotations.map((ann, index) => (
+                            <InteractiveAnnotation
+                              key={ann.id}
+                              {...ann}
+                              isOpen={activeAnnotationId === ann.id}
+                              onToggle={() => setActiveAnnotationId(activeAnnotationId === ann.id ? null : ann.id)}
+                              delay={index * 0.15}
+                              direction="bottom-right"
+                            />
+                          ))}
+                        </div>
+                      </motion.div>
+                    )}
                   </div>
 
                   {/* Onboarding Bubble */}
@@ -329,7 +344,7 @@ export function PreviewArea({ initialState = 'dropzone', onFilesAccepted, onDocu
               {/* Toolbar — always visible at the bottom */}
               <div className="w-full max-w-[600px] mt-2 mb-1 shrink-0 z-10">
                 <PreviewControlsZoom
-                  onAutocorrect={handleOpenAutocorrect}
+                  onAutocorrect={currentFile?.mimeType?.startsWith('video/') ? undefined : handleOpenAutocorrect}
                   onReset={handleReset}
                   onDelete={isUserFile ? handleDelete : undefined}
                   onZoomIn={handleZoomIn}

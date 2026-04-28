@@ -100,7 +100,7 @@ export const CLAIMS_MOCK_DATA: Claim[] = [
   // April 2026 — mix of statuses (newest first within month)
   createClaim('MFC560010', new Date(2026, 3, 27), 2850.00, 'Pending',            2,  0, '12345', 'Volkswagen Any Town', 'Any Town', 'DMF - Media Costs', 5, 'Mallory Manning'),
   createClaim('MFC560011', new Date(2026, 3, 25), 1780.00, 'In Review',          4,  0, '12345', 'Volkswagen Any Town', 'Any Town', 'DMF - Hard Costs',  5, 'Mallory Manning'),
-  createClaim('MFC560012', new Date(2026, 3, 22), 3420.00, 'Approved',           7,  3, '12345', 'Volkswagen Any Town', 'Any Town', 'DMP - Hard Costs',  5, 'Mallory Manning'),
+  createClaim('MFC560012', new Date(2026, 3, 21), 3420.00, 'Approved',           7,  3, '12345', 'Volkswagen Any Town', 'Any Town', 'DMP - Hard Costs',  5, 'Mallory Manning'),
   createClaim('MFC560013', new Date(2026, 3, 20), 2100.00, 'Pending',            9,  0, '12345', 'Volkswagen Any Town', 'Any Town', 'DMF - Media Costs', 5, 'Mallory Manning'),
   createClaim('MFC560014', new Date(2026, 3, 18), 4150.00, 'In Review',         11,  0, '12345', 'Volkswagen Any Town', 'Any Town', 'DMF - Media Costs', 5, 'Mallory Manning'),
   createClaim('MFC560015', new Date(2026, 3, 15), 1890.00, 'Approved',          14,  4, '12345', 'Volkswagen Any Town', 'Any Town', 'DMF - Hard Costs',  5, 'Mallory Manning'),

@@ -652,8 +652,8 @@ export function VideoAnnotationDrawer({ doc, onClose }: VideoAnnotationDrawerPro
             {/* ── Body ─────────────────────────────────────────────────── */}
             <div className="flex-1 flex min-h-0 relative">
 
-              {/* Left Panel — ScrollerAnnotations (same width/bg as existing image flow) */}
-              <div className="w-[220px] shrink-0 flex flex-col bg-[#f0f2f4] border-r border-[rgba(0,0,0,0.08)]">
+              {/* Left Panel — ScrollerAnnotations */}
+              <div className="w-[220px] shrink-0 flex flex-col bg-white">
                 {/* Panel header — custom hover tooltip for truncated filename */}
                 <div className="px-3 py-3 shrink-0">
                   {/* Tooltip wrapper — relative so tooltip can anchor here */}
@@ -691,7 +691,7 @@ export function VideoAnnotationDrawer({ doc, onClose }: VideoAnnotationDrawerPro
                       if (ann) seekTo(ann.timestamp);
                     }}
                     emptyMessage="No annotations yet"
-                    className="h-full w-full rounded-none bg-[#f0f2f4]"
+                    className="h-full w-full rounded-none bg-white"
                   />
                 </div>
               </div>

@@ -36,11 +36,11 @@ export function PreApprovalDrawer({ open, onClose }: PreApprovalDrawerProps) {
 
   return createPortal(
     <>
-      {/* VideoAnnotationDrawer — opens on top of everything when a video is uploaded */}
+      {/* VideoAnnotationDrawer — takes over the whole modal (has its own form panel) */}
       {videoDrawerDoc && (
         <VideoAnnotationDrawer
           doc={videoDrawerDoc}
-          onClose={() => setVideoDrawerDoc(null)}
+          onClose={() => { setVideoDrawerDoc(null); onClose(); }}
         />
       )}
 

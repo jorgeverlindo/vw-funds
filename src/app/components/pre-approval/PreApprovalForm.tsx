@@ -275,14 +275,15 @@ export function PreApprovalForm({ onClose, onDone }: PreApprovalFormProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const sizeKB = file.size / 1024;
-    const sizeStr = sizeKB >= 1024 ? `${(sizeKB / 1024).toFixed(1)} MB` : `${Math.round(sizeKB)} KB`;
-    const ext = file.name.split('.').pop()?.toLowerCase() ?? 'file';
-    // Generate blob URL for ALL file types (enables PDF iframe + image preview)
-    const url = URL.createObjectURL(file);
-    addPreApprovalDocument({ name: file.name, size: sizeStr, type: ext, url });
+    const files = Array.from(e.target.files ?? []);
+    if (files.length === 0) return;
+    files.forEach(file => {
+      const sizeKB = file.size / 1024;
+      const sizeStr = sizeKB >= 1024 ? `${(sizeKB / 1024).toFixed(1)} MB` : `${Math.round(sizeKB)} KB`;
+      const ext = file.name.split('.').pop()?.toLowerCase() ?? 'file';
+      const url = URL.createObjectURL(file);
+      addPreApprovalDocument({ name: file.name, size: sizeStr, type: ext, url });
+    });
     e.target.value = '';
   };
 
@@ -328,18 +329,17 @@ export function PreApprovalForm({ onClose, onDone }: PreApprovalFormProps) {
             {/* Title */}
             <div className="flex flex-col gap-1.5" id="field-title">
               <label className="text-[12px] text-[#686576] font-medium flex items-center gap-1">
-                <span className="text-[#D2323F]">*</span> {t('Title')}:
+                {t('Title')}:
               </label>
               <Controller
                 name="title"
                 control={control}
-                rules={{ required: 'Title is required' }}
                 render={({ field }) => (
                   <input
                     {...field}
                     className={cn(
                       'w-full h-10 px-3 bg-[#F9FAFA] border rounded-[4px] text-[13px] text-[#1F1D25] focus:outline-none focus:ring-1 focus:ring-[#473BAB] transition-all',
-                      errors.title ? 'border-[#D2323F]' : 'border-[#CAC9CF]'
+                      'border-[#CAC9CF]'
                     )}
                     placeholder={t('Enter title')}
                   />
@@ -574,6 +574,10 @@ export function PreApprovalForm({ onClose, onDone }: PreApprovalFormProps) {
                         const raw = e.target.value.replace(/[^0-9.]/g, '');
                         updateLine(i, 'amount', raw);
                       }}
+                      onBlur={e => {
+                        const n = parseFloat(e.target.value.replace(/[^0-9.]/g, ''));
+                        if (!isNaN(n)) updateLine(i, 'amount', n.toFixed(2));
+                      }}
                       type="text"
                       inputMode="decimal"
                       placeholder="0.00"
@@ -724,6 +728,7 @@ export function PreApprovalForm({ onClose, onDone }: PreApprovalFormProps) {
               <input
                 ref={fileInputRef}
                 type="file"
+                multiple
                 accept=".pdf,.png,.jpg,.jpeg,.doc,.docx,.mp4,.webm,.mov,.avi,.m4v"
                 className="absolute w-0 h-0 opacity-0 overflow-hidden pointer-events-none"
                 tabIndex={-1}

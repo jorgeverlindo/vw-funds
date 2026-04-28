@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { X, CheckCircle2 } from 'lucide-react';
@@ -14,10 +14,14 @@ interface PreApprovalDrawerProps {
 }
 
 export function PreApprovalDrawer({ open, onClose }: PreApprovalDrawerProps) {
-  const { submitPreApproval, addPreApprovalDocument } = useWorkflow();
+  const { submitPreApproval, addPreApprovalDocument, clearPreApprovalDocuments } = useWorkflow();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [videoDrawerDoc, setVideoDrawerDoc] = useState<WorkflowDocument | null>(null);
+
+  useEffect(() => {
+    if (open) clearPreApprovalDocuments();
+  }, [open]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleSubmit = (_data: any) => {
     setIsSubmitting(true);

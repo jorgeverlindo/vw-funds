@@ -201,6 +201,7 @@ interface WorkflowContextType {
   // Document management
   addPreApprovalDocument: (doc: WorkflowDocument) => void;
   removePreApprovalDocument: (name: string) => void;
+  clearPreApprovalDocuments: () => void;
   addClaimDocument: (doc: WorkflowDocument) => void;
   removeClaimDocument: (name: string) => void;
 
@@ -672,6 +673,13 @@ export function WorkflowProvider({ children }: { children: ReactNode }) {
     }));
   }, []);
 
+  const clearPreApprovalDocuments = useCallback(() => {
+    setWorkflow(prev => ({
+      ...prev,
+      preApproval: { ...prev.preApproval, documents: [] },
+    }));
+  }, []);
+
   const addClaimDocument = useCallback((doc: WorkflowDocument) => {
     const isReply = workflow.claim.status !== 'Draft';
     const tagged: WorkflowDocument = { ...doc, phase: isReply ? 'reply' : 'initial' };
@@ -799,6 +807,7 @@ export function WorkflowProvider({ children }: { children: ReactNode }) {
         updatePreApprovalData,
         addPreApprovalDocument,
         removePreApprovalDocument,
+        clearPreApprovalDocuments,
         addClaimDocument,
         removeClaimDocument,
         resubmitPreApprovalWithComment,

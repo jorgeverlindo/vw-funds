@@ -606,7 +606,12 @@ export function VideoAnnotationDrawer({ doc, onClose }: VideoAnnotationDrawerPro
         if (pinPlacementMode) { setPinPlacementMode(false); return; }
         onClose();
       }
-      if (e.key === ' ') { e.preventDefault(); togglePlay(); }
+      if (e.key === ' ') {
+        const tag = (document.activeElement as HTMLElement)?.tagName?.toUpperCase();
+        if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || tag === 'BUTTON') return;
+        e.preventDefault();
+        togglePlay();
+      }
       if (e.key === 'ArrowLeft')  skip(-5);
       if (e.key === 'ArrowRight') skip(5);
     };

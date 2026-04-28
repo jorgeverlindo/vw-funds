@@ -99,7 +99,7 @@ export interface Claim {
 interface ClaimsPanelProps {
   claim: Claim;
   onClose: () => void;
-  userType?: 'dealer' | 'oem';
+  userType?: 'dealer' | 'dealer-singular' | 'oem';
 }
 
 export function ClaimsPanel({
@@ -504,7 +504,7 @@ export function ClaimsPanel({
           )}
 
           {/* OEM comment banner — dealer sees when revision was requested */}
-          {isWorkflowItem && userType === 'dealer' && liveStatus === 'Revision Requested' && liveOemComment && (
+          {isWorkflowItem && userType !== 'oem' && liveStatus === 'Revision Requested' && liveOemComment && (
             <section className="bg-[rgba(225,118,19,0.06)] -mx-8 px-8 py-4 border-b border-[rgba(225,118,19,0.2)]">
               <h3 className="text-[#E17613] text-[13px] font-medium mb-1.5 flex items-center gap-2">
                 <span className="w-2 h-2 rounded-full bg-[#E17613]" />
@@ -637,7 +637,7 @@ export function ClaimsPanel({
                         className="w-full h-full object-cover cursor-pointer"
                         onClick={() => setPreviewDoc(doc)}
                       />
-                      {userType === 'dealer' && (
+                      {userType !== 'oem' && (
                         <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center pointer-events-none">
                           <button
                             onClick={() => removeClaimDocument(doc.name)}
@@ -662,7 +662,7 @@ export function ClaimsPanel({
           <section>
             <div className="flex items-center justify-between mb-3">
               <h3 className="text-[#1f1d25] text-[15px] font-medium">{t('Documents')}</h3>
-              {isWorkflowItem && userType === 'dealer' && (
+              {isWorkflowItem && userType !== 'oem' && (
                 <>
                   <input
                     ref={fileInputRef}
@@ -711,7 +711,7 @@ export function ClaimsPanel({
                         >
                           <Eye className="w-4 h-4" />
                         </button>
-                        {isWorkflowItem && userType === 'dealer' && (
+                        {isWorkflowItem && userType !== 'oem' && (
                           <button
                             onClick={() => removeClaimDocument(doc.name)}
                             className="text-[#9C99A9] hover:text-[#D2323F] p-2 hover:bg-red-50 rounded-full transition-colors cursor-pointer"
@@ -748,7 +748,7 @@ export function ClaimsPanel({
               <div className="flex flex-col items-center gap-2 py-6 border border-dashed border-[#E0E0E0] rounded-xl text-center">
                 <Paperclip className="w-6 h-6 text-[#9C99A9]" />
                 <p className="text-[13px] text-[#9C99A9]">
-                  {isWorkflowItem && userType === 'dealer'
+                  {isWorkflowItem && userType !== 'oem'
                     ? 'No documents attached yet. Click Add Document to attach.'
                     : t('No documents attached')}
                 </p>

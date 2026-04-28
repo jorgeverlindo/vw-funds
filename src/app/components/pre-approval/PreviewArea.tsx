@@ -107,7 +107,7 @@ export function PreviewArea({ initialState = 'dropzone', onFilesAccepted, onDocu
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop: handleDrop,
     accept: { 'image/*': [], 'application/pdf': [], 'video/*': [] },
-    maxSize: 10485760,
+    // No maxSize — videos can be large; file size validation happens server-side
   });
 
   const handleDelete = () => {
@@ -163,7 +163,7 @@ export function PreviewArea({ initialState = 'dropzone', onFilesAccepted, onDocu
                 </svg>
               </div>
               <p className="text-[16px] font-medium text-[#1F1D25] text-center mb-2">Drop your images, fonts or videos <br/> here to start uploading</p>
-              <p className="text-[11px] text-[#686576] text-center tracking-[0.4px] max-w-[400px] leading-relaxed">Supported formats: PNG, JPG, PSD, MP3, WOFF, TTF, TTL, <br/> MP4, PDF, ZIP, MOV. Maximum file size: 10MB.</p>
+              <p className="text-[11px] text-[#686576] text-center tracking-[0.4px] max-w-[400px] leading-relaxed">Supported formats: PNG, JPG, PDF, MP4, MOV, WEBM and more.</p>
             </div>
           </motion.div>
         )}

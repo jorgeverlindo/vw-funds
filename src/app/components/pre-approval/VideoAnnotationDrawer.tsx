@@ -483,6 +483,9 @@ export function VideoAnnotationDrawer({ doc, onClose }: VideoAnnotationDrawerPro
   const [isSubmitted,  setIsSubmitted]  = useState(false);
 
   const handleFormDone = (_data: unknown) => {
+    // Collapse all open annotation bubbles before the submit overlay appears
+    setActiveAnnId(null);
+    setHoveredPinId(null);
     setIsSubmitting(true);
     setTimeout(() => {
       submitPreApproval();

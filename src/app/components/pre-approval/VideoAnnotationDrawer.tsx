@@ -36,38 +36,51 @@ interface VideoFrame {
   height: number;
 }
 
-// ─── Auto-annotation seeds (match MOCK_ANNOTATIONS from PreviewArea / Figma design)
+// ─── Temporal visibility window for canvas pins ────────────────────────────────
+// A pin is shown on the canvas only when the player is within this many
+// seconds of the annotation's timestamp (before or after).
+const VISIBILITY_WINDOW_SEC = 2;
+
+// ─── Auto-annotation seeds ────────────────────────────────────────────────────
+// Pins are clustered in the latter half of the video (50 – 90 % of duration)
+// where pricing, offer and disclaimer text typically appears in car commercials.
+// The first half (action shots, no text) is intentionally left clean.
 
 function buildAutoAnnotations(duration: number): VideoAnnotation[] {
   if (!duration || duration <= 0) return [];
   const d = duration;
   return [
+    // ~50 % — offer / price overlay appears (center of screen)
     {
-      id: uid(), timestamp: d * 0.07, xPct: 50, yPct: 18,
+      id: uid(), timestamp: d * 0.50, xPct: 48, yPct: 40,
       cataCode: '3A', title: 'Background Colors',
       description: 'Must adhere to Primary & Secondary brand color palettes. The background must not include any design elements.',
       included: true,
     },
+    // ~60 % — secondary price text (left-center)
     {
-      id: uid(), timestamp: d * 0.21, xPct: 22, yPct: 42,
+      id: uid(), timestamp: d * 0.60, xPct: 26, yPct: 54,
       cataCode: '1D', title: 'Font Types',
       description: 'Volkswagen approved fonts must be used across all assets. VW Head Light, VW Head Regular, VW Head Bold, VW Head Extra Bold, VW Text.',
       included: true,
     },
+    // ~70 % — logo / brand badge (upper-right)
     {
-      id: uid(), timestamp: d * 0.44, xPct: 72, yPct: 20,
+      id: uid(), timestamp: d * 0.70, xPct: 74, yPct: 18,
       cataCode: '3A', title: 'Logo Protection',
       description: 'The VW logo has a protected zone. Design elements or type must not intrude on this zone. The protected zone is equal to half of the logo diameter on all sides.',
       included: false,
     },
+    // ~80 % — deal-days / promo graphic (center)
     {
-      id: uid(), timestamp: d * 0.67, xPct: 78, yPct: 62,
+      id: uid(), timestamp: d * 0.80, xPct: 53, yPct: 58,
       cataCode: '2D', title: 'Assets',
       description: 'Assets may not contain graphics or unauthorized design elements outside of VW brand guidelines.',
       included: true,
     },
+    // ~90 % — fine-print disclaimer text (lower third)
     {
-      id: uid(), timestamp: d * 0.88, xPct: 48, yPct: 82,
+      id: uid(), timestamp: d * 0.90, xPct: 50, yPct: 80,
       cataCode: '2D', title: 'Protected Area',
       description: 'Logos must respect the protected area defined in the brand definition guidelines.',
       included: true,
@@ -717,6 +730,7 @@ export function VideoAnnotationDrawer({ doc, onClose }: VideoAnnotationDrawerPro
                   />
 
                   {/* InteractiveAnnotation pins — positioned over actual video frame */}
+                  {/* Each pin is shown only within ±VISIBILITY_WINDOW_SEC of its timestamp */}
                   {videoFrame && !processing && (
                     <div
                       className="absolute"
@@ -728,25 +742,41 @@ export function VideoAnnotationDrawer({ doc, onClose }: VideoAnnotationDrawerPro
                         pointerEvents: pinPlacementMode ? 'none' : 'auto',
                       }}
                     >
-                      {sortedAnnotations.map((ann, i) => (
-                        <InteractiveAnnotation
-                          key={ann.id}
-                          id={ann.id}
-                          number={i + 1}
-                          category={ann.cataCode}
-                          title={ann.title}
-                          description={ann.description}
-                          x={ann.xPct}
-                          y={ann.yPct}
-                          isOpen={displayOpenId === ann.id}
-                          onToggle={() => {
-                            setHoveredPinId(null);
-                            setActiveAnnId(activeAnnId === ann.id ? null : ann.id);
-                          }}
-                          direction="bottom-right"
-                          delay={0}
-                        />
-                      ))}
+                      <AnimatePresence>
+                        {sortedAnnotations.map((ann, i) => {
+                          const inWindow =
+                            Math.abs(ann.timestamp - currentTime) <= VISIBILITY_WINDOW_SEC;
+                          if (!inWindow) return null;
+                          return (
+                            <motion.div
+                              key={ann.id}
+                              initial={{ opacity: 0, scale: 0.6 }}
+                              animate={{ opacity: 1, scale: 1 }}
+                              exit={{ opacity: 0, scale: 0.6 }}
+                              transition={{ duration: 0.25, ease: 'easeOut' }}
+                              className="absolute inset-0 pointer-events-none"
+                              style={{ pointerEvents: 'auto' }}
+                            >
+                              <InteractiveAnnotation
+                                id={ann.id}
+                                number={i + 1}
+                                category={ann.cataCode}
+                                title={ann.title}
+                                description={ann.description}
+                                x={ann.xPct}
+                                y={ann.yPct}
+                                isOpen={displayOpenId === ann.id}
+                                onToggle={() => {
+                                  setHoveredPinId(null);
+                                  setActiveAnnId(activeAnnId === ann.id ? null : ann.id);
+                                }}
+                                direction="bottom-right"
+                                delay={0}
+                              />
+                            </motion.div>
+                          );
+                        })}
+                      </AnimatePresence>
 
                       {/* Pending pin pulse while modal is open */}
                       {pendingPin && (

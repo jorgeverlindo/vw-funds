@@ -641,13 +641,17 @@ export function WorkflowProvider({ children }: { children: ReactNode }) {
     // They are stamped with phase='reply' and also appear in the activity timeline.
     const isReply = workflow.preApproval.status !== 'Draft';
     const tagged: WorkflowDocument = { ...doc, phase: isReply ? 'reply' : 'initial' };
-    setWorkflow(prev => ({
-      ...prev,
-      preApproval: {
-        ...prev.preApproval,
-        documents: [...prev.preApproval.documents, tagged],
-      },
-    }));
+    setWorkflow(prev => {
+      // Deduplicate by URL — prevents double-adds from StrictMode or fast re-renders
+      if (prev.preApproval.documents.some(d => d.url === doc.url)) return prev;
+      return {
+        ...prev,
+        preApproval: {
+          ...prev.preApproval,
+          documents: [...prev.preApproval.documents, tagged],
+        },
+      };
+    });
     if (isReply) {
       pushEvent('preApproval', {
         actor: 'Dealer',

@@ -36,6 +36,45 @@ interface VideoFrame {
   height: number;
 }
 
+// ─── Auto-annotation seeds (match MOCK_ANNOTATIONS from PreviewArea / Figma design)
+
+function buildAutoAnnotations(duration: number): VideoAnnotation[] {
+  if (!duration || duration <= 0) return [];
+  const d = duration;
+  return [
+    {
+      id: uid(), timestamp: d * 0.07, xPct: 50, yPct: 18,
+      cataCode: '3A', title: 'Background Colors',
+      description: 'Must adhere to Primary & Secondary brand color palettes. The background must not include any design elements.',
+      included: true,
+    },
+    {
+      id: uid(), timestamp: d * 0.21, xPct: 22, yPct: 42,
+      cataCode: '1D', title: 'Font Types',
+      description: 'Volkswagen approved fonts must be used across all assets. VW Head Light, VW Head Regular, VW Head Bold, VW Head Extra Bold, VW Text.',
+      included: true,
+    },
+    {
+      id: uid(), timestamp: d * 0.44, xPct: 72, yPct: 20,
+      cataCode: '3A', title: 'Logo Protection',
+      description: 'The VW logo has a protected zone. Design elements or type must not intrude on this zone. The protected zone is equal to half of the logo diameter on all sides.',
+      included: false,
+    },
+    {
+      id: uid(), timestamp: d * 0.67, xPct: 78, yPct: 62,
+      cataCode: '2D', title: 'Assets',
+      description: 'Assets may not contain graphics or unauthorized design elements outside of VW brand guidelines.',
+      included: true,
+    },
+    {
+      id: uid(), timestamp: d * 0.88, xPct: 48, yPct: 82,
+      cataCode: '2D', title: 'Protected Area',
+      description: 'Logos must respect the protected area defined in the brand definition guidelines.',
+      included: true,
+    },
+  ].sort((a, b) => a.timestamp - b.timestamp);
+}
+
 // ─── CATA codes ───────────────────────────────────────────────────────────────
 
 const CATA_CODES = [
@@ -400,14 +439,30 @@ export function VideoAnnotationDrawer({ doc, onClose }: VideoAnnotationDrawerPro
   const { thumbs, loading: thumbsLoading } = useVideoThumbnails(doc.url, duration);
 
   // ── Processing overlay ───────────────────────────────────────────────────
-  const [processing, setProcessing] = useState(true);
+  const [processing,   setProcessing]   = useState(true);
+  const [hasSeeded,    setHasSeeded]    = useState(false);
+
   useEffect(() => {
     processingTimerRef.current = setTimeout(() => setProcessing(false), 3500);
     return () => { if (processingTimerRef.current) clearTimeout(processingTimerRef.current); };
   }, []);
+
+  // Seed auto-annotations once processing ends + duration is known
+  useEffect(() => {
+    if (!processing && duration > 0 && !hasSeeded) {
+      setAnnotations(buildAutoAnnotations(duration));
+      setHasSeeded(true);
+    }
+  }, [processing, duration, hasSeeded]);
+
   const skipProcessing = () => {
     if (processingTimerRef.current) clearTimeout(processingTimerRef.current);
     setProcessing(false);
+    // Seed immediately if duration is already available
+    if (duration > 0 && !hasSeeded) {
+      setAnnotations(buildAutoAnnotations(duration));
+      setHasSeeded(true);
+    }
   };
 
   // ── Submit state (for PreApprovalForm completion) ────────────────────────
@@ -586,9 +641,14 @@ export function VideoAnnotationDrawer({ doc, onClose }: VideoAnnotationDrawerPro
 
               {/* Left Panel — ScrollerAnnotations (same width/bg as existing image flow) */}
               <div className="w-[220px] shrink-0 flex flex-col bg-[#f0f2f4] border-r border-[rgba(0,0,0,0.08)]">
-                {/* Panel header */}
-                <div className="px-3 py-3 border-b border-[rgba(0,0,0,0.08)] shrink-0">
-                  <p className="text-[11px] font-semibold text-[#1F1D25] font-['Roboto'] truncate">{doc.name}</p>
+                {/* Panel header — no bottom border; tooltip shows full filename on hover */}
+                <div className="px-3 py-3 shrink-0">
+                  <p
+                    className="text-[11px] font-semibold text-[#1F1D25] font-['Roboto'] truncate cursor-default"
+                    title={doc.name}
+                  >
+                    {doc.name}
+                  </p>
                   {annotations.length > 0 && (
                     <p className="text-[10px] text-[#473BAB] mt-0.5 font-medium font-['Roboto']">
                       {annotations.length} annotation{annotations.length !== 1 ? 's' : ''} · {includedCount} in report
@@ -654,7 +714,6 @@ export function VideoAnnotationDrawer({ doc, onClose }: VideoAnnotationDrawerPro
                     onPlay={() => setIsPlaying(true)}
                     onPause={() => setIsPlaying(false)}
                     onEnded={() => setIsPlaying(false)}
-                    onClick={(e) => e.stopPropagation()}
                   />
 
                   {/* InteractiveAnnotation pins — positioned over actual video frame */}

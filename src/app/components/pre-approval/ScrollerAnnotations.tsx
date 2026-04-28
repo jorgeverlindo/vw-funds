@@ -1,3 +1,4 @@
+import { Trash2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 export interface AnnotationItem {
@@ -9,6 +10,10 @@ export interface AnnotationItem {
   x: number;
   y: number;
   direction?: 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right';
+  /** Seconds — shown as MM:SS when provided */
+  timestamp?: number;
+  /** Whether this annotation is included in the compliance report */
+  included?: boolean;
 }
 
 interface ScrollerAnnotationsProps {
@@ -16,6 +21,18 @@ interface ScrollerAnnotationsProps {
   activeId: string | null;
   onSelect: (id: string) => void;
   className?: string;
+  /** Called when the Include checkbox is toggled (video annotations) */
+  onToggleInclude?: (id: string) => void;
+  /** Called when the Delete button is clicked (video annotations) */
+  onDelete?: (id: string) => void;
+  /** Empty-state message override */
+  emptyMessage?: string;
+}
+
+function fmtTime(s: number): string {
+  const m = Math.floor(s / 60);
+  const sec = Math.floor(s % 60);
+  return `${m}:${sec.toString().padStart(2, '0')}`;
 }
 
 export function ScrollerAnnotations({
@@ -23,6 +40,9 @@ export function ScrollerAnnotations({
   activeId,
   onSelect,
   className,
+  onToggleInclude,
+  onDelete,
+  emptyMessage,
 }: ScrollerAnnotationsProps) {
   return (
     <div className={cn("relative h-full flex flex-col w-[200px] overflow-hidden rounded-bl-[12px] rounded-tl-[12px] bg-white", className)}>
@@ -53,8 +73,13 @@ export function ScrollerAnnotations({
               </svg>
             </div>
             <div className="text-center">
-              <p className="text-[12px] font-semibold text-[#1F1D25]">No Issues Found</p>
-              <p className="text-[10px] text-[#686576] mt-1 leading-relaxed">All brand guidelines<br/>have been accepted.</p>
+              {emptyMessage
+                ? <p className="text-[12px] font-semibold text-[#1F1D25]">{emptyMessage}</p>
+                : <>
+                    <p className="text-[12px] font-semibold text-[#1F1D25]">No Issues Found</p>
+                    <p className="text-[10px] text-[#686576] mt-1 leading-relaxed">All brand guidelines<br/>have been accepted.</p>
+                  </>
+              }
             </div>
           </div>
         )}
@@ -92,7 +117,7 @@ export function ScrollerAnnotations({
               </div>
 
               {/* Right Side: Content */}
-              <div className="flex flex-col gap-1.5 pt-0.5 min-w-0">
+              <div className="flex flex-col gap-1.5 pt-0.5 min-w-0 flex-1">
                 <h4 className="text-[11px] font-bold text-[#1F1D25] leading-tight font-['Roboto'] break-words">
                   {item.title}
                 </h4>
@@ -101,6 +126,50 @@ export function ScrollerAnnotations({
                 </p>
               </div>
             </div>
+
+            {/* Include checkbox + timestamp + delete — shown only for video annotations */}
+            {(onToggleInclude || onDelete) && (
+              <div
+                className="flex items-center justify-between border-t border-[rgba(0,0,0,0.08)] pt-[4px] mt-1 mx-[8px] mb-[4px]"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <div className="flex items-center gap-1.5">
+                  {onToggleInclude && (
+                    <button
+                      onClick={() => onToggleInclude(item.id)}
+                      className="flex items-center gap-1 text-[10px] font-bold text-[#1F1D25] font-['Roboto'] hover:text-[#473bab] transition-colors cursor-pointer"
+                    >
+                      <div className={cn(
+                        'w-[14px] h-[14px] rounded-[3px] border flex items-center justify-center transition-colors',
+                        item.included
+                          ? 'bg-[#473bab] border-[#473bab]'
+                          : 'bg-white border-[rgba(0,0,0,0.38)]'
+                      )}>
+                        {item.included && (
+                          <svg width="9" height="7" viewBox="0 0 9 7" fill="none">
+                            <path d="M1 3.5L3.5 6L8 1" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                          </svg>
+                        )}
+                      </div>
+                      Include
+                    </button>
+                  )}
+                  {item.timestamp !== undefined && (
+                    <span className="text-[9px] text-[#9C99A9] font-['Roboto'] ml-1">
+                      {fmtTime(item.timestamp)}
+                    </span>
+                  )}
+                </div>
+                {onDelete && (
+                  <button
+                    onClick={() => onDelete(item.id)}
+                    className="p-0.5 text-[#9C99A9] hover:text-[#D2323F] transition-colors cursor-pointer"
+                  >
+                    <Trash2 className="w-3 h-3" />
+                  </button>
+                )}
+              </div>
+            )}
           </div>
         ))}
       </div>

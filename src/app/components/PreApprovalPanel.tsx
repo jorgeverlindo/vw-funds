@@ -449,7 +449,7 @@ export function PreApprovalPanel({
                   <input
                     ref={fileInputRef}
                     type="file"
-                    accept=".pdf,.png,.jpg,.jpeg,.doc,.docx"
+                    accept=".pdf,.png,.jpg,.jpeg,.doc,.docx,.mp4,.webm,.mov,.avi,.m4v"
                     className="absolute w-0 h-0 opacity-0 overflow-hidden pointer-events-none"
                     onChange={handleFileChange}
                     tabIndex={-1}

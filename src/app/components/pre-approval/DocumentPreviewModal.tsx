@@ -2,6 +2,7 @@ import { createPortal } from 'react-dom';
 import { X, FileText, Download } from 'lucide-react';
 import { WorkflowDocument } from '@/app/contexts/WorkflowContext';
 import { PDFViewer } from './PDFViewer';
+import { VideoAnnotationDrawer } from './VideoAnnotationDrawer';
 
 interface DocumentPreviewModalProps {
   doc: WorkflowDocument;
@@ -12,7 +13,13 @@ export function DocumentPreviewModal({ doc, onClose }: DocumentPreviewModalProps
   const ext = doc.type.toLowerCase();
   const isImage = doc.url && ['png', 'jpg', 'jpeg', 'gif', 'webp'].includes(ext);
   const isPDF   = doc.url && ext === 'pdf';
+  const isVideo = doc.url && ['mp4', 'webm', 'mov', 'avi', 'm4v'].includes(ext);
   const hasPreview = isImage || isPDF;
+
+  // Video files get their own full-screen drawer experience
+  if (isVideo) {
+    return <VideoAnnotationDrawer doc={doc} onClose={onClose} />;
+  }
 
   return createPortal(
     <div className="fixed inset-0 z-[10000] flex items-center justify-center p-4">

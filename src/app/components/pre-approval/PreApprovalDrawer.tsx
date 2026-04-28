@@ -4,7 +4,9 @@ import { motion, AnimatePresence } from 'motion/react';
 import { X, CheckCircle2 } from 'lucide-react';
 import { PreviewArea } from './PreviewArea';
 import { PreApprovalForm } from './PreApprovalForm';
+import { VideoAnnotationDrawer } from './VideoAnnotationDrawer';
 import { useWorkflow } from '@/app/contexts/WorkflowContext';
+import type { WorkflowDocument } from '@/app/contexts/WorkflowContext';
 
 interface PreApprovalDrawerProps {
   open: boolean;
@@ -15,6 +17,7 @@ export function PreApprovalDrawer({ open, onClose }: PreApprovalDrawerProps) {
   const { submitPreApproval, addPreApprovalDocument } = useWorkflow();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const [videoDrawerDoc, setVideoDrawerDoc] = useState<WorkflowDocument | null>(null);
 
   const handleSubmit = (_data: any) => {
     setIsSubmitting(true);
@@ -33,6 +36,14 @@ export function PreApprovalDrawer({ open, onClose }: PreApprovalDrawerProps) {
 
   return createPortal(
     <>
+      {/* VideoAnnotationDrawer — opens on top of everything when a video is uploaded */}
+      {videoDrawerDoc && (
+        <VideoAnnotationDrawer
+          doc={videoDrawerDoc}
+          onClose={() => setVideoDrawerDoc(null)}
+        />
+      )}
+
       <AnimatePresence>
         {open && (
           <div className="fixed inset-0 z-[9999] flex items-center justify-center isolate">
@@ -74,7 +85,10 @@ export function PreApprovalDrawer({ open, onClose }: PreApprovalDrawerProps) {
               <div className="flex-1 flex min-h-0 relative">
                 {/* Left Pane: Preview Area */}
                 <div className="flex-1 p-4 bg-white min-w-0">
-                  <PreviewArea onDocumentAdded={addPreApprovalDocument} />
+                  <PreviewArea
+                    onDocumentAdded={addPreApprovalDocument}
+                    onVideoUploaded={(doc) => setVideoDrawerDoc(doc)}
+                  />
                 </div>
 
                 {/* Divider */}

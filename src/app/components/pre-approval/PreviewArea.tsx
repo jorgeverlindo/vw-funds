@@ -27,6 +27,9 @@ interface PreviewAreaProps {
   initialState?: PreviewState;
   onFilesAccepted?: (files: File[]) => void;
   onDocumentAdded?: (doc: { name: string; size: string; type: string; url: string }) => void;
+  /** Called when a video file is dropped/selected — instead of showing inline, the
+   *  caller should open the VideoAnnotationDrawer with this doc. */
+  onVideoUploaded?: (doc: { name: string; size: string; type: string; url: string }) => void;
 }
 
 // Mock Annotations
@@ -49,7 +52,7 @@ const DEMO_FILES = [
   { url: imgNextAd,   annotations: NEXT_AD_ANNOTATIONS },
 ];
 
-export function PreviewArea({ initialState = 'dropzone', onFilesAccepted, onDocumentAdded }: PreviewAreaProps) {
+export function PreviewArea({ initialState = 'dropzone', onFilesAccepted, onDocumentAdded, onVideoUploaded }: PreviewAreaProps) {
   const [state, setState] = useState<PreviewState>(initialState);
   const [viewMode, setViewMode] = useState<ViewMode>('single');
   const [activeAnnotationId, setActiveAnnotationId] = useState<string | null>(null);
@@ -86,17 +89,34 @@ export function PreviewArea({ initialState = 'dropzone', onFilesAccepted, onDocu
   // ── Handlers ──────────────────────────────────────────────────────────────
   const handleDrop = (files: File[]) => {
     if (files.length === 0) return;
-    const newEntries = files.map(f => ({ url: URL.createObjectURL(f), annotations: MOCK_ANNOTATIONS, mimeType: f.type }));
+
+    // ── Video files → trigger VideoAnnotationDrawer, skip inline preview ──
+    const videoFiles = files.filter(f => f.type.startsWith('video/'));
+    const mediaFiles = files.filter(f => !f.type.startsWith('video/'));
+
+    videoFiles.forEach(f => {
+      const sizeKB = f.size / 1024;
+      const sizeStr = sizeKB >= 1024 ? `${(sizeKB / 1024).toFixed(1)} MB` : `${sizeKB.toFixed(0)} KB`;
+      const ext = f.name.split('.').pop()?.toLowerCase() ?? 'file';
+      const url = URL.createObjectURL(f);
+      const doc = { name: f.name, size: sizeStr, type: ext, url };
+      onDocumentAdded?.(doc);    // add to workflow documents
+      onVideoUploaded?.(doc);    // open VideoAnnotationDrawer
+    });
+
+    // ── Non-video files → existing inline preview behaviour ──
+    if (mediaFiles.length === 0) return;
+
+    const newEntries = mediaFiles.map(f => ({ url: URL.createObjectURL(f), annotations: MOCK_ANNOTATIONS, mimeType: f.type }));
     setUploadedFiles(prev => [...prev, ...newEntries]);
     setState('loading');
     setTimeout(() => {
       setState('populated');
       setShowOnboarding(true);
-      setCurrentIndex(uploadedFiles.length); // first newly uploaded file
+      setCurrentIndex(uploadedFiles.length);
     }, 1500);
-    onFilesAccepted?.(files);
-    // Sync image files to the workflow document store so the panel carousel shows them
-    files.forEach((f, i) => {
+    onFilesAccepted?.(mediaFiles);
+    mediaFiles.forEach((f, i) => {
       const ext = f.name.split('.').pop()?.toLowerCase() ?? 'file';
       const sizeKB = f.size / 1024;
       const sizeStr = sizeKB >= 1024 ? `${(sizeKB / 1024).toFixed(1)} MB` : `${sizeKB.toFixed(0)} KB`;

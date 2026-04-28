@@ -84,6 +84,13 @@ export interface WorkflowDocument {
   type: string;
   /** Blob URL for image previews — set when an image file is uploaded */
   url?: string;
+  /**
+   * 'initial' = attached during the Draft phase (before first submission).
+   * 'reply'   = attached after the PA/Claim was already submitted (e.g. dealer
+   *              responds to an OEM revision request with proof). Reply docs are
+   *              shown in the Activity timeline, not mixed with the initial docs.
+   */
+  phase?: 'initial' | 'reply';
 }
 
 export interface WorkflowEvent {
@@ -93,6 +100,8 @@ export interface WorkflowEvent {
   actorName: string;
   action: string;
   comment?: string;
+  /** Files attached as part of this activity (reply attachments) */
+  attachments?: WorkflowDocument[];
 }
 
 export interface WorkflowNotification {
@@ -628,14 +637,26 @@ export function WorkflowProvider({ children }: { children: ReactNode }) {
   // ── Document management ───────────────────────────────────────────────────
 
   const addPreApprovalDocument = useCallback((doc: WorkflowDocument) => {
+    // Documents added after the initial Draft phase are "reply" attachments.
+    // They are stamped with phase='reply' and also appear in the activity timeline.
+    const isReply = workflow.preApproval.status !== 'Draft';
+    const tagged: WorkflowDocument = { ...doc, phase: isReply ? 'reply' : 'initial' };
     setWorkflow(prev => ({
       ...prev,
       preApproval: {
         ...prev.preApproval,
-        documents: [...prev.preApproval.documents, doc],
+        documents: [...prev.preApproval.documents, tagged],
       },
     }));
-  }, []);
+    if (isReply) {
+      pushEvent('preApproval', {
+        actor: 'Dealer',
+        actorName: WORKFLOW_DEALER.contact,
+        action: 'Document attached',
+        attachments: [tagged],
+      });
+    }
+  }, [pushEvent, workflow.preApproval.status]);
 
   const removePreApprovalDocument = useCallback((name: string) => {
     setWorkflow(prev => ({
@@ -648,11 +669,21 @@ export function WorkflowProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const addClaimDocument = useCallback((doc: WorkflowDocument) => {
+    const isReply = workflow.claim.status !== 'Draft';
+    const tagged: WorkflowDocument = { ...doc, phase: isReply ? 'reply' : 'initial' };
     setWorkflow(prev => ({
       ...prev,
-      claim: { ...prev.claim, documents: [...prev.claim.documents, doc] },
+      claim: { ...prev.claim, documents: [...prev.claim.documents, tagged] },
     }));
-  }, []);
+    if (isReply) {
+      pushEvent('claim', {
+        actor: 'Dealer',
+        actorName: WORKFLOW_DEALER.contact,
+        action: 'Document attached',
+        attachments: [tagged],
+      });
+    }
+  }, [pushEvent, workflow.claim.status]);
 
   const removeClaimDocument = useCallback((name: string) => {
     setWorkflow(prev => ({

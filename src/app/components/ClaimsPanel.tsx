@@ -123,7 +123,6 @@ export function ClaimsPanel({
   const [oemDraftComment, setOemDraftComment] = useState('');
   const [dealerDraftComment, setDealerDraftComment] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const replyFileInputRef = useRef<HTMLInputElement>(null);
   const [previewDoc, setPreviewDoc] = useState<typeof wfCL.documents[number] | null>(null);
 
   // ── Penalty form state ────────────────────────────────────────────────────
@@ -257,31 +256,13 @@ export function ClaimsPanel({
       if (canReview) {
         return (
           <div className="space-y-3">
-            <div className="relative">
-              <textarea
-                value={oemDraftComment}
-                onChange={(e) => setOemDraftComment(e.target.value)}
-                placeholder="Add a comment (required for Request Adjustments)…"
-                rows={3}
-                className="w-full rounded-xl border border-[#E0E0E0] px-3 py-2 pr-10 text-[13px] text-[#1f1d25] placeholder:text-[#9C99A9] resize-none focus:outline-none focus:border-[var(--brand-accent)] transition-colors"
-              />
-              <input
-                ref={replyFileInputRef}
-                type="file"
-                accept=".pdf,.png,.jpg,.jpeg,.doc,.docx"
-                className="absolute w-0 h-0 opacity-0 overflow-hidden pointer-events-none"
-                onChange={handleFileChange}
-                tabIndex={-1}
-              />
-              <button
-                type="button"
-                onClick={() => replyFileInputRef.current?.click()}
-                className="absolute bottom-2 right-2 p-1.5 rounded-full hover:bg-gray-100 text-[#9C99A9] hover:text-[#686576] transition-colors cursor-pointer"
-                title="Attach file"
-              >
-                <Paperclip className="w-4 h-4" />
-              </button>
-            </div>
+            <textarea
+              value={oemDraftComment}
+              onChange={(e) => setOemDraftComment(e.target.value)}
+              placeholder="Add a comment (required for Request Adjustments)…"
+              rows={3}
+              className="w-full rounded-xl border border-[#E0E0E0] px-3 py-2 text-[13px] text-[#1f1d25] placeholder:text-[#9C99A9] resize-none focus:outline-none focus:border-[var(--brand-accent)] transition-colors"
+            />
             <div className="flex justify-end gap-3">
               <button
                 onClick={onClose}
@@ -366,31 +347,13 @@ export function ClaimsPanel({
     if (liveStatus === 'Revision Requested') {
       return (
         <div className="space-y-3">
-          <div className="relative">
-            <textarea
-              value={dealerDraftComment}
-              onChange={(e) => setDealerDraftComment(e.target.value)}
-              placeholder="Add a reply to the OEM (optional)…"
-              rows={3}
-              className="w-full rounded-xl border border-[#E0E0E0] px-3 py-2 pr-10 text-[13px] text-[#1f1d25] placeholder:text-[#9C99A9] resize-none focus:outline-none focus:border-[var(--brand-accent)] transition-colors"
-            />
-            <input
-              ref={replyFileInputRef}
-              type="file"
-              accept=".pdf,.png,.jpg,.jpeg,.doc,.docx"
-              className="absolute w-0 h-0 opacity-0 overflow-hidden pointer-events-none"
-              onChange={handleFileChange}
-              tabIndex={-1}
-            />
-            <button
-              type="button"
-              onClick={() => replyFileInputRef.current?.click()}
-              className="absolute bottom-2 right-2 p-1.5 rounded-full hover:bg-gray-100 text-[#9C99A9] hover:text-[#686576] transition-colors cursor-pointer"
-              title="Attach a file to prove the correction"
-            >
-              <Paperclip className="w-4 h-4" />
-            </button>
-          </div>
+          <textarea
+            value={dealerDraftComment}
+            onChange={(e) => setDealerDraftComment(e.target.value)}
+            placeholder="Add a reply to the OEM (optional)…"
+            rows={3}
+            className="w-full rounded-xl border border-[#E0E0E0] px-3 py-2 text-[13px] text-[#1f1d25] placeholder:text-[#9C99A9] resize-none focus:outline-none focus:border-[var(--brand-accent)] transition-colors"
+          />
           <div className="flex justify-end gap-3">
             <button
               onClick={onClose}
@@ -974,7 +937,10 @@ export function ClaimsPanel({
 
           {/* Workflow Activity Timeline */}
           {isWorkflowItem && wfCL.history.length > 0 && (
-            <WorkflowHistoryTimeline history={wfCL.history} />
+            <WorkflowHistoryTimeline
+              history={wfCL.history}
+              onPreviewDoc={setPreviewDoc}
+            />
           )}
 
         </div>

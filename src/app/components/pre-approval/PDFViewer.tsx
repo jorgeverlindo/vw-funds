@@ -9,18 +9,19 @@ interface PDFViewerProps {
 }
 
 export function PDFViewer({ url, fileName }: PDFViewerProps) {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const canvasRef   = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const renderTaskRef = useRef<{ cancel: () => void } | null>(null);
 
-  const [numPages, setNumPages] = useState(0);
+  const [numPages, setNumPages]     = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
-  const [scale, setScale] = useState(1.2);
-  const [rotation, setRotation] = useState(0);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [scale, setScale]           = useState(1);   // set after first page load
+  const [fitScale, setFitScale]     = useState(1);   // "fit to width" baseline
+  const [rotation, setRotation]     = useState(0);
+  const [loading, setLoading]       = useState(true);
+  const [error, setError]           = useState<string | null>(null);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const [pdfDoc, setPdfDoc] = useState<any>(null);
+  const [pdfDoc, setPdfDoc]         = useState<any>(null);
 
   // Load PDF.js lazily (client-side only) to avoid SSR issues
   useEffect(() => {
@@ -31,9 +32,7 @@ export function PDFViewer({ url, fileName }: PDFViewerProps) {
         setLoading(true);
         setError(null);
 
-        // Dynamic import so the 1 MB worker bundle doesn't hit SSR
         const pdfjsLib = await import('pdfjs-dist/build/pdf');
-        // Vite resolves new URL(..., import.meta.url) at build time → correct asset URL
         pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
           'pdfjs-dist/build/pdf.worker.min.js',
           import.meta.url,
@@ -41,10 +40,21 @@ export function PDFViewer({ url, fileName }: PDFViewerProps) {
 
         const doc = await pdfjsLib.getDocument(url).promise;
         if (cancelled) return;
+
+        // Compute a "fit to width" scale from the first page's natural size
+        const firstPage  = await doc.getPage(1);
+        const naturalVp  = firstPage.getViewport({ scale: 1, rotation: 0 });
+        // Container padding: 2 × p-4 (16px each) = 32px, plus a 4px safety margin
+        const containerW = containerRef.current?.clientWidth ?? 700;
+        const computed   = Math.floor(((containerW - 36) / naturalVp.width) * 100) / 100;
+        const clamped    = Math.min(Math.max(computed, 0.5), 3);
+
         setNumPages(doc.numPages);
         setPdfDoc(doc);
+        setFitScale(clamped);
+        setScale(clamped);
         setCurrentPage(1);
-      } catch (e) {
+      } catch {
         if (!cancelled) setError('Could not load PDF. Try the download button.');
       } finally {
         if (!cancelled) setLoading(false);
@@ -59,17 +69,16 @@ export function PDFViewer({ url, fileName }: PDFViewerProps) {
   const renderPage = useCallback(async () => {
     if (!pdfDoc || !canvasRef.current) return;
 
-    // Cancel any in-progress render
     if (renderTaskRef.current) {
       renderTaskRef.current.cancel();
       renderTaskRef.current = null;
     }
 
     try {
-      const page = await pdfDoc.getPage(currentPage);
+      const page     = await pdfDoc.getPage(currentPage);
       const viewport = page.getViewport({ scale, rotation });
-      const canvas = canvasRef.current;
-      const ctx = canvas.getContext('2d');
+      const canvas   = canvasRef.current;
+      const ctx      = canvas.getContext('2d');
       if (!ctx) return;
 
       canvas.width  = viewport.width;
@@ -80,7 +89,6 @@ export function PDFViewer({ url, fileName }: PDFViewerProps) {
       await task.promise;
       renderTaskRef.current = null;
     } catch (e: unknown) {
-      // RenderingCancelledException is thrown when we cancel — ignore it
       if (e instanceof Error && e.name !== 'RenderingCancelledException') {
         setError('Error rendering page.');
       }
@@ -89,10 +97,14 @@ export function PDFViewer({ url, fileName }: PDFViewerProps) {
 
   useEffect(() => { renderPage(); }, [renderPage]);
 
-  const goTo = (p: number) => setCurrentPage(Math.min(Math.max(1, p), numPages));
-  const zoomIn  = () => setScale(s => Math.min(s + 0.25, 3));
-  const zoomOut = () => setScale(s => Math.max(s - 0.25, 0.5));
+  const goTo    = (p: number) => setCurrentPage(Math.min(Math.max(1, p), numPages));
+  const zoomIn  = () => setScale(s => Math.min(+(s + 0.25).toFixed(2), 3));
+  const zoomOut = () => setScale(s => Math.max(+(s - 0.25).toFixed(2), 0.5));
+  const fitWidth = () => setScale(fitScale);
   const rotate  = () => setRotation(r => (r + 90) % 360);
+
+  // Percentage relative to fit-width scale, so 100% always means "fits the container"
+  const pct = fitScale > 0 ? Math.round((scale / fitScale) * 100) : Math.round(scale * 100);
 
   if (loading) {
     return (
@@ -125,7 +137,7 @@ export function PDFViewer({ url, fileName }: PDFViewerProps) {
           >
             <ChevronLeft className="w-4 h-4 text-[#686576]" />
           </button>
-          <span className="text-[12px] text-[#686576] min-w-[72px] text-center select-none">
+          <span className="text-[12px] text-[#686576] min-w-[64px] text-center select-none">
             {currentPage} / {numPages}
           </span>
           <button
@@ -137,7 +149,7 @@ export function PDFViewer({ url, fileName }: PDFViewerProps) {
           </button>
         </div>
 
-        {/* Zoom + rotate */}
+        {/* Zoom + fit + rotate */}
         <div className="flex items-center gap-1">
           <button
             onClick={zoomOut}
@@ -146,9 +158,14 @@ export function PDFViewer({ url, fileName }: PDFViewerProps) {
           >
             <ZoomOut className="w-4 h-4 text-[#686576]" />
           </button>
-          <span className="text-[12px] text-[#686576] min-w-[44px] text-center select-none">
-            {Math.round(scale * 100)}%
-          </span>
+          {/* Click the percentage to snap back to fit-width */}
+          <button
+            onClick={fitWidth}
+            className="text-[12px] text-[#686576] min-w-[44px] text-center select-none hover:text-[var(--brand-accent)] transition-colors cursor-pointer"
+            title="Click to fit width"
+          >
+            {pct}%
+          </button>
           <button
             onClick={zoomIn}
             disabled={scale >= 3}
@@ -160,14 +177,14 @@ export function PDFViewer({ url, fileName }: PDFViewerProps) {
           <button
             onClick={rotate}
             className="p-1.5 rounded-full hover:bg-gray-100 transition-colors cursor-pointer"
-            title="Rotate"
+            title="Rotate 90°"
           >
             <RotateCw className="w-4 h-4 text-[#686576]" />
           </button>
         </div>
       </div>
 
-      {/* Canvas scroll area */}
+      {/* Canvas scroll area — overflow-auto so user can scroll if they zoom in */}
       <div
         ref={containerRef}
         className="flex-1 overflow-auto bg-[#F0F2F4] flex items-start justify-center p-4"

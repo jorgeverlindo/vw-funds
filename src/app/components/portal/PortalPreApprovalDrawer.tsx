@@ -97,7 +97,7 @@ export function PortalPreApprovalDrawer({ open, onClose, assets }: PortalPreAppr
 
                 {/* Right Pane: Form */}
                 <div className="w-[380px] flex-none h-full overflow-hidden bg-[#F9FAFA]">
-                  <PreApprovalForm onClose={onClose} onDone={handleSubmit} />
+                  <PreApprovalForm isolated onClose={onClose} onDone={handleSubmit} />
                 </div>
 
                 {/* Submitting/Success Overlay */}

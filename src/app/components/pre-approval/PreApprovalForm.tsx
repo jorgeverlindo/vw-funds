@@ -36,6 +36,14 @@ interface PreApprovalFormProps {
   /** When provided the ⓘ icon becomes an active button that opens the
    *  full video annotation drawer for the currently uploaded video. */
   onOpenAnnotationMode?: () => void;
+  /**
+   * When true the form is fully detached from WorkflowContext:
+   *  - `updatePreApprovalData` is NOT called on field changes (prevents
+   *    portal submissions from overwriting the main workflow PA)
+   *  - Documents are kept in local state instead of `workflow.preApproval.documents`
+   *  - The ID field shows "Auto-assigned" instead of the live workflow PA id
+   */
+  isolated?: boolean;
 }
 
 // ─── Constants ─────────────────────────────────────────────────────────────
@@ -111,7 +119,7 @@ function formatRange(range: DateRange | undefined): string {
 
 // ─── Component ─────────────────────────────────────────────────────────────
 
-export function PreApprovalForm({ onClose, onDone, onOpenAnnotationMode }: PreApprovalFormProps) {
+export function PreApprovalForm({ onClose, onDone, onOpenAnnotationMode, isolated = false }: PreApprovalFormProps) {
   const { t } = useTranslation();
   const { workflow, addPreApprovalDocument, removePreApprovalDocument, updatePreApprovalData } = useWorkflow();
   const { isLockedDealership } = useFilters();
@@ -209,9 +217,12 @@ export function PreApprovalForm({ onClose, onDone, onOpenAnnotationMode }: PreAp
   const watchedContactInfo = watch('contactInfo');
 
   // ── Sync with WorkflowContext ──────────────────────────────────────────────
-  // hasMounted prevents the first fire from overwriting context pre-populated data
+  // hasMounted prevents the first fire from overwriting context pre-populated data.
+  // When `isolated=true` (portal flow) we skip this entirely so the portal form
+  // never overwrites the main workflow PA state.
   const hasMounted = useRef(false);
   useEffect(() => {
+    if (isolated) return;
     if (!hasMounted.current) {
       hasMounted.current = true;
       return;
@@ -228,7 +239,7 @@ export function PreApprovalForm({ onClose, onDone, onOpenAnnotationMode }: PreAp
       watchedContactInfo ?? '',
     );
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [computedTotal, activityRange, claimLines, watchedTitle, watchedMediaType, watchedDetails, watchedContactInfo]);
+  }, [isolated, computedTotal, activityRange, claimLines, watchedTitle, watchedMediaType, watchedDetails, watchedContactInfo]);
 
   // ── Expanded info ─────────────────────────────────────────────────────────
   const [isExpanded, setIsExpanded] = useState(false);
@@ -275,6 +286,10 @@ export function PreApprovalForm({ onClose, onDone, onOpenAnnotationMode }: PreAp
   const isOverBudget = computedTotal > 0 && availableFunds > 0 && computedTotal > availableFunds;
 
   // ── File upload ───────────────────────────────────────────────────────────
+  // When `isolated=true` (portal flow) docs are held in local state so they
+  // never leak into the main workflow PA.  When false, the WorkflowContext is
+  // the single source of truth as before.
+  const [localDocs, setLocalDocs] = useState<typeof workflow.preApproval.documents>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -285,13 +300,25 @@ export function PreApprovalForm({ onClose, onDone, onOpenAnnotationMode }: PreAp
       const sizeStr = sizeKB >= 1024 ? `${(sizeKB / 1024).toFixed(1)} MB` : `${Math.round(sizeKB)} KB`;
       const ext = file.name.split('.').pop()?.toLowerCase() ?? 'file';
       const url = URL.createObjectURL(file);
-      addPreApprovalDocument({ name: file.name, size: sizeStr, type: ext, url });
+      if (isolated) {
+        setLocalDocs(prev => [...prev, { name: file.name, size: sizeStr, type: ext, url }]);
+      } else {
+        addPreApprovalDocument({ name: file.name, size: sizeStr, type: ext, url });
+      }
     });
     e.target.value = '';
   };
 
-  // Documents are always read from WorkflowContext (single source of truth)
-  const uploadedDocs = workflow.preApproval.documents;
+  const handleRemoveDoc = (name: string) => {
+    if (isolated) {
+      setLocalDocs(prev => prev.filter(d => d.name !== name));
+    } else {
+      removePreApprovalDocument(name);
+    }
+  };
+
+  // Source of truth for the displayed doc list
+  const uploadedDocs = isolated ? localDocs : workflow.preApproval.documents;
 
   // ── Document preview modal ────────────────────────────────────────────────
   const [previewDoc, setPreviewDoc] = useState<typeof uploadedDocs[number] | null>(null);
@@ -372,7 +399,7 @@ export function PreApprovalForm({ onClose, onDone, onOpenAnnotationMode }: PreAp
                 type="text"
                 readOnly
                 disabled
-                value={wfPA.id}
+                value={isolated ? 'Auto-assigned' : wfPA.id}
                 className="w-full h-10 px-3 bg-[#F0F2F4] border border-[#CAC9CF] rounded-[4px] text-[13px] text-[#686576] cursor-not-allowed select-none"
               />
             </div>
@@ -785,7 +812,7 @@ export function PreApprovalForm({ onClose, onDone, onOpenAnnotationMode }: PreAp
                           </button>
                           <button
                             type="button"
-                            onClick={() => removePreApprovalDocument(doc.name)}
+                            onClick={() => handleRemoveDoc(doc.name)}
                             className="p-1.5 text-[#9C99A9] hover:text-[#D2323F] hover:bg-red-50 rounded-full transition-colors cursor-pointer"
                           >
                             <Trash2 className="w-4 h-4" />

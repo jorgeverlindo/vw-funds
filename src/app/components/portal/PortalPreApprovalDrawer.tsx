@@ -14,9 +14,13 @@ interface PortalPreApprovalDrawerProps {
 }
 
 export function PortalPreApprovalDrawer({ open, onClose, assets }: PortalPreApprovalDrawerProps) {
-  const { addPortalSubmission } = useWorkflow();
+  const { addPortalSubmission, peekNextPortalId } = useWorkflow();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
+
+  // Pre-generate the ID that will be used for this submission so the form can
+  // display it before the user hits Submit. Captured once when the drawer mounts.
+  const [pendingPortalId] = useState(() => peekNextPortalId());
 
   // Close on Escape key
   useEffect(() => {
@@ -97,7 +101,7 @@ export function PortalPreApprovalDrawer({ open, onClose, assets }: PortalPreAppr
 
                 {/* Right Pane: Form */}
                 <div className="w-[380px] flex-none h-full overflow-hidden bg-[#F9FAFA]">
-                  <PreApprovalForm isolated onClose={onClose} onDone={handleSubmit} />
+                  <PreApprovalForm isolated previewId={pendingPortalId} onClose={onClose} onDone={handleSubmit} />
                 </div>
 
                 {/* Submitting/Success Overlay */}

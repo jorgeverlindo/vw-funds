@@ -41,9 +41,14 @@ interface PreApprovalFormProps {
    *  - `updatePreApprovalData` is NOT called on field changes (prevents
    *    portal submissions from overwriting the main workflow PA)
    *  - Documents are kept in local state instead of `workflow.preApproval.documents`
-   *  - The ID field shows "Auto-assigned" instead of the live workflow PA id
+   *  - The ID field shows `previewId` (if provided) instead of the live workflow PA id
    */
   isolated?: boolean;
+  /**
+   * Pre-generated ID to display in the read-only ID field when `isolated=true`.
+   * Typically the result of `peekNextPortalId()` captured when the drawer mounts.
+   */
+  previewId?: string;
 }
 
 // ─── Constants ─────────────────────────────────────────────────────────────
@@ -119,7 +124,7 @@ function formatRange(range: DateRange | undefined): string {
 
 // ─── Component ─────────────────────────────────────────────────────────────
 
-export function PreApprovalForm({ onClose, onDone, onOpenAnnotationMode, isolated = false }: PreApprovalFormProps) {
+export function PreApprovalForm({ onClose, onDone, onOpenAnnotationMode, isolated = false, previewId }: PreApprovalFormProps) {
   const { t } = useTranslation();
   const { workflow, addPreApprovalDocument, removePreApprovalDocument, updatePreApprovalData } = useWorkflow();
   const { isLockedDealership } = useFilters();
@@ -399,7 +404,7 @@ export function PreApprovalForm({ onClose, onDone, onOpenAnnotationMode, isolate
                 type="text"
                 readOnly
                 disabled
-                value={isolated ? 'Auto-assigned' : wfPA.id}
+                value={isolated ? (previewId ?? 'Auto-assigned') : wfPA.id}
                 className="w-full h-10 px-3 bg-[#F0F2F4] border border-[#CAC9CF] rounded-[4px] text-[13px] text-[#686576] cursor-not-allowed select-none"
               />
             </div>

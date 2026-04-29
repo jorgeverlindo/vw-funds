@@ -227,6 +227,8 @@ interface WorkflowContextType {
 
   // Portal submissions
   addPortalSubmission: (data: { title?: string; mediaType?: string; initiativeType?: string }) => void;
+  /** Returns the ID that the NEXT addPortalSubmission call will generate, without consuming it. */
+  peekNextPortalId: () => string;
 
   // Notifications
   markNotificationRead: (id: string) => void;
@@ -836,6 +838,9 @@ export function WorkflowProvider({ children }: { children: ReactNode }) {
 
   // ── Portal submissions ────────────────────────────────────────────────────
 
+  /** Peek the next portal ID without incrementing the counter. */
+  const peekNextPortalId = useCallback(() => `MFA${_portalIdCounter + 1}`, []);
+
   const addPortalSubmission = useCallback((data: { title?: string; mediaType?: string; initiativeType?: string }) => {
     const sub: PortalSubmission = {
       id: nextPortalId(),
@@ -905,6 +910,7 @@ export function WorkflowProvider({ children }: { children: ReactNode }) {
         resubmitPreApprovalWithComment,
         resubmitClaimWithComment,
         addPortalSubmission,
+        peekNextPortalId,
         markNotificationRead,
         markAllRead,
         oemUnreadCount,

@@ -26,6 +26,17 @@ export const WORKFLOW_PA_BASE = 386604;
 export const WORKFLOW_CL_BASE = 560002;
 export const WORKFLOW_PA_ID = `MFA${WORKFLOW_PA_BASE}`;
 export const WORKFLOW_CL_ID = `MFC${WORKFLOW_CL_BASE}`;
+// Portal-submitted PAs get IDs starting here — safely above the archiveAndReset range
+export const WORKFLOW_PORTAL_BASE = 387000;
+
+/** Minimal record created when a portal pre-approval is submitted */
+export interface PortalSubmission {
+  id: string;
+  title: string;
+  mediaType: string;
+  initiativeType: string;
+  submittedAt: string; // ISO
+}
 
 export const WORKFLOW_DEALER = {
   name: 'Volkswagen Any Town',
@@ -59,7 +70,8 @@ export type PreApprovalWorkflowStatus =
   | 'In Review'
   | 'Revision Requested'
   | 'Resubmitted'
-  | 'Approved';
+  | 'Approved'
+  | 'Declined';
 
 export type ClaimWorkflowStatus =
   | 'Draft'
@@ -69,7 +81,8 @@ export type ClaimWorkflowStatus =
   | 'Resubmitted'
   | 'Approved'
   | 'Ready for Payment'
-  | 'Paid';
+  | 'Paid'
+  | 'Declined';
 
 // ─── Supporting types ────────────────────────────────────────────────────────
 
@@ -161,6 +174,7 @@ export interface WorkflowState {
   claim: WorkflowClaimState;
   notifications: WorkflowNotification[];
   archivedCycles: ArchivedCycle[];
+  portalSubmissions: PortalSubmission[];
 }
 
 // ─── Context interface ───────────────────────────────────────────────────────
@@ -175,6 +189,7 @@ interface WorkflowContextType {
   // Pre-approval actions (OEM)
   approvePreApproval: (comment?: string) => void;
   requestPreApprovalRevision: (comment: string) => void;
+  declinePreApproval: (comment?: string) => void;
 
   // Claim actions (Dealer)
   createClaim: () => void;
@@ -184,6 +199,7 @@ interface WorkflowContextType {
   // Claim actions (OEM)
   approveClaimAction: (comment?: string) => void;
   requestClaimRevision: (comment: string) => void;
+  declineClaimAction: (comment?: string) => void;
   processPayment: () => void;
 
   // Cycle management
@@ -209,6 +225,9 @@ interface WorkflowContextType {
   resubmitPreApprovalWithComment: (comment: string) => void;
   resubmitClaimWithComment: (comment: string) => void;
 
+  // Portal submissions
+  addPortalSubmission: (data: { title?: string; mediaType?: string; initiativeType?: string }) => void;
+
   // Notifications
   markNotificationRead: (id: string) => void;
   markAllRead: (role: 'oem' | 'dealer') => void;
@@ -221,6 +240,11 @@ interface WorkflowContextType {
 let _eventCounter = 2; // starts at 2 because initial event is evt-001
 function nextEventId() {
   return `evt-${String(++_eventCounter).padStart(3, '0')}`;
+}
+
+let _portalIdCounter = WORKFLOW_PORTAL_BASE;
+function nextPortalId() {
+  return `MFA${++_portalIdCounter}`;
 }
 
 let _notifCounter = 2; // initial notif is wf-notif-001
@@ -278,6 +302,7 @@ const INITIAL_STATE: WorkflowState = {
   },
 
   archivedCycles: [],
+  portalSubmissions: [],
 
   // OEM sees one unread notification from the pre-approval submission.
   notifications: [
@@ -437,6 +462,32 @@ export function WorkflowProvider({ children }: { children: ReactNode }) {
     emitSnackbar('Revision request sent');
   }, [pushEvent, pushNotif, workflow.preApproval.id]);
 
+  const declinePreApproval = useCallback((comment?: string) => {
+    setWorkflow(prev => ({
+      ...prev,
+      preApproval: {
+        ...prev.preApproval,
+        status: 'Declined',
+        oemComment: comment ?? '',
+      },
+    }));
+    pushEvent('preApproval', {
+      actor: 'OEM',
+      actorName: 'OEM Reviewer',
+      action: 'Pre-approval declined',
+      comment,
+    });
+    pushNotif({
+      targetRole: 'dealer',
+      type: 'pre-approval',
+      title: 'Pre-Approval declined',
+      body: `declined your pre-approval for ${WORKFLOW_DEALER.name}`,
+      referenceId: workflow.preApproval.id,
+      user: { name: 'OEM Reviewer', initials: 'OR' },
+    });
+    emitSnackbar('Pre-approval declined');
+  }, [pushEvent, pushNotif, workflow.preApproval.id]);
+
   // ── Claim actions ─────────────────────────────────────────────────────────
 
   const createClaim = useCallback(() => {
@@ -544,6 +595,28 @@ export function WorkflowProvider({ children }: { children: ReactNode }) {
       user: { name: 'OEM Reviewer', initials: 'OR' },
     });
     emitSnackbar('Revision request sent');
+  }, [pushEvent, pushNotif, workflow.claim.id]);
+
+  const declineClaimAction = useCallback((comment?: string) => {
+    setWorkflow(prev => ({
+      ...prev,
+      claim: { ...prev.claim, status: 'Declined', oemComment: comment ?? '' },
+    }));
+    pushEvent('claim', {
+      actor: 'OEM',
+      actorName: 'OEM Reviewer',
+      action: 'Claim declined',
+      comment,
+    });
+    pushNotif({
+      targetRole: 'dealer',
+      type: 'claim',
+      title: 'Claim declined',
+      body: `declined your claim for ${WORKFLOW_DEALER.name}`,
+      referenceId: workflow.claim.id,
+      user: { name: 'OEM Reviewer', initials: 'OR' },
+    });
+    emitSnackbar('Claim declined');
   }, [pushEvent, pushNotif, workflow.claim.id]);
 
   const processPayment = useCallback(() => {
@@ -761,6 +834,23 @@ export function WorkflowProvider({ children }: { children: ReactNode }) {
     emitSnackbar('Claim resubmitted');
   }, [pushEvent, pushNotif, workflow.claim.id]);
 
+  // ── Portal submissions ────────────────────────────────────────────────────
+
+  const addPortalSubmission = useCallback((data: { title?: string; mediaType?: string; initiativeType?: string }) => {
+    const sub: PortalSubmission = {
+      id: nextPortalId(),
+      title: data.title ?? '',
+      mediaType: data.mediaType ?? 'Digital',
+      initiativeType: data.initiativeType ?? 'DMP - Media Costs',
+      submittedAt: nowIso(),
+    };
+    setWorkflow(prev => ({
+      ...prev,
+      portalSubmissions: [sub, ...prev.portalSubmissions],
+    }));
+    emitSnackbar('Pre-approval submitted');
+  }, []);
+
   // ── Notification read state ───────────────────────────────────────────────
 
   const markNotificationRead = useCallback((id: string) => {
@@ -797,11 +887,13 @@ export function WorkflowProvider({ children }: { children: ReactNode }) {
         resubmitPreApproval,
         approvePreApproval,
         requestPreApprovalRevision,
+        declinePreApproval,
         createClaim,
         submitClaim,
         resubmitClaim,
         approveClaimAction,
         requestClaimRevision,
+        declineClaimAction,
         processPayment,
         archiveAndReset,
         updatePreApprovalData,
@@ -812,6 +904,7 @@ export function WorkflowProvider({ children }: { children: ReactNode }) {
         removeClaimDocument,
         resubmitPreApprovalWithComment,
         resubmitClaimWithComment,
+        addPortalSubmission,
         markNotificationRead,
         markAllRead,
         oemUnreadCount,

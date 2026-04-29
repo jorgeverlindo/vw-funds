@@ -5,7 +5,8 @@ import { cn } from "@/lib/utils";
 interface OnboardingBubbleProps {
   isVisible: boolean;
   onSkip: () => void;
-  onAutocorrect: () => void;
+  onAutocorrect?: () => void;
+  hideAutocorrect?: boolean;
   className?: string;
   style?: React.CSSProperties;
 }
@@ -88,16 +89,16 @@ function AutocorrectButton({ onClick }: ActionProps) {
   );
 }
 
-function BubbleActions({ onSkip, onAutocorrect }: { onSkip: () => void, onAutocorrect: () => void }) {
+function BubbleActions({ onSkip, onAutocorrect, hideAutocorrect }: { onSkip: () => void, onAutocorrect?: () => void, hideAutocorrect?: boolean }) {
   return (
     <div className="content-stretch flex gap-[8px] items-center relative shrink-0" data-name="Bubble Actions">
       <SkipButton onClick={onSkip} />
-      <AutocorrectButton onClick={onAutocorrect} />
+      {!hideAutocorrect && <AutocorrectButton onClick={onAutocorrect} />}
     </div>
   );
 }
 
-export function OnboardingBubble({ isVisible, onSkip, onAutocorrect, className, style }: OnboardingBubbleProps) {
+export function OnboardingBubble({ isVisible, onSkip, onAutocorrect, hideAutocorrect, className, style }: OnboardingBubbleProps) {
   if (!isVisible) return null;
 
   return (
@@ -115,7 +116,7 @@ export function OnboardingBubble({ isVisible, onSkip, onAutocorrect, className, 
         <p className="css-4hzbpn font-['Roboto:Regular',sans-serif] font-normal leading-[1.43] min-w-full relative shrink-0 text-[12px] text-white tracking-[0.17px]" style={{ fontVariationSettings: "'wdth' 100" }}>
             {`Brand guidelines issues were found in the assets you're submitting, please check below`}
         </p>
-        <BubbleActions onSkip={onSkip} onAutocorrect={onAutocorrect} />
+        <BubbleActions onSkip={onSkip} onAutocorrect={onAutocorrect} hideAutocorrect={hideAutocorrect} />
         </div>
     </motion.div>
   );

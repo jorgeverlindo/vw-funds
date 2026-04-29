@@ -2,7 +2,6 @@ import { createPortal } from 'react-dom';
 import { X, FileText, Download } from 'lucide-react';
 import { WorkflowDocument } from '@/app/contexts/WorkflowContext';
 import { PDFViewer } from './PDFViewer';
-import { VideoAnnotationDrawer } from './VideoAnnotationDrawer';
 
 interface DocumentPreviewModalProps {
   doc: WorkflowDocument;
@@ -13,13 +12,8 @@ export function DocumentPreviewModal({ doc, onClose }: DocumentPreviewModalProps
   const ext = doc.type.toLowerCase();
   const isImage = doc.url && ['png', 'jpg', 'jpeg', 'gif', 'webp'].includes(ext);
   const isPDF   = doc.url && ext === 'pdf';
-  const isVideo = doc.url && ['mp4', 'webm', 'mov', 'avi', 'm4v'].includes(ext);
-  const hasPreview = isImage || isPDF;
-
-  // Video files get their own full-screen drawer experience
-  if (isVideo) {
-    return <VideoAnnotationDrawer doc={doc} onClose={onClose} />;
-  }
+  const isVideo = doc.url && ['mp4', 'webm', 'mov', 'avi', 'm4v', 'mkv'].includes(ext);
+  const hasPreview = isImage || isPDF || isVideo;
 
   return createPortal(
     <div className="fixed inset-0 z-[10000] flex items-center justify-center p-4">
@@ -69,6 +63,16 @@ export function DocumentPreviewModal({ doc, onClose }: DocumentPreviewModalProps
           {isPDF && (
             // Canvas-based renderer — no GPU compositing issue, works inside any container
             <PDFViewer url={doc.url!} fileName={doc.name} />
+          )}
+          {isVideo && (
+            <div className="h-full flex items-center justify-center p-4 bg-black">
+              <video
+                src={doc.url!}
+                controls
+                autoPlay={false}
+                className="max-h-full max-w-full rounded-lg shadow-lg"
+              />
+            </div>
           )}
           {!hasPreview && (
             <div className="h-full flex flex-col items-center justify-center gap-4 text-[#9C99A9]">

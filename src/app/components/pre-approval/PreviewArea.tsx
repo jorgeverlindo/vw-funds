@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useDropzone } from 'react-dropzone';
 import { motion, AnimatePresence } from 'motion/react';
 import { ChevronLeft, ChevronRight, LayoutGrid, Maximize2, X } from 'lucide-react';
@@ -27,9 +27,8 @@ interface PreviewAreaProps {
   initialState?: PreviewState;
   onFilesAccepted?: (files: File[]) => void;
   onDocumentAdded?: (doc: { name: string; size: string; type: string; url: string }) => void;
-  /** Called when a video file is dropped/selected — instead of showing inline, the
-   *  caller should open the VideoAnnotationDrawer with this doc. */
-  onVideoUploaded?: (doc: { name: string; size: string; type: string; url: string }) => void;
+  /** When true, hides the Autocorrect button from the onboarding bubble and the toolbar */
+  hideAutocorrect?: boolean;
 }
 
 // Mock Annotations
@@ -52,7 +51,7 @@ const DEMO_FILES = [
   { url: imgNextAd,   annotations: NEXT_AD_ANNOTATIONS },
 ];
 
-export function PreviewArea({ initialState = 'dropzone', onFilesAccepted, onDocumentAdded, onVideoUploaded }: PreviewAreaProps) {
+export function PreviewArea({ initialState = 'dropzone', onFilesAccepted, onDocumentAdded, hideAutocorrect = false }: PreviewAreaProps) {
   const [state, setState] = useState<PreviewState>(initialState);
   const [viewMode, setViewMode] = useState<ViewMode>('single');
   const [activeAnnotationId, setActiveAnnotationId] = useState<string | null>(null);
@@ -63,6 +62,9 @@ export function PreviewArea({ initialState = 'dropzone', onFilesAccepted, onDocu
 
   // Zoom state
   const [zoom, setZoom] = useState(1);
+
+  // Ref for the inline video player — used by handleReset to seek to beginning
+  const inlineVideoRef = useRef<HTMLVideoElement>(null);
 
   // Legacy states
   const [showOnboarding, setShowOnboarding] = useState(false);
@@ -90,38 +92,30 @@ export function PreviewArea({ initialState = 'dropzone', onFilesAccepted, onDocu
   const handleDrop = (files: File[]) => {
     if (files.length === 0) return;
 
-    // ── Video files → trigger VideoAnnotationDrawer, skip inline preview ──
-    const videoFiles = files.filter(f => f.type.startsWith('video/'));
-    const mediaFiles = files.filter(f => !f.type.startsWith('video/'));
-
-    videoFiles.forEach(f => {
+    // All files (images, PDFs, videos) go through the inline preview.
+    // Videos render as a plain player — no annotation bubbles.
+    const newEntries = files.map(f => {
       const sizeKB = f.size / 1024;
       const sizeStr = sizeKB >= 1024 ? `${(sizeKB / 1024).toFixed(1)} MB` : `${sizeKB.toFixed(0)} KB`;
       const ext = f.name.split('.').pop()?.toLowerCase() ?? 'file';
       const url = URL.createObjectURL(f);
-      const doc = { name: f.name, size: sizeStr, type: ext, url };
-      onDocumentAdded?.(doc);    // add to workflow documents
-      onVideoUploaded?.(doc);    // open VideoAnnotationDrawer
+      onDocumentAdded?.({ name: f.name, size: sizeStr, type: ext, url });
+      return {
+        url,
+        annotations: f.type.startsWith('video/') ? [] as AnnotationItem[] : MOCK_ANNOTATIONS,
+        mimeType: f.type,
+      };
     });
 
-    // ── Non-video files → existing inline preview behaviour ──
-    if (mediaFiles.length === 0) return;
-
-    const newEntries = mediaFiles.map(f => ({ url: URL.createObjectURL(f), annotations: MOCK_ANNOTATIONS, mimeType: f.type }));
     setUploadedFiles(prev => [...prev, ...newEntries]);
     setState('loading');
+    const hasNonVideo = files.some(f => !f.type.startsWith('video/'));
     setTimeout(() => {
       setState('populated');
-      setShowOnboarding(true);
+      if (hasNonVideo) setShowOnboarding(true);
       setCurrentIndex(uploadedFiles.length);
     }, 1500);
-    onFilesAccepted?.(mediaFiles);
-    mediaFiles.forEach((f, i) => {
-      const ext = f.name.split('.').pop()?.toLowerCase() ?? 'file';
-      const sizeKB = f.size / 1024;
-      const sizeStr = sizeKB >= 1024 ? `${(sizeKB / 1024).toFixed(1)} MB` : `${sizeKB.toFixed(0)} KB`;
-      onDocumentAdded?.({ name: f.name, size: sizeStr, type: ext, url: newEntries[i].url });
-    });
+    onFilesAccepted?.(files);
   };
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
@@ -140,7 +134,14 @@ export function PreviewArea({ initialState = 'dropzone', onFilesAccepted, onDocu
 
   const handleZoomIn  = () => setZoom(z => Math.min(z + 0.25, 3));
   const handleZoomOut = () => setZoom(z => Math.max(z - 0.25, 0.5));
-  const handleReset   = () => setZoom(1);
+  const handleReset   = () => {
+    setZoom(1);
+    // For video: seek back to the beginning
+    if (inlineVideoRef.current) {
+      inlineVideoRef.current.currentTime = 0;
+      inlineVideoRef.current.pause();
+    }
+  };
 
   // Opens BeforeAfter starting from the currently visible file
   const handleOpenAutocorrect = () => {
@@ -199,8 +200,8 @@ export function PreviewArea({ initialState = 'dropzone', onFilesAccepted, onDocu
         {state === 'populated' && (
           <motion.div key="populated" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex flex-1 h-full w-full p-4 gap-4 overflow-hidden relative">
 
-            {/* Left Sidebar: Annotations */}
-            {viewMode === 'single' && (
+            {/* Left Sidebar: Annotations — hidden for video files */}
+            {viewMode === 'single' && !currentFile?.mimeType?.startsWith('video/') && (
               <div className="w-[200px] flex-none flex flex-col h-full relative z-20">
                 <ScrollerAnnotations annotations={annotations} activeId={activeAnnotationId} onSelect={setActiveAnnotationId} className="h-full" />
               </div>
@@ -209,18 +210,20 @@ export function PreviewArea({ initialState = 'dropzone', onFilesAccepted, onDocu
             {/* Center Canvas */}
             <div className="flex-1 relative flex flex-col items-center bg-transparent rounded-lg z-0 overflow-hidden">
 
-              {/* ── View mode toggle + file counter ── */}
+              {/* ── View mode toggle + file counter — hidden for video files ── */}
               <div className="w-full flex items-center justify-between mb-2 shrink-0 px-1">
                 <span className="text-[11px] text-[#686576]">
                   {allFiles.length > 1 ? `${currentIndex + 1} / ${allFiles.length}` : ''}
                 </span>
-                <button
-                  onClick={() => setViewMode(v => v === 'single' ? 'grid' : 'single')}
-                  className="flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-medium text-[#473BAB] border border-[rgba(71,59,171,0.3)] hover:bg-[#473BAB]/8 transition-colors cursor-pointer"
-                >
-                  {viewMode === 'single' ? <LayoutGrid size={13} /> : <Maximize2 size={13} />}
-                  {viewMode === 'single' ? 'Grid' : 'Single'}
-                </button>
+                {!currentFile?.mimeType?.startsWith('video/') && (
+                  <button
+                    onClick={() => setViewMode(v => v === 'single' ? 'grid' : 'single')}
+                    className="flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-medium text-[#473BAB] border border-[rgba(71,59,171,0.3)] hover:bg-[#473BAB]/8 transition-colors cursor-pointer"
+                  >
+                    {viewMode === 'single' ? <LayoutGrid size={13} /> : <Maximize2 size={13} />}
+                    {viewMode === 'single' ? 'Grid' : 'Single'}
+                  </button>
+                )}
               </div>
 
               {/* ── GRID VIEW ── */}
@@ -313,6 +316,7 @@ export function PreviewArea({ initialState = 'dropzone', onFilesAccepted, onDocu
                     {currentFile?.mimeType?.startsWith('video/') ? (
                       /* ── Video player ── */
                       <video
+                        ref={inlineVideoRef}
                         key={currentFile.url}
                         src={currentFile.url}
                         controls
@@ -353,7 +357,8 @@ export function PreviewArea({ initialState = 'dropzone', onFilesAccepted, onDocu
                       <OnboardingBubble
                         isVisible={true}
                         onSkip={() => setShowOnboarding(false)}
-                        onAutocorrect={handleOpenAutocorrect}
+                        onAutocorrect={hideAutocorrect ? undefined : handleOpenAutocorrect}
+                        hideAutocorrect={hideAutocorrect}
                         className="absolute left-0 top-16 z-[1005]"
                       />
                     )}
@@ -364,7 +369,8 @@ export function PreviewArea({ initialState = 'dropzone', onFilesAccepted, onDocu
               {/* Toolbar — always visible at the bottom */}
               <div className="w-full max-w-[600px] mt-2 mb-1 shrink-0 z-10">
                 <PreviewControlsZoom
-                  onAutocorrect={currentFile?.mimeType?.startsWith('video/') ? undefined : handleOpenAutocorrect}
+                  onAutocorrect={hideAutocorrect || currentFile?.mimeType?.startsWith('video/') ? undefined : handleOpenAutocorrect}
+                  hideActionsBar={hideAutocorrect || currentFile?.mimeType?.startsWith('video/')}
                   onReset={handleReset}
                   onDelete={isUserFile ? handleDelete : undefined}
                   onZoomIn={handleZoomIn}

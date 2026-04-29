@@ -5,7 +5,7 @@ import { useRef, useState, useEffect, useCallback } from 'react';
 import {
   X, Play, Pause, Volume2, VolumeX, SkipBack, SkipForward,
   Sparkles, Pencil, ChevronDown, ChevronUp, MinusCircle, PlusCircle,
-  CheckCircle2, CirclePlus,
+  CheckCircle2, CirclePlus, UploadCloud,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { WorkflowDocument } from '@/app/contexts/WorkflowContext';
@@ -42,48 +42,46 @@ interface VideoFrame {
 const VISIBILITY_WINDOW_SEC = 2;
 
 // ─── Auto-annotation seeds ────────────────────────────────────────────────────
-// Pins are clustered in the latter half of the video (50 – 90 % of duration)
-// where pricing, offer and disclaimer text typically appears in car commercials.
-// The first half (action shots, no text) is intentionally left clean.
+// All pins cluster at the frames where real compliance issues appear:
+//   21s — promo/offer frame: background color violation
+//   24s — disclaimer screen: typography, legal text and missing disclaimer
 
-function buildAutoAnnotations(duration: number): VideoAnnotation[] {
-  if (!duration || duration <= 0) return [];
-  const d = duration;
+function buildAutoAnnotations(_duration: number): VideoAnnotation[] {
   return [
-    // ~50 % — offer / price overlay appears (center of screen)
+    // 21s — offer/promo background frame (center of screen)
     {
-      id: uid(), timestamp: d * 0.50, xPct: 48, yPct: 40,
+      id: uid(), timestamp: 21.0, xPct: 42, yPct: 38,
       cataCode: '3A', title: 'Background Colors',
       description: 'Must adhere to Primary & Secondary brand color palettes. The background must not include any design elements.',
       included: true,
     },
-    // ~60 % — secondary price text (left-center)
+    // 24s — heading/offer text on disclaimer screen (upper-left area)
     {
-      id: uid(), timestamp: d * 0.60, xPct: 26, yPct: 54,
+      id: uid(), timestamp: 24.0, xPct: 28, yPct: 22,
       cataCode: '1D', title: 'Font Types',
       description: 'Volkswagen approved fonts must be used across all assets. VW Head Light, VW Head Regular, VW Head Bold, VW Head Extra Bold, VW Text.',
       included: true,
     },
-    // ~70 % — logo / brand badge (upper-right)
+    // 24.3s — APR / legal offer text (center-lower)
     {
-      id: uid(), timestamp: d * 0.70, xPct: 74, yPct: 18,
+      id: uid(), timestamp: 24.3, xPct: 43, yPct: 68,
+      cataCode: '3D', title: 'Legal Text',
+      description: 'Mandatory legal copy must be present and legible at this frame.',
+      included: true,
+    },
+    // 24.8s — fine-print disclaimer at bottom of screen
+    {
+      id: uid(), timestamp: 24.8, xPct: 50, yPct: 84,
+      cataCode: '3C', title: 'Disclaimer Missing',
+      description: 'Required pricing or offer disclaimer must be present and legible.',
+      included: true,
+    },
+    // 25.5s — logo / brand badge (upper-right corner)
+    {
+      id: uid(), timestamp: 25.5, xPct: 74, yPct: 16,
       cataCode: '3A', title: 'Logo Protection',
-      description: 'The VW logo has a protected zone. Design elements or type must not intrude on this zone. The protected zone is equal to half of the logo diameter on all sides.',
+      description: 'The VW logo has a protected zone. Design elements or type must not intrude on this zone.',
       included: false,
-    },
-    // ~80 % — deal-days / promo graphic (center)
-    {
-      id: uid(), timestamp: d * 0.80, xPct: 53, yPct: 58,
-      cataCode: '2D', title: 'Assets',
-      description: 'Assets may not contain graphics or unauthorized design elements outside of VW brand guidelines.',
-      included: true,
-    },
-    // ~90 % — fine-print disclaimer text (lower third)
-    {
-      id: uid(), timestamp: d * 0.90, xPct: 50, yPct: 80,
-      cataCode: '2D', title: 'Protected Area',
-      description: 'Logos must respect the protected area defined in the brand definition guidelines.',
-      included: true,
     },
   ].sort((a, b) => a.timestamp - b.timestamp);
 }
@@ -399,12 +397,16 @@ function TimelineRuler({ duration, currentTime, annotations, onSeek, onHoverPin 
 // ─── Main component ───────────────────────────────────────────────────────────
 
 interface VideoAnnotationDrawerProps {
-  doc: WorkflowDocument;
+  doc?: WorkflowDocument;
   onClose: () => void;
 }
 
 export function VideoAnnotationDrawer({ doc, onClose }: VideoAnnotationDrawerProps) {
-  const { submitPreApproval } = useWorkflow();
+  const { submitPreApproval, addPreApprovalDocument } = useWorkflow();
+
+  // activeDoc tracks the video currently loaded; starts from the prop (if provided),
+  // or null when opened in empty state (upload zone will set it).
+  const [activeDoc, setActiveDoc] = useState<WorkflowDocument | null>(doc ?? null);
 
   const videoRef     = useRef<HTMLVideoElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -449,16 +451,20 @@ export function VideoAnnotationDrawer({ doc, onClose }: VideoAnnotationDrawerPro
   }, [computeVideoFrame]);
 
   // ── Filmstrip thumbnails ─────────────────────────────────────────────────
-  const { thumbs, loading: thumbsLoading } = useVideoThumbnails(doc.url, duration);
+  const { thumbs, loading: thumbsLoading } = useVideoThumbnails(activeDoc?.url, duration);
 
   // ── Processing overlay ───────────────────────────────────────────────────
-  const [processing,   setProcessing]   = useState(true);
+  // Starts false; fires automatically whenever a new video URL is set (activeDoc changes).
+  const [processing,   setProcessing]   = useState(false);
   const [hasSeeded,    setHasSeeded]    = useState(false);
 
   useEffect(() => {
+    if (!activeDoc?.url) return;
+    setProcessing(true);
+    setHasSeeded(false);
     processingTimerRef.current = setTimeout(() => setProcessing(false), 3500);
     return () => { if (processingTimerRef.current) clearTimeout(processingTimerRef.current); };
-  }, []);
+  }, [activeDoc?.url]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Seed auto-annotations once processing ends + duration is known
   useEffect(() => {
@@ -477,6 +483,26 @@ export function VideoAnnotationDrawer({ doc, onClose }: VideoAnnotationDrawerPro
       setHasSeeded(true);
     }
   };
+
+  // ── File upload handler (used by both drag-drop and file input) ───────────
+  const handleVideoFile = useCallback((file: File) => {
+    const url = URL.createObjectURL(file);
+    const ext = file.name.split('.').pop()?.toLowerCase() ?? 'mp4';
+    const sizeMB = file.size / 1024 / 1024;
+    const sizeStr = sizeMB >= 1 ? `${sizeMB.toFixed(1)} MB` : `${(file.size / 1024).toFixed(0)} KB`;
+    const newDoc: WorkflowDocument = { name: file.name, size: sizeStr, type: ext, url };
+    addPreApprovalDocument(newDoc);
+    setActiveDoc(newDoc);
+    setAnnotations([]);
+    setDuration(0);
+    setCurrentTime(0);
+  }, [addPreApprovalDocument]);
+
+  const handleVideoFileDrop = useCallback((e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    const file = Array.from(e.dataTransfer.files).find(f => f.type.startsWith('video/'));
+    if (file) handleVideoFile(file);
+  }, [handleVideoFile]);
 
   // ── Submit state (for PreApprovalForm completion) ────────────────────────
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -667,7 +693,7 @@ export function VideoAnnotationDrawer({ doc, onClose }: VideoAnnotationDrawerPro
                   {/* Tooltip wrapper — relative so tooltip can anchor here */}
                   <div className="relative group">
                     <p className="text-[11px] font-semibold text-[#1F1D25] font-['Roboto'] truncate cursor-default">
-                      {doc.name}
+                      {activeDoc?.name ?? 'No video loaded'}
                     </p>
                     {/* Custom tooltip: appears below on hover */}
                     <div
@@ -678,7 +704,7 @@ export function VideoAnnotationDrawer({ doc, onClose }: VideoAnnotationDrawerPro
                                  rounded-md px-2 py-1.5 shadow-lg
                                  max-w-[190px] break-all whitespace-normal"
                     >
-                      {doc.name}
+                      {activeDoc?.name ?? 'No video loaded'}
                     </div>
                   </div>
                   {annotations.length > 0 && (
@@ -731,114 +757,143 @@ export function VideoAnnotationDrawer({ doc, onClose }: VideoAnnotationDrawerPro
                 <div
                   ref={containerRef}
                   className="flex-1 min-h-0 bg-[#0d0d0d] relative"
-                  onClick={handleVideoAreaClick}
-                  style={{ cursor: pinPlacementMode ? 'crosshair' : 'default' }}
+                  onClick={activeDoc ? handleVideoAreaClick : undefined}
+                  style={{ cursor: activeDoc ? (pinPlacementMode ? 'crosshair' : 'default') : 'default' }}
+                  onDragOver={(e) => { if (!activeDoc) e.preventDefault(); }}
+                  onDrop={!activeDoc ? handleVideoFileDrop : undefined}
                 >
-                  <video
-                    ref={videoRef}
-                    src={doc.url}
-                    className="absolute inset-0 w-full h-full object-contain"
-                    onTimeUpdate={() => { const v = videoRef.current; if (v) setCurrentTime(v.currentTime); }}
-                    onDurationChange={() => { const v = videoRef.current; if (v?.duration) { setDuration(v.duration); computeVideoFrame(); } }}
-                    onLoadedMetadata={() => { const v = videoRef.current; if (v) { setDuration(v.duration || 0); computeVideoFrame(); } }}
-                    onPlay={() => setIsPlaying(true)}
-                    onPause={() => setIsPlaying(false)}
-                    onEnded={() => setIsPlaying(false)}
-                  />
-
-                  {/* InteractiveAnnotation pins — positioned over actual video frame */}
-                  {/* Each pin is shown only within ±VISIBILITY_WINDOW_SEC of its timestamp */}
-                  {videoFrame && !processing && (
-                    <div
-                      className="absolute"
-                      style={{
-                        left:   videoFrame.left,
-                        top:    videoFrame.top,
-                        width:  videoFrame.width,
-                        height: videoFrame.height,
-                        pointerEvents: pinPlacementMode ? 'none' : 'auto',
-                      }}
-                    >
-                      <AnimatePresence>
-                        {sortedAnnotations.map((ann, i) => {
-                          const inWindow =
-                            Math.abs(ann.timestamp - currentTime) <= VISIBILITY_WINDOW_SEC;
-                          if (!inWindow) return null;
-                          return (
-                            <motion.div
-                              key={ann.id}
-                              initial={{ opacity: 0, scale: 0.6 }}
-                              animate={{ opacity: 1, scale: 1 }}
-                              exit={{ opacity: 0, scale: 0.6 }}
-                              transition={{ duration: 0.25, ease: 'easeOut' }}
-                              className="absolute inset-0 pointer-events-none"
-                              style={{ pointerEvents: 'auto' }}
-                            >
-                              <InteractiveAnnotation
-                                id={ann.id}
-                                number={i + 1}
-                                category={ann.cataCode}
-                                title={ann.title}
-                                description={ann.description}
-                                x={ann.xPct}
-                                y={ann.yPct}
-                                isOpen={displayOpenId === ann.id}
-                                onToggle={() => {
-                                  setHoveredPinId(null);
-                                  setActiveAnnId(activeAnnId === ann.id ? null : ann.id);
-                                }}
-                                direction="bottom-right"
-                                delay={0}
-                              />
-                            </motion.div>
-                          );
-                        })}
-                      </AnimatePresence>
-
-                      {/* Pending pin pulse while modal is open */}
-                      {pendingPin && (
-                        <div
-                          className="absolute rounded-tl-[12px] rounded-tr-[12px] rounded-bl-[12px] animate-ping pointer-events-none"
-                          style={{
-                            left: `${pendingPin.xPct}%`,
-                            top:  `${pendingPin.yPct}%`,
-                            width: 16, height: 16,
-                            background: 'rgba(239,83,80,0.5)',
-                            border: '1px solid #EF5350',
-                            transform: 'translate(-50%,-50%)',
+                  {!activeDoc ? (
+                    /* ── Upload zone (shown when drawer is opened with no video) ── */
+                    <div className="absolute inset-0 flex flex-col items-center justify-center gap-5 text-center px-8">
+                      <div className="w-16 h-16 rounded-full bg-white/10 flex items-center justify-center">
+                        <UploadCloud className="w-7 h-7 text-white/50" />
+                      </div>
+                      <div>
+                        <p className="text-white/80 text-[15px] font-semibold font-['Roboto']">Drop a video to analyze</p>
+                        <p className="text-white/40 text-[11px] mt-1.5 font-['Roboto']">MP4 · MOV · WebM · AVI · MKV</p>
+                      </div>
+                      <label className="px-5 py-2 rounded-full bg-[#473BAB] text-white text-[13px] font-medium font-['Roboto'] hover:bg-[#3c31a0] transition-colors cursor-pointer">
+                        Browse file
+                        <input
+                          type="file"
+                          accept="video/*"
+                          className="sr-only"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) handleVideoFile(file);
                           }}
                         />
-                      )}
+                      </label>
                     </div>
-                  )}
+                  ) : (
+                    <>
+                      <video
+                        ref={videoRef}
+                        src={activeDoc.url}
+                        className="absolute inset-0 w-full h-full object-contain"
+                        onTimeUpdate={() => { const v = videoRef.current; if (v) setCurrentTime(v.currentTime); }}
+                        onDurationChange={() => { const v = videoRef.current; if (v?.duration) { setDuration(v.duration); computeVideoFrame(); } }}
+                        onLoadedMetadata={() => { const v = videoRef.current; if (v) { setDuration(v.duration || 0); computeVideoFrame(); } }}
+                        onPlay={() => setIsPlaying(true)}
+                        onPause={() => setIsPlaying(false)}
+                        onEnded={() => setIsPlaying(false)}
+                      />
 
-                  {/* Add Annotation — floating button at bottom-right of canvas */}
-                  {!processing && !pinPlacementMode && (
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setPinPlacementMode(true);
-                        videoRef.current?.pause();
-                      }}
-                      className="absolute bottom-3 right-3 flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/90 border border-[rgba(71,59,171,0.4)] text-[#473BAB] text-[12px] font-medium font-['Roboto'] hover:bg-white hover:border-[#473BAB] shadow-sm backdrop-blur-sm transition-all cursor-pointer z-10"
-                    >
-                      <Pencil className="w-[13px] h-[13px]" />
-                      Add Annotation
-                    </button>
-                  )}
+                      {/* InteractiveAnnotation pins — positioned over actual video frame */}
+                      {/* Each pin is shown only within ±VISIBILITY_WINDOW_SEC of its timestamp */}
+                      {videoFrame && !processing && (
+                        <div
+                          className="absolute"
+                          style={{
+                            left:   videoFrame.left,
+                            top:    videoFrame.top,
+                            width:  videoFrame.width,
+                            height: videoFrame.height,
+                            pointerEvents: pinPlacementMode ? 'none' : 'auto',
+                          }}
+                        >
+                          <AnimatePresence>
+                            {sortedAnnotations.map((ann, i) => {
+                              const inWindow =
+                                Math.abs(ann.timestamp - currentTime) <= VISIBILITY_WINDOW_SEC;
+                              if (!inWindow) return null;
+                              return (
+                                <motion.div
+                                  key={ann.id}
+                                  initial={{ opacity: 0, scale: 0.6 }}
+                                  animate={{ opacity: 1, scale: 1 }}
+                                  exit={{ opacity: 0, scale: 0.6 }}
+                                  transition={{ duration: 0.25, ease: 'easeOut' }}
+                                  className="absolute inset-0 pointer-events-none"
+                                  style={{ pointerEvents: 'auto' }}
+                                >
+                                  <InteractiveAnnotation
+                                    id={ann.id}
+                                    number={i + 1}
+                                    category={ann.cataCode}
+                                    title={ann.title}
+                                    description={ann.description}
+                                    x={ann.xPct}
+                                    y={ann.yPct}
+                                    isOpen={displayOpenId === ann.id}
+                                    onToggle={() => {
+                                      setHoveredPinId(null);
+                                      setActiveAnnId(activeAnnId === ann.id ? null : ann.id);
+                                    }}
+                                    direction="bottom-right"
+                                    delay={0}
+                                  />
+                                </motion.div>
+                              );
+                            })}
+                          </AnimatePresence>
 
-                  {/* Processing overlay */}
-                  <AnimatePresence>
-                    {processing && <ProcessingOverlay onSkip={skipProcessing} />}
-                  </AnimatePresence>
+                          {/* Pending pin pulse while modal is open */}
+                          {pendingPin && (
+                            <div
+                              className="absolute rounded-tl-[12px] rounded-tr-[12px] rounded-bl-[12px] animate-ping pointer-events-none"
+                              style={{
+                                left: `${pendingPin.xPct}%`,
+                                top:  `${pendingPin.yPct}%`,
+                                width: 16, height: 16,
+                                background: 'rgba(239,83,80,0.5)',
+                                border: '1px solid #EF5350',
+                                transform: 'translate(-50%,-50%)',
+                              }}
+                            />
+                          )}
+                        </div>
+                      )}
 
-                  {/* Pin modal */}
-                  {showPinModal && (
-                    <PinModal
-                      timestamp={currentTime}
-                      onConfirm={handlePinConfirm}
-                      onCancel={() => { setPendingPin(null); setShowPinModal(false); }}
-                    />
+                      {/* Add Annotation — floating button at bottom-right of canvas */}
+                      {!processing && !pinPlacementMode && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setPinPlacementMode(true);
+                            videoRef.current?.pause();
+                          }}
+                          className="absolute bottom-3 right-3 flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/90 border border-[rgba(71,59,171,0.4)] text-[#473BAB] text-[12px] font-medium font-['Roboto'] hover:bg-white hover:border-[#473BAB] shadow-sm backdrop-blur-sm transition-all cursor-pointer z-10"
+                        >
+                          <Pencil className="w-[13px] h-[13px]" />
+                          Add Annotation
+                        </button>
+                      )}
+
+                      {/* Processing overlay */}
+                      <AnimatePresence>
+                        {processing && <ProcessingOverlay onSkip={skipProcessing} />}
+                      </AnimatePresence>
+
+                      {/* Pin modal */}
+                      {showPinModal && (
+                        <PinModal
+                          timestamp={currentTime}
+                          onConfirm={handlePinConfirm}
+                          onCancel={() => { setPendingPin(null); setShowPinModal(false); }}
+                        />
+                      )}
+                    </>
                   )}
                 </div>
 

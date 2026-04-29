@@ -2,7 +2,7 @@ import { useState, useRef, useEffect, useMemo } from 'react';
 import { DateRange } from 'react-day-picker';
 import { Search, Plus, MoreVertical } from 'lucide-react';
 import { useTranslation } from '../contexts/LanguageContext';
-import { useWorkflow, WORKFLOW_DEALER, WORKFLOW_CAMPAIGN, type PreApprovalWorkflowStatus, type ArchivedCycle } from '../contexts/WorkflowContext';
+import { useWorkflow, WORKFLOW_DEALER, WORKFLOW_CAMPAIGN, type PreApprovalWorkflowStatus, type ArchivedCycle, type PortalSubmission } from '../contexts/WorkflowContext';
 import { DateRangeInput } from './DateRangeInput';
 import { DateRangePicker } from './DateRangePicker';
 import { FilterSelect } from './FilterSelect';
@@ -27,7 +27,7 @@ export interface PreApproval {
   dealershipCode: string;
   dealershipName: string;
   dealershipCity: string;
-  status: 'Pending' | 'Approved' | 'Revision Requested' | 'In Review';
+  status: 'Pending' | 'Approved' | 'Revision Requested' | 'In Review' | 'Declined';
   timeInPreApproval: number;
   submittedBy: {
     name: string;
@@ -369,6 +369,7 @@ import { PreApprovalDrawer } from './pre-approval/PreApprovalDrawer';
 function mapWorkflowPAStatus(s: PreApprovalWorkflowStatus): PreApproval['status'] {
   switch (s) {
     case 'Approved':           return 'Approved';
+    case 'Declined':           return 'Declined';
     case 'Revision Requested': return 'Revision Requested';
     case 'In Review':          return 'In Review';
     case 'Resubmitted':        return 'In Review';
@@ -404,6 +405,30 @@ function archivedCycleToPA(cycle: ArchivedCycle): PreApproval {
     contactEmail: pa.contactEmail || WORKFLOW_DEALER.email,
     description: WORKFLOW_CAMPAIGN.description,
     documents: pa.documents,
+  };
+}
+
+/** Build a displayable PreApproval row from a portal-submitted PA */
+function portalSubmissionToPA(sub: PortalSubmission): PreApproval {
+  return {
+    id: sub.id,
+    title: sub.title || undefined,
+    date: new Date(sub.submittedAt),
+    dealershipCode: WORKFLOW_DEALER.code,
+    dealershipName: WORKFLOW_DEALER.name,
+    dealershipCity: WORKFLOW_DEALER.city,
+    status: 'Pending',
+    timeInPreApproval: 0,
+    submittedBy: { name: WORKFLOW_DEALER.contact, avatarUrl: AVATARS[5] },
+    mediaType: sub.mediaType || WORKFLOW_CAMPAIGN.mediaType,
+    details: sub.title || 'Portal Pre-Approval',
+    lastUpdated: new Date(sub.submittedAt),
+    submittedAt: new Date(sub.submittedAt),
+    initiativeType: sub.initiativeType || WORKFLOW_CAMPAIGN.initiativeType,
+    claimsCount: 0,
+    contactEmail: WORKFLOW_DEALER.email,
+    description: sub.title || 'Submitted via portal',
+    documents: [],
   };
 }
 
@@ -504,15 +529,21 @@ export function FundsPreApprovalsContent({
       );
     };
 
-    // Active workflow item first (most recent), then archived cycles (newest→oldest)
+    // Portal submissions → PA rows (newest first)
+    const portalRows = [...workflow.portalSubmissions]
+      .map(portalSubmissionToPA)
+      .filter(filterRow);
+
+    // Active workflow item first (most recent), then portal rows, then archived cycles (newest→oldest)
     const pinnedRows = [
       ...(showActiveWorkflow && filterRow(workflowPreApproval) ? [workflowPreApproval] : []),
+      ...portalRows,
       ...archivedRows.filter(filterRow),
     ];
 
     return [...pinnedRows, ...filteredMock];
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [dateRange, searchQuery, workflow.preApproval.status, workflow.preApproval.id, workflow.preApproval.claimsCount, workflow.archivedCycles, workflowPreApproval, isLockedDealership, filterCtx.dealershipCode]);
+  }, [dateRange, searchQuery, workflow.preApproval.status, workflow.preApproval.id, workflow.preApproval.claimsCount, workflow.archivedCycles, workflow.portalSubmissions, workflowPreApproval, isLockedDealership, filterCtx.dealershipCode]);
 
   return (
     <div className="flex flex-col h-full relative overflow-hidden">
@@ -580,8 +611,8 @@ export function FundsPreApprovalsContent({
       </div>
 
       {/* Table Section */}
-      <div className="flex-1 flex flex-col min-w-0 bg-white border-t border-gray-200">
-         <div className="flex-1 overflow-auto custom-scrollbar">
+      <div className="flex-1 flex flex-col min-w-0 min-h-0 bg-white border-t border-gray-200">
+         <div className="flex-1 min-h-0 overflow-auto custom-scrollbar">
            <table className="min-w-full text-left border-collapse">
              <thead className="bg-white sticky top-0 z-10 shadow-[0_1px_0_rgba(0,0,0,0.06)]">
                <tr>

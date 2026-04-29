@@ -14,10 +14,11 @@ interface PreApprovalDrawerProps {
 }
 
 export function PreApprovalDrawer({ open, onClose }: PreApprovalDrawerProps) {
-  const { submitPreApproval, addPreApprovalDocument, clearPreApprovalDocuments } = useWorkflow();
+  const { submitPreApproval, addPreApprovalDocument, clearPreApprovalDocuments, workflow } = useWorkflow();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [videoDrawerDoc, setVideoDrawerDoc] = useState<WorkflowDocument | null>(null);
+  const [videoDrawerOpen, setVideoDrawerOpen] = useState(false);
 
   useEffect(() => {
     if (open) clearPreApprovalDocuments();
@@ -40,11 +41,11 @@ export function PreApprovalDrawer({ open, onClose }: PreApprovalDrawerProps) {
 
   return createPortal(
     <>
-      {/* VideoAnnotationDrawer — takes over the whole modal (has its own form panel) */}
-      {videoDrawerDoc && (
+      {/* VideoAnnotationDrawer — opens on top; closing returns to PreApprovalDrawer */}
+      {videoDrawerOpen && (
         <VideoAnnotationDrawer
-          doc={videoDrawerDoc}
-          onClose={() => { setVideoDrawerDoc(null); onClose(); }}
+          doc={videoDrawerDoc ?? undefined}
+          onClose={() => { setVideoDrawerOpen(false); setVideoDrawerDoc(null); }}
         />
       )}
 
@@ -91,7 +92,7 @@ export function PreApprovalDrawer({ open, onClose }: PreApprovalDrawerProps) {
                 <div className="flex-1 p-4 bg-white min-w-0">
                   <PreviewArea
                     onDocumentAdded={addPreApprovalDocument}
-                    onVideoUploaded={(doc) => setVideoDrawerDoc(doc)}
+                    hideAutocorrect
                   />
                 </div>
 
@@ -100,7 +101,18 @@ export function PreApprovalDrawer({ open, onClose }: PreApprovalDrawerProps) {
 
                 {/* Right Pane: Form */}
                 <div className="w-[380px] flex-none h-full overflow-hidden bg-[#F9FAFA]">
-                  <PreApprovalForm onClose={onClose} onDone={handleSubmit} />
+                  <PreApprovalForm
+                    onClose={onClose}
+                    onDone={handleSubmit}
+                    onOpenAnnotationMode={() => {
+                      const VIDEO_EXTS = ['mp4', 'webm', 'mov', 'avi', 'm4v', 'mkv'];
+                      const videoDoc = workflow.preApproval.documents.find(d =>
+                        VIDEO_EXTS.includes(d.type.toLowerCase())
+                      ) ?? null;
+                      setVideoDrawerDoc(videoDoc);
+                      setVideoDrawerOpen(true);
+                    }}
+                  />
                 </div>
 
                 {/* Submitting/Success Overlay */}

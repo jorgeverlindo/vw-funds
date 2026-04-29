@@ -132,13 +132,14 @@ interface FundsClaimsContentProps {
 // Maps workflow claim status to ClaimStatus for display
 function mapWorkflowClaimStatus(s: ClaimWorkflowStatus): ClaimStatus {
   switch (s) {
-    case 'Approved':          return 'Approved';
-    case 'Ready for Payment': return 'Ready for Payment';
-    case 'Paid':              return 'Paid';
+    case 'Approved':           return 'Approved';
+    case 'Declined':           return 'Declined';
+    case 'Ready for Payment':  return 'Ready for Payment';
+    case 'Paid':               return 'Paid';
     case 'Revision Requested': return 'Revision Requested';
-    case 'In Review':         return 'In Review';
-    case 'Resubmitted':       return 'In Review';
-    default:                  return 'Pending'; // Draft, Submitted
+    case 'In Review':          return 'In Review';
+    case 'Resubmitted':        return 'In Review';
+    default:                   return 'Pending'; // Draft, Submitted
   }
 }
 

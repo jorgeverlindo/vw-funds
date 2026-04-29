@@ -34,6 +34,7 @@ export type ClaimStatus =
   | 'In Review'
   | 'Revision Requested'
   | 'Denied'
+  | 'Declined'
   | 'Finished'
   | 'Penalty Applied'
   | 'Ready for Payment'
@@ -94,8 +95,7 @@ export function StatusChip({ status, className }: StatusChipProps) {
       styles = "bg-[rgba(225,118,19,0.08)] text-[#613f02]";
       break;
     case 'Denied':
-      // Annex 3 (NotificationStack) Denied:
-      // bg-[rgba(210,50,63,0.08)] text-[#be0e1c]
+    case 'Declined':
       styles = "bg-[rgba(210,50,63,0.08)] text-[#be0e1c]";
       icon = <XCircle className="w-3.5 h-3.5 mr-1.5 text-[#D2323F]" />;
       break;

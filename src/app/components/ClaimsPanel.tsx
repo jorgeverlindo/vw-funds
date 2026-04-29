@@ -1,6 +1,6 @@
 import { useRef, useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { X, Eye, Star, MessageSquare, Banknote, RefreshCw, Paperclip, Trash2, AlertTriangle, ShieldAlert } from 'lucide-react';
+import { X, Eye, Star, MessageSquare, Banknote, RefreshCw, Paperclip, Trash2, AlertTriangle, ShieldAlert, XCircle } from 'lucide-react';
 import { CustomSelect } from './ui/CustomSelect';
 import { SingleDatePicker } from './ui/SingleDatePicker';
 import { StatusChip, ClaimStatus } from './StatusChip';
@@ -113,6 +113,7 @@ export function ClaimsPanel({
     submitClaim,
     approveClaimAction,
     requestClaimRevision,
+    declineClaimAction,
     resubmitClaimWithComment,
     processPayment,
     archiveAndReset,
@@ -122,7 +123,7 @@ export function ClaimsPanel({
 
   const [oemDraftComment, setOemDraftComment] = useState('');
   const [dealerDraftComment, setDealerDraftComment] = useState('');
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const fileInputRef      = useRef<HTMLInputElement>(null);
   const [previewDoc, setPreviewDoc] = useState<typeof wfCL.documents[number] | null>(null);
 
   // ── Penalty form state ────────────────────────────────────────────────────
@@ -215,6 +216,12 @@ export function ClaimsPanel({
     onClose();
   };
 
+  const handleDeclineClaim = () => {
+    declineClaimAction(oemDraftComment.trim() || undefined);
+    setOemDraftComment('');
+    onClose();
+  };
+
   const handleProcessPayment = () => {
     processPayment();
     onClose();
@@ -276,6 +283,13 @@ export function ClaimsPanel({
                 className="px-5 py-2 rounded-full text-sm font-medium border border-[#E17613] text-[#E17613] hover:bg-[rgba(225,118,19,0.06)] disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer"
               >
                 Request Adjustments
+              </button>
+              <button
+                onClick={handleDeclineClaim}
+                className="flex items-center gap-1.5 px-5 py-2 rounded-full text-sm font-medium border border-[#D2323F] text-[#D2323F] hover:bg-[rgba(210,50,63,0.06)] transition-colors cursor-pointer"
+              >
+                <XCircle className="w-4 h-4" />
+                Decline
               </button>
               <button
                 onClick={handleApprove}
@@ -625,12 +639,12 @@ export function ClaimsPanel({
           <section>
             <div className="flex items-center justify-between mb-3">
               <h3 className="text-[#1f1d25] text-[15px] font-medium">{t('Documents')}</h3>
-              {isWorkflowItem && userType !== 'oem' && (
+              {isWorkflowItem && (
                 <>
                   <input
                     ref={fileInputRef}
                     type="file"
-                    accept=".pdf,.png,.jpg,.jpeg,.doc,.docx"
+                    accept=".pdf,.png,.jpg,.jpeg,.doc,.docx,.mp4,.webm,.mov,.avi,.m4v"
                     className="absolute w-0 h-0 opacity-0 overflow-hidden pointer-events-none"
                     onChange={handleFileChange}
                     tabIndex={-1}
@@ -711,7 +725,7 @@ export function ClaimsPanel({
               <div className="flex flex-col items-center gap-2 py-6 border border-dashed border-[#E0E0E0] rounded-xl text-center">
                 <Paperclip className="w-6 h-6 text-[#9C99A9]" />
                 <p className="text-[13px] text-[#9C99A9]">
-                  {isWorkflowItem && userType !== 'oem'
+                  {isWorkflowItem
                     ? 'No documents attached yet. Click Add Document to attach.'
                     : t('No documents attached')}
                 </p>

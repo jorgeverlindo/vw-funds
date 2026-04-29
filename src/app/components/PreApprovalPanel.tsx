@@ -1,5 +1,5 @@
-import { useRef, useState } from 'react';
-import { X, Eye, Star, Users, CheckCircle2, MessageSquare, Paperclip, Trash2, Sparkles } from 'lucide-react';
+import { useRef, useState, useEffect } from 'react';
+import { X, Eye, Star, Users, CheckCircle2, MessageSquare, Paperclip, Trash2, Sparkles, XCircle } from 'lucide-react';
 import { PreApproval } from './FundsPreApprovalsContent';
 import { OEM_ANNOTATIONS } from './pre-approval/DrawerOEMMainPane';
 import { StatusChip } from './StatusChip';
@@ -31,13 +31,16 @@ export function PreApprovalPanel({
     workflow,
     approvePreApproval,
     requestPreApprovalRevision,
+    declinePreApproval,
     resubmitPreApprovalWithComment,
     createClaim,
     addPreApprovalDocument,
     removePreApprovalDocument,
   } = useWorkflow();
 
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const fileInputRef      = useRef<HTMLInputElement>(null);
+  const oemTextareaRef    = useRef<HTMLTextAreaElement>(null);
+  const dealerTextareaRef = useRef<HTMLTextAreaElement>(null);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -58,6 +61,21 @@ export function PreApprovalPanel({
 
   const [oemDraftComment, setOemDraftComment] = useState('');
   const [dealerDraftComment, setDealerDraftComment] = useState('');
+
+  // Auto-resize textareas whenever their value changes (handles typing and shortcut injection)
+  useEffect(() => {
+    const el = oemTextareaRef.current;
+    if (!el) return;
+    el.style.height = 'auto';
+    el.style.height = `${el.scrollHeight}px`;
+  }, [oemDraftComment]);
+
+  useEffect(() => {
+    const el = dealerTextareaRef.current;
+    if (!el) return;
+    el.style.height = 'auto';
+    el.style.height = `${el.scrollHeight}px`;
+  }, [dealerDraftComment]);
 
   // Determine whether this is the live workflow item
   // Matches the CURRENT active cycle — ID changes each time archiveAndReset is called
@@ -81,6 +99,12 @@ export function PreApprovalPanel({
     onClose();
   };
 
+  const handleDeclinePreApproval = () => {
+    declinePreApproval(oemDraftComment.trim() || undefined);
+    setOemDraftComment('');
+    onClose();
+  };
+
   // ── Dealer action handlers ────────────────────────────────────────────────
 
   const handleCreateClaim = () => {
@@ -94,6 +118,109 @@ export function PreApprovalPanel({
     setDealerDraftComment('');
     onClose();
   };
+
+  // ── Double ⌥⌥ shortcut → fill focused input with OEM approval message ────
+  useEffect(() => {
+    let lastAltTs = 0;
+
+    const buildMessage = () => {
+      const id    = isWorkflowItem ? wfPA.id    : preApproval.id;
+      const title = isWorkflowItem ? wfPA.title : preApproval.title;
+
+      // Shorten activity period: "Mar 1, 2026 – Mar 31, 2026" → "Mar 26"
+      const rawPeriod = isWorkflowItem ? wfPA.activityPeriod : '';
+      const periodShort = rawPeriod
+        ? (() => {
+            const m = rawPeriod.match(/^(\w+)\s+\d+,\s+(\d{4})/);
+            return m ? `${m[1]} ${m[2].slice(2)}` : rawPeriod;
+          })()
+        : '';
+
+      // Parenthetical: use title if set, otherwise mediaType + period
+      const mediaType  = isWorkflowItem ? wfPA.mediaType : preApproval.mediaType;
+      const descriptor = title?.trim() || [mediaType, periodShort].filter(Boolean).join(' ');
+
+      const dealerName = preApproval.dealershipName;
+      const city       = preApproval.dealershipCity;
+
+      // Derive fund from initiative type
+      const init = preApproval.initiativeType ?? '';
+      const fund = init.toLowerCase().includes('media') ? 'DMF - Media Costs'
+                 : (init.toLowerCase().includes('cpo') || init.toLowerCase().includes('hard')) ? 'DMF - Hard Costs'
+                 : 'DMF - Media Costs';
+
+      return [
+        'Hi there,',
+        `Pre-approval ${id}${descriptor ? ` (${descriptor})` : ''} for ${dealerName} (${city}) has been reviewed in ${fund}. Status updated to approved.`,
+        'Remarks: The ad you have submitted appears to comply with the Dealer Marketing Program Guidelines and therefore meets the requirements for pre-approval. As noted in the Guidelines, the pre-approval process does not constitute legal review by VWoA or its agency or advice from VWoA regarding compliance with any federal, state, and/or local laws, rules, or regulations. By disseminating the ad, you represent that the pre-approved ad complies with federal, state, and/or local laws, rules, or regulations and acknowledge that your dealership is solely responsible for the ad\'s compliance with federal, state, and/or local laws, rules, or regulations.',
+      ].join('\n');
+    };
+
+    const inject = (el: HTMLTextAreaElement | HTMLInputElement, value: string) => {
+      const proto  = el instanceof HTMLTextAreaElement ? HTMLTextAreaElement.prototype : HTMLInputElement.prototype;
+      const setter = Object.getOwnPropertyDescriptor(proto, 'value')?.set;
+      setter?.call(el, value);
+      el.dispatchEvent(new Event('input',  { bubbles: true }));
+      el.dispatchEvent(new Event('change', { bubbles: true }));
+    };
+
+    const onKeyUp = (e: KeyboardEvent) => {
+      if (e.key !== 'Alt') return;
+      const now = Date.now();
+      if (now - lastAltTs < 450) {
+        // Double ⌥ — fill whatever input/textarea is currently focused
+        const el = document.activeElement;
+        if (el instanceof HTMLTextAreaElement) {
+          inject(el, buildMessage());
+          lastAltTs = 0;
+        } else if (el instanceof HTMLInputElement && el.type !== 'hidden') {
+          inject(el, buildMessage());
+          lastAltTs = 0;
+        }
+      } else {
+        lastAltTs = now;
+      }
+    };
+
+    // ── ⌥1 → fill focused input with revision-request template ──────────────
+    const buildRevisionMessage = () => {
+      const id         = isWorkflowItem ? wfPA.id    : preApproval.id;
+      const title      = isWorkflowItem ? wfPA.title : preApproval.title;
+      const mediaType  = isWorkflowItem ? wfPA.mediaType : preApproval.mediaType;
+      const descriptor = title?.trim() || mediaType;
+      const dealerName = preApproval.dealershipName;
+      const dealerCity = preApproval.dealershipCity;
+
+      return [
+        `We would like to inform you that the creative asset${descriptor ? ` "${descriptor}"` : ''} submitted for pre-approval ${id} for ${dealerName} (${dealerCity}) is marked as "revision requested" as it currently does not comply with DMP guidelines.`,
+        'For guidance, see the attached marked-up document:',
+        'RULE – 1D - Font Types\nReference page 24 of the DMP guidelines.',
+        'RULE – 6G - National Offer Advertising.\nReference page 33 of the DMP guidelines.',
+        'RULE – 8E  - APR Selling Price must be disclosed in the ad.\nReference page 41 of the DMP guidelines.',
+        'As noted in the Guidelines, the pre-approval process does not constitute legal review by VWoA or its agency or advice from VWoA regarding compliance with any federal, state, and/or local laws, rules, or regulations.  You represent that any ad you submit complies with federal, state, and/or local laws, rules, or regulations and acknowledge that your dealership is solely responsible for the ad\'s compliance with federal, state, and/or local laws, rules, or regulations.',
+        'Thank you for your cooperation and understanding.',
+      ].join('\n');
+    };
+
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (!e.altKey || e.code !== 'Digit1') return;
+      e.preventDefault();
+      const el = document.activeElement;
+      if (el instanceof HTMLTextAreaElement) {
+        inject(el, buildRevisionMessage());
+      } else if (el instanceof HTMLInputElement && el.type !== 'hidden') {
+        inject(el, buildRevisionMessage());
+      }
+    };
+
+    window.addEventListener('keyup', onKeyUp);
+    window.addEventListener('keydown', onKeyDown);
+    return () => {
+      window.removeEventListener('keyup', onKeyUp);
+      window.removeEventListener('keydown', onKeyDown);
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [preApproval, wfPA, isWorkflowItem]);
 
   // ── Footer content ────────────────────────────────────────────────────────
 
@@ -120,18 +247,18 @@ export function PreApprovalPanel({
       // OEM can review any PA that hasn't been finally approved/declined yet.
       // For the live workflow item this maps to 'Submitted'/'Resubmitted';
       // for static mock items it maps to 'Pending'/'In Review'/'Revision Requested'.
-      const canAct = liveStatus !== 'Approved';
+      const canAct = liveStatus !== 'Approved' && liveStatus !== 'Declined';
 
       if (canAct) {
         return (
           <div className="space-y-3">
-            {/* Comment textarea */}
             <textarea
+              ref={oemTextareaRef}
               value={oemDraftComment}
               onChange={(e) => setOemDraftComment(e.target.value)}
               placeholder="Add a comment (required for Request Adjustments)…"
-              rows={3}
-              className="w-full rounded-xl border border-[#E0E0E0] px-3 py-2 text-[13px] text-[#1f1d25] placeholder:text-[#9C99A9] resize-none focus:outline-none focus:border-[var(--brand-accent)] transition-colors"
+              rows={1}
+              className="w-full rounded-xl border border-[#E0E0E0] px-3 py-2 text-[13px] text-[#1f1d25] placeholder:text-[#9C99A9] resize-none overflow-hidden focus:outline-none focus:border-[var(--brand-accent)] transition-colors"
             />
             <div className="flex justify-end gap-3">
               <button
@@ -146,6 +273,13 @@ export function PreApprovalPanel({
                 className="px-5 py-2 rounded-full text-sm font-medium border border-[#E17613] text-[#E17613] hover:bg-[rgba(225,118,19,0.06)] disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer"
               >
                 Request Adjustments
+              </button>
+              <button
+                onClick={handleDeclinePreApproval}
+                className="flex items-center gap-1.5 px-5 py-2 rounded-full text-sm font-medium border border-[#D2323F] text-[#D2323F] hover:bg-[rgba(210,50,63,0.06)] transition-colors cursor-pointer"
+              >
+                <XCircle className="w-4 h-4" />
+                Decline
               </button>
               <button
                 onClick={handleApprove}
@@ -196,11 +330,12 @@ export function PreApprovalPanel({
       return (
         <div className="space-y-3">
           <textarea
+            ref={dealerTextareaRef}
             value={dealerDraftComment}
             onChange={(e) => setDealerDraftComment(e.target.value)}
             placeholder="Add a reply to the OEM (optional)…"
-            rows={3}
-            className="w-full rounded-xl border border-[#E0E0E0] px-3 py-2 text-[13px] text-[#1f1d25] placeholder:text-[#9C99A9] resize-none focus:outline-none focus:border-[var(--brand-accent)] transition-colors"
+            rows={1}
+            className="w-full rounded-xl border border-[#E0E0E0] px-3 py-2 text-[13px] text-[#1f1d25] placeholder:text-[#9C99A9] resize-none overflow-hidden focus:outline-none focus:border-[var(--brand-accent)] transition-colors"
           />
           <div className="flex justify-end gap-3">
             <button
@@ -442,8 +577,8 @@ export function PreApprovalPanel({
           <section>
             <div className="flex items-center justify-between mb-3">
               <h3 className="text-[#1f1d25] text-[15px] font-medium">{t('Supporting Documents')}</h3>
-              {/* Add Document button — non-OEM users on the live workflow item */}
-              {isWorkflowItem && userType !== 'oem' && (
+              {/* Add Document button — all users on the live workflow item */}
+              {isWorkflowItem && (
                 <>
                   {/* Must NOT use display:none — browsers block .click() on hidden inputs */}
                   <input
@@ -511,7 +646,7 @@ export function PreApprovalPanel({
               <div className="flex flex-col items-center gap-2 py-6 border border-dashed border-[#E0E0E0] rounded-xl text-center">
                 <Paperclip className="w-6 h-6 text-[#9C99A9]" />
                 <p className="text-[13px] text-[#9C99A9]">
-                  {isWorkflowItem && userType !== 'oem'
+                  {isWorkflowItem
                     ? 'No documents attached yet. Click Add Document to attach.'
                     : t('No documents attached')}
                 </p>

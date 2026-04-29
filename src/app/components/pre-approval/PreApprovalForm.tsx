@@ -33,6 +33,9 @@ type ClaimLine = ClaimLineItem;
 interface PreApprovalFormProps {
   onClose?: () => void;
   onDone?: (data: FormValues) => void;
+  /** When provided the ⓘ icon becomes an active button that opens the
+   *  full video annotation drawer for the currently uploaded video. */
+  onOpenAnnotationMode?: () => void;
 }
 
 // ─── Constants ─────────────────────────────────────────────────────────────
@@ -108,7 +111,7 @@ function formatRange(range: DateRange | undefined): string {
 
 // ─── Component ─────────────────────────────────────────────────────────────
 
-export function PreApprovalForm({ onClose, onDone }: PreApprovalFormProps) {
+export function PreApprovalForm({ onClose, onDone, onOpenAnnotationMode }: PreApprovalFormProps) {
   const { t } = useTranslation();
   const { workflow, addPreApprovalDocument, removePreApprovalDocument, updatePreApprovalData } = useWorkflow();
   const { isLockedDealership } = useFilters();
@@ -316,7 +319,20 @@ export function PreApprovalForm({ onClose, onDone }: PreApprovalFormProps) {
         {/* Header */}
         <div className="flex-none flex items-center justify-between px-4 py-3 border-b border-[rgba(0,0,0,0.04)]">
           <h2 className="text-[16px] font-medium text-[#1F1D25]">{t('Details')}</h2>
-          <Info size={16} className="text-[#686576]/60 cursor-help" />
+          <button
+            type="button"
+            onClick={onOpenAnnotationMode}
+            disabled={!onOpenAnnotationMode}
+            title={onOpenAnnotationMode ? 'Open video compliance review' : undefined}
+            className={cn(
+              'p-1 rounded-full transition-colors',
+              onOpenAnnotationMode
+                ? 'text-[#473BAB]/70 hover:text-[#473BAB] hover:bg-[#473BAB]/10 cursor-pointer'
+                : 'text-[#686576]/40 cursor-default'
+            )}
+          >
+            <Info size={16} />
+          </button>
         </div>
 
         {/* Scrollable body */}

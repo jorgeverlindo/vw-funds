@@ -5,6 +5,7 @@ import { X, CheckCircle2 } from 'lucide-react';
 import { PortalPreviewArea } from './PortalPreviewArea';
 import { PreApprovalForm } from '../pre-approval/PreApprovalForm';
 import { emitSnackbar } from '@/app/components/Snackbar';
+import { useWorkflow } from '@/app/contexts/WorkflowContext';
 
 interface PortalPreApprovalDrawerProps {
   open: boolean;
@@ -13,6 +14,7 @@ interface PortalPreApprovalDrawerProps {
 }
 
 export function PortalPreApprovalDrawer({ open, onClose, assets }: PortalPreApprovalDrawerProps) {
+  const { addPortalSubmission } = useWorkflow();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
 
@@ -29,14 +31,17 @@ export function PortalPreApprovalDrawer({ open, onClose, assets }: PortalPreAppr
 
   const handleSubmit = (data: any) => {
     setIsSubmitting(true);
-    // Simulate API call
     setTimeout(() => {
+      // Create a new sequential ID in the datagrid
+      addPortalSubmission({
+        title: data?.title,
+        mediaType: data?.mediaType,
+        initiativeType: data?.initiativeType,
+      });
       setIsSubmitting(false);
       setIsSubmitted(true);
-      emitSnackbar('Pre-approval submitted');
       setTimeout(() => {
         onClose();
-        // Reset state
         setTimeout(() => setIsSubmitted(false), 500);
       }, 3000);
     }, 1500);

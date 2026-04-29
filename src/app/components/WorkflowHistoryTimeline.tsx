@@ -56,7 +56,7 @@ export function WorkflowHistoryTimeline({ history, onPreviewDoc }: WorkflowHisto
 
               {evt.comment && (
                 <p
-                  className="text-[13px] mt-1.5 rounded-lg px-3 py-2 border leading-relaxed"
+                  className="text-[13px] mt-1.5 rounded-lg px-3 py-2 border leading-relaxed whitespace-pre-wrap"
                   style={isRevisionEvent(evt)
                     ? { background: 'rgba(225,118,19,0.06)', borderColor: 'rgba(225,118,19,0.3)', color: '#1f1d25' }
                     : { background: '#F9FAFA', borderColor: '#E0E0E0', color: '#1f1d25' }

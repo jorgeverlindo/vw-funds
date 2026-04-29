@@ -9,6 +9,9 @@ interface PreviewControlsZoomProps {
   onDelete?: () => void;
   onEditSource?: () => void;
   onAutocorrect?: () => void;
+  /** When true, hides the Edit Source Template and Autocorrect action buttons.
+   *  Used for the video-only inline player view. */
+  hideActionsBar?: boolean;
   className?: string;
 }
 
@@ -302,15 +305,16 @@ function ConfigureButton({ onClick }: { onClick?: () => void }) {
   );
 }
 
-export function PreviewControlsZoom({ 
-  onZoomIn, 
-  onZoomOut, 
+export function PreviewControlsZoom({
+  onZoomIn,
+  onZoomOut,
   onRotate,
   onReset,
   onDelete,
   onEditSource,
   onAutocorrect,
-  className 
+  hideActionsBar = false,
+  className
 }: PreviewControlsZoomProps) {
   return (
     <div className={cn("content-stretch flex items-center justify-between px-3 py-1 relative w-full pointer-events-auto bg-white/95 backdrop-blur-sm rounded-full shadow-sm border border-white/60", className)} data-name="Zoom">
@@ -320,12 +324,16 @@ export function PreviewControlsZoom({
       <div className="content-stretch flex gap-[8px] h-[30px] items-center justify-end relative shrink-0">
         <IconButton onClick={onReset} />
         <IconButton1 onClick={onDelete} />
-        <div className="content-stretch flex flex-col items-end justify-center relative shrink-0" data-name="Edit Source Button">
-            <RestoreButton onClick={onEditSource} />
-        </div>
-        <div className="content-stretch flex flex-col items-end justify-center relative shrink-0" data-name="Canvas Main Button">
-            <ConfigureButton onClick={onAutocorrect} />
-        </div>
+        {!hideActionsBar && (
+          <>
+            <div className="content-stretch flex flex-col items-end justify-center relative shrink-0" data-name="Edit Source Button">
+              <RestoreButton onClick={onEditSource} />
+            </div>
+            <div className="content-stretch flex flex-col items-end justify-center relative shrink-0" data-name="Canvas Main Button">
+              <ConfigureButton onClick={onAutocorrect} />
+            </div>
+          </>
+        )}
       </div>
     </div>
   );

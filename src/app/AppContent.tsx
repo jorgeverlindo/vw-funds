@@ -221,9 +221,34 @@ export default function AppContent() {
       };
     }
 
+    // ── Portal submissions ────────────────────────────────────────────────────
+    const portalSub = workflow.portalSubmissions.find(s => s.id === selectedPreApprovalId);
+    if (portalSub) {
+      return {
+        id: portalSub.id,
+        title: portalSub.title || undefined,
+        date: new Date(portalSub.submittedAt),
+        dealershipCode: WORKFLOW_DEALER.code,
+        dealershipName: WORKFLOW_DEALER.name,
+        dealershipCity: WORKFLOW_DEALER.city,
+        status: 'Pending' as const,
+        timeInPreApproval: 0,
+        submittedBy: { name: WORKFLOW_DEALER.contact, avatarUrl: '' },
+        mediaType: portalSub.mediaType || WORKFLOW_CAMPAIGN.mediaType,
+        details: portalSub.title || 'Portal Pre-Approval',
+        lastUpdated: new Date(portalSub.submittedAt),
+        submittedAt: new Date(portalSub.submittedAt),
+        initiativeType: portalSub.initiativeType || WORKFLOW_CAMPAIGN.initiativeType,
+        claimsCount: 0,
+        contactEmail: WORKFLOW_DEALER.email,
+        description: portalSub.title || 'Submitted via portal',
+        documents: [],
+      };
+    }
+
     // ── Static mock data ─────────────────────────────────────────────────────
     return PRE_APPROVALS_MOCK_DATA.find(i => i.id === selectedPreApprovalId);
-  }, [selectedPreApprovalId, workflow.preApproval, workflow.archivedCycles]);
+  }, [selectedPreApprovalId, workflow.preApproval, workflow.archivedCycles, workflow.portalSubmissions]);
 
   // Claims Specific State
   const [selectedClaimId, setSelectedClaimId] = useState<string | null>(null);

@@ -534,10 +534,11 @@ export function FundsPreApprovalsContent({
       .map(portalSubmissionToPA)
       .filter(filterRow);
 
-    // Active workflow item first (most recent), then portal rows, then archived cycles (newest→oldest)
+    // Portal submissions always appear first (they are "just now"), then the active
+    // workflow PA, then archived cycles newest→oldest.
     const pinnedRows = [
-      ...(showActiveWorkflow && filterRow(workflowPreApproval) ? [workflowPreApproval] : []),
       ...portalRows,
+      ...(showActiveWorkflow && filterRow(workflowPreApproval) ? [workflowPreApproval] : []),
       ...archivedRows.filter(filterRow),
     ];
 

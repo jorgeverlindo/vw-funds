@@ -10,7 +10,7 @@ import { useTranslation } from '../contexts/LanguageContext';
 import { useWorkflow } from '../contexts/WorkflowContext';
 
 interface TopNavBarProps {
-  userType?: 'dealer' | 'oem';
+  userType?: 'dealer' | 'dealer-singular' | 'oem';
   onOpenOEMDrawer?: () => void;
   languageToggleActive?: boolean;
   onOpenAgentPane?: () => void;
@@ -95,7 +95,7 @@ export function TopNavBar({ userType = 'dealer', onOpenOEMDrawer, languageToggle
         </div>
         {/* AI Sparkle Icon - With Badge */}
         <button
-          onClick={userType === 'dealer' ? onOpenAgentPane : undefined}
+          onClick={userType !== 'oem' ? onOpenAgentPane : undefined}
           className={cn(
             "p-1.5 rounded-full hover:bg-black/5 transition-colors cursor-pointer relative group",
             isAgentPaneOpen && "bg-[var(--brand-accent)]/10"

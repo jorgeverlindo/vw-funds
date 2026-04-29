@@ -9,6 +9,7 @@ import { WorkflowHistoryTimeline } from './WorkflowHistoryTimeline';
 import {
   useWorkflow,
 } from '../contexts/WorkflowContext';
+import type { PortalSubmission } from '../contexts/WorkflowContext';
 import { DocumentPreviewModal } from './pre-approval/DocumentPreviewModal';
 
 interface PreApprovalPanelProps {
@@ -36,6 +37,7 @@ export function PreApprovalPanel({
     createClaim,
     addPreApprovalDocument,
     removePreApprovalDocument,
+    updatePortalSubmissionStatus,
   } = useWorkflow();
 
   const fileInputRef      = useRef<HTMLInputElement>(null);
@@ -80,27 +82,45 @@ export function PreApprovalPanel({
   // Determine whether this is the live workflow item
   // Matches the CURRENT active cycle — ID changes each time archiveAndReset is called
   const isWorkflowItem = preApproval.id === workflow.preApproval.id;
+  // Detect portal submissions — these need OEM actions but are separate from the main PA
+  const portalSub: PortalSubmission | undefined = workflow.portalSubmissions.find(
+    s => s.id === preApproval.id,
+  );
+  const isPortalItem = !!portalSub;
+
   const wfPA = workflow.preApproval;
   const liveStatus = isWorkflowItem ? wfPA.status : preApproval.status;
-  const liveOemComment = isWorkflowItem ? wfPA.oemComment : null;
+  const liveOemComment = isWorkflowItem ? wfPA.oemComment : (portalSub?.oemComment ?? null);
 
   // ── OEM action handlers ───────────────────────────────────────────────────
 
   const handleApprove = () => {
-    approvePreApproval(oemDraftComment.trim() || undefined);
+    if (isPortalItem) {
+      updatePortalSubmissionStatus(preApproval.id, 'Approved', oemDraftComment.trim() || undefined);
+    } else {
+      approvePreApproval(oemDraftComment.trim() || undefined);
+    }
     setOemDraftComment('');
     onClose();
   };
 
   const handleRequestAdjustments = () => {
     if (!oemDraftComment.trim()) return;
-    requestPreApprovalRevision(oemDraftComment.trim());
+    if (isPortalItem) {
+      updatePortalSubmissionStatus(preApproval.id, 'Revision Requested', oemDraftComment.trim());
+    } else {
+      requestPreApprovalRevision(oemDraftComment.trim());
+    }
     setOemDraftComment('');
     onClose();
   };
 
   const handleDeclinePreApproval = () => {
-    declinePreApproval(oemDraftComment.trim() || undefined);
+    if (isPortalItem) {
+      updatePortalSubmissionStatus(preApproval.id, 'Declined', oemDraftComment.trim() || undefined);
+    } else {
+      declinePreApproval(oemDraftComment.trim() || undefined);
+    }
     setOemDraftComment('');
     onClose();
   };
@@ -225,18 +245,16 @@ export function PreApprovalPanel({
   // ── Footer content ────────────────────────────────────────────────────────
 
   const renderFooter = () => {
-    // Non-workflow items: original Cancel + Submit
-    if (!isWorkflowItem) {
+    // Static mock / non-interactive items: show a simple Close button
+    // (workflow items and portal items both get the full OEM/dealer action bars below)
+    if (!isWorkflowItem && !isPortalItem) {
       return (
         <div className="flex justify-end gap-3">
           <button
             onClick={onClose}
             className="px-6 py-2 rounded-full text-sm font-medium text-[#111014]/60 hover:bg-black/5 transition-colors cursor-pointer"
           >
-            {t('Cancel')}
-          </button>
-          <button className="px-6 py-2 bg-[var(--brand-accent)] hover:bg-[var(--brand-accent-hover)] text-white rounded-full text-sm font-medium transition-colors shadow-sm cursor-pointer">
-            {t('Submit')}
+            {t('Close')}
           </button>
         </div>
       );

@@ -231,7 +231,7 @@ export default function AppContent() {
         dealershipCode: WORKFLOW_DEALER.code,
         dealershipName: WORKFLOW_DEALER.name,
         dealershipCity: WORKFLOW_DEALER.city,
-        status: 'Pending' as const,
+        status: (portalSub.status ?? 'Pending') as PreApproval['status'],
         timeInPreApproval: 0,
         submittedBy: { name: WORKFLOW_DEALER.contact, avatarUrl: '' },
         mediaType: portalSub.mediaType || WORKFLOW_CAMPAIGN.mediaType,

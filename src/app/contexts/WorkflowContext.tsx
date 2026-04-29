@@ -36,6 +36,10 @@ export interface PortalSubmission {
   mediaType: string;
   initiativeType: string;
   submittedAt: string; // ISO
+  /** OEM review status — mirrors PreApproval datagrid status values */
+  status: 'Pending' | 'Approved' | 'Declined' | 'Revision Requested';
+  /** OEM comment attached during review */
+  oemComment?: string;
 }
 
 export const WORKFLOW_DEALER = {
@@ -229,6 +233,12 @@ interface WorkflowContextType {
   addPortalSubmission: (data: { title?: string; mediaType?: string; initiativeType?: string }) => void;
   /** Returns the ID that the NEXT addPortalSubmission call will generate, without consuming it. */
   peekNextPortalId: () => string;
+  /** OEM approves / declines / requests revision on a portal-submitted PA */
+  updatePortalSubmissionStatus: (
+    id: string,
+    status: PortalSubmission['status'],
+    comment?: string,
+  ) => void;
 
   // Notifications
   markNotificationRead: (id: string) => void;
@@ -848,12 +858,30 @@ export function WorkflowProvider({ children }: { children: ReactNode }) {
       mediaType: data.mediaType ?? 'Digital',
       initiativeType: data.initiativeType ?? 'DMP - Media Costs',
       submittedAt: nowIso(),
+      status: 'Pending',
     };
     setWorkflow(prev => ({
       ...prev,
       portalSubmissions: [sub, ...prev.portalSubmissions],
     }));
     emitSnackbar('Pre-approval submitted');
+  }, []);
+
+  const updatePortalSubmissionStatus = useCallback((
+    id: string,
+    status: PortalSubmission['status'],
+    comment?: string,
+  ) => {
+    setWorkflow(prev => ({
+      ...prev,
+      portalSubmissions: prev.portalSubmissions.map(s =>
+        s.id === id ? { ...s, status, oemComment: comment ?? s.oemComment } : s,
+      ),
+    }));
+    const label = status === 'Approved' ? 'Pre-approval approved'
+      : status === 'Declined' ? 'Pre-approval declined'
+      : 'Revision requested';
+    emitSnackbar(label);
   }, []);
 
   // ── Notification read state ───────────────────────────────────────────────
@@ -911,6 +939,7 @@ export function WorkflowProvider({ children }: { children: ReactNode }) {
         resubmitClaimWithComment,
         addPortalSubmission,
         peekNextPortalId,
+        updatePortalSubmissionStatus,
         markNotificationRead,
         markAllRead,
         oemUnreadCount,

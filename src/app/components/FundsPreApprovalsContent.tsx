@@ -417,7 +417,7 @@ function portalSubmissionToPA(sub: PortalSubmission): PreApproval {
     dealershipCode: WORKFLOW_DEALER.code,
     dealershipName: WORKFLOW_DEALER.name,
     dealershipCity: WORKFLOW_DEALER.city,
-    status: 'Pending',
+    status: (sub.status ?? 'Pending') as PreApproval['status'],
     timeInPreApproval: 0,
     submittedBy: { name: WORKFLOW_DEALER.contact, avatarUrl: AVATARS[5] },
     mediaType: sub.mediaType || WORKFLOW_CAMPAIGN.mediaType,

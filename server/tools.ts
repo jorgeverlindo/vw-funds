@@ -212,6 +212,31 @@ export const agentTools: Anthropic.Tool[] = [
     },
   },
 
+  // ── Sharing mechanism chooser ──────────────────────────────────────────────────
+  {
+    name: "propose_share",
+    description:
+      "Propose a sharing mechanism when the user wants to send or share a project with someone " +
+      "but has NOT specified whether to use email or the platform. " +
+      "Shows a choice card: 'Send via Email' or 'Send via Platform Communications'. " +
+      "Use this INSTEAD of propose_email when the user says things like 'send to [name]', " +
+      "'share with [name]', 'send this to Katelyn' — without saying 'email'.",
+    input_schema: {
+      type: "object" as const,
+      properties: {
+        recipient_hint: {
+          type: "string",
+          description: "Name of the intended recipient (e.g. 'Katelyn', 'Sarah Collins'). Required.",
+        },
+        project_name: {
+          type: "string",
+          description: "Current project name, for display in the card. Leave blank to use the active project name.",
+        },
+      },
+      required: ["recipient_hint"],
+    },
+  },
+
   // ── Email sharing ──────────────────────────────────────────────────────────────
   {
     name: "propose_email",
@@ -318,6 +343,13 @@ export function executeTool(
         success: true,
         name: input.name,
         message: `Project renamed to "${input.name}".`,
+      };
+
+    case "propose_share":
+      return {
+        success: true,
+        share: input,
+        message: "Share mechanism choice card ready for user.",
       };
 
     case "propose_email":

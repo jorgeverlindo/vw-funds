@@ -105,6 +105,7 @@ function loadProjectState(projectId: string) {
       bgId?: string | null;
       agentAddedBgIds?: string[];
       activatedOem?: string | null;
+      activatedOems?: string[];
     };
   } catch { return null; }
 }
@@ -1037,6 +1038,23 @@ function ProjectDetailView({
   // Restore persisted state for this project
   const saved = useMemo(() => loadProjectState(project.id), [project.id]);
 
+  const { setActiveBrandKit, activeBrandKitIds } = useProjectStore();
+
+  // Auto-wire brand kit when project OEM matches a known brand kit
+  useEffect(() => {
+    const kit = brandKits.find(k =>
+      k.oem.toLowerCase() === (project.oem ?? "").toLowerCase() ||
+      k.name.toLowerCase() === (project.oem ?? "").toLowerCase()
+    );
+    if (!kit) return;
+    if (!activeBrandKitIds[project.id]?.[kit.oem]) {
+      setActiveBrandKit(project.id, kit.oem, kit.id);
+    }
+    setAgentActivatedOems(prev =>
+      prev.includes(kit.oem) ? prev : [...prev, kit.oem]
+    );
+  }, [project.id, project.oem]); // eslint-disable-line react-hooks/exhaustive-deps
+
   // Locally removed offer/template IDs (session-level, persisted per project)
   const [removedOfferIds, setRemovedOfferIds]       = useState<Set<string>>(new Set(saved?.removedOfferIds ?? []));
   const [removedTemplateIds, setRemovedTemplateIds] = useState<Set<string>>(new Set(saved?.removedTemplateIds ?? []));
@@ -1057,7 +1075,9 @@ function ProjectDetailView({
   // Backgrounds: additive model — only show what the agent (or user) explicitly adds
   const [agentAddedBgIds,       setAgentAddedBgIds]       = useState<string[]>(saved?.agentAddedBgIds ?? []);
   // Brand/theme kit: only activated when agent explicitly confirms it (not auto-derived from OEM)
-  const [agentActivatedOem,     setAgentActivatedOem]     = useState<string | null>(saved?.activatedOem ?? null);
+  const [agentActivatedOems, setAgentActivatedOems] = useState<string[]>(
+    saved?.activatedOems ?? (saved?.activatedOem ? [saved.activatedOem] : [])
+  );
 
   // Merged library: static catalog + user-added custom offers from file extraction
   const combinedOfferLibrary = useMemo(
@@ -1069,17 +1089,18 @@ function ProjectDetailView({
   // the brand card in the pane handles that after the wizard is complete.
   const isAgentCreated = project.id.startsWith("project-");
 
-  // Brand kit: only resolved after agent explicitly activates it via propose_brand → confirm
-  const brandKit: BrandKit | undefined = agentActivatedOem
-    ? brandKits.find((k) => k.oem === agentActivatedOem || k.name === agentActivatedOem)
-    : undefined;
+  // Active brand kits — can be multiple (one per make)
+  const activeBrandKits: BrandKit[] = brandKits.filter(k =>
+    agentActivatedOems.some(oem => k.oem === oem || k.name === oem)
+  );
+  const brandKit = activeBrandKits[0]; // backward compat alias
 
   // Controlled accordion states — declared here so agent effects can reference setExpandedSections
   const [expandedSections, setExpandedSections] = useState<Partial<Record<SectionId, boolean>>>({
     offers:    !!offersCount,
     templates: !!templateCount,
     preview:   !!offersCount && !!templateCount,
-    theme:     !!agentActivatedOem && !isAgentCreated,
+    theme:     agentActivatedOems.length > 0 && !isAgentCreated,
   });
   const [selectedBgId, setSelectedBgId] = useState<string | null>(saved?.bgId ?? null);
   const selectedBg = backgroundCollections.find(b => b.id === selectedBgId) ?? null;
@@ -1117,10 +1138,11 @@ function ProjectDetailView({
       removedTemplateIds: [...removedTemplateIds],
       bgId: selectedBgId,
       agentAddedBgIds,
-      activatedOem: agentActivatedOem,
+      activatedOems: agentActivatedOems,
+      activatedOem: agentActivatedOems[0] ?? null,
     };
     localStorage.setItem(`constellation_proj_state_${project.id}`, JSON.stringify(state));
-  }, [agentAddedOfferIds, agentAddedTemplateIds, removedOfferIds, removedTemplateIds, selectedBgId, agentAddedBgIds, agentActivatedOem, project.id]);
+  }, [agentAddedOfferIds, agentAddedTemplateIds, removedOfferIds, removedTemplateIds, selectedBgId, agentAddedBgIds, agentActivatedOems, project.id]);
 
   const visibleOffers = [
     ...offers,
@@ -1195,10 +1217,13 @@ function ProjectDetailView({
           if (backgroundIds.length > 0) setSelectedBgId(backgroundIds[0]);
         }, 220);
       } else if (action === "set_brand") {
-        // Activate brand kit only when explicitly confirmed via propose_brand
         const { oem } = payload as { oem: string };
         setExpandedSections((prev) => ({ ...prev, theme: true }));
-        setTimeout(() => setAgentActivatedOem(oem), 220);
+        setTimeout(() => {
+          setAgentActivatedOems(prev => prev.includes(oem) ? prev : [...prev, oem]);
+          const kit = brandKits.find(k => k.oem === oem || k.name === oem);
+          if (kit) setActiveBrandKit(project.id, kit.oem, kit.id);
+        }, 220);
       } else if (action === "add_custom_offers") {
         const { offers: customOffers } = payload as { offers: import("@projects/ProjectAgentPane").CustomOffer[] };
         const stored = customOffers.map(customOfferToStored);
@@ -1578,8 +1603,8 @@ function ProjectDetailView({
         <div data-agent-section="theme">
         <ProjectAccordionSection
           title="Theme & Logos"
-          count={brandKit ? 1 : undefined}
-          statusSlot={brandKit ? <ProjectStatusChip status="Done" /> : undefined}
+          count={activeBrandKits.length > 0 ? activeBrandKits.length : undefined}
+          statusSlot={activeBrandKits.length > 0 ? <ProjectStatusChip status="Done" /> : undefined}
           expanded={expandedSections["theme"]}
           onExpandedChange={(v) => toggleSection("theme", v)}
           emptyContent={
@@ -1589,52 +1614,72 @@ function ProjectDetailView({
             </button>
           }
         >
-          {brandKit && (
-            <div className="flex flex-col gap-4">
-              {/* Brand name + colors */}
-              <div className="flex items-center gap-4">
-                <span className="text-[13px] font-semibold text-[#1f1d25]">{brandKit.name}</span>
-                <div className="flex items-center gap-2">
-                  {brandKit.colors.map((color, i) => (
-                    <div key={i} className="flex items-center gap-1.5">
-                      <div
-                        className="w-5 h-5 rounded-full border border-black/10 shrink-0"
-                        style={{ backgroundColor: color }}
-                      />
-                      <span className="text-[11px] text-[#686576] font-mono">{color}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-              {/* Logo thumbnails — stagger in */}
-              <motion.div
-                className="flex flex-wrap gap-2"
-                variants={{ hidden: {}, show: { transition: { staggerChildren: 0.07, delayChildren: 0.2 } } }}
-                initial="hidden"
-                animate="show"
-              >
-                {brandKit.logos.map((logo) => (
-                  <motion.div
-                    key={logo.id}
-                    className="flex flex-col items-center gap-1 w-[88px]"
-                    variants={{ hidden: { opacity: 0, y: 8 }, show: { opacity: 1, y: 0, transition: { duration: 0.24, ease: "easeOut" } } }}
+          <div className="flex flex-col gap-4">
+            {/* Brand selector checkboxes */}
+            <div className="flex flex-wrap gap-2">
+              {brandKits.map(k => {
+                const isActive = agentActivatedOems.some(oem => k.oem === oem || k.name === oem);
+                return (
+                  <button
+                    key={k.id}
+                    onClick={() => {
+                      setAgentActivatedOems(prev =>
+                        isActive ? prev.filter(o => o !== k.oem && o !== k.name) : [...prev, k.oem]
+                      );
+                      if (!isActive) setActiveBrandKit(project.id, k.oem, k.id);
+                    }}
+                    className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-[12px] font-medium border transition-all cursor-pointer ${isActive ? "bg-[rgba(99,86,225,0.08)] border-[rgba(99,86,225,0.3)] text-[#473bab]" : "bg-white border-[rgba(0,0,0,0.12)] text-[#686576] hover:border-[rgba(99,86,225,0.3)]"}`}
+                    style={{ fontFamily: "'Roboto', sans-serif" }}
                   >
-                    <div className="w-[88px] h-[66px] rounded-lg bg-[#F4F5F6] border border-black/[0.07] flex items-center justify-center p-2">
-                      <img
-                        src={logo.image}
-                        alt={logo.label}
-                        className="max-w-full max-h-full object-contain"
-                      />
-                    </div>
-                    <span className="text-[10px] text-[#686576] text-center leading-tight line-clamp-2">
-                      {logo.label}
+                    <span className={`w-[14px] h-[14px] rounded-[3px] border flex items-center justify-center shrink-0 transition-colors ${isActive ? "bg-[#6356e1] border-[#6356e1]" : "border-[rgba(0,0,0,0.3)]"}`}>
+                      {isActive && (
+                        <svg width="9" height="9" viewBox="0 0 9 9" fill="none">
+                          <path d="M1.5 4.5L3.5 6.5L7.5 2.5" stroke="white" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/>
+                        </svg>
+                      )}
                     </span>
-                    <span className="text-[9px] text-[#9C99A9] text-center">{logo.sublabel}</span>
-                  </motion.div>
-                ))}
-              </motion.div>
+                    {k.name}
+                  </button>
+                );
+              })}
             </div>
-          )}
+            {/* Logo grids for each active brand kit */}
+            {activeBrandKits.map(kit => (
+              <div key={kit.id} className="flex flex-col gap-3">
+                <div className="flex items-center gap-4">
+                  <span className="text-[13px] font-semibold text-[#1f1d25]">{kit.name}</span>
+                  <div className="flex items-center gap-2">
+                    {kit.colors.map((color, i) => (
+                      <div key={i} className="flex items-center gap-1.5">
+                        <div className="w-5 h-5 rounded-full border border-black/10 shrink-0" style={{ backgroundColor: color }} />
+                        <span className="text-[11px] text-[#686576] font-mono">{color}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                <motion.div
+                  className="flex flex-wrap gap-2"
+                  variants={{ hidden: {}, show: { transition: { staggerChildren: 0.07, delayChildren: 0.1 } } }}
+                  initial="hidden"
+                  animate="show"
+                >
+                  {kit.logos.map((logo) => (
+                    <motion.div
+                      key={logo.id}
+                      className="flex flex-col items-center gap-1 w-[88px]"
+                      variants={{ hidden: { opacity: 0, y: 8 }, show: { opacity: 1, y: 0, transition: { duration: 0.24, ease: "easeOut" } } }}
+                    >
+                      <div className="w-[88px] h-[66px] rounded-lg bg-[#F4F5F6] border border-black/[0.07] flex items-center justify-center p-2">
+                        <img src={logo.image} alt={logo.label} className="max-w-full max-h-full object-contain" />
+                      </div>
+                      <span className="text-[10px] text-[#686576] text-center leading-tight line-clamp-2">{logo.label}</span>
+                      <span className="text-[9px] text-[#9C99A9] text-center">{logo.sublabel}</span>
+                    </motion.div>
+                  ))}
+                </motion.div>
+              </div>
+            ))}
+          </div>
         </ProjectAccordionSection>
         </div>
 

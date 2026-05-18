@@ -21,6 +21,7 @@ interface TopNavBarProps {
   onOpenWebMonitoring?: (id: string) => void;
   onOpenPreApprovalFromNotif?: (id: string) => void;
   onOpenClaimFromNotif?: (id: string) => void;
+  onOpenProjectFromNotif?: (projectId: string) => void;
   // [FV] início — dealer-side compliance notifications driven by OEM-added infractions
   dealerInfractionNotifs?: WCMItem[];
   dealerSeenInfractionIds?: Set<string>;
@@ -58,6 +59,7 @@ export function TopNavBar({
   onOpenWebMonitoring,
   onOpenPreApprovalFromNotif,
   onOpenClaimFromNotif,
+  onOpenProjectFromNotif,
   dealerInfractionNotifs, // [FV]
   dealerSeenInfractionIds, // [FV]
   dealerInfractionUnread = 0, // [FV]
@@ -239,6 +241,7 @@ export function TopNavBar({
                   onClose={() => setIsNotificationOpen(false)}
                   onOpenPreApproval={onOpenPreApprovalFromNotif}
                   onOpenClaim={onOpenClaimFromNotif}
+                  onOpenProject={onOpenProjectFromNotif}
                   // [FV] início
                   infractionNotifs={dealerInfractionNotifs}
                   seenInfractionIds={dealerSeenInfractionIds}

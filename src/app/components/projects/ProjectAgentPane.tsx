@@ -17,6 +17,10 @@ import imgAgentAvatar from "figma:asset/a66b3945941bddb97efa53207e606703467e02b3
 import { AvatarInitials } from "../ui/AvatarInitials";
 import { PROJECT_OWNERS, PLATFORM_OPTIONS } from "./CreateProjectDialog";
 import { ChannelChip } from "../ui/ChannelChip";
+import { OfferCard } from "./offers/OfferCard";
+import type { Offer as OfferCardData } from "./offers/OfferCard";
+import { offerLibrary } from "./lib/mock-data";
+import { useWorkflow } from "../../contexts/WorkflowContext";
 
 // ─── Shared event constants ────────────────────────────────────────────────────
 export const PROJECT_CONTEXT_EVENT         = "project-context-update";
@@ -88,12 +92,13 @@ interface BackgroundsMsg  { id: string; role: "assistant"; type: "backgrounds"; 
 interface PreviewMsg      { id: string; role: "assistant"; type: "preview";     offerIds: string[];       templateIds: string[] }
 interface ContinuationMsg { id: string; role: "user";     type: "continuation"; content: string }
 interface EmailMsg        { id: string; role: "assistant"; type: "email";       input: EmailInput;        applied: boolean }
+interface ShareMsg        { id: string; role: "assistant"; type: "share";       input: ShareInput;        applied: boolean }
 // File upload message (shown in chat as user bubble with file chip)
 interface UserFileMsg     { id: string; role: "user"; type: "user_file"; text: string; fileName: string; fileType: string; apiContent: ApiContentBlock[] }
 // Parsed offers from AI extraction of uploaded file
 interface ParsedOffersMsg { id: string; role: "assistant"; type: "parsed_offers"; input: ParsedOffersInput; applied: boolean }
 
-type Message = TextMessage | ToolChipMsg | ProposalMsg | SetupMsg | OffersMsg | TemplatesMsg | BrandMsg | BackgroundsMsg | PreviewMsg | ContinuationMsg | EmailMsg | UserFileMsg | ParsedOffersMsg;
+type Message = TextMessage | ToolChipMsg | ProposalMsg | SetupMsg | OffersMsg | TemplatesMsg | BrandMsg | BackgroundsMsg | PreviewMsg | ContinuationMsg | EmailMsg | ShareMsg | UserFileMsg | ParsedOffersMsg;
 
 interface ProposalInput {
   project_name?: string;
@@ -132,6 +137,10 @@ interface BackgroundsInput {
 interface EmailInput {
   recipient_hint?: string;
   message: string;
+}
+interface ShareInput {
+  recipient_hint: string;
+  project_name?: string;
 }
 
 // Offer row extracted from a file by Claude
@@ -969,61 +978,71 @@ function OffersProposalCard({ input, context, onApply, onDismiss }: OffersCardPr
           </div>
         } />
       </div>
-      {/* Items card */}
-      <div className="rounded-[14px] border border-[rgba(0,0,0,0.1)] bg-white overflow-hidden"
-        style={{ boxShadow: "0 2px 12px rgba(0,0,0,0.06)" }}>
-      <div className="flex flex-col gap-[10px] px-[14px] py-[12px]">
-        <div>
-          <p className={labelCls} style={f}>Offers · {offerIds.length} selected</p>
-          <motion.div
-            className="flex flex-col gap-[4px]"
-            variants={{ hidden: {}, show: { transition: { staggerChildren: 0.1, delayChildren: 0.28 } } }}
-            initial="hidden"
-            animate="show"
-          >
-            {offerIds.map((id) => {
-              const o = offers.find(x => x.id === id);
-              return (
-                <motion.div key={id}
-                  variants={{ hidden: { opacity: 0, x: -14 }, show: { opacity: 1, x: 0, transition: { duration: 0.26, ease: "easeOut" } } }}
-                  className="flex items-center gap-[8px] px-[10px] py-[7px] rounded-[8px] bg-[#f5f4f8] group">
-                  <div className="flex-1 min-w-0">
-                    <p className="text-[12px] font-medium text-[#1f1d25] truncate" style={f}>
-                      {o ? `${o.year} ${o.make} ${o.model} ${o.trim}` : id}
-                    </p>
-                    {o && <p className="text-[10.5px] text-[#686576] mt-[1px]" style={f}>
-                      {o.offerType} · ${o.monthlyPayment}/mo · PVI {o.pvi} · {o.aging}d aging
-                    </p>}
-                  </div>
-                  <button onClick={() => setOfferIds(p => p.filter(x => x !== id))}
-                    className="opacity-0 group-hover:opacity-100 text-[#9c99a9] hover:text-[#dc2626] transition-all cursor-pointer shrink-0">
-                    <Trash2 size={12} strokeWidth={1.7} />
-                  </button>
-                </motion.div>
-              );
-            })}
-            <AgentAddSelect
-              f={f}
-              placeholder="+ Add another offer…"
-              onAdd={v => setOfferIds(p => [...p, v])}
-              options={offers
-                .filter(o => !offerIds.includes(o.id))
-                .map(o => ({ value: o.id, label: `${o.year} ${o.make} ${o.model} ${o.trim} — ${o.offerType} $${o.monthlyPayment}/mo` }))}
-            />
-          </motion.div>
-        </div>
-        <div className="flex items-center gap-[8px] pt-[2px]">
+      {/* Offer cards list */}
+      <motion.div
+        className="flex flex-col gap-[6px]"
+        variants={{ hidden: {}, show: { transition: { staggerChildren: 0.08, delayChildren: 0.2 } } }}
+        initial="hidden"
+        animate="show"
+      >
+        {offerIds.map((id) => {
+          const o = offers.find(x => x.id === id);
+          if (!o) return null;
+          // Look up the full catalog entry to get the car image
+          const fullOffer = offerLibrary.find(x => x.id === o.id);
+          const cardData: OfferCardData = {
+            id: o.id,
+            year: o.year,
+            make: o.make,
+            model: o.model,
+            trim: o.trim,
+            image: (fullOffer as any)?.image ?? "",
+            stock: o.stock,
+            offerType: o.offerType,
+            tags: (fullOffer as any)?.tags ?? [],
+            pvi: o.pvi,
+            aging: o.aging,
+            sales: (fullOffer as any)?.sales ?? 0,
+            inventory: (fullOffer as any)?.inventory ?? o.stock,
+            monthlyPayment: o.monthlyPayment,
+            term: o.term,
+            totalDueAtSigning: (fullOffer as any)?.totalDueAtSigning ?? 0,
+          };
+          return (
+            <motion.div key={id}
+              variants={{ hidden: { opacity: 0, y: 8 }, show: { opacity: 1, y: 0, transition: { duration: 0.22, ease: "easeOut" } } }}
+            >
+              <OfferCard
+                offer={cardData}
+                variant="recommendation"
+                onDelete={() => setOfferIds(p => p.filter(x => x !== id))}
+              />
+            </motion.div>
+          );
+        })}
+      </motion.div>
+
+      {/* Add another + action buttons */}
+      <div className="flex flex-col gap-[6px] mt-[2px]">
+        <AgentAddSelect
+          f={f}
+          placeholder="+ Add another offer…"
+          onAdd={v => setOfferIds(p => [...p, v])}
+          options={offers
+            .filter(o => !offerIds.includes(o.id))
+            .map(o => ({ value: o.id, label: `${o.year} ${o.make} ${o.model} ${o.trim} — ${o.offerType} $${o.monthlyPayment}/mo` }))}
+        />
+        <div className="flex items-center gap-[8px]">
           <button onClick={() => { onApply(offerIds); setApplied(true); }}
             disabled={offerIds.length === 0}
             className="flex-1 py-[8px] rounded-full text-[13px] font-medium tracking-[0.46px] text-white transition-all cursor-pointer disabled:opacity-40"
             style={{ background: "linear-gradient(99deg, #473bab 0%, #6356e1 100%)", ...f }}>
-            Add offers
+            Add {offerIds.length} offer{offerIds.length !== 1 ? "s" : ""}
           </button>
           <button onClick={onDismiss} className="px-[14px] py-[8px] rounded-full text-[13px] text-[#686576] hover:bg-black/5 transition-colors cursor-pointer" style={f}>
             Dismiss
           </button>
         </div>
-      </div>
       </div>
     </motion.div>
   );
@@ -1413,7 +1432,105 @@ function BackgroundsProposalCard({ input, onApply, onDismiss }: BackgroundsCardP
   );
 }
 
+// ─── Share Chooser Card ───────────────────────────────────────────────────────
+
+function ShareChooserCard({
+  input,
+  projectName,
+  applied,
+  onChooseEmail,
+  onChoosePlatform,
+}: {
+  input: ShareInput;
+  projectName: string;
+  applied: boolean;
+  onChooseEmail: (recipientHint: string) => void;
+  onChoosePlatform: (recipientName: string) => void;
+}) {
+  const f = { fontFamily: "'Roboto', sans-serif" };
+  const [chosen, setChosen] = useState<"email" | "platform" | null>(null);
+
+  const recipient = input.recipient_hint || "the recipient";
+  const firstName = recipient.split(" ")[0];
+
+  if (chosen === "email") {
+    // Delegate immediately — email proposal card will render as a separate message
+    return (
+      <div className="ml-[32px] mt-[4px]">
+        <ConfirmedChip label={`Opening email share for ${firstName}…`} />
+      </div>
+    );
+  }
+
+  if (chosen === "platform") {
+    return (
+      <div className="ml-[32px] mt-[4px]">
+        <ConfirmedChip label={`Platform notification sent to ${firstName}`} />
+      </div>
+    );
+  }
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}
+      className="ml-[32px] mt-[4px] rounded-[14px] border border-[rgba(0,0,0,0.10)] bg-white overflow-hidden"
+      style={{ boxShadow: "0 2px 12px rgba(0,0,0,0.06)" }}
+    >
+      {/* Header */}
+      <div className="px-[14px] pt-[10px] pb-[8px] border-b border-[rgba(0,0,0,0.06)] bg-[#fafafa]">
+        <p style={{ ...f, fontSize: 11, color: "#686576", lineHeight: 1.5 }}>
+          How would you like to send to{" "}
+          <strong style={{ color: "#1f1d25" }}>{recipient}</strong>?
+        </p>
+      </div>
+
+      <div className="flex flex-col gap-[8px] px-[14px] py-[12px]">
+        {/* Email option */}
+        <button
+          onClick={() => { setChosen("email"); onChooseEmail(input.recipient_hint); }}
+          className="flex items-center gap-[10px] px-[12px] py-[10px] rounded-[10px] border border-[rgba(0,0,0,0.10)] bg-white hover:bg-[#f5f4ff] hover:border-[rgba(99,86,225,0.35)] text-left transition-all group"
+          style={{ cursor: "pointer" }}
+        >
+          <div className="w-[30px] h-[30px] rounded-full flex items-center justify-center shrink-0"
+            style={{ background: "rgba(99,86,225,0.10)" }}>
+            <svg width="14" height="14" viewBox="0 0 20 20" fill="none">
+              <rect x="2" y="5" width="16" height="11" rx="2" stroke="#6356E1" strokeWidth="1.5"/>
+              <path d="M2 7l8 5 8-5" stroke="#6356E1" strokeWidth="1.5" strokeLinecap="round"/>
+            </svg>
+          </div>
+          <div className="flex-1 min-w-0">
+            <p style={{ ...f, fontSize: 12, fontWeight: 500, color: "#1f1d25" }}>Send via Email</p>
+            <p style={{ ...f, fontSize: 10.5, color: "#9c99a9" }}>Share a project link by email</p>
+          </div>
+          <ChevronDown size={13} strokeWidth={1.5} style={{ color: "#9c99a9", transform: "rotate(-90deg)", flexShrink: 0 }} />
+        </button>
+
+        {/* Platform Communications option */}
+        <button
+          onClick={() => { setChosen("platform"); onChoosePlatform(input.recipient_hint); }}
+          className="flex items-center gap-[10px] px-[12px] py-[10px] rounded-[10px] border border-[rgba(0,0,0,0.10)] bg-white hover:bg-[#f0faf7] hover:border-[rgba(13,122,95,0.35)] text-left transition-all group"
+          style={{ cursor: "pointer" }}
+        >
+          <div className="w-[30px] h-[30px] rounded-full flex items-center justify-center shrink-0"
+            style={{ background: "rgba(13,122,95,0.10)" }}>
+            <svg width="14" height="14" viewBox="0 0 20 20" fill="none">
+              <path d="M10 2.5C7.1 2.5 4.7 4.7 4.7 7.5V11.5L3 13v.5h14V13l-1.7-1.5V7.5C15.3 4.7 12.9 2.5 10 2.5Z" stroke="#0d7a5f" strokeWidth="1.5" strokeLinejoin="round"/>
+              <path d="M8 13.5c0 1.1.9 2 2 2s2-.9 2-2" stroke="#0d7a5f" strokeWidth="1.5" strokeLinecap="round"/>
+            </svg>
+          </div>
+          <div className="flex-1 min-w-0">
+            <p style={{ ...f, fontSize: 12, fontWeight: 500, color: "#1f1d25" }}>Platform Communications</p>
+            <p style={{ ...f, fontSize: 10.5, color: "#9c99a9" }}>Send an in-app notification</p>
+          </div>
+          <ChevronDown size={13} strokeWidth={1.5} style={{ color: "#9c99a9", transform: "rotate(-90deg)", flexShrink: 0 }} />
+        </button>
+      </div>
+    </motion.div>
+  );
+}
+
 // ─── Email Proposal Card ──────────────────────────────────────────────────────
+
 interface EmailCardProps {
   input: EmailInput;
   projectName: string;
@@ -2333,6 +2450,9 @@ export function ProjectAgentPane({ isOpen, onClose }: ProjectAgentPaneProps) {
     return "Thinking…";
   }, [messages]);
 
+  // ── WorkflowContext (for Platform Communications notification) ──────────────
+  const { pushProjectMention } = useWorkflow();
+
   // Listen for project context
   useEffect(() => {
     const h = (e: Event) => setProjectContext((e as CustomEvent<ProjectContextPayload>).detail);
@@ -2408,6 +2528,11 @@ export function ProjectAgentPane({ isOpen, onClose }: ProjectAgentPaneProps) {
         id: `backgrounds-${Date.now()}`, role: "assistant", type: "backgrounds",
         input: toolInput as BackgroundsInput, applied: false,
       } as BackgroundsMsg]);
+    } else if (toolName === "propose_share") {
+      setMessages(prev => [...prev, {
+        id: `share-${Date.now()}`, role: "assistant", type: "share",
+        input: toolInput as ShareInput, applied: false,
+      } as ShareMsg]);
     } else if (toolName === "propose_email") {
       setMessages(prev => [...prev, {
         id: `email-${Date.now()}`, role: "assistant", type: "email",
@@ -2807,6 +2932,36 @@ export function ProjectAgentPane({ isOpen, onClose }: ProjectAgentPaneProps) {
 
   const handleEmailDismiss = useCallback(() => {}, []);
 
+  // ── Share card ────────────────────────────────────────────────────────────
+  // Called when user picks "Send via Email" from the share chooser card
+  const handleShareChooseEmail = useCallback((recipientHint: string) => {
+    const ctx = ctxRef.current;
+    const name = ctx?.projectName ?? "this project";
+    const oem  = ctx?.oem ?? "";
+    const emailInput: EmailInput = {
+      recipient_hint: recipientHint,
+      message: `I'd like to share the ${oem} project "${name}" with you. You can view and collaborate on it using the link below:\n\n[Project link]`,
+    };
+    setMessages(prev => [...prev, {
+      id: `email-${Date.now()}`, role: "assistant", type: "email",
+      input: emailInput, applied: false,
+    } as EmailMsg]);
+  }, []);
+
+  // Called when user picks "Send via Platform Communications"
+  const handleShareChoosePlatform = useCallback((recipientName: string) => {
+    const ctx = ctxRef.current;
+    pushProjectMention(
+      ctx?.projectId ?? "unknown",
+      ctx?.projectName ?? "this project",
+      "Jorge Verlindo",
+    );
+    setMessages(prev => [...prev, {
+      id: `a-${Date.now()}`, role: "assistant", type: "text",
+      content: `✅ Platform notification sent to **${recipientName}**. They'll see a notification in their feed.`,
+    } as TextMessage]);
+  }, [pushProjectMention]);
+
   // ── ParsedOffers card ────────────────────────────────────────────────────────
   const handleParsedOffersApply = useCallback((msgId: string, offers: CustomOffer[]) => {
     setMessages(prev => prev.map(m => m.id === msgId ? { ...m, applied: true } as ParsedOffersMsg : m));
@@ -2870,6 +3025,16 @@ export function ProjectAgentPane({ isOpen, onClose }: ProjectAgentPaneProps) {
     currentThreadIdRef.current = thread.id;
     setShowHistory(false);
   }, []);
+
+  // Reset thread when the user switches to a different project
+  const prevProjectIdRef = useRef<string | null>(null);
+  useEffect(() => {
+    const newId = projectContext?.projectId ?? "";
+    if (prevProjectIdRef.current !== null && prevProjectIdRef.current !== newId) {
+      handleNewThread();
+    }
+    prevProjectIdRef.current = newId;
+  }, [projectContext?.projectId, handleNewThread]);
 
   // ── "Create a project" chip — shows a brief thinking moment, then the card ──
   const handleCreateProjectClick = useCallback(() => {
@@ -3157,6 +3322,8 @@ export function ProjectAgentPane({ isOpen, onClose }: ProjectAgentPaneProps) {
                           onProposalDismiss={() => handleProposalDismiss(msg.id)}
                           onEmailApply={handleEmailApply}
                           onEmailDismiss={handleEmailDismiss}
+                          onShareChooseEmail={handleShareChooseEmail}
+                          onShareChoosePlatform={handleShareChoosePlatform}
                           onParsedOffersApply={(offers) => handleParsedOffersApply(msg.id, offers)}
                           onParsedOffersDismiss={() => handleParsedOffersDismiss(msg.id)}
                         />
@@ -3211,6 +3378,7 @@ function MessageBubble({
   onBrandApply, onBrandDismiss,
   onProposalApply, onProposalDismiss,
   onEmailApply, onEmailDismiss,
+  onShareChooseEmail, onShareChoosePlatform,
   onParsedOffersApply, onParsedOffersDismiss,
 }: {
   message: Message;
@@ -3231,6 +3399,8 @@ function MessageBubble({
   onProposalDismiss: () => void;
   onEmailApply: (recipient: string, message: string) => void;
   onEmailDismiss: () => void;
+  onShareChooseEmail: (recipientHint: string) => void;
+  onShareChoosePlatform: (recipientName: string) => void;
   onParsedOffersApply: (offers: CustomOffer[]) => void;
   onParsedOffersDismiss: () => void;
 }) {
@@ -3330,6 +3500,18 @@ function MessageBubble({
         projectName={projectName}
         onApply={onEmailApply}
         onDismiss={onEmailDismiss}
+      />
+    );
+  }
+
+  if (message.type === "share") {
+    return (
+      <ShareChooserCard
+        input={message.input}
+        projectName={projectName}
+        applied={message.applied}
+        onChooseEmail={onShareChooseEmail}
+        onChoosePlatform={onShareChoosePlatform}
       />
     );
   }

@@ -584,6 +584,9 @@ export default function AppContent() {
           setSelectedClaimId(id);
           navigate(buildUrl(userType, client.clientId, 'claims'), { replace: true });
         }}
+        onOpenProjectFromNotif={(_projectId) => {
+          setActiveAppSection('projects');
+        }}
       />
 
       {/* Main Layout Container - Fixed offsets for sidebar/navbar */}

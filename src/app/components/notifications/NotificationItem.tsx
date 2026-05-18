@@ -4,7 +4,7 @@ import { ImageWithFallback } from '../figma/ImageWithFallback';
 
 export interface NotificationItemProps {
   id: string;
-  type: 'claim' | 'pre-approval' | 'comment';
+  type: 'claim' | 'pre-approval' | 'comment' | 'project-mention';
   referenceId?: string; // e.g., MFA386592
   message: React.ReactNode;
   time: string;

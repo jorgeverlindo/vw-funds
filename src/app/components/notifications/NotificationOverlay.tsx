@@ -9,6 +9,8 @@ interface NotificationOverlayProps {
   onClose: () => void;
   onOpenPreApproval?: (id: string) => void;
   onOpenClaim?: (id: string) => void;
+  /** Called when a project-mention notification is clicked — id is the projectId */
+  onOpenProject?: (projectId: string) => void;
   className?: string;
   // Compliance infractions logged by OEM that pertain to this dealer
   infractionNotifs?: WCMItem[];
@@ -29,6 +31,7 @@ export function NotificationOverlay({
   onClose,
   onOpenPreApproval,
   onOpenClaim,
+  onOpenProject,
   className,
   infractionNotifs,
   seenInfractionIds,
@@ -62,6 +65,7 @@ export function NotificationOverlay({
               markNotificationRead(n.id);
               if (n.type === 'pre-approval') onOpenPreApproval?.(n.referenceId);
               else if (n.type === 'claim') onOpenClaim?.(n.referenceId);
+              else if (n.type === 'project-mention') onOpenProject?.(n.referenceId);
               onClose();
             }}
             className={n.isRead ? 'opacity-70' : ''}

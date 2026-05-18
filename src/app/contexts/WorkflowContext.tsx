@@ -124,7 +124,7 @@ export interface WorkflowEvent {
 export interface WorkflowNotification {
   id: string;
   targetRole: 'oem' | 'dealer';
-  type: 'pre-approval' | 'claim';
+  type: 'pre-approval' | 'claim' | 'project-mention';
   title: string;
   body: string;
   referenceId: string;
@@ -248,6 +248,9 @@ interface WorkflowContextType {
   markAllRead: (role: 'oem' | 'dealer') => void;
   oemUnreadCount: number;
   dealerUnreadCount: number;
+
+  /** Push a project-mention notification to the dealer feed (Katelyn). */
+  pushProjectMention: (projectId: string, projectName: string, senderName: string) => void;
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -942,6 +945,20 @@ export function WorkflowProvider({ children }: { children: ReactNode }) {
     }));
   }, []);
 
+  const pushProjectMention = useCallback(
+    (projectId: string, projectName: string, senderName: string) => {
+      pushNotif({
+        targetRole: 'dealer',
+        type: 'project-mention',
+        title: `${senderName} mentioned you in a project`,
+        body: `mentioned you in the project "${projectName}"`,
+        referenceId: projectId,
+        user: { name: senderName, initials: senderName.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase() },
+      });
+    },
+    [pushNotif],
+  );
+
   // ── Derived counts ────────────────────────────────────────────────────────
 
   const oemUnreadCount = workflow.notifications.filter(
@@ -985,6 +1002,7 @@ export function WorkflowProvider({ children }: { children: ReactNode }) {
         markAllRead,
         oemUnreadCount,
         dealerUnreadCount,
+        pushProjectMention,
       }}
     >
       {children}

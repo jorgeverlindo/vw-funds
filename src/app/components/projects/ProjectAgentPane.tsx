@@ -2598,13 +2598,12 @@ export function ProjectAgentPane({ isOpen, onClose }: ProjectAgentPaneProps) {
   const handleParsedOffersApply = useCallback((msgId: string, offers: CustomOffer[]) => {
     setMessages(prev => prev.map(m => m.id === msgId ? { ...m, applied: true } as ParsedOffersMsg : m));
     dispatchAction({ action: "add_custom_offers", offers });
-    if (offers.length > 0) {
-      setMessages(prev => [...prev, {
-        id: `a-${Date.now()}`, role: "assistant", type: "text",
-        content: `✅ Added ${offers.length} custom offer${offers.length === 1 ? "" : "s"} to the project.`,
-      } as TextMessage]);
+    // Continue the flow — parsed_offers fulfills the "offers" step
+    const inSetupFlow = messagesRef.current.some(m => m.type === "setup");
+    if (inSetupFlow) {
+      fireNextStep("offers");
     }
-  }, [dispatchAction]);
+  }, [dispatchAction, fireNextStep]);
 
   const handleParsedOffersDismiss = useCallback((msgId: string) => {
     setMessages(prev => prev.filter(m => m.id !== msgId));

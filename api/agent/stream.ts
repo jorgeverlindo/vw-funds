@@ -124,78 +124,45 @@ ${bgList}
 
 ━━━ CAMPAIGN BUILDING FLOW ━━━
 
-INTENT DETECTION — use this decision tree to pick flow_scope for setup_project:
+STEP SELECTION — always set flow_steps in setup_project:
 
-  1. Does the user explicitly mention email / send / share at the end?
-     YES → does the user also want offers (not just templates)?
-       YES (offers + email, no templates) → flow_scope: "offers_and_email"
-       NO  (templates + email)            → flow_scope: "templates_and_email"
-     NO → continue to step 2
+flow_steps is an ORDERED array of actions to perform after the project is created.
+Valid steps: "offers", "templates", "backgrounds", "brand", "email".
 
-  2. Does the user want a complete campaign (full build)?
-     YES → flow_scope: "full"
+Rules:
+  - Include "email" last if the user wants to share/send/email the project to someone.
+  - "full campaign" → ["offers", "templates", "backgrounds", "brand"]
+  - User says "offers only" → ["offers"]
+  - User says "templates only" → ["templates"]
+  - User says "offers and email" → ["offers", "email"]
+  - User says "templates and email" → ["templates", "email"]
+  - User says "offers and backgrounds" → ["offers", "backgrounds"]
+  - User says "offers, templates, email" → ["offers", "templates", "email"]
+  - User says "offers and templates" → ["offers", "templates"]
+  - No clear scope → ["offers", "templates", "backgrounds", "brand"]
 
-  3. Does the user want only specific pieces?
-     Only offers                       → flow_scope: "offers_only"
-     Only templates                    → flow_scope: "templates_only"
-     Offers + templates (no email)     → flow_scope: "offers_and_templates"
+⚠️ ALWAYS call setup_project FIRST — no exceptions, no clarifying questions before it.
+⚠️ If OEM unknown: infer from catalog. If catalog empty: use "General" / "New Project".
 
-  Examples:
-    "build a full campaign" → "full"
-    "pick offers" / "just pick some offers" / "offers only" / "I want to pick offers for a new project" → "offers_only"
-    "pick templates" / "just templates" / "I want to pick templates for a new project" → "templates_only"
-    "create a project, add some offers and send via email to Luke" → "offers_and_email"  ← KEY CASE
-    "create a project with offers and email it" → "offers_and_email"
-    "pick templates and send to Sarah" → "templates_and_email"
-    "add offers and templates" → "offers_and_templates"
-    (no clear scope) → "full"
+CONTINUATION MESSAGES (automated — the UI sends these after each step is confirmed):
+  "Step complete. Next: propose_offers"      → call propose_offers immediately
+  "Step complete. Next: propose_templates"   → call propose_templates immediately
+  "Step complete. Next: propose_backgrounds" → call propose_backgrounds immediately
+  "Step complete. Next: propose_brand"       → call propose_brand immediately
+  "Step complete. Next: propose_email"       → call propose_email immediately
+  "Project created. Next: propose_offers"    → call propose_offers immediately
+  "Project created. Next: propose_templates" → call propose_templates immediately
+  (etc. for any first step)
 
-  ⚠️  RULE: If the user says "email", "send", "share" as a final step with NO mention of templates/backgrounds/brand,
-  the scope ends at email — do NOT proceed to templates. Use "offers_and_email" or "templates_and_email".
+Never ask the user what to do next during automated continuations — just fire the tool.
 
-FLOW STEPS BY SCOPE (new project, no project open):
-  ⚠️  ALWAYS call setup_project as the FIRST action — NO EXCEPTIONS.
-  NEVER ask the user any clarifying question before calling setup_project — not for OEM, not for name, not for dates.
-  If OEM/brand is not stated: infer from the available offers catalog (e.g. "Honda" if all offers are Honda).
-  If the catalog is empty: use OEM "General" and project_name "New Project". The setup card lets the user correct any field before confirming.
-
-  flow_scope "full":
-    Step 1: setup_project → user confirms
-    Step 2: "Project created. Propose offers." → propose_offers → user confirms
-    Step 3: "Offers confirmed. Propose templates." → propose_templates → user confirms
-    Step 3.5: "Templates confirmed. Propose backgrounds." → propose_backgrounds → user confirms
-    Step 4: "Backgrounds confirmed/skipped. Propose brand." → propose_brand → done
-
-  flow_scope "templates_only":
-    Step 1: setup_project → user confirms
-    Step 2: "Project created. User wants templates only — propose templates directly, skip offers." → propose_templates → STOP (the UI will show a follow-up question automatically)
-
-  flow_scope "offers_only":
-    Step 1: setup_project → user confirms
-    Step 2: "Project created. Propose offers." → propose_offers → STOP (the UI will show a follow-up question automatically — do NOT proceed to templates or anything else)
-
-  flow_scope "offers_and_templates":
-    Step 1: setup_project → user confirms
-    Step 2: "Project created. Propose offers." → propose_offers → user confirms
-    Step 3: "Offers confirmed. Propose templates." → propose_templates → done
-
-  flow_scope "templates_and_email":
-    Step 1: setup_project → user confirms
-    Step 2: "Project created. User wants templates only — propose templates directly, skip offers." → propose_templates → user confirms
-    Step 3: "Templates confirmed. Now propose the email share." → propose_email → done
-
-  flow_scope "offers_and_email":
-    Step 1: setup_project → user confirms
-    Step 2: "Project created. Propose offers." → propose_offers → user confirms
-    Step 3: "Offers confirmed. Now propose the email share." → propose_email → done
-
-INDIVIDUAL REQUESTS (project already open — respond to specific asks):
-  - "add offers" / "change offers" → call propose_offers directly
-  - "add templates" / "change templates" → call propose_templates directly
+INDIVIDUAL REQUESTS (project already open):
+  - "add offers" / "change offers"           → call propose_offers directly
+  - "add templates" / "change templates"     → call propose_templates directly
   - "add backgrounds" / "change backgrounds" → call propose_backgrounds directly
-  - "add brand" / "change theme" → call propose_brand directly
-  - "full refresh" → call propose_project (offers + templates together)
-  - "send by email" / "share by email" / "email this" → call propose_email directly
+  - "add brand" / "change theme"             → call propose_brand directly
+  - "full refresh"                           → call propose_project (offers + templates)
+  - "send by email" / "share" / "email this" → call propose_email directly
   Do NOT restart the full flow. Respond ONLY to what was asked.
 
 KEY RULES:
@@ -255,7 +222,7 @@ const agentTools: Anthropic.Tool[] = [
     description:
       "Propose project metadata — name, account, brand, and date range — for the user to confirm " +
       "before the project is created. Use this as the FIRST step when the user wants to build a " +
-      "campaign and no project is currently open. Always set flow_scope to match the user's intent. " +
+      "campaign and no project is currently open. Always set flow_steps to match the user's intent. " +
       "After the user confirms, the project is created and you will receive a continuation message " +
       "telling you what to propose next based on the scope.",
     input_schema: {
@@ -266,17 +233,16 @@ const agentTools: Anthropic.Tool[] = [
         oem:          { type: "string", description: "Brand / OEM (e.g. 'Honda', 'BMW')" },
         start_date:   { type: "string", description: "Campaign start date (e.g. 'Jun 1, 2026')" },
         end_date:     { type: "string", description: "Campaign end date (e.g. 'Jun 30, 2026')" },
-        flow_scope: {
-          type: "string",
-          enum: ["full", "offers_only", "templates_only", "offers_and_templates", "templates_and_email", "offers_and_email"],
+        flow_steps: {
+          type: "array",
+          items: { type: "string", enum: ["offers", "templates", "backgrounds", "brand", "email"] },
           description:
-            "Scope of this build flow based on what the user asked for. " +
-            "full = complete campaign (offers→templates→backgrounds→brand). " +
-            "templates_only = just propose templates, then stop. " +
-            "offers_only = just propose offers, then stop. " +
-            "offers_and_templates = propose offers then templates, skip backgrounds & brand. " +
-            "templates_and_email = propose templates then email share, skip backgrounds & brand. " +
-            "offers_and_email = propose offers then email share, skip templates/backgrounds/brand.",
+            "Ordered list of steps to execute after project setup. Choose from: " +
+            "'offers', 'templates', 'backgrounds', 'brand', 'email'. " +
+            "Always end with 'email' if the user wants to share the project. " +
+            "Examples: full=[offers,templates,backgrounds,brand], offers+email=[offers,email], " +
+            "templates+email=[templates,email], offers+templates+email=[offers,templates,email], " +
+            "backgrounds only=[backgrounds], offers+backgrounds=[offers,backgrounds].",
         },
         owner: {
           type: "string",
@@ -288,7 +254,7 @@ const agentTools: Anthropic.Tool[] = [
           description: "Ad platforms for this project. Valid values: 'Google PMax', 'Google Display', 'Meta', 'Website', 'TikTok', 'YouTube', 'Email'.",
         },
       },
-      required: ["project_name", "oem", "start_date", "end_date", "flow_scope"],
+      required: ["project_name", "oem", "start_date", "end_date", "flow_steps"],
     },
   },
 

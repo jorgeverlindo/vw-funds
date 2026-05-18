@@ -73,14 +73,13 @@ interface ProposalInput {
   end_date?: string;
   rationale: string;
 }
-type FlowScope = "full" | "offers_only" | "templates_only" | "offers_and_templates" | "templates_and_email" | "offers_and_email";
 interface SetupInput {
   project_name: string;
   account?: string;
   oem: string;
   start_date: string;
   end_date: string;
-  flow_scope?: FlowScope;
+  flow_steps?: string[];
   owner?: string;
   platforms?: string[];
 }
@@ -1336,28 +1335,29 @@ interface EmailCardProps {
   onDismiss: () => void;
 }
 
-const CONTACT_GROUPS = [
-  { key: "constellation" as const, label: "Constellation" },
-  { key: "dealer"        as const, label: "Dealer" },
-];
-
 function EmailProposalCard({ input, projectName, onApply, onDismiss }: EmailCardProps) {
-  // Multi-select: set of selected emails
-  const [selectedEmails, setSelectedEmails] = useState<Set<string>>(() => {
-    if (!input.recipient_hint) return new Set();
-    const hint = input.recipient_hint.toLowerCase();
-    const match = MOCK_CONTACTS.find(c =>
-      c.name.toLowerCase().includes(hint) || c.email.toLowerCase().includes(hint)
-    );
-    return match ? new Set([match.email]) : new Set();
-  });
+  const f = { fontFamily: "'Roboto', sans-serif" };
+  const labelCls = "text-[10px] font-semibold uppercase tracking-[0.06em] text-[#9c99a9] mb-[6px]";
+  const hint = (input.recipient_hint ?? "").trim();
 
+  // Find known contact
+  const knownContact = hint
+    ? MOCK_CONTACTS.find(c =>
+        c.name.toLowerCase().includes(hint.toLowerCase()) ||
+        c.email.toLowerCase().includes(hint.toLowerCase()))
+    : undefined;
+
+  const isUnknownRecipient = !!hint && !knownContact;
+
+  // State
+  const [selectedEmails, setSelectedEmails] = useState<Set<string>>(
+    () => knownContact ? new Set([knownContact.email]) : new Set()
+  );
+  const [unknownEmail, setUnknownEmail] = useState("");
   const [message, setMessage] = useState(input.message);
   const [applied, setApplied] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const f = { fontFamily: "'Roboto', sans-serif" };
 
-  // Auto-height textarea — hug content vertically
   useEffect(() => {
     const el = textareaRef.current;
     if (!el) return;
@@ -1372,21 +1372,34 @@ function EmailProposalCard({ input, projectName, onApply, onDismiss }: EmailCard
       return next;
     });
 
-  const selectedNames = MOCK_CONTACTS
-    .filter(c => selectedEmails.has(c.email))
-    .map(c => c.name.split(" ")[0])
-    .join(", ");
+  // Determine recipient label for confirmed chip
+  const getRecipientLabel = () => {
+    if (isUnknownRecipient) return unknownEmail || hint;
+    if (knownContact) return knownContact.name.split(" ")[0];
+    return MOCK_CONTACTS.filter(c => selectedEmails.has(c.email)).map(c => c.name.split(" ")[0]).join(", ") || "recipient";
+  };
 
   if (applied) {
     return (
       <div className="ml-[32px] mt-[4px]">
-        <ConfirmedChip label={`Email sent to ${selectedNames || "recipient"}`} />
+        <ConfirmedChip label={`Email sent to ${getRecipientLabel()}`} />
       </div>
     );
   }
 
-  const labelCls = "text-[10px] font-semibold uppercase tracking-[0.06em] text-[#9c99a9] mb-[6px]";
+  const canSend = isUnknownRecipient ? unknownEmail.includes("@") : knownContact ? true : selectedEmails.size > 0;
+
+  const handleSend = () => {
+    const recipient = isUnknownRecipient ? unknownEmail : knownContact ? knownContact.email : [...selectedEmails].join(", ");
+    onApply(recipient, message);
+    setApplied(true);
+  };
+
   const groupLabelCls = "text-[9px] font-semibold uppercase tracking-[0.08em] text-[#c4c1d0] px-[2px] mb-[3px] mt-[6px] first:mt-0";
+  const CONTACT_GROUPS = [
+    { key: "constellation" as const, label: "Constellation" },
+    { key: "dealer" as const, label: "Dealer" },
+  ];
 
   return (
     <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}
@@ -1402,73 +1415,94 @@ function EmailProposalCard({ input, projectName, onApply, onDismiss }: EmailCard
 
       <div className="flex flex-col gap-[10px] px-[14px] py-[12px]">
 
-        {/* Recipient selector — grouped, multi-select */}
+        {/* ── Recipient section ── */}
         <div>
           <p className={labelCls} style={f}>Send to</p>
-          <div className="flex flex-col">
-            {CONTACT_GROUPS.map(group => {
-              const contacts = MOCK_CONTACTS.filter(c => c.group === group.key);
-              return (
-                <div key={group.key}>
-                  <p className={groupLabelCls} style={f}>{group.label}</p>
-                  <div className="flex flex-col gap-[3px] mb-[4px]">
-                    {contacts.map(c => {
-                      const isSelected = selectedEmails.has(c.email);
-                      const avatarBg = group.key === "constellation" ? "#473bab" : "#0d7a5f";
-                      return (
-                        <button
-                          key={c.email}
-                          onClick={() => toggleContact(c.email)}
-                          className="flex items-center gap-[8px] px-[10px] py-[7px] rounded-[8px] transition-all cursor-pointer text-left w-full"
-                          style={{
-                            background: isSelected ? "rgba(71,59,171,0.08)" : "#f5f4f8",
-                            outline: isSelected ? "1.5px solid rgba(71,59,171,0.35)" : "1.5px solid transparent",
-                          }}>
-                          <div className="w-[24px] h-[24px] rounded-full flex items-center justify-center shrink-0"
-                            style={{ background: avatarBg }}>
-                            <span style={{ ...f, fontSize: 9, fontWeight: 700, color: "white" }}>
-                              {c.name.split(" ").map(n => n[0]).join("").slice(0, 2)}
-                            </span>
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <p style={{ ...f, fontSize: 12, fontWeight: 500, color: "#1f1d25" }}>{c.name}</p>
-                            <p style={{ ...f, fontSize: 10, color: "#9c99a9" }} className="truncate">{c.email}</p>
-                          </div>
-                          {isSelected && (
-                            <Check size={12} strokeWidth={2.5} className="text-[#473bab] shrink-0" />
-                          )}
-                        </button>
-                      );
-                    })}
+
+          {/* Mode A: known contact — single row, pre-selected */}
+          {knownContact && (
+            <div className="flex items-center gap-[8px] px-[10px] py-[8px] rounded-[8px]"
+              style={{ background: "rgba(71,59,171,0.08)", outline: "1.5px solid rgba(71,59,171,0.35)" }}>
+              <div className="w-[28px] h-[28px] rounded-full flex items-center justify-center shrink-0"
+                style={{ background: knownContact.group === "constellation" ? "#473bab" : "#0d7a5f" }}>
+                <span style={{ ...f, fontSize: 10, fontWeight: 700, color: "white" }}>
+                  {knownContact.name.split(" ").map((n: string) => n[0]).join("").slice(0, 2)}
+                </span>
+              </div>
+              <div className="flex-1 min-w-0">
+                <p style={{ ...f, fontSize: 12, fontWeight: 500, color: "#1f1d25" }}>{knownContact.name}</p>
+                <p style={{ ...f, fontSize: 10, color: "#9c99a9" }} className="truncate">{knownContact.email}</p>
+              </div>
+              <Check size={13} strokeWidth={2.5} className="text-[#473bab] shrink-0" />
+            </div>
+          )}
+
+          {/* Mode B: unknown recipient — ask for email */}
+          {isUnknownRecipient && (
+            <div className="flex flex-col gap-[6px]">
+              <p style={{ ...f, fontSize: 11.5, color: "#686576", lineHeight: 1.5 }}>
+                I don't have <strong style={{ color: "#1f1d25" }}>"{hint}"</strong> in my contacts.
+              </p>
+              <input
+                type="email"
+                value={unknownEmail}
+                onChange={e => setUnknownEmail(e.target.value)}
+                placeholder="their@email.com"
+                className="w-full px-[10px] py-[7px] rounded-[8px] text-[12px] text-[#1f1d25] border border-[rgba(0,0,0,0.12)] bg-[#fafafb] outline-none focus:border-[#473bab] transition-all"
+                style={f}
+              />
+            </div>
+          )}
+
+          {/* Mode C: no hint — full grouped contact list */}
+          {!hint && (
+            <div className="flex flex-col">
+              {CONTACT_GROUPS.map(group => {
+                const contacts = MOCK_CONTACTS.filter(c => c.group === group.key);
+                return (
+                  <div key={group.key}>
+                    <p className={groupLabelCls} style={f}>{group.label}</p>
+                    <div className="flex flex-col gap-[3px] mb-[4px]">
+                      {contacts.map(c => {
+                        const isSelected = selectedEmails.has(c.email);
+                        const avatarBg = group.key === "constellation" ? "#473bab" : "#0d7a5f";
+                        return (
+                          <button key={c.email} onClick={() => toggleContact(c.email)}
+                            className="flex items-center gap-[8px] px-[10px] py-[7px] rounded-[8px] transition-all cursor-pointer text-left w-full"
+                            style={{ background: isSelected ? "rgba(71,59,171,0.08)" : "#f5f4f8", outline: isSelected ? "1.5px solid rgba(71,59,171,0.35)" : "1.5px solid transparent" }}>
+                            <div className="w-[24px] h-[24px] rounded-full flex items-center justify-center shrink-0" style={{ background: avatarBg }}>
+                              <span style={{ ...f, fontSize: 9, fontWeight: 700, color: "white" }}>
+                                {c.name.split(" ").map((n: string) => n[0]).join("").slice(0, 2)}
+                              </span>
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p style={{ ...f, fontSize: 12, fontWeight: 500, color: "#1f1d25" }}>{c.name}</p>
+                              <p style={{ ...f, fontSize: 10, color: "#9c99a9" }} className="truncate">{c.email}</p>
+                            </div>
+                            {isSelected && <Check size={12} strokeWidth={2.5} className="text-[#473bab] shrink-0" />}
+                          </button>
+                        );
+                      })}
+                    </div>
                   </div>
-                </div>
-              );
-            })}
-          </div>
+                );
+              })}
+            </div>
+          )}
         </div>
 
-        {/* Message editor — auto-height, hugs content */}
+        {/* Message editor */}
         <div>
           <p className={labelCls} style={f}>Message</p>
-          <textarea
-            ref={textareaRef}
-            value={message}
-            onChange={e => setMessage(e.target.value)}
+          <textarea ref={textareaRef} value={message} onChange={e => setMessage(e.target.value)}
             rows={1}
             className="w-full px-[10px] py-[8px] rounded-[8px] text-[12px] text-[#1f1d25] border border-[rgba(0,0,0,0.12)] bg-[#fafafb] outline-none focus:border-[#473bab] transition-all resize-none leading-relaxed overflow-hidden"
-            style={{ ...f, minHeight: 36 }}
-          />
+            style={{ ...f, minHeight: 36 }} />
         </div>
 
         {/* Actions */}
         <div className="flex items-center gap-[8px] pt-[2px]">
-          <button
-            onClick={() => {
-              const allEmails = [...selectedEmails].join(", ");
-              onApply(allEmails, message);
-              setApplied(true);
-            }}
-            disabled={selectedEmails.size === 0}
+          <button onClick={handleSend} disabled={!canSend}
             className="flex-1 py-[8px] rounded-full text-[13px] font-medium tracking-[0.46px] text-white transition-all cursor-pointer disabled:opacity-40"
             style={{ background: "linear-gradient(99deg, #473bab 0%, #6356e1 100%)", ...f }}>
             Send email
@@ -2094,119 +2128,89 @@ export function ProjectAgentPane({ isOpen, onClose }: ProjectAgentPaneProps) {
     );
   }, [streaming, projectContext, messages, streamMessage, handleToolResult]);
 
-  // ── Flow scope helper — reads messagesRef (always fresh, no stale closure) ──
-  // Primary source: flow_scope set by the agent in setup_project.
-  // Fallback: if agent chose "full" but the original user message mentions email → override.
-  const getFlowScope = useCallback((): FlowScope => {
+  // ── Flow steps helper — reads messagesRef (always fresh, no stale closure) ──
+  const getFlowSteps = useCallback((): string[] => {
     const msgs = messagesRef.current;
     const setupMsgs = msgs.filter((m): m is SetupMsg => m.type === "setup");
-    const agentScope = setupMsgs.at(-1)?.input.flow_scope ?? "full";
-
-    // If agent already picked a specific scope, trust it
-    if (agentScope !== "full") return agentScope;
-
-    // Fallback: scan the first user message for email intent the agent may have missed
+    const agentSteps = setupMsgs.at(-1)?.input.flow_steps;
+    if (agentSteps && agentSteps.length > 0) return agentSteps;
+    // Fallback: infer from first user message
     const firstUser = msgs.find((m): m is TextMessage => m.type === "text" && m.role === "user");
     if (firstUser) {
       const t = firstUser.content.toLowerCase();
-      const wantsEmail    = t.includes("email") || (t.includes("send") && (t.includes("luke") || t.includes("sarah") || t.includes("zak") || t.includes("sonya") || t.includes("rachel") || t.includes("jenny") || t.includes("mike") || t.includes("james") || t.includes("ashley")));
-      const wantsOffers   = t.includes("offer");
+      const wantsEmail = t.includes("email") || t.includes("send") || t.includes("share");
+      const wantsOffers = t.includes("offer");
       const wantsTemplates = t.includes("template");
-      if (wantsEmail && wantsOffers   && !wantsTemplates) return "offers_and_email";
-      if (wantsEmail && !wantsOffers  && !wantsTemplates) return "templates_and_email";
+      const wantsBackgrounds = t.includes("background");
+      const steps: string[] = [];
+      if (wantsOffers) steps.push("offers");
+      if (wantsTemplates) steps.push("templates");
+      if (wantsBackgrounds) steps.push("backgrounds");
+      if (wantsEmail) steps.push("email");
+      if (steps.length > 0) return steps;
     }
-    return "full";
+    return ["offers", "templates", "backgrounds", "brand"];
   }, []);
+
+  const fireNextStep = useCallback((completedStep: string) => {
+    const steps = getFlowSteps();
+    const idx = steps.indexOf(completedStep);
+    const nextStep = idx >= 0 && idx < steps.length - 1 ? steps[idx + 1] : null;
+    if (!nextStep) return; // flow complete
+    const continuations: Record<string, string> = {
+      offers:      "Step complete. Next: propose_offers",
+      templates:   "Step complete. Next: propose_templates",
+      backgrounds: "Step complete. Next: propose_backgrounds",
+      brand:       "Step complete. Next: propose_brand",
+      email:       "Step complete. Next: propose_email",
+    };
+    const msg = continuations[nextStep];
+    if (msg) setTimeout(() => sendInternal(msg), 400);
+  }, [getFlowSteps, sendInternal]);
 
   // ── Setup card ──────────────────────────────────────────────────────────────
   const handleSetupApply = useCallback((name: string, account: string, oem: string, startDate: string, endDate: string, owner: string, platforms: string[]) => {
     dispatchAction({ action: "create_project", name, account, oem, startDate, endDate, owner, platforms });
     setKnownProjectNames(prev => [...prev, name]);
-    // Wait briefly for the project to mount, then continue based on flow_scope
     setTimeout(() => {
-      const scope = getFlowScope();
-      if (scope === "templates_only" || scope === "templates_and_email") {
-        sendInternal("Project created. User wants templates only — propose templates directly, skip offers.");
-      } else {
-        sendInternal("Project created. Propose offers.");
-      }
+      const steps = getFlowSteps();
+      const firstStep = steps[0] ?? "offers";
+      const continuations: Record<string, string> = {
+        offers:      "Project created. Next: propose_offers",
+        templates:   "Project created. Next: propose_templates",
+        backgrounds: "Project created. Next: propose_backgrounds",
+        brand:       "Project created. Next: propose_brand",
+        email:       "Project created. Next: propose_email",
+      };
+      sendInternal(continuations[firstStep] ?? "Project created. Next: propose_offers");
     }, 600);
-  }, [dispatchAction, sendInternal, getFlowScope]);
+  }, [dispatchAction, sendInternal, getFlowSteps]);
 
   // ── Offers card ─────────────────────────────────────────────────────────────
   const handleOffersApply = useCallback((offerIds: string[]) => {
     dispatchAction({ action: "add_offers", offerIds });
-    const scope = getFlowScope();
     const inSetupFlow = messagesRef.current.some(m => m.type === "setup");
-
-    // Standalone request (no setup card) → done, no follow-up
-    if (!inSetupFlow) return;
-
-    // Offers-only scope → soft follow-up question, no auto-pipeline
-    if (scope === "offers_only") {
-      setTimeout(() => {
-        setMessages(prev => [...prev, {
-          id: `a-${Date.now()}`, role: "assistant", type: "text",
-          content: "Offers added! What would you like to do next — **pick templates**, or **share this project** with someone?",
-        } as TextMessage]);
-      }, 350);
-      return;
-    }
-
-    // Offers + email → go straight to email
-    if (scope === "offers_and_email") {
-      setTimeout(() => sendInternal("Offers confirmed. Now propose the email share."), 400);
-      return;
-    }
-
-    // Full or offers+templates → proceed to templates
-    setTimeout(() => sendInternal("Offers confirmed. Propose templates."), 400);
-  }, [dispatchAction, sendInternal, getFlowScope]);
+    if (!inSetupFlow) return; // standalone add — no continuation
+    fireNextStep("offers");
+  }, [dispatchAction, fireNextStep]);
 
   // ── Templates card ──────────────────────────────────────────────────────────
   const handleTemplatesApply = useCallback((templateIds: string[]) => {
     dispatchAction({ action: "add_templates", templateIds });
-    const scope = getFlowScope();
     const inSetupFlow = messagesRef.current.some(m => m.type === "setup");
-
-    // Standalone request (no setup card in session) → done silently
     if (!inSetupFlow) return;
-
-    // Templates-only scope → soft follow-up, no auto-pipeline
-    if (scope === "templates_only") {
-      setTimeout(() => {
-        setMessages(prev => [...prev, {
-          id: `a-${Date.now()}`, role: "assistant", type: "text",
-          content: "Templates added! Would you like to **share this project** with someone, or is there anything else I can help with?",
-        } as TextMessage]);
-      }, 350);
-      return;
-    }
-
-    // Offers + templates scope → done silently (both steps complete)
-    if (scope === "offers_and_templates") return;
-    // Templates + email → skip backgrounds/brand, go straight to email
-    if (scope === "templates_and_email") {
-      setTimeout(() => sendInternal("Templates confirmed. Now propose the email share."), 400);
-      return;
-    }
-    // Full flow → proceed to backgrounds
-    setTimeout(() => sendInternal("Templates confirmed. Propose backgrounds."), 400);
-  }, [dispatchAction, sendInternal, getFlowScope]);
+    fireNextStep("templates");
+  }, [dispatchAction, fireNextStep]);
 
   // ── Backgrounds card ────────────────────────────────────────────────────────
   const handleBackgroundsApply = useCallback((backgroundIds: string[]) => {
     dispatchAction({ action: "add_backgrounds", backgroundIds });
-    setTimeout(() => {
-      sendInternal("Backgrounds confirmed. Propose brand.");
-    }, 400);
-  }, [dispatchAction, sendInternal]);
+    fireNextStep("backgrounds");
+  }, [dispatchAction, fireNextStep]);
 
   const handleBackgroundsDismiss = useCallback(() => {
-    setTimeout(() => {
-      sendInternal("Backgrounds skipped. Propose brand.");
-    }, 200);
-  }, [sendInternal]);
+    fireNextStep("backgrounds");
+  }, [fireNextStep]);
 
   // ── Email card ──────────────────────────────────────────────────────────────
   const handleEmailApply = useCallback((recipient: string, message: string) => {
@@ -2253,7 +2257,7 @@ export function ProjectAgentPane({ isOpen, onClose }: ProjectAgentPaneProps) {
       oem,
       start_date: startDate,
       end_date:   endDate,
-      flow_scope: "full",
+      flow_steps: ["offers", "templates", "backgrounds", "brand"],
     };
     // 1. Show user message immediately
     setMessages(prev => [

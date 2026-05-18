@@ -1934,7 +1934,13 @@ export function ProjectAgentPane({ isOpen, onClose }: ProjectAgentPaneProps) {
   const [projectContext, setProjectContext] = useState<ProjectContextPayload | null>(null);
   const [showHistory,      setShowHistory]      = useState(false);
   const [threads,          setThreads]          = useState<AgentThread[]>(() => loadAgentThreads());
-  const [knownProjectNames,  setKnownProjectNames]  = useState<string[]>([]);
+  const [knownProjectNames,  setKnownProjectNames]  = useState<string[]>(() => {
+    try {
+      const raw = localStorage.getItem("constellation_local_projects");
+      const projects: Array<{ name?: string }> = raw ? JSON.parse(raw) : [];
+      return projects.map(p => p.name || "").filter(Boolean);
+    } catch { return []; }
+  });
   const [simulatingStream,   setSimulatingStream]   = useState(false);
   const [historySearch, setHistorySearch] = useState("");
   const currentThreadIdRef = useRef<string | null>(null);

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef } from "react";
 import { Check, ChevronDown, X } from "lucide-react";
 import {
   Dialog,
@@ -175,73 +175,58 @@ function PlatformMultiSelect({
   selected: string[];
   onChange: (v: string[]) => void;
 }) {
-  const [open, setOpen] = useState(false);
-  const containerRef = useRef<HTMLDivElement>(null);
+  const toggle = (id: string) =>
+    onChange(selected.includes(id) ? selected.filter(x => x !== id) : [...selected, id]);
 
-  const available = PLATFORM_OPTIONS.filter((p) => !selected.includes(p.id));
   const selectedPlatforms = selected
-    .map((id) => PLATFORM_OPTIONS.find((p) => p.id === id))
+    .map(id => PLATFORM_OPTIONS.find(p => p.id === id))
     .filter(Boolean) as PlatformOption[];
 
-  const add = (id: string) => { onChange([...selected, id]); setOpen(false); };
-  const remove = (id: string) => onChange(selected.filter((x) => x !== id));
-
-  // Close on outside click
-  useEffect(() => {
-    const handler = (e: MouseEvent) => {
-      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
-        setOpen(false);
-      }
-    };
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
-  }, []);
+  const menuCls = "z-[500] bg-white rounded-xl shadow-xl border border-[rgba(0,0,0,0.1)] p-1 animate-in fade-in-0 zoom-in-95 min-w-[var(--radix-dropdown-menu-trigger-width)]";
+  const itemCls = "flex items-center gap-2 px-[10px] py-[6px] rounded-lg text-[13px] text-[#1f1d25] cursor-pointer outline-none select-none data-[highlighted]:bg-[#f5f4f8]";
 
   return (
-    <div ref={containerRef} className="relative">
-      <div
-        className="min-h-10 w-full flex flex-wrap items-center gap-1.5 border border-[#CAC9CF] rounded-[8px] px-2.5 py-1.5 bg-[#F9FAFA] cursor-pointer hover:border-[#B0B0B5] transition-colors"
-        style={{ outline: open ? "1px solid var(--brand-accent)" : "none", borderColor: open ? "var(--brand-accent)" : undefined }}
-        onClick={() => { if (available.length > 0) setOpen((v) => !v); }}
-      >
-        {selectedPlatforms.map((p) => (
-          <ChannelChip key={p.id} label={p.label} icon={p.icon} onRemove={() => remove(p.id)} />
-        ))}
-        {selectedPlatforms.length === 0 && (
-          <span className="text-[13px] text-[rgba(0,0,0,0.38)] flex-1" style={R}>
-            Select platforms
-          </span>
-        )}
-        {available.length > 0 && (
-          <ChevronDown
-            size={13}
-            className="ml-auto text-[rgba(0,0,0,0.4)] shrink-0 transition-transform"
-            style={{ transform: open ? "rotate(180deg)" : "rotate(0deg)" }}
-          />
-        )}
-      </div>
-
-      {/* Dropdown */}
-      {open && available.length > 0 && (
-        <div
-          className="absolute z-[400] top-full left-0 mt-1 w-full bg-white rounded-xl shadow-xl border border-[rgba(0,0,0,0.12)] p-1 animate-in fade-in-0 zoom-in-95"
-          onClick={(e) => e.stopPropagation()}
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <button
+          type="button"
+          className="w-full flex flex-wrap items-center gap-1.5 min-h-[40px] border border-[#CAC9CF] rounded-[8px] px-2.5 py-1.5 bg-[#F9FAFA] cursor-pointer hover:border-[#B0B0B5] transition-colors text-left focus:outline-none focus:border-[var(--brand-accent)]"
+          style={R}
         >
-          {available.map((p) => (
-            <button
+          {selectedPlatforms.length === 0 ? (
+            <span className="text-[13px] text-[rgba(0,0,0,0.38)] flex-1" style={R}>Select platforms</span>
+          ) : (
+            <div className="flex flex-wrap gap-[3px] flex-1 min-w-0">
+              {selectedPlatforms.map(p => (
+                <ChannelChip key={p.id} label={p.label} icon={p.icon} onRemove={() => toggle(p.id)} />
+              ))}
+            </div>
+          )}
+          <ChevronDown size={13} className="ml-auto text-[rgba(0,0,0,0.4)] shrink-0" />
+        </button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent className={menuCls} sideOffset={4} align="start">
+        {PLATFORM_OPTIONS.map(p => {
+          const active = selected.includes(p.id);
+          return (
+            <DropdownMenuItem
               key={p.id}
-              type="button"
-              className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-[13px] text-[#1f1d25] hover:bg-gray-50 cursor-pointer transition-colors"
-              style={R}
-              onClick={() => add(p.id)}
+              className={itemCls}
+              onSelect={e => { e.preventDefault(); toggle(p.id); }}
             >
-              <img src={p.icon} alt="" className="w-[14px] h-[14px] shrink-0 object-contain" />
-              {p.label}
-            </button>
-          ))}
-        </div>
-      )}
-    </div>
+              <span
+                className="w-[14px] h-[14px] rounded-[3px] border flex items-center justify-center shrink-0 transition-all"
+                style={{ background: active ? "var(--brand-accent)" : "white", borderColor: active ? "var(--brand-accent)" : "rgba(0,0,0,0.2)" }}
+              >
+                {active && <Check size={9} strokeWidth={3} color="white" />}
+              </span>
+              <img src={p.icon} alt="" className="w-[13px] h-[13px] shrink-0 object-contain" />
+              <span style={R}>{p.label}</span>
+            </DropdownMenuItem>
+          );
+        })}
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }
 

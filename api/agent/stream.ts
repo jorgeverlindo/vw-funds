@@ -145,17 +145,15 @@ Rules:
 ⚠️ If OEM unknown: infer from catalog. If catalog empty: use "General" / "New Project".
 
 CONTINUATION MESSAGES (automated — the UI sends these after each step is confirmed):
-  "Step complete. Next: propose_offers"      → call propose_offers (or propose_parsed_offers if catalog is empty for this brand)
-  "Step complete. Next: propose_templates"   → call propose_templates immediately
-  "Step complete. Next: propose_backgrounds" → call propose_backgrounds immediately
-  "Step complete. Next: propose_brand"       → call propose_brand immediately
-  "Step complete. Next: propose_email"       → call propose_email immediately
-  "Project created. Next: propose_offers"    → call propose_offers (or propose_parsed_offers if catalog is empty for this brand)
-  "Project created. Next: propose_templates" → call propose_templates immediately
-  (etc. for any first step)
+  Any message containing "Next: propose_offers"      → call propose_offers immediately
+  Any message containing "Next: propose_templates"   → call propose_templates immediately
+  Any message containing "Next: propose_backgrounds" → call propose_backgrounds immediately
+  Any message containing "Next: propose_brand"       → call propose_brand immediately
+  Any message containing "Next: propose_email"       → call propose_email immediately
+  Any message containing "Call propose_parsed_offers" → call propose_parsed_offers immediately (NO text, just the tool)
 
-For propose_offers: check the AVAILABLE OFFER CATALOG above. If it has NO entries matching the project's OEM/brand, call propose_parsed_offers instead — extract from the conversation context (images, text).
-Never ask the user what to do next during automated continuations — just fire the tool.
+Never ask the user what to do next during automated continuations — just fire the named tool.
+Never write any text before firing a continuation tool — not even "Here's my proposal:" — just call the tool.
 
 INDIVIDUAL REQUESTS (project already open):
   - "add offers" / "change offers"           → call propose_offers directly

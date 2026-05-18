@@ -2523,13 +2523,43 @@ export function ProjectAgentPane({ isOpen, onClose }: ProjectAgentPaneProps) {
     return ["offers", "templates", "backgrounds", "brand"];
   }, []);
 
+  // ── Check if catalog has any offers for a given OEM ─────────────────────────
+  const catalogHasOffersFor = useCallback((oem: string): boolean => {
+    const offers = ctxRef.current?.availableOffers ?? [];
+    if (offers.length === 0) return false;
+    const oemLower = oem.toLowerCase().trim();
+    return offers.some(o => {
+      const makeLower = (o.make ?? "").toLowerCase();
+      return makeLower.includes(oemLower) || oemLower.includes(makeLower);
+    });
+  }, []);
+
+  // ── Build offers continuation — routes to propose_parsed_offers if no catalog match ──
+  const buildOffersContinuation = useCallback((prefix: string, oem: string): string => {
+    if (catalogHasOffersFor(oem)) {
+      return `${prefix}. Next: propose_offers`;
+    }
+    const hasFile = messagesRef.current.some(m => m.type === "user_file");
+    const context = hasFile
+      ? "The user uploaded an image/document — look at it and call propose_parsed_offers now to extract the offers from that file."
+      : "No catalog offers exist for this brand. Call propose_parsed_offers immediately. Create placeholder rows using the project OEM and year so the user can fill in the details inline.";
+    return `${prefix}. The offer catalog has NO offers for "${oem}". Do NOT call propose_offers. ${context}`;
+  }, [catalogHasOffersFor]);
+
   const fireNextStep = useCallback((completedStep: string) => {
     const steps = getFlowSteps();
     const idx = steps.indexOf(completedStep);
     const nextStep = idx >= 0 && idx < steps.length - 1 ? steps[idx + 1] : null;
     if (!nextStep) return; // flow complete
+
+    if (nextStep === "offers") {
+      const setupMsg = messagesRef.current.filter((m): m is SetupMsg => m.type === "setup").at(-1);
+      const oem = setupMsg?.input.oem ?? ctxRef.current?.oem ?? "";
+      setTimeout(() => sendInternal(buildOffersContinuation("Step complete", oem)), 400);
+      return;
+    }
+
     const continuations: Record<string, string> = {
-      offers:      "Step complete. Next: propose_offers",
       templates:   "Step complete. Next: propose_templates",
       backgrounds: "Step complete. Next: propose_backgrounds",
       brand:       "Step complete. Next: propose_brand",
@@ -2537,7 +2567,7 @@ export function ProjectAgentPane({ isOpen, onClose }: ProjectAgentPaneProps) {
     };
     const msg = continuations[nextStep];
     if (msg) setTimeout(() => sendInternal(msg), 400);
-  }, [getFlowSteps, sendInternal]);
+  }, [getFlowSteps, sendInternal, buildOffersContinuation]);
 
   // ── Setup card ──────────────────────────────────────────────────────────────
   const handleSetupApply = useCallback((name: string, account: string, oem: string, startDate: string, endDate: string, owner: string, platforms: string[]) => {
@@ -2546,16 +2576,21 @@ export function ProjectAgentPane({ isOpen, onClose }: ProjectAgentPaneProps) {
     setTimeout(() => {
       const steps = getFlowSteps();
       const firstStep = steps[0] ?? "offers";
+
+      if (firstStep === "offers") {
+        sendInternal(buildOffersContinuation("Project created", oem));
+        return;
+      }
+
       const continuations: Record<string, string> = {
-        offers:      "Project created. Next: propose_offers",
         templates:   "Project created. Next: propose_templates",
         backgrounds: "Project created. Next: propose_backgrounds",
         brand:       "Project created. Next: propose_brand",
         email:       "Project created. Next: propose_email",
       };
-      sendInternal(continuations[firstStep] ?? "Project created. Next: propose_offers");
+      sendInternal(continuations[firstStep] ?? buildOffersContinuation("Project created", oem));
     }, 600);
-  }, [dispatchAction, sendInternal, getFlowSteps]);
+  }, [dispatchAction, sendInternal, getFlowSteps, buildOffersContinuation]);
 
   // ── Offers card ─────────────────────────────────────────────────────────────
   const handleOffersApply = useCallback((offerIds: string[]) => {

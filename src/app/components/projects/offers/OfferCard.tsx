@@ -66,9 +66,17 @@ export function OfferCard({ offer, selected = false, onSelect, onDelete }: Offer
     >
       {/* Top section */}
       <div style={{ padding: 12, display: "flex", gap: 12 }}>
-        {/* Car image */}
-        <div style={{ width: 90, height: 90, position: "relative", flexShrink: 0 }}>
-          <img src={offer.image} alt={fullName} className="absolute inset-0 w-full h-full object-contain drop-shadow-sm"  />
+        {/* Car image — falls back to branded gradient when no image is available */}
+        <div style={{ width: 90, height: 90, position: "relative", flexShrink: 0, borderRadius: 8, overflow: "hidden",
+          background: offer.image ? "transparent" : "linear-gradient(135deg, rgba(71,59,171,0.10) 0%, rgba(99,86,225,0.18) 100%)" }}>
+          {offer.image ? (
+            <img src={offer.image} alt={fullName} className="absolute inset-0 w-full h-full object-contain drop-shadow-sm" />
+          ) : (
+            <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 2 }}>
+              <span style={{ fontSize: 22, lineHeight: 1 }}>🚗</span>
+              <span style={{ fontSize: 8, color: "#473bab", fontWeight: 600, letterSpacing: "0.4px", opacity: 0.7, fontFamily: "'Roboto', sans-serif" }}>CUSTOM</span>
+            </div>
+          )}
         </div>
 
         {/* Right content */}

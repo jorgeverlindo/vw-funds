@@ -46,6 +46,51 @@ import {
 } from "./CreateProjectDialog";
 import { ChannelChip } from "../ui/ChannelChip";
 
+// ─── Custom offer library (localStorage store for non-catalog offers) ─────────
+
+const CUSTOM_OFFER_LIBRARY_KEY = "constellation_custom_offer_library";
+
+// The shape stored in localStorage — all 16 fields required by OfferCard
+interface StoredOffer {
+  id: string; year: string; make: string; model: string; trim: string;
+  image: string; stock: number; offerType: string; tags: string[];
+  pvi: number; aging: number; sales: number; inventory: number;
+  monthlyPayment: number; term: number; totalDueAtSigning: number;
+}
+
+function loadCustomOfferLibrary(): StoredOffer[] {
+  try {
+    const raw = localStorage.getItem(CUSTOM_OFFER_LIBRARY_KEY);
+    return raw ? (JSON.parse(raw) as StoredOffer[]) : [];
+  } catch { return []; }
+}
+
+function saveCustomOfferLibrary(offers: StoredOffer[]) {
+  try { localStorage.setItem(CUSTOM_OFFER_LIBRARY_KEY, JSON.stringify(offers)); } catch {}
+}
+
+// Convert a CustomOffer (from ParsedOffersCard) to a StoredOffer with defaults
+function customOfferToStored(co: import("@projects/ProjectAgentPane").CustomOffer): StoredOffer {
+  return {
+    id: co.id,
+    year: co.year,
+    make: co.make,
+    model: co.model,
+    trim: co.trim,
+    image: "",                                          // no car photo — OfferCard shows placeholder
+    stock: 1,
+    offerType: co.offerType,
+    tags: ["Custom"],
+    pvi: 0,
+    aging: 0,
+    sales: 0,
+    inventory: 1,
+    monthlyPayment: parseFloat(co.monthlyPayment) || 0,
+    term: parseInt(co.term) || 36,
+    totalDueAtSigning: parseFloat(co.dueAtSigning) || 0,
+  };
+}
+
 // ─── localStorage helpers ─────────────────────────────────────────────────────
 
 function loadProjectState(projectId: string) {
@@ -1007,12 +1052,18 @@ function ProjectDetailView({
   // Agent-added IDs (arrive via window events from ProjectAgentPane, persisted per project)
   const [agentAddedOfferIds,    setAgentAddedOfferIds]    = useState<string[]>(saved?.addedOfferIds ?? []);
   const [agentAddedTemplateIds, setAgentAddedTemplateIds] = useState<string[]>(saved?.addedTemplateIds ?? []);
-  // Custom offers from file extraction (not in catalog)
-  const [customOffers, setCustomOffers] = useState<import("@projects/ProjectAgentPane").CustomOffer[]>([]);
+  // Custom offer library — persisted to localStorage, merged with static offerLibrary
+  const [customOfferLibrary, setCustomOfferLibrary] = useState<StoredOffer[]>(() => loadCustomOfferLibrary());
   // Backgrounds: additive model — only show what the agent (or user) explicitly adds
   const [agentAddedBgIds,       setAgentAddedBgIds]       = useState<string[]>(saved?.agentAddedBgIds ?? []);
   // Brand/theme kit: only activated when agent explicitly confirms it (not auto-derived from OEM)
   const [agentActivatedOem,     setAgentActivatedOem]     = useState<string | null>(saved?.activatedOem ?? null);
+
+  // Merged library: static catalog + user-added custom offers from file extraction
+  const combinedOfferLibrary = useMemo(
+    () => [...offerLibrary, ...customOfferLibrary] as Offer[],
+    [customOfferLibrary],
+  );
 
   // Agent-created projects (id starts with "project-") should not auto-expand Theme & Logos;
   // the brand card in the pane handles that after the wizard is complete.
@@ -1074,7 +1125,7 @@ function ProjectDetailView({
   const visibleOffers = [
     ...offers,
     ...agentAddedOfferIds
-      .map((id) => offerLibrary.find((o) => o.id === id))
+      .map((id) => combinedOfferLibrary.find((o) => o.id === id))
       .filter((o): o is Offer => !!o),
   ].filter((o, i, arr) => !removedOfferIds.has(o.id) && arr.findIndex((x) => x.id === o.id) === i);
 
@@ -1101,10 +1152,10 @@ function ProjectDetailView({
       oem:                project.oem ?? project.dealerName,
       currentOfferIds:    visibleOfferIds,
       currentTemplateIds: visibleTemplateIds,
-      availableOffers:    offerLibrary.map((o) => ({
+      availableOffers:    combinedOfferLibrary.map((o) => ({
         id: o.id, year: o.year, make: o.make, model: o.model, trim: o.trim,
         offerType: o.offerType, monthlyPayment: o.monthlyPayment,
-        term: o.term, pvi: o.pvi, aging: o.aging, stock: o.stock,
+        term: o.term, pvi: (o as any).pvi ?? 0, aging: (o as any).aging ?? 0, stock: (o as any).stock ?? 1,
       })),
       availableTemplates: templateLibrary.map((t) => ({
         id: t.id, name: t.name, format: t.format,
@@ -1114,7 +1165,7 @@ function ProjectDetailView({
     // Defer so ProjectAgentPane's listener effect has time to register first
     setTimeout(() => window.dispatchEvent(new CustomEvent(PROJECT_CONTEXT_EVENT, { detail: payload })), 0);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [project.id, visibleOffers.length, visibleTemplates.length]);
+  }, [project.id, visibleOffers.length, visibleTemplates.length, customOfferLibrary.length]);
 
   // ── Listen for agent actions from ProjectAgentPane ────────────────────────
   useEffect(() => {
@@ -1149,9 +1200,17 @@ function ProjectDetailView({
         setExpandedSections((prev) => ({ ...prev, theme: true }));
         setTimeout(() => setAgentActivatedOem(oem), 220);
       } else if (action === "add_custom_offers") {
-        const { offers } = payload as { offers: import("@projects/ProjectAgentPane").CustomOffer[] };
+        const { offers: customOffers } = payload as { offers: import("@projects/ProjectAgentPane").CustomOffer[] };
+        const stored = customOffers.map(customOfferToStored);
+        const newIds = stored.map((s) => s.id);
+        // Persist to localStorage and update in-memory library
+        setCustomOfferLibrary((prev) => {
+          const merged = [...prev, ...stored.filter((s) => !prev.some((p) => p.id === s.id))];
+          saveCustomOfferLibrary(merged);
+          return merged;
+        });
         setExpandedSections((prev) => ({ ...prev, offers: true }));
-        setTimeout(() => setCustomOffers((prev) => [...prev, ...offers]), 220);
+        setTimeout(() => setAgentAddedOfferIds((prev) => [...new Set([...prev, ...newIds])]), 220);
       }
     };
     window.addEventListener(PROJECT_AGENT_ACTION_EVENT, handler);
@@ -1347,42 +1406,6 @@ function ProjectDetailView({
                     label: `${(o as any).year} ${(o as any).make} ${(o as any).model} ${(o as any).trim}`,
                   })}
                 />
-              </motion.div>
-            ))}
-            {/* Custom offers from file extraction */}
-            {customOffers.map((co) => (
-              <motion.div
-                key={co.id}
-                className="flex-shrink-0"
-                variants={{ hidden: { opacity: 0, x: -16 }, show: { opacity: 1, x: 0, transition: { duration: 0.28, ease: "easeOut" } } }}
-              >
-                <div className="relative w-[200px] rounded-[10px] border border-dashed border-[rgba(71,59,171,0.4)] bg-[rgba(71,59,171,0.03)] p-[10px] flex flex-col gap-[4px]">
-                  <div className="flex items-center gap-[5px] mb-[2px]">
-                    <span className="text-[9px] px-[5px] py-[1px] rounded-full bg-[rgba(71,59,171,0.1)] text-[#473bab] tracking-[0.3px]"
-                      style={{ fontFamily: "'Roboto', sans-serif", fontWeight: 600 }}>CUSTOM</span>
-                  </div>
-                  <p className="text-[12px] text-[#1f1d25] truncate"
-                    style={{ fontFamily: "'Roboto', sans-serif", fontWeight: 500 }}>
-                    {co.year} {co.make} {co.model} {co.trim}
-                  </p>
-                  <p className="text-[11px] text-[#473bab]"
-                    style={{ fontFamily: "'Roboto', sans-serif" }}>
-                    {co.offerType === "Finance" && co.apr
-                      ? `${co.apr}% APR · ${co.term} mo`
-                      : `$${co.monthlyPayment}/mo · ${co.term} mo`}
-                  </p>
-                  {co.dueAtSigning && co.dueAtSigning !== "0" && (
-                    <p className="text-[10px] text-[#9c99a9]" style={{ fontFamily: "'Roboto', sans-serif" }}>
-                      ${co.dueAtSigning} due at signing
-                    </p>
-                  )}
-                  <button
-                    onClick={() => setCustomOffers(prev => prev.filter(x => x.id !== co.id))}
-                    className="absolute top-[6px] right-[6px] text-[#9c99a9] hover:text-[#dc2626] transition-colors"
-                  >
-                    <XCircle size={11} />
-                  </button>
-                </div>
               </motion.div>
             ))}
           </motion.div>

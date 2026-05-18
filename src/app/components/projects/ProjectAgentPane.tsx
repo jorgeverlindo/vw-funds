@@ -325,6 +325,7 @@ function useAgentStream() {
       onTool:   (name: string, input: Record<string, unknown>) => void,
       onDone:   () => void,
       onError:  (msg: string) => void,
+      forceTool?: string,
     ) => {
       abortRef.current?.abort();
       abortRef.current = new AbortController();
@@ -334,7 +335,7 @@ function useAgentStream() {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           signal: abortRef.current.signal,
-          body: JSON.stringify({ messages, projectContext: ctx }),
+          body: JSON.stringify({ messages, projectContext: ctx, ...(forceTool ? { forceTool } : {}) }),
         });
         if (!res.ok || !res.body) { onError(`Server error ${res.status}`); return; }
         const reader = res.body.getReader();
@@ -361,7 +362,7 @@ function useAgentStream() {
       } finally { setStreaming(false); }
     }, []);
   const stop = useCallback(() => { abortRef.current?.abort(); setStreaming(false); }, []);
-  return { streaming, streamMessage, stop };
+  return { streaming, setStreaming, streamMessage, stop };
 }
 
 // ─── Markdown renderer ────────────────────────────────────────────────────────
@@ -1977,8 +1978,20 @@ function ParsedOffersCard({
     input.offers.map(o => ({ ...o, checked: true }))
   );
   const [editingField, setEditingField] = useState<{ rowId: string; field: string } | null>(null);
+  const selectAllRef = useRef<HTMLInputElement>(null);
 
   const checkedCount = rows.filter(r => r.checked).length;
+  const allChecked = checkedCount === rows.length;
+  const someChecked = checkedCount > 0 && checkedCount < rows.length;
+
+  // Keep the native indeterminate state in sync
+  useEffect(() => {
+    if (selectAllRef.current) selectAllRef.current.indeterminate = someChecked;
+  }, [someChecked]);
+
+  const toggleAll = () => {
+    setRows(prev => prev.map(r => ({ ...r, checked: !allChecked })));
+  };
 
   const updateRow = (id: string, field: string, value: string) => {
     setRows(prev => prev.map(r => r.id === id ? { ...r, [field]: value } : r));
@@ -2062,7 +2075,10 @@ function ParsedOffersCard({
   return (
     <motion.div
       initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.22 }}
-      className="rounded-[12px] border border-[rgba(0,0,0,0.1)] overflow-hidden bg-white"
+      // overflow:clip preserves rounded corners without creating a scroll context,
+      // so position:sticky children stick relative to the chat panel scroll
+      className="rounded-[12px] border border-[rgba(0,0,0,0.1)] bg-white"
+      style={{ overflow: "clip" }}
     >
       {/* Header */}
       <div className="flex items-center gap-[8px] px-[12px] py-[10px] bg-[#fafafb] border-b border-[rgba(0,0,0,0.07)]">
@@ -2091,6 +2107,38 @@ function ParsedOffersCard({
           </span>
         </div>
       )}
+
+      {/* ── Sticky "Select all" bar ──────────────────────────────────────── */}
+      <div className="sticky top-0 z-10 flex items-center gap-[8px] px-[12px] py-[7px] bg-white border-b border-[rgba(0,0,0,0.07)] shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
+        <label className="flex items-center gap-[8px] cursor-pointer select-none group">
+          {/* Custom checkbox wrapping a native input for indeterminate support */}
+          <span className="relative flex items-center justify-center shrink-0 w-[15px] h-[15px]">
+            <input
+              ref={selectAllRef}
+              type="checkbox"
+              checked={allChecked}
+              onChange={toggleAll}
+              className="absolute inset-0 opacity-0 w-full h-full cursor-pointer"
+            />
+            <span
+              className="w-[15px] h-[15px] rounded-[3px] border-[1.5px] flex items-center justify-center transition-all pointer-events-none"
+              style={{
+                borderColor: allChecked || someChecked ? "#473bab" : "rgba(0,0,0,0.25)",
+                background: allChecked ? "#473bab" : "white",
+              }}
+            >
+              {allChecked && <Check size={9} className="text-white" strokeWidth={3} />}
+              {someChecked && <span className="w-[7px] h-[1.5px] rounded bg-[#473bab]" />}
+            </span>
+          </span>
+          <span className="text-[11px] text-[#686576] group-hover:text-[#1f1d25] transition-colors" style={{ fontFamily: "'Roboto', sans-serif" }}>
+            {allChecked ? "Deselect all" : someChecked ? `${checkedCount} selected` : "Select all"}
+          </span>
+        </label>
+        <span className="ml-auto text-[10px] text-[#9c99a9]" style={{ fontFamily: "'Roboto', sans-serif" }}>
+          {rows.length} total
+        </span>
+      </div>
 
       {/* Offer rows */}
       <div className="divide-y divide-[rgba(0,0,0,0.06)]">
@@ -2162,8 +2210,8 @@ function ParsedOffersCard({
         </div>
       )}
 
-      {/* Footer */}
-      <div className="px-[12px] py-[10px] border-t border-[rgba(0,0,0,0.08)]">
+      {/* ── Sticky "Add X offers" footer ─────────────────────────────────── */}
+      <div className="sticky bottom-0 z-10 px-[12px] py-[10px] bg-white border-t border-[rgba(0,0,0,0.08)] shadow-[0_-1px_4px_rgba(0,0,0,0.06)]">
         <button
           onClick={handleApply}
           disabled={checkedCount === 0}
@@ -2252,7 +2300,7 @@ export function ProjectAgentPane({ isOpen, onClose }: ProjectAgentPaneProps) {
   const [historySearch, setHistorySearch] = useState("");
   const currentThreadIdRef = useRef<string | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
-  const { streaming, streamMessage, stop } = useAgentStream();
+  const { streaming, setStreaming, streamMessage, stop } = useAgentStream();
   // arcState declared below alongside simulatingStream (after all state declarations)
 
   // ── Contextual loading label — derived from what the agent is working on ──────
@@ -2302,6 +2350,10 @@ export function ProjectAgentPane({ isOpen, onClose }: ProjectAgentPaneProps) {
   const accRef      = useRef("");
   const ctxRef      = useRef<ProjectContextPayload | null>(null);
   const messagesRef = useRef<Message[]>([]);
+  // Holds parsed offers extracted from a document while waiting for project setup
+  const pendingParsedOffersRef = useRef<CustomOffer[] | null>(null);
+  // Stores the original user text from a file upload so pipeline intent survives the extraction step
+  const pendingPipelineTextRef = useRef<string>("");
   useEffect(() => { ctxRef.current      = projectContext; }, [projectContext]);
   useEffect(() => { messagesRef.current = messages;       }, [messages]);
 
@@ -2372,9 +2424,30 @@ export function ProjectAgentPane({ isOpen, onClose }: ProjectAgentPaneProps) {
         input: toolInput as ProposalInput, applied: false,
       } as ProposalMsg]);
     } else if (toolName === "propose_parsed_offers") {
+      // Normalize flat confidence_* fields back into a field_confidence Record
+      const rawInput = toolInput as Record<string, unknown>;
+      const normalizedOffers = ((rawInput.offers ?? []) as Record<string, unknown>[]).map(o => {
+        const fc: Record<string, "high" | "medium" | "low"> = {};
+        if (o.field_confidence && typeof o.field_confidence === "object") {
+          Object.assign(fc, o.field_confidence);
+        }
+        const confidenceKeys = ["monthly_payment", "term", "due_at_signing", "trim", "year", "apr"];
+        for (const k of confidenceKeys) {
+          const flat = o[`confidence_${k}`] as string | undefined;
+          if (flat) fc[k] = flat as "high" | "medium" | "low";
+          // Remove the flat key so it doesn't confuse the UI
+          delete o[`confidence_${k}`];
+        }
+        return { ...o, field_confidence: fc };
+      });
+      const normalizedInput: ParsedOffersInput = {
+        source: (rawInput.source as string) ?? "",
+        offers: normalizedOffers as ParsedOfferRow[],
+        extraction_notes: rawInput.extraction_notes as string | undefined,
+      };
       setMessages(prev => [...prev, {
         id: `parsed-${Date.now()}`, role: "assistant", type: "parsed_offers",
-        input: toolInput as ParsedOffersInput, applied: false,
+        input: normalizedInput, applied: false,
       } as ParsedOffersMsg]);
     } else {
       setMessages(prev => [...prev, {
@@ -2412,6 +2485,9 @@ export function ProjectAgentPane({ isOpen, onClose }: ProjectAgentPaneProps) {
         content: m.type === "user_file" ? m.apiContent : (m as TextMessage | ContinuationMsg).content,
       }));
 
+    // If the continuation explicitly requests propose_parsed_offers, force it so the model cannot refuse.
+    const forcedTool = text.includes("Call propose_parsed_offers") ? "propose_parsed_offers" : undefined;
+
     accRef.current = ""; setStreamingText("");
     await streamMessage(history, ctx,
       d => { accRef.current += d; setStreamingText(accRef.current); },
@@ -2422,6 +2498,7 @@ export function ProjectAgentPane({ isOpen, onClose }: ProjectAgentPaneProps) {
         if (finalText.trim()) setMessages(p => [...p, { id: `a-${Date.now()}`, role: "assistant", type: "text", content: finalText } as TextMessage]);
       },
       err => { setMessages(p => [...p, { id: `e-${Date.now()}`, role: "assistant", type: "text", content: `⚠️ ${err}` } as TextMessage]); accRef.current = ""; setStreamingText(""); },
+      forcedTool,
     );
   }, [streamMessage, handleToolResult]); // stable — reads state via refs, not closure
 
@@ -2486,7 +2563,54 @@ export function ProjectAgentPane({ isOpen, onClose }: ProjectAgentPaneProps) {
         content: m.type === "user_file" ? m.apiContent : (m as TextMessage | ContinuationMsg).content,
       }));
 
+    // When the user uploads an image, PDF, or Excel — use the dedicated extract endpoint.
+    // That endpoint has ONLY propose_parsed_offers as a tool with tool_choice forced,
+    // so the model MUST extract offers. No system-prompt games needed.
+    const isFileUpload = userMsg.type === "user_file";
+    const isImageOrDocument = isFileUpload && (
+      (userMsg as UserFileMsg).fileType.startsWith("image/") ||
+      (userMsg as UserFileMsg).fileType === "application/pdf" ||
+      /\.xlsx?$/i.test((userMsg as UserFileMsg).fileName)
+    );
+
     accRef.current = ""; setStreamingText("");
+
+    if (isImageOrDocument) {
+      // ── Dedicated extraction path ────────────────────────────────────────
+      pendingPipelineTextRef.current = text.trim(); // preserve pipeline intent for after extraction
+      setStreaming(true);
+      try {
+        const res = await fetch("/api/agent/extract", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ messages: history }),
+        });
+        if (!res.ok || !res.body) throw new Error(`Server error ${res.status}`);
+        const reader = res.body.getReader();
+        const dec = new TextDecoder();
+        let buf = "";
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          buf += dec.decode(value, { stream: true });
+          const lines = buf.split("\n"); buf = lines.pop() ?? "";
+          for (const line of lines) {
+            if (!line.startsWith("data: ")) continue;
+            const raw = line.slice(6).trim(); if (!raw) continue;
+            let ev: Record<string, unknown>;
+            try { ev = JSON.parse(raw); } catch { continue; }
+            if (ev.type === "tool_result") handleToolResult(ev.name as string, ev.input as Record<string, unknown>);
+            else if (ev.type === "error") setMessages(prev => [...prev, { id: `e-${Date.now()}`, role: "assistant", type: "text", content: `⚠️ ${ev.message}` } as TextMessage]);
+          }
+        }
+      } catch (err) {
+        setMessages(prev => [...prev, { id: `e-${Date.now()}`, role: "assistant", type: "text", content: `⚠️ ${String(err)}` } as TextMessage]);
+      } finally {
+        setStreaming(false);
+      }
+      return;
+    }
+
     await streamMessage(history, ctx,
       d => { accRef.current += d; setStreamingText(accRef.current); },
       handleToolResult,
@@ -2541,9 +2665,9 @@ export function ProjectAgentPane({ isOpen, onClose }: ProjectAgentPaneProps) {
     }
     const hasFile = messagesRef.current.some(m => m.type === "user_file");
     const context = hasFile
-      ? "The user uploaded an image/document — look at it and call propose_parsed_offers now to extract the offers from that file."
-      : "No catalog offers exist for this brand. Call propose_parsed_offers immediately. Create placeholder rows using the project OEM and year so the user can fill in the details inline.";
-    return `${prefix}. The offer catalog has NO offers for "${oem}". Do NOT call propose_offers. ${context}`;
+      ? "Call propose_parsed_offers now — scan the image/document in the conversation history and extract every offer row you can see."
+      : "Call propose_parsed_offers now — no catalog offers exist for this brand. Create placeholder rows using the project OEM and current year so the user can fill in the details inline.";
+    return `${prefix}. The offer catalog has NO offers for "${oem}". Do NOT write any text. Do NOT call propose_offers. ${context}`;
   }, [catalogHasOffersFor]);
 
   const fireNextStep = useCallback((completedStep: string) => {
@@ -2574,6 +2698,16 @@ export function ProjectAgentPane({ isOpen, onClose }: ProjectAgentPaneProps) {
     dispatchAction({ action: "create_project", name, account, oem, startDate, endDate, owner, platforms });
     setKnownProjectNames(prev => [...prev, name]);
     setTimeout(() => {
+      // If offers were pre-extracted from a document, add them now and skip propose_offers
+      if (pendingParsedOffersRef.current) {
+        const pending = pendingParsedOffersRef.current;
+        pendingParsedOffersRef.current = null;
+        dispatchAction({ action: "add_custom_offers", offers: pending });
+        // Continue to next step after offers (templates, email, etc.) based on flow scope
+        setTimeout(() => fireNextStep("offers"), 400);
+        return;
+      }
+
       const steps = getFlowSteps();
       const firstStep = steps[0] ?? "offers";
 
@@ -2590,7 +2724,7 @@ export function ProjectAgentPane({ isOpen, onClose }: ProjectAgentPaneProps) {
       };
       sendInternal(continuations[firstStep] ?? buildOffersContinuation("Project created", oem));
     }, 600);
-  }, [dispatchAction, sendInternal, getFlowSteps, buildOffersContinuation]);
+  }, [dispatchAction, sendInternal, getFlowSteps, buildOffersContinuation, fireNextStep]);
 
   // ── Offers card ─────────────────────────────────────────────────────────────
   const handleOffersApply = useCallback((offerIds: string[]) => {
@@ -2632,13 +2766,43 @@ export function ProjectAgentPane({ isOpen, onClose }: ProjectAgentPaneProps) {
   // ── ParsedOffers card ────────────────────────────────────────────────────────
   const handleParsedOffersApply = useCallback((msgId: string, offers: CustomOffer[]) => {
     setMessages(prev => prev.map(m => m.id === msgId ? { ...m, applied: true } as ParsedOffersMsg : m));
-    dispatchAction({ action: "add_custom_offers", offers });
-    // Continue the flow — parsed_offers fulfills the "offers" step
+
+    const projectOpen = Boolean(ctxRef.current?.projectId);
     const inSetupFlow = messagesRef.current.some(m => m.type === "setup");
+    // Consume the stored pipeline text (clear it so it isn't used twice)
+    const originalText = pendingPipelineTextRef.current;
+    pendingPipelineTextRef.current = "";
+
+    if (!projectOpen && !inSetupFlow) {
+      // No project yet — store offers and trigger setup with full pipeline intent preserved
+      pendingParsedOffersRef.current = offers;
+      const oem = offers[0]?.make ?? "";
+      // Extract email recipient from the original user text if present
+      const emailMatch = originalText.match(/(?:send|email|share)(?:\s+(?:it|this|project))?(?:\s+(?:to|with))?\s+([A-Z][a-z]+)/);
+      const recipientClue = emailMatch?.[1] ?? "";
+      let setupMsg = `Create a new ${oem} project.`;
+      if (recipientClue) {
+        setupMsg += ` Then send by email to ${recipientClue}.`;
+      } else if (/template/i.test(originalText)) {
+        setupMsg += ` Then add templates.`;
+      }
+      sendInternal(setupMsg);
+      return;
+    }
+
+    // Project already open or setup card already in thread — add offers directly
+    dispatchAction({ action: "add_custom_offers", offers });
     if (inSetupFlow) {
       fireNextStep("offers");
+    } else if (originalText) {
+      // Project was open — check if there is remaining pipeline to execute (e.g. email)
+      const emailMatch = originalText.match(/(?:send|email|share)(?:\s+(?:it|this|project))?(?:\s+(?:to|with))?\s+([A-Z][a-z]+)/);
+      const recipientClue = emailMatch?.[1] ?? "";
+      if (recipientClue) {
+        setTimeout(() => sendInternal(`Offers added. Now send by email to ${recipientClue}.`), 400);
+      }
     }
-  }, [dispatchAction, fireNextStep]);
+  }, [dispatchAction, fireNextStep, sendInternal]);
 
   const handleParsedOffersDismiss = useCallback((msgId: string) => {
     setMessages(prev => prev.filter(m => m.id !== msgId));

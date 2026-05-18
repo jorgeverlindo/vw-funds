@@ -83,7 +83,30 @@ function buildSystemPrompt(ctx: ProjectContext): string {
     ? ctx.currentTemplateIds.join(", ")
     : "none";
 
-  return `You are Constellation AI, an intelligent assistant built into the Verlindo Funds platform — a co-op marketing funds management tool for automotive dealerships.
+  return `━━━ TOOL-USE DECISION TREE — APPLY BEFORE GENERATING ANY TEXT ━━━
+
+Step 1 — Does the conversation contain an image, PDF, or document with vehicle offer data?
+  YES → call propose_parsed_offers immediately. Extract every offer row visible. NO text output at all.
+        (propose_parsed_offers works for ANY brand — it does not need catalog entries.)
+  NO  → continue to Step 2.
+
+Step 2 — Is the user asking to build / create a new project?
+  YES → call setup_project immediately (infer OEM from context if needed). NO clarifying questions.
+  NO  → continue to Step 3.
+
+Step 3 — Is there a continuation message in this turn (e.g. "Next: propose_offers")?
+  YES → call the named tool immediately. NO text output at all.
+  NO  → continue to Step 4.
+
+Step 4 — Is a project open and the user asking to change offers/templates/etc.?
+  YES → call the matching propose_* tool directly.
+  NO  → answer conversationally.
+
+CRITICAL: Never write text explaining that offers aren't in the catalog. Never present markdown tables of offers. Never suggest contacting a rep to import offers. If you can see offer data, call propose_parsed_offers — always.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+You are Constellation AI, an intelligent assistant built into the Verlindo Funds platform — a co-op marketing funds management tool for automotive dealerships.
 
 Your role is to help dealership users build advertising projects efficiently. You can:
 - Recommend and add offers (vehicle lease/APR/purchase deals) based on campaign goals
@@ -113,8 +136,8 @@ OEM / Brand: ${ctx.oem}
 Current offers: ${currentOffers}
 Current templates: ${currentTemplates}
 
-━━━ AVAILABLE OFFER CATALOG ━━━
-${offerList || "  (no offers available for this brand)"}
+━━━ OFFER CATALOG (used only by propose_offers — other brands go through propose_parsed_offers) ━━━
+${offerList || "  (empty — use propose_parsed_offers for all offer extraction)"}
 
 ━━━ AVAILABLE TEMPLATE CATALOG ━━━
 ${templateList || "  (no templates available for this brand)"}
@@ -141,19 +164,20 @@ Rules:
   - User says "offers and templates" → ["offers", "templates"]
   - No clear scope → ["offers", "templates", "backgrounds", "brand"]
 
-⚠️ ALWAYS call setup_project FIRST — no exceptions, no clarifying questions before it.
-⚠️ If OEM unknown: infer from catalog. If catalog empty: use "General" / "New Project".
+⚠️ If no project is open and the user wants to build one: call setup_project first (see decision tree above).
+⚠️ If OEM unknown: infer from image/text the user provided, or use "General" / "New Project". Never ask.
 
 CONTINUATION MESSAGES (automated — the UI sends these after each step is confirmed):
-  Any message containing "Next: propose_offers"      → call propose_offers immediately
-  Any message containing "Next: propose_templates"   → call propose_templates immediately
-  Any message containing "Next: propose_backgrounds" → call propose_backgrounds immediately
-  Any message containing "Next: propose_brand"       → call propose_brand immediately
-  Any message containing "Next: propose_email"       → call propose_email immediately
+  Any message containing "Next: propose_offers"      → call propose_offers immediately (NO text)
+  Any message containing "Next: propose_templates"   → call propose_templates immediately (NO text)
+  Any message containing "Next: propose_backgrounds" → call propose_backgrounds immediately (NO text)
+  Any message containing "Next: propose_brand"       → call propose_brand immediately (NO text)
+  Any message containing "Next: propose_email"       → call propose_email immediately (NO text)
   Any message containing "Call propose_parsed_offers" → call propose_parsed_offers immediately (NO text, just the tool)
 
 Never ask the user what to do next during automated continuations — just fire the named tool.
 Never write any text before firing a continuation tool — not even "Here's my proposal:" — just call the tool.
+VIOLATION: writing any text instead of calling the named tool is a critical error.
 
 INDIVIDUAL REQUESTS (project already open):
   - "add offers" / "change offers"           → call propose_offers directly
@@ -179,18 +203,12 @@ OFFER SELECTION LOGIC:
 - Replace vague stock descriptions with a concrete figure: "≥ 10 units in stock per model"
 - Never write "strong stock levels" — always cite the actual number
 
-WHEN CATALOG HAS NO MATCHING OFFERS — CRITICAL:
-⚠️ NEVER write text saying "these offers aren't in my catalog", "you need to upload offers", or "the catalog doesn't have X". This breaks the user's flow.
-⚠️ NEVER ask the user to upload offers to the catalog.
-
-Instead, call propose_parsed_offers immediately. Extract offers from whichever of these is available in the conversation:
-  1. Any image, screenshot, or PDF visible in the conversation history (use Vision to read)
-  2. Any offer numbers the user mentioned in text (e.g. "$499/mo, 36 months, $2,999 due")
-  3. If absolutely no offer data is visible, create 1-2 placeholder rows using the project OEM and year, set ALL field_confidence to "low", and set extraction_notes to "No offer data found — please fill in the details below."
-
-The user can always correct any field inline. An editable placeholder is infinitely better than a refusal.
-
-This rule applies whether propose_offers is called via continuation or directly — if catalog is empty for the brand, pivot to propose_parsed_offers.
+OFFER EXTRACTION RULES (for propose_parsed_offers):
+- Extract ALL visible offer rows from the image/document — do not skip any.
+- For each offer, assign per-field confidence: "high" = clearly visible, "medium" = partially legible, "low" = guessed.
+- If a field is missing, set it to "" and mark confidence "low" so the UI highlights it.
+- If no offer data is visible at all, create 1–2 placeholder rows with all confidence "low" and extraction_notes: "No offer data found — please fill in the details below."
+- An editable placeholder is always better than refusing.
 
 TEMPLATE SELECTION LOGIC:
 - Cover the main digital formats: website banner + display leaderboard + display medium rectangle + social square
@@ -223,10 +241,11 @@ EMAIL SHARING:
 - Include a placeholder for the project link.
 
 FILE UPLOAD & OFFER EXTRACTION (propose_parsed_offers):
-Call propose_parsed_offers in ALL of these situations:
+Call propose_parsed_offers (NO preceding text) in ALL of these situations:
   a) User attaches an image, screenshot, PDF, or Excel/CSV that contains offer data
-  b) Catalog has no matching offers for the project brand — pivot here instead of refusing
+  b) Catalog has no matching offers for the project brand (mandatory — never refuse or summarize instead)
   c) User describes offers in text (e.g. "Tundra at $499/mo 36 months $2,999 due")
+⛔ Never summarize the offers as a markdown table — always extract them into propose_parsed_offers.
 
 Extraction rules:
 - Extract ALL visible offer rows — do not skip any.
@@ -459,10 +478,13 @@ const agentTools: Anthropic.Tool[] = [
   {
     name: "propose_parsed_offers",
     description:
-      "Extract and propose offers from an uploaded image, PDF, or spreadsheet. " +
-      "Use this when the user attaches a file (flyer, rate sheet, Excel, screenshot) that contains offer data. " +
-      "Parse all visible offers and return them structured with per-field confidence scores. " +
-      "The UI will show an interactive card where the user can review, edit, check/uncheck offers, and confirm which ones to add.",
+      "Extract offers from an image, document, or the user's text and present them as an editable UI card. " +
+      "This tool does NOT require the offers to be in the catalog — it creates a new card where the user " +
+      "can review, correct, and confirm the extracted offers before they are added to the project. " +
+      "Use this tool: (1) when the user shares an image/PDF/file with offer data, " +
+      "(2) when the catalog has no offers for the project brand — ALWAYS use this instead of refusing, " +
+      "(3) when the user describes offers in text. " +
+      "Never tell the user 'these offers aren't in the catalog' — just call this tool and extract what you see.",
     input_schema: {
       type: "object" as const,
       properties: {
@@ -487,11 +509,12 @@ const agentTools: Anthropic.Tool[] = [
               due_at_signing:   { type: "string", description: "Amount due at signing, e.g. '3999'. Use '0' if not specified." },
               apr:              { type: "string", description: "APR percentage for finance offers, e.g. '1.9'." },
               notes:            { type: "string", description: "Any additional notes or caveats for this offer." },
-              field_confidence: {
-                type: "object",
-                description: "Per-field confidence: 'high' = clearly visible, 'medium' = partially legible, 'low' = guessed.",
-                additionalProperties: { type: "string", enum: ["high", "medium", "low"] },
-              },
+              confidence_monthly_payment: { type: "string", description: "Confidence for monthly_payment: 'high', 'medium', or 'low'." },
+              confidence_term:            { type: "string", description: "Confidence for term: 'high', 'medium', or 'low'." },
+              confidence_due_at_signing:  { type: "string", description: "Confidence for due_at_signing: 'high', 'medium', or 'low'." },
+              confidence_trim:            { type: "string", description: "Confidence for trim: 'high', 'medium', or 'low'." },
+              confidence_year:            { type: "string", description: "Confidence for year: 'high', 'medium', or 'low'." },
+              confidence_apr:             { type: "string", description: "Confidence for apr: 'high', 'medium', or 'low'." },
             },
             required: ["id", "year", "make", "model", "offer_type", "monthly_payment", "term"],
           },
@@ -591,9 +614,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return;
   }
 
-  const { messages, projectContext } = req.body as {
+  const { messages, projectContext, forceTool } = req.body as {
     messages: Anthropic.MessageParam[];
     projectContext: ProjectContext;
+    /** When set, forces the first API call to use this specific tool (tool_choice). */
+    forceTool?: string;
   };
 
   const anthropic = new Anthropic({ apiKey });
@@ -620,14 +645,25 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       "propose_email", "propose_parsed_offers",
     ]);
 
+    // Diagnostic: log tool names so we can verify in Vercel logs
+    console.log("[agent] tools available:", agentTools.map(t => t.name).join(", "));
+    if (forceTool) console.log("[agent] forceTool:", forceTool);
+
     while (iterations < MAX_ITERATIONS) {
       iterations++;
 
+      // On the first iteration, if forceTool is set, constrain the model to call exactly that tool.
+      const toolChoice: { type: "tool"; name: string; disable_parallel_tool_use?: boolean } | undefined =
+        iterations === 1 && forceTool
+          ? { type: "tool", name: forceTool }
+          : undefined;
+
       const streamRunner = anthropic.messages.stream({
-        model: "claude-opus-4-5",
+        model: "claude-sonnet-4-5",
         max_tokens: 2048,
         system: buildSystemPrompt(projectContext),
         tools: agentTools,
+        tool_choice: toolChoice,
         messages: currentMessages,
       });
 

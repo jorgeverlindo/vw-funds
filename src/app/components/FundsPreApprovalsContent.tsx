@@ -155,13 +155,13 @@ export const MOCK_DATA: PreApproval[] = [
     description: 'Facebook social media campaign.',
     documents: []
   },
-  // ── Volkswagen Any Town (408258) pre-approvals ────────────────────────────
+  // ── Jack Daniels Volkswagen (408258) pre-approvals ────────────────────────────
   {
-    id: 'MFA386595',
+    id: 'MFA386550',
     date: new Date(2026, 2, 15),
     dealershipCode: '12345',
-    dealershipName: 'Volkswagen Any Town',
-    dealershipCity: 'Any Town',
+    dealershipName: 'Jack Daniels Volkswagen',
+    dealershipCity: 'Paramus',
     status: 'Approved',
     timeInPreApproval: 3,
     submittedBy: { name: 'Mallory Manning', avatarUrl: AVATARS[5] },
@@ -176,11 +176,11 @@ export const MOCK_DATA: PreApproval[] = [
     documents: [],
   },
   {
-    id: 'MFA386596',
+    id: 'MFA386551',
     date: new Date(2026, 1, 20),
     dealershipCode: '12345',
-    dealershipName: 'Volkswagen Any Town',
-    dealershipCity: 'Any Town',
+    dealershipName: 'Jack Daniels Volkswagen',
+    dealershipCity: 'Paramus',
     status: 'Approved',
     timeInPreApproval: 4,
     submittedBy: { name: 'Mallory Manning', avatarUrl: AVATARS[5] },
@@ -198,8 +198,8 @@ export const MOCK_DATA: PreApproval[] = [
     id: 'MFA386597',
     date: new Date(2026, 0, 10),
     dealershipCode: '12345',
-    dealershipName: 'Volkswagen Any Town',
-    dealershipCity: 'Any Town',
+    dealershipName: 'Jack Daniels Volkswagen',
+    dealershipCity: 'Paramus',
     status: 'Approved',
     timeInPreApproval: 6,
     submittedBy: { name: 'Mallory Manning', avatarUrl: AVATARS[5] },
@@ -217,8 +217,8 @@ export const MOCK_DATA: PreApproval[] = [
     id: 'MFA386598',
     date: new Date(2025, 11, 5),
     dealershipCode: '12345',
-    dealershipName: 'Volkswagen Any Town',
-    dealershipCity: 'Any Town',
+    dealershipName: 'Jack Daniels Volkswagen',
+    dealershipCity: 'Paramus',
     status: 'In Review',
     timeInPreApproval: 8,
     submittedBy: { name: 'Mallory Manning', avatarUrl: AVATARS[5] },
@@ -236,8 +236,8 @@ export const MOCK_DATA: PreApproval[] = [
     id: 'MFA386599',
     date: new Date(2025, 10, 2),
     dealershipCode: '12345',
-    dealershipName: 'Volkswagen Any Town',
-    dealershipCity: 'Any Town',
+    dealershipName: 'Jack Daniels Volkswagen',
+    dealershipCity: 'Paramus',
     status: 'Revision Requested',
     timeInPreApproval: 5,
     submittedBy: { name: 'Mallory Manning', avatarUrl: AVATARS[5] },
@@ -252,11 +252,11 @@ export const MOCK_DATA: PreApproval[] = [
     documents: [],
   },
   {
-    id: 'MFA386601',
+    id: 'MFA386552',
     date: new Date(2025, 8, 18),
     dealershipCode: '12345',
-    dealershipName: 'Volkswagen Any Town',
-    dealershipCity: 'Any Town',
+    dealershipName: 'Jack Daniels Volkswagen',
+    dealershipCity: 'Paramus',
     status: 'Approved',
     timeInPreApproval: 4,
     submittedBy: { name: 'Mallory Manning', avatarUrl: AVATARS[5] },
@@ -447,30 +447,6 @@ export function FundsPreApprovalsContent({
   const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
 
-  // Build the live workflow pre-approval item from shared context
-  // ID is dynamic — changes each cycle after archiveAndReset
-  const workflowPreApproval: PreApproval = {
-    id: workflow.preApproval.id,
-    title: workflow.preApproval.title,
-    date: new Date(),   // always today — avoids UTC-offset display bug
-    dealershipCode: WORKFLOW_DEALER.code,
-    dealershipName: WORKFLOW_DEALER.name,
-    dealershipCity: WORKFLOW_DEALER.city,
-    status: mapWorkflowPAStatus(workflow.preApproval.status),
-    timeInPreApproval: workflow.preApproval.submittedAt
-      ? Math.round((Date.now() - new Date(workflow.preApproval.submittedAt).getTime()) / 86_400_000)
-      : 0,
-    submittedBy: { name: WORKFLOW_DEALER.contact, avatarUrl: AVATARS[5] },
-    mediaType: workflow.preApproval.mediaType || WORKFLOW_CAMPAIGN.mediaType,
-    details: workflow.preApproval.details || 'Digital Ad Campaign',
-    lastUpdated: new Date(),
-    submittedAt: workflow.preApproval.submittedAt ? new Date(workflow.preApproval.submittedAt) : new Date('2026-04-20'),
-    initiativeType: WORKFLOW_CAMPAIGN.initiativeType,
-    claimsCount: workflow.preApproval.claimsCount,
-    contactEmail: workflow.preApproval.contactEmail || WORKFLOW_DEALER.email,
-    description: workflow.preApproval.details || WORKFLOW_CAMPAIGN.description,
-    documents: workflow.preApproval.documents,
-  };
   const datePickerRef = useRef<HTMLDivElement>(null);
 
   // Close date picker on outside click
@@ -486,8 +462,40 @@ export function FundsPreApprovalsContent({
 
   // Filter Data — archived cycles + active workflow item are always pinned at top,
   // bypassing date filter. Mock items are filtered normally by date + search.
+  //
+  // workflowPreApproval is computed INSIDE the memo (not in component body) so
+  // the dep is the stable `workflow.preApproval` reference — the memo only
+  // re-runs when the PA state actually changes, not on every render.
   const filteredData = useMemo(() => {
-    const showActiveWorkflow = workflow.preApproval.status !== 'Draft';
+    const wfPA = workflow.preApproval;
+
+    // Build the live workflow PA row from the shared context object
+    const workflowPreApproval: PreApproval = {
+      id: wfPA.id,
+      title: wfPA.title,
+      date: new Date(),   // always today — avoids UTC-offset display bug
+      dealershipCode: WORKFLOW_DEALER.code,
+      dealershipName: WORKFLOW_DEALER.name,
+      dealershipCity: WORKFLOW_DEALER.city,
+      status: mapWorkflowPAStatus(wfPA.status),
+      timeInPreApproval: wfPA.submittedAt
+        ? Math.round((Date.now() - new Date(wfPA.submittedAt).getTime()) / 86_400_000)
+        : 0,
+      submittedBy: { name: WORKFLOW_DEALER.contact, avatarUrl: AVATARS[5] },
+      mediaType: wfPA.mediaType || WORKFLOW_CAMPAIGN.mediaType,
+      details: wfPA.details || 'Digital Ad Campaign',
+      lastUpdated: new Date(),
+      submittedAt: wfPA.submittedAt ? new Date(wfPA.submittedAt) : new Date('2026-04-20'),
+      initiativeType: WORKFLOW_CAMPAIGN.initiativeType,
+      claimsCount: wfPA.claimsCount,
+      contactEmail: wfPA.contactEmail || WORKFLOW_DEALER.email,
+      description: wfPA.details || WORKFLOW_CAMPAIGN.description,
+      documents: wfPA.documents,
+    };
+
+    // Show the active workflow PA for any status except Draft (Draft = still being
+    // filled in by the dealer and not yet submitted for OEM review)
+    const showActiveWorkflow = wfPA.status !== 'Draft';
 
     const filteredMock = MOCK_DATA.filter((item) => {
       // In dealer-singular mode only show records belonging to the locked dealer
@@ -543,8 +551,7 @@ export function FundsPreApprovalsContent({
     ];
 
     return [...pinnedRows, ...filteredMock];
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [dateRange, searchQuery, workflow.preApproval.status, workflow.preApproval.id, workflow.preApproval.claimsCount, workflow.archivedCycles, workflow.portalSubmissions, workflowPreApproval, isLockedDealership, filterCtx.dealershipCode]);
+  }, [dateRange, searchQuery, workflow.preApproval, workflow.archivedCycles, workflow.portalSubmissions, isLockedDealership, filterCtx.dealershipCode]);
 
   return (
     <div className="flex flex-col h-full relative overflow-hidden">

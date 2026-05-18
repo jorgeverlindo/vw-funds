@@ -96,29 +96,29 @@ export const CLAIMS_MOCK_DATA: Claim[] = [
   createClaim('MFC540994', new Date(2026, 0, 2),  3114.47, 'In Review',        10,  7, '402165', 'Volkswagen of Downtown Chicago',        'Chicago',  'DMP - Hard Costs', 3, 'Ryan Ledger'),
   createClaim('MFC550001', new Date(2025, 1, 15), 5500.00, 'Approved',          5,  5, '408252', 'Jack Daniels Volkswagen (Paramus)',     'Paramus',  'DMP - Hard Costs', 4, 'Garry Schwietert'),
   createClaim('MFC560001', new Date(2025, 2, 20), 6200.00, 'Approved',          4,  3, '402165', 'Volkswagen of Downtown Chicago',        'Chicago',  'DMP - Hard Costs', 5, 'Mallory Manning'),
-  // ── Volkswagen Any Town (12345) claims ───────────────────────────────────
+  // ── Jack Daniels Volkswagen (12345) claims ───────────────────────────────────
   // April 2026 — mix of statuses (newest first within month)
-  createClaim('MFC560010', new Date(2026, 3, 27), 2850.00, 'Pending',            2,  0, '12345', 'Volkswagen Any Town', 'Any Town', 'DMF - Media Costs', 5, 'Mallory Manning'),
-  createClaim('MFC560011', new Date(2026, 3, 25), 1780.00, 'In Review',          4,  0, '12345', 'Volkswagen Any Town', 'Any Town', 'DMF - Hard Costs',  5, 'Mallory Manning'),
-  createClaim('MFC560012', new Date(2026, 3, 21), 3420.00, 'Approved',           7,  3, '12345', 'Volkswagen Any Town', 'Any Town', 'DMP - Hard Costs',  5, 'Mallory Manning'),
-  createClaim('MFC560013', new Date(2026, 3, 20), 2100.00, 'Pending',            9,  0, '12345', 'Volkswagen Any Town', 'Any Town', 'DMF - Media Costs', 5, 'Mallory Manning'),
-  createClaim('MFC560014', new Date(2026, 3, 18), 4150.00, 'In Review',         11,  0, '12345', 'Volkswagen Any Town', 'Any Town', 'DMF - Media Costs', 5, 'Mallory Manning'),
-  createClaim('MFC560015', new Date(2026, 3, 15), 1890.00, 'Approved',          14,  4, '12345', 'Volkswagen Any Town', 'Any Town', 'DMF - Hard Costs',  5, 'Mallory Manning'),
-  createClaim('MFC560016', new Date(2026, 3, 12), 3670.00, 'Ready for Payment', 17,  5, '12345', 'Volkswagen Any Town', 'Any Town', 'DMP - Hard Costs',  5, 'Mallory Manning'),
-  createClaim('MFC560017', new Date(2026, 3, 8),  2240.00, 'Revision Requested',21,  0, '12345', 'Volkswagen Any Town', 'Any Town', 'DMF - Media Costs', 5, 'Mallory Manning'),
+  createClaim('MFC560010', new Date(2026, 3, 27), 2850.00, 'Pending',            2,  0, '12345', 'Jack Daniels Volkswagen', 'Paramus', 'DMF - Media Costs', 5, 'Mallory Manning'),
+  createClaim('MFC560011', new Date(2026, 3, 25), 1780.00, 'In Review',          4,  0, '12345', 'Jack Daniels Volkswagen', 'Paramus', 'DMF - Hard Costs',  5, 'Mallory Manning'),
+  createClaim('MFC560012', new Date(2026, 3, 21), 3420.00, 'Approved',           7,  3, '12345', 'Jack Daniels Volkswagen', 'Paramus', 'DMP - Hard Costs',  5, 'Mallory Manning'),
+  createClaim('MFC560013', new Date(2026, 3, 20), 2100.00, 'Pending',            9,  0, '12345', 'Jack Daniels Volkswagen', 'Paramus', 'DMF - Media Costs', 5, 'Mallory Manning'),
+  createClaim('MFC560014', new Date(2026, 3, 18), 4150.00, 'In Review',         11,  0, '12345', 'Jack Daniels Volkswagen', 'Paramus', 'DMF - Media Costs', 5, 'Mallory Manning'),
+  createClaim('MFC560015', new Date(2026, 3, 15), 1890.00, 'Approved',          14,  4, '12345', 'Jack Daniels Volkswagen', 'Paramus', 'DMF - Hard Costs',  5, 'Mallory Manning'),
+  createClaim('MFC560016', new Date(2026, 3, 12), 3670.00, 'Ready for Payment', 17,  5, '12345', 'Jack Daniels Volkswagen', 'Paramus', 'DMP - Hard Costs',  5, 'Mallory Manning'),
+  createClaim('MFC560017', new Date(2026, 3, 8),  2240.00, 'Revision Requested',21,  0, '12345', 'Jack Daniels Volkswagen', 'Paramus', 'DMF - Media Costs', 5, 'Mallory Manning'),
   // Feb 2026
-  createClaim('MFC541010', new Date(2026, 1, 18), 4250.00, 'Approved',           5,  4, '12345', 'Volkswagen Any Town', 'Any Town', 'DMF - Media Costs', 5, 'Mallory Manning'),
+  createClaim('MFC541010', new Date(2026, 1, 18), 4250.00, 'Approved',           5,  4, '12345', 'Jack Daniels Volkswagen', 'Paramus', 'DMF - Media Costs', 5, 'Mallory Manning'),
   // Jan 2026 — old enough to be fully paid
-  createClaim('MFC541013', new Date(2026, 0, 10), 3780.00, 'Paid',              16, 14, '12345', 'Volkswagen Any Town', 'Any Town', 'DMP - Hard Costs',  5, 'Mallory Manning'),
-  createClaim('MFC541012', new Date(2026, 0, 22), 2190.00, 'Approved',          14, 12, '12345', 'Volkswagen Any Town', 'Any Town', 'DMF - Hard Costs',  5, 'Mallory Manning'),
+  createClaim('MFC541013', new Date(2026, 0, 10), 3780.00, 'Paid',              16, 14, '12345', 'Jack Daniels Volkswagen', 'Paramus', 'DMP - Hard Costs',  5, 'Mallory Manning'),
+  createClaim('MFC541012', new Date(2026, 0, 22), 2190.00, 'Approved',          14, 12, '12345', 'Jack Daniels Volkswagen', 'Paramus', 'DMF - Hard Costs',  5, 'Mallory Manning'),
   // Dec 2025
-  createClaim('MFC541011', new Date(2025, 11, 15),2800.00, 'Approved',           8,  5, '12345', 'Volkswagen Any Town', 'Any Town', 'DMF - Media Costs', 5, 'Mallory Manning'),
+  createClaim('MFC541011', new Date(2025, 11, 15),2800.00, 'Approved',           8,  5, '12345', 'Jack Daniels Volkswagen', 'Paramus', 'DMF - Media Costs', 5, 'Mallory Manning'),
   // Nov 2025
-  createClaim('MFC541014', new Date(2025, 10, 20),3100.00, 'Approved',           6,  4, '12345', 'Volkswagen Any Town', 'Any Town', 'DMF - Media Costs', 5, 'Mallory Manning'),
+  createClaim('MFC541014', new Date(2025, 10, 20),3100.00, 'Approved',           6,  4, '12345', 'Jack Daniels Volkswagen', 'Paramus', 'DMF - Media Costs', 5, 'Mallory Manning'),
   // Oct 2025
-  createClaim('MFC541015', new Date(2025, 9, 12), 1950.00, 'Approved',           5,  6, '12345', 'Volkswagen Any Town', 'Any Town', 'DMF - Hard Costs',  5, 'Mallory Manning'),
+  createClaim('MFC541015', new Date(2025, 9, 12), 1950.00, 'Approved',           5,  6, '12345', 'Jack Daniels Volkswagen', 'Paramus', 'DMF - Hard Costs',  5, 'Mallory Manning'),
   // Sep 2025
-  createClaim('MFC541016', new Date(2025, 8, 8),  4600.00, 'Approved',           4,  3, '12345', 'Volkswagen Any Town', 'Any Town', 'DMP - Hard Costs',  5, 'Mallory Manning'),
+  createClaim('MFC541016', new Date(2025, 8, 8),  4600.00, 'Approved',           4,  3, '12345', 'Jack Daniels Volkswagen', 'Paramus', 'DMP - Hard Costs',  5, 'Mallory Manning'),
 ];
 
 interface FundsClaimsContentProps {

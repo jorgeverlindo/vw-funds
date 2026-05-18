@@ -11,6 +11,8 @@ interface SingleDatePickerProps {
   placeholder?: string;
   className?: string;
   error?: boolean;
+  /** 'up' opens above the trigger (default); 'down' opens below */
+  direction?: 'up' | 'down';
 }
 
 export function SingleDatePicker({
@@ -19,6 +21,7 @@ export function SingleDatePicker({
   placeholder = 'Select date…',
   className,
   error,
+  direction = 'up',
 }: SingleDatePickerProps) {
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -37,13 +40,16 @@ export function SingleDatePicker({
     <div className={cn('relative', className)} ref={containerRef}>
       {/* Trigger */}
       <div
+        role="button"
+        tabIndex={0}
         onClick={() => setIsOpen(v => !v)}
+        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setIsOpen(v => !v); } }}
         className={cn(
-          'w-full h-10 pl-3 pr-10 bg-[#F9FAFA] border rounded-[4px] text-[13px] flex items-center cursor-pointer transition-all select-none',
+          'w-full h-10 pl-3 pr-10 bg-[#F9FAFA] border rounded-[4px] text-[13px] flex items-center cursor-pointer transition-all select-none outline-none',
           error ? 'border-[#D2323F]' : 'border-[#CAC9CF]',
           isOpen
             ? 'ring-1 ring-[var(--brand-accent)] border-[var(--brand-accent)]'
-            : 'hover:border-[#B0B0B5]',
+            : 'hover:border-[#B0B0B5] focus-visible:border-[var(--brand-accent)] focus-visible:ring-1 focus-visible:ring-[var(--brand-accent)]',
         )}
       >
         <span className={cn('truncate', !value && 'text-[#686576]/60')}>
@@ -63,7 +69,12 @@ export function SingleDatePicker({
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.97, y: 6 }}
             transition={{ duration: 0.12 }}
-            className="absolute bottom-full left-0 mb-1 bg-white rounded-xl shadow-xl border border-[rgba(0,0,0,0.12)] p-3 z-[200]"
+            className={cn(
+              "absolute bg-white rounded-xl shadow-xl border border-[rgba(0,0,0,0.12)] p-3 z-[200]",
+              direction === 'down'
+                ? "top-full left-0 mt-1"
+                : "bottom-full left-0 mb-1"
+            )}
           >
             <DayPicker
               mode="single"

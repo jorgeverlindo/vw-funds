@@ -209,6 +209,14 @@ const translations: Record<Language, Record<string, string>> = {
     'Planner': 'Planner',
     'Guidelines & Assets': 'Guidelines & Assets',
     'Web Monitoring': 'Web Monitoring',
+    'Compliance': 'Compliance', // [FV]
+    'Source': 'Source', // [FV]
+    'Manually Added': 'Manually Added', // [FV]
+    'Issue Solution': 'Issue Solution', // [FV]
+    'Submit Solution': 'Submit Solution', // [FV]
+    'Drag a screenshot of the fix here, or click to browse': 'Drag a screenshot of the fix here, or click to browse', // [FV]
+    'Add a note for the OEM…': 'Add a note for the OEM…', // [FV]
+    'Solution submitted to OEM for review': 'Solution submitted to OEM for review', // [FV]
     // PaymentStatusTableCard
     'Payouts': 'Payouts',
     // FundsCasesContent — filter & type/priority cells
@@ -439,6 +447,14 @@ const translations: Record<Language, Record<string, string>> = {
     'Planner': 'Planificateur',
     'Guidelines & Assets': 'Directives et actifs',
     'Web Monitoring': 'Surveillance web',
+    'Compliance': 'Conformité', // [FV]
+    'Source': 'Source', // [FV]
+    'Manually Added': 'Ajouté manuellement', // [FV]
+    'Issue Solution': 'Résolution', // [FV]
+    'Submit Solution': 'Soumettre la résolution', // [FV]
+    'Drag a screenshot of the fix here, or click to browse': 'Glissez ici une capture du correctif, ou cliquez pour parcourir', // [FV]
+    'Add a note for the OEM…': 'Ajouter une note pour l’OEM…', // [FV]
+    'Solution submitted to OEM for review': 'Résolution soumise à l’OEM pour vérification', // [FV]
     // PaymentStatusTableCard
     'Payouts': 'Paiements',
     // FundsCasesContent — filter & type/priority cells
@@ -452,7 +468,6 @@ const translations: Record<Language, Record<string, string>> = {
     'Low': 'Faible',
     'Audit': 'Audit',
     'Dispute': 'Contestation',
-    'Compliance': 'Conformité',
     // PaymentStatusTable
     'Paid out': 'Versé',
     // DateRangePicker fallback

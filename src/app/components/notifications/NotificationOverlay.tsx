@@ -1,44 +1,8 @@
-import { NotificationItem, NotificationItemProps } from './NotificationItem';
+import { NotificationItem } from './NotificationItem';
 import { cn } from '@/lib/utils';
 import { useWorkflow } from '../../contexts/WorkflowContext';
-
-const MOCK_NOTIFICATIONS: NotificationItemProps[] = [
-  {
-    id: '1',
-    type: 'claim',
-    referenceId: 'MFA386592',
-    message: 'claim has a new status:',
-    time: '12 min ago',
-    status: 'Revision Requested'
-  },
-  {
-    id: '2',
-    type: 'pre-approval',
-    referenceId: 'MFC539881',
-    message: 'pre-approval has a new status:',
-    time: '50 min ago',
-    status: 'Approved'
-  },
-  {
-    id: '3',
-    type: 'comment',
-    referenceId: 'MFC539811',
-    message: null,
-    time: '1 day ago',
-    user: {
-      name: 'Marie Smith',
-      initials: 'MS'
-    }
-  },
-  {
-    id: '4',
-    type: 'claim',
-    referenceId: 'MFA386592',
-    message: 'claim has a new status:',
-    time: '12 days ago',
-    status: 'Denied'
-  }
-];
+import type { WCMItem } from '../WebMonitoringContent';
+import type { CaseUpdateNotif } from '../../contexts/ComplianceContext';
 
 interface NotificationOverlayProps {
   isOpen: boolean;
@@ -46,39 +10,184 @@ interface NotificationOverlayProps {
   onOpenPreApproval?: (id: string) => void;
   onOpenClaim?: (id: string) => void;
   className?: string;
+  // Compliance infractions logged by OEM that pertain to this dealer
+  infractionNotifs?: WCMItem[];
+  seenInfractionIds?: Set<string>;
+  onOpenInfraction?: (id: string) => void;
+  // Dealer-submitted infractions — confirmation that report was accepted
+  submittedNotifs?: WCMItem[];
+  seenSubmittedIds?: Set<string>;
+  onOpenSubmitted?: (id: string) => void;
+  // Case status update notifications (OEM reviewed/resolved a compliance item)
+  caseUpdateNotifs?: CaseUpdateNotif[];
+  seenCaseUpdateIds?: Set<string>;
+  onOpenCaseUpdate?: (id: string) => void;
 }
 
-export function NotificationOverlay({ isOpen, onClose, onOpenPreApproval, onOpenClaim, className }: NotificationOverlayProps) {
+export function NotificationOverlay({
+  isOpen,
+  onClose,
+  onOpenPreApproval,
+  onOpenClaim,
+  className,
+  infractionNotifs,
+  seenInfractionIds,
+  onOpenInfraction,
+  submittedNotifs,
+  seenSubmittedIds,
+  onOpenSubmitted,
+  caseUpdateNotifs,
+  seenCaseUpdateIds,
+  onOpenCaseUpdate,
+}: NotificationOverlayProps) {
   const { workflow, markNotificationRead } = useWorkflow();
 
   if (!isOpen) return null;
 
-  // Dealer-targeted workflow notifications, newest first
-  const dealerNotifs: NotificationItemProps[] = workflow.notifications
+  // ── Build a unified list sorted by recency (newest first) ──────────────────
+
+  type MergedItem = { key: string; sortMs: number; node: React.ReactNode };
+  const merged: MergedItem[] = [];
+
+  // Workflow notifications (dealer-targeted)
+  workflow.notifications
     .filter(n => n.targetRole === 'dealer')
-    .map(n => ({
-      id: n.id,
-      type: n.type,
-      message: (
-        <div className="flex flex-col items-start gap-0.5">
-          <span className="font-normal text-[#1f1d25]">{n.user?.name ?? n.title}</span>
-          <span className="font-normal text-[#1f1d25] text-[12px]">{n.body}</span>
+    .forEach(n => {
+      merged.push({
+        key: `wf-${n.id}`,
+        sortMs: new Date(n.createdAt).getTime(),
+        node: (
+          <div
+            onClick={() => {
+              markNotificationRead(n.id);
+              if (n.type === 'pre-approval') onOpenPreApproval?.(n.referenceId);
+              else if (n.type === 'claim') onOpenClaim?.(n.referenceId);
+              onClose();
+            }}
+            className={n.isRead ? 'opacity-70' : ''}
+          >
+            <NotificationItem
+              id={n.id}
+              type={n.type}
+              message={
+                <div className="flex flex-col items-start gap-0.5">
+                  <span className="font-normal text-[#1f1d25]">{n.user?.name ?? n.title}</span>
+                  <span className="font-normal text-[#1f1d25] text-[12px]">
+                    {n.body}{n.referenceId ? <> <span className="font-medium">{n.referenceId}</span></> : null}
+                  </span>
+                </div>
+              }
+              time={n.time}
+              isRead={n.isRead}
+              user={n.user ? { ...n.user, name: '' } : undefined}
+            />
+          </div>
+        ),
+      });
+    });
+
+  // OEM-added infractions against this dealer
+  (infractionNotifs ?? []).forEach((infr) => {
+    const isRead = seenInfractionIds?.has(infr.id) ?? false;
+    const sortMs = infr.createdAtISO
+      ? new Date(infr.createdAtISO).getTime()
+      : new Date(infr.detectedOn).getTime() || 0;
+    merged.push({
+      key: `infr-${infr.id}`,
+      sortMs,
+      node: (
+        <div
+          onClick={() => { onOpenInfraction?.(infr.id); onClose(); }}
+          className={isRead ? 'opacity-70' : ''}
+        >
+          <NotificationItem
+            id={infr.id}
+            type="claim"
+            message={
+              <div className="flex flex-col items-start gap-0.5">
+                <span className="font-normal text-[#1f1d25]">New compliance infraction logged</span>
+                <span className="font-normal text-[#1f1d25] text-[12px]">
+                  {infr.violationType} <span className="font-medium">{infr.id}</span>
+                </span>
+              </div>
+            }
+            time={infr.createdAtISO
+              ? new Date(infr.createdAtISO).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
+              : infr.detectedOn}
+            isRead={isRead}
+          />
         </div>
       ),
-      time: n.time,
-      isRead: n.isRead,
-      user: n.user ? { ...n.user, name: '' } : undefined,
-    }));
+    });
+  });
 
-  const handleWorkflowClick = (id: string) => {
-    markNotificationRead(id);
-    const notif = workflow.notifications.find(n => n.id === id);
-    if (notif) {
-      if (notif.type === 'pre-approval') onOpenPreApproval?.(notif.referenceId);
-      else if (notif.type === 'claim') onOpenClaim?.(notif.referenceId);
-    }
-    onClose();
-  };
+  // Dealer-submitted infraction reports (confirmation)
+  (submittedNotifs ?? []).forEach((infr) => {
+    const isRead = seenSubmittedIds?.has(infr.id) ?? false;
+    const sortMs = infr.createdAtISO
+      ? new Date(infr.createdAtISO).getTime()
+      : new Date(infr.detectedOn).getTime() || 0;
+    merged.push({
+      key: `sub-${infr.id}`,
+      sortMs,
+      node: (
+        <div
+          onClick={() => { onOpenSubmitted?.(infr.id); onClose(); }}
+          className={isRead ? 'opacity-70' : ''}
+        >
+          <NotificationItem
+            id={infr.id}
+            type="claim"
+            message={
+              <div className="flex flex-col items-start gap-0.5">
+                <span className="font-normal text-[#1f1d25]">Infraction report submitted</span>
+                <span className="font-normal text-[#1f1d25] text-[12px]">
+                  {infr.violationType} · Pending OEM review <span className="font-medium">{infr.id}</span>
+                </span>
+              </div>
+            }
+            time={infr.createdAtISO
+              ? new Date(infr.createdAtISO).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
+              : infr.detectedOn}
+            isRead={isRead}
+          />
+        </div>
+      ),
+    });
+  });
+
+  // Case status updates from OEM
+  (caseUpdateNotifs ?? []).forEach((notif) => {
+    const isRead = seenCaseUpdateIds?.has(notif.id) ?? false;
+    merged.push({
+      key: `cu-${notif.id}`,
+      sortMs: new Date(notif.timestampISO).getTime(),
+      node: (
+        <div
+          onClick={() => { onOpenCaseUpdate?.(notif.id); onClose(); }}
+          className={isRead ? 'opacity-70' : ''}
+        >
+          <NotificationItem
+            id={notif.id}
+            type="claim"
+            message={
+              <div className="flex flex-col items-start gap-0.5">
+                <span className="font-normal text-[#1f1d25]">Compliance case update</span>
+                <span className="font-normal text-[#1f1d25] text-[12px]">
+                  {notif.message} <span className="font-medium">{notif.itemId}</span>
+                </span>
+              </div>
+            }
+            time={new Date(notif.timestampISO).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+            isRead={isRead}
+          />
+        </div>
+      ),
+    });
+  });
+
+  // Sort newest first
+  merged.sort((a, b) => b.sortMs - a.sortMs);
 
   return (
     <div
@@ -89,29 +198,16 @@ export function NotificationOverlay({ isOpen, onClose, onOpenPreApproval, onOpen
       onClick={(e) => e.stopPropagation()}
     >
       <div className="flex flex-col max-h-[480px] overflow-y-auto custom-scrollbar">
-        {/* Workflow notifications — dynamic, dealer-targeted, pinned at top */}
-        {dealerNotifs.map((notif) => (
-          <div
-            key={notif.id}
-            onClick={() => handleWorkflowClick(notif.id as string)}
-            className={notif.isRead ? 'opacity-70' : ''}
-          >
-            <NotificationItem {...notif} />
-          </div>
+        {merged.map(m => (
+          <div key={m.key}>{m.node}</div>
         ))}
 
-        {/* Static dealer mock notifications */}
-        {MOCK_NOTIFICATIONS.map((notif) => (
-          <NotificationItem
-            key={notif.id}
-            {...notif}
-            message={
-               notif.type === 'comment' ? (
-                 <span><span className="font-bold">{notif.user?.name}</span></span>
-               ) : notif.message
-            }
-          />
-        ))}
+        {merged.length === 0 && (
+          <div className="flex flex-col items-center justify-center py-8 px-4 text-center gap-1.5">
+            <span className="text-[14px] font-medium text-[#1F1D25]">You're all caught up</span>
+            <span className="text-[12px] text-[#9C99A9]">No new notifications</span>
+          </div>
+        )}
       </div>
     </div>
   );

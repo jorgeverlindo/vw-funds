@@ -17,6 +17,17 @@ function figmaAssetResolver() {
 }
 
 export default defineConfig({
+  server: {
+    port: 5173,
+    strictPort: false,
+    proxy: {
+      // Forward /api/* to the Hono agent server (never exposed in the browser bundle)
+      '/api': {
+        target: 'http://localhost:3001',
+        changeOrigin: true,
+      },
+    },
+  },
   plugins: [
     figmaAssetResolver(),
     // The React and Tailwind plugins are both required for Make, even if
@@ -28,6 +39,8 @@ export default defineConfig({
     alias: {
       // Alias @ to the src directory
       '@': path.resolve(__dirname, './src'),
+      // Alias for the Projects module (constellation-app port)
+      '@projects': path.resolve(__dirname, './src/app/components/projects'),
     },
   },
 })

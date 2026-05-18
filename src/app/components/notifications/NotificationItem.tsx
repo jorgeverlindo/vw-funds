@@ -27,13 +27,13 @@ export function NotificationItem({
   isRead = false,
 }: NotificationItemProps) {
   return (
-    <div 
+    <div
       className={cn(
         "group flex items-start gap-3 p-3 w-full border-b border-gray-100 last:border-0 hover:bg-gray-50 active:bg-gray-100 transition-colors cursor-pointer",
         !isRead ? "bg-white" : "bg-gray-50/50"
       )}
     >
-      {/* Avatar (if comment/user related) */}
+      {/* Avatar */}
       {user && (
         <div className="flex-shrink-0">
           {user.avatarUrl ? (
@@ -51,30 +51,27 @@ export function NotificationItem({
       {/* Content */}
       <div className="flex-1 min-w-0">
         <div className="flex items-start justify-between gap-2">
-          {/* Main Message */}
+          {/* Main Message — referenceId is embedded inline by the caller */}
           <div className="text-[14px] text-[#1f1d25] font-normal leading-[1.5] tracking-[0.15px]">
-             {referenceId && <span className="font-bold">{referenceId} </span>}
-             {message}
+            {message}
           </div>
-          
           {/* Timestamp */}
           <div className="text-[12px] text-[#9c99a9] whitespace-nowrap tracking-[0.17px] leading-[1.43]">
             {time}
           </div>
         </div>
 
-        {/* Status Chip (if applicable) */}
+        {/* Status Chip */}
         {status && (
           <div className="mt-1.5">
             <StatusChip status={status} />
           </div>
         )}
 
-        {/* User Comment Subtext (if applicable) */}
+        {/* Comment subtext */}
         {user && type === 'comment' && (
-          <div className="mt-0.5 text-[12px] text-[#1f1d25] tracking-[0.17px] leading-[1.43]">
-             {user.name}
-             <div className="text-[#9c99a9] mt-0.5">Left a comment on {referenceId}</div>
+          <div className="mt-0.5 text-[12px] text-[#9c99a9] tracking-[0.17px] leading-[1.43]">
+            Left a comment{referenceId ? ` on ${referenceId}` : ''}
           </div>
         )}
       </div>

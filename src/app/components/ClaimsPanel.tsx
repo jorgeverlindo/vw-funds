@@ -119,6 +119,7 @@ export function ClaimsPanel({
     archiveAndReset,
     addClaimDocument,
     removeClaimDocument,
+    addDealerNote,
   } = useWorkflow();
 
   const [oemDraftComment, setOemDraftComment] = useState('');
@@ -235,32 +236,21 @@ export function ClaimsPanel({
     onClose();
   };
 
+  const handleSendDealerNote = () => {
+    if (!dealerDraftComment.trim()) return;
+    addDealerNote('claim', dealerDraftComment.trim());
+    setDealerDraftComment('');
+  };
+
   // ── Footer content ────────────────────────────────────────────────────────
 
   const renderFooter = () => {
-    // Non-workflow items: original Cancel + Process Payment
-    if (!isWorkflowItem) {
-      return (
-        <div className="flex justify-end gap-3">
-          <button
-            onClick={onClose}
-            className="px-6 py-2 rounded-full text-sm font-medium text-[#111014]/60 hover:bg-black/5 transition-colors cursor-pointer"
-          >
-            {t('Cancel')}
-          </button>
-          <button className="px-6 py-2 bg-[var(--brand-accent)] hover:bg-[var(--brand-accent-hover)] text-white rounded-full text-sm font-medium transition-colors shadow-sm cursor-pointer">
-            {t('Process Payment')}
-          </button>
-        </div>
-      );
-    }
-
-    // ── OEM view ────────────────────────────────────────────────────────────
+    // ── OEM view — always evaluated first, regardless of workflow/non-workflow ─
     if (userType === 'oem') {
-      const canReview = liveStatus === 'Submitted' || liveStatus === 'Resubmitted';
-      const canApprove = liveStatus === 'Approved';
+      // Any status that isn't a terminal state is actionable for OEM review
+      const canAct = !['Approved', 'Declined', 'Paid'].includes(liveStatus);
 
-      if (canReview) {
+      if (canAct) {
         return (
           <div className="space-y-3">
             <textarea
@@ -278,21 +268,21 @@ export function ClaimsPanel({
                 {t('Close')}
               </button>
               <button
-                onClick={handleRequestAdjustments}
+                onClick={isWorkflowItem ? handleRequestAdjustments : onClose}
                 disabled={!oemDraftComment.trim()}
                 className="px-5 py-2 rounded-full text-sm font-medium border border-[#E17613] text-[#E17613] hover:bg-[rgba(225,118,19,0.06)] disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer"
               >
                 Request Adjustments
               </button>
               <button
-                onClick={handleDeclineClaim}
+                onClick={isWorkflowItem ? handleDeclineClaim : onClose}
                 className="flex items-center gap-1.5 px-5 py-2 rounded-full text-sm font-medium border border-[#D2323F] text-[#D2323F] hover:bg-[rgba(210,50,63,0.06)] transition-colors cursor-pointer"
               >
                 <XCircle className="w-4 h-4" />
                 Decline
               </button>
               <button
-                onClick={handleApprove}
+                onClick={isWorkflowItem ? handleApprove : onClose}
                 className="px-6 py-2 bg-[var(--brand-accent)] hover:bg-[var(--brand-accent-hover)] text-white rounded-full text-sm font-medium transition-colors shadow-sm cursor-pointer"
               >
                 Approve Claim
@@ -302,7 +292,8 @@ export function ClaimsPanel({
         );
       }
 
-      if (canApprove) {
+      // liveStatus is Approved/Declined/Paid — workflow item can still process payment
+      if (isWorkflowItem && liveStatus === 'Approved') {
         return (
           <div className="flex justify-end gap-3">
             <button
@@ -322,7 +313,7 @@ export function ClaimsPanel({
         );
       }
 
-      // Paid or other terminal status
+      // Paid, Declined, or other terminal status — read-only
       return (
         <div className="flex justify-end">
           <button
@@ -335,24 +326,72 @@ export function ClaimsPanel({
       );
     }
 
-    // ── Dealer view ──────────────────────────────────────────────────────────
-    if (liveStatus === 'Draft') {
+    // ── Dealer view: non-workflow items are read-only ─────────────────────────
+    if (!isWorkflowItem) {
       return (
-        <div className="flex items-center justify-between">
-          <p className="text-[13px] text-[#686576]">Review the details and submit for OEM review.</p>
-          <div className="flex gap-3">
+        <div className="space-y-3">
+          <textarea
+            value={dealerDraftComment}
+            onChange={(e) => setDealerDraftComment(e.target.value)}
+            placeholder="Add a note to the OEM (optional)…"
+            rows={2}
+            className="w-full rounded-xl border border-[#E0E0E0] px-3 py-2 text-[13px] text-[#1f1d25] placeholder:text-[#9C99A9] resize-none focus:outline-none focus:border-[var(--brand-accent)] transition-colors"
+          />
+          <div className="flex items-center justify-end gap-3">
             <button
               onClick={onClose}
               className="px-6 py-2 rounded-full text-sm font-medium text-[#111014]/60 hover:bg-black/5 transition-colors cursor-pointer"
             >
               {t('Close')}
             </button>
-            <button
-              onClick={() => { submitClaim(); onClose(); }}
-              className="px-6 py-2 bg-[var(--brand-accent)] hover:bg-[var(--brand-accent-hover)] text-white rounded-full text-sm font-medium transition-colors shadow-sm cursor-pointer"
-            >
-              Submit Claim
-            </button>
+            {dealerDraftComment.trim() && (
+              <button
+                onClick={handleSendDealerNote}
+                className="px-5 py-2 bg-[var(--brand-accent)] hover:bg-[var(--brand-accent-hover)] text-white rounded-full text-sm font-medium transition-colors cursor-pointer"
+              >
+                Send Note
+              </button>
+            )}
+          </div>
+        </div>
+      );
+    }
+
+    // ── Dealer view ──────────────────────────────────────────────────────────
+    if (liveStatus === 'Draft') {
+      return (
+        <div className="space-y-3">
+          <textarea
+            value={dealerDraftComment}
+            onChange={(e) => setDealerDraftComment(e.target.value)}
+            placeholder="Add a note to the OEM (optional)…"
+            rows={2}
+            className="w-full rounded-xl border border-[#E0E0E0] px-3 py-2 text-[13px] text-[#1f1d25] placeholder:text-[#9C99A9] resize-none focus:outline-none focus:border-[var(--brand-accent)] transition-colors"
+          />
+          <div className="flex items-center justify-between">
+            <p className="text-[13px] text-[#686576]">Review the details and submit for OEM review.</p>
+            <div className="flex gap-3">
+              <button
+                onClick={onClose}
+                className="px-6 py-2 rounded-full text-sm font-medium text-[#111014]/60 hover:bg-black/5 transition-colors cursor-pointer"
+              >
+                {t('Close')}
+              </button>
+              <button
+                onClick={() => { submitClaim(); onClose(); }}
+                className="px-6 py-2 bg-[var(--brand-accent)] hover:bg-[var(--brand-accent-hover)] text-white rounded-full text-sm font-medium transition-colors shadow-sm cursor-pointer"
+              >
+                Submit Claim
+              </button>
+              {dealerDraftComment.trim() && (
+                <button
+                  onClick={handleSendDealerNote}
+                  className="px-5 py-2 bg-[var(--brand-accent)] hover:bg-[var(--brand-accent-hover)] text-white rounded-full text-sm font-medium transition-colors cursor-pointer"
+                >
+                  Send Note
+                </button>
+              )}
+            </div>
           </div>
         </div>
       );
@@ -415,13 +454,30 @@ export function ClaimsPanel({
 
     // Submitted / Resubmitted / Approved / In Review — read-only for dealer
     return (
-      <div className="flex justify-end">
-        <button
-          onClick={onClose}
-          className="px-6 py-2 rounded-full text-sm font-medium text-[#111014]/60 hover:bg-black/5 transition-colors cursor-pointer"
-        >
-          {t('Close')}
-        </button>
+      <div className="space-y-3">
+        <textarea
+          value={dealerDraftComment}
+          onChange={(e) => setDealerDraftComment(e.target.value)}
+          placeholder="Add a note to the OEM (optional)…"
+          rows={2}
+          className="w-full rounded-xl border border-[#E0E0E0] px-3 py-2 text-[13px] text-[#1f1d25] placeholder:text-[#9C99A9] resize-none focus:outline-none focus:border-[var(--brand-accent)] transition-colors"
+        />
+        <div className="flex items-center justify-end gap-3">
+          <button
+            onClick={onClose}
+            className="px-6 py-2 rounded-full text-sm font-medium text-[#111014]/60 hover:bg-black/5 transition-colors cursor-pointer"
+          >
+            {t('Close')}
+          </button>
+          {dealerDraftComment.trim() && (
+            <button
+              onClick={handleSendDealerNote}
+              className="px-5 py-2 bg-[var(--brand-accent)] hover:bg-[var(--brand-accent-hover)] text-white rounded-full text-sm font-medium transition-colors cursor-pointer"
+            >
+              Send Note
+            </button>
+          )}
+        </div>
       </div>
     );
   };

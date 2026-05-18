@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import svgPaths from '@/imports/svg-kh2cdc4deu';
 import imgAvatar from 'figma:asset/f0494d5017440bdc302141d9ab01c7c81e4a339a.png';
+import imgEmichAvatar from '../../assets/Emich_Avatar.jpeg';
 import { NotificationOverlay } from './notifications/NotificationOverlay';
 import { NotificationOverlayOEM } from './notifications/NotificationOverlayOEM';
 import { AvatarInitials } from './ui/AvatarInitials';
@@ -8,9 +9,11 @@ import { cn } from '@/lib/utils';
 import { LanguageToggleButton } from './LanguageToggleButton';
 import { useTranslation } from '../contexts/LanguageContext';
 import { useWorkflow } from '../contexts/WorkflowContext';
+import type { WCMItem } from './WebMonitoringContent';
+import type { CaseUpdateNotif } from '../contexts/ComplianceContext';
 
 interface TopNavBarProps {
-  userType?: 'dealer' | 'dealer-singular' | 'oem';
+  userType?: 'dealer' | 'dealer-singular' | 'dealer-emich' | 'oem';
   onOpenOEMDrawer?: () => void;
   languageToggleActive?: boolean;
   onOpenAgentPane?: () => void;
@@ -18,20 +21,78 @@ interface TopNavBarProps {
   onOpenWebMonitoring?: (id: string) => void;
   onOpenPreApprovalFromNotif?: (id: string) => void;
   onOpenClaimFromNotif?: (id: string) => void;
+  // [FV] início — dealer-side compliance notifications driven by OEM-added infractions
+  dealerInfractionNotifs?: WCMItem[];
+  dealerSeenInfractionIds?: Set<string>;
+  dealerInfractionUnread?: number;
+  onOpenInfractionFromNotif?: (id: string) => void;
+  // dealer submitted-infraction confirmations
+  dealerSubmittedNotifs?: WCMItem[];
+  dealerSeenSubmittedIds?: Set<string>;
+  dealerSubmittedUnread?: number;
+  onOpenSubmittedFromNotif?: (id: string) => void;
+  // Dealer case update notifications (OEM changed compliance item status)
+  dealerCaseUpdateNotifs?: CaseUpdateNotif[];
+  seenCaseUpdateIds?: Set<string>;
+  dealerCaseUpdateUnread?: number;
+  onOpenCaseUpdateFromNotif?: (id: string) => void;
+  // OEM-side: solution submissions by dealers
+  oemSolutionNotifs?: { id: string; solution: { submittedBy: string; submittedAtISO: string; comment: string } }[];
+  oemSeenSolutionIds?: Set<string>;
+  oemSolutionUnread?: number;
+  onOpenSolutionFromNotif?: (id: string) => void;
+  // OEM-side: dealer-reported infractions
+  oemReportedNotifs?: WCMItem[];
+  oemSeenReportedIds?: Set<string>;
+  oemReportedUnread?: number;
+  onOpenReportedFromNotif?: (id: string) => void;
+  // [FV] fim
 }
 
-export function TopNavBar({ userType = 'dealer', onOpenOEMDrawer, languageToggleActive = false, onOpenAgentPane, isAgentPaneOpen = false, onOpenWebMonitoring, onOpenPreApprovalFromNotif, onOpenClaimFromNotif }: TopNavBarProps) {
+export function TopNavBar({
+  userType = 'dealer',
+  onOpenOEMDrawer,
+  languageToggleActive = false,
+  onOpenAgentPane,
+  isAgentPaneOpen = false,
+  onOpenWebMonitoring,
+  onOpenPreApprovalFromNotif,
+  onOpenClaimFromNotif,
+  dealerInfractionNotifs, // [FV]
+  dealerSeenInfractionIds, // [FV]
+  dealerInfractionUnread = 0, // [FV]
+  onOpenInfractionFromNotif, // [FV]
+  dealerSubmittedNotifs, // [FV]
+  dealerSeenSubmittedIds, // [FV]
+  dealerSubmittedUnread = 0, // [FV]
+  onOpenSubmittedFromNotif, // [FV]
+  dealerCaseUpdateNotifs,
+  seenCaseUpdateIds,
+  dealerCaseUpdateUnread = 0,
+  onOpenCaseUpdateFromNotif,
+  oemSolutionNotifs, // [FV]
+  oemSeenSolutionIds, // [FV]
+  oemSolutionUnread = 0, // [FV]
+  onOpenSolutionFromNotif, // [FV]
+  oemReportedNotifs, // [FV]
+  oemSeenReportedIds, // [FV]
+  oemReportedUnread = 0, // [FV]
+  onOpenReportedFromNotif, // [FV]
+}: TopNavBarProps) {
   const { t } = useTranslation();
   const { oemUnreadCount, dealerUnreadCount } = useWorkflow();
-  const badgeCount = userType === 'oem' ? oemUnreadCount : dealerUnreadCount;
+  // [FV] badges sum workflow unread + compliance flow notifs (per role)
+  const badgeCount = userType === 'oem'
+    ? oemUnreadCount + oemSolutionUnread + oemReportedUnread
+    : dealerUnreadCount + dealerInfractionUnread + dealerSubmittedUnread + dealerCaseUpdateUnread;
   const [isNotificationOpen, setIsNotificationOpen] = useState(false);
   const notificationRef = useRef<HTMLDivElement>(null);
   const bellRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
+    if (!isNotificationOpen) return;
     function handleClickOutside(event: MouseEvent) {
       if (
-        isNotificationOpen &&
         notificationRef.current &&
         !notificationRef.current.contains(event.target as Node) &&
         !bellRef.current?.contains(event.target as Node)
@@ -39,12 +100,14 @@ export function TopNavBar({ userType = 'dealer', onOpenOEMDrawer, languageToggle
         setIsNotificationOpen(false);
       }
     }
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    // capture:true fires before React's synthetic event system so clicks inside
+    // portals / overlays that call stopPropagation don't block this handler.
+    document.addEventListener('mousedown', handleClickOutside, true);
+    return () => document.removeEventListener('mousedown', handleClickOutside, true);
   }, [isNotificationOpen]);
 
   return (
-    <div className="fixed top-0 left-[72px] right-0 h-12 bg-[#F9FAFA] flex items-center z-[100] px-[24px] py-[8px] mt-[8px] mr-[0px] mb-[0px] ml-[0px]">
+    <div className="fixed top-0 left-[72px] right-0 h-12 bg-[#F9FAFA] flex items-center z-[49] px-[24px] py-[8px] mt-[8px] mr-[0px] mb-[0px] ml-[0px]">
       {/* Left: Logo */}
       <div className="flex items-center h-8">
         <svg viewBox="0 0 176 32" className="h-full w-auto" fill="none">
@@ -95,7 +158,7 @@ export function TopNavBar({ userType = 'dealer', onOpenOEMDrawer, languageToggle
         </div>
         {/* AI Sparkle Icon - With Badge */}
         <button
-          onClick={userType !== 'oem' ? onOpenAgentPane : undefined}
+          onClick={onOpenAgentPane}
           className={cn(
             "p-1.5 rounded-full hover:bg-black/5 transition-colors cursor-pointer relative group",
             isAgentPaneOpen && "bg-[var(--brand-accent)]/10"
@@ -151,7 +214,7 @@ export function TopNavBar({ userType = 'dealer', onOpenOEMDrawer, languageToggle
           </button>
 
           {/* Overlay */}
-          <div ref={notificationRef} className="absolute top-full right-0 z-[1000] pt-2">
+          <div ref={notificationRef} className="absolute top-full right-0 z-[9998] pt-2">
              {userType === 'oem' ? (
                 <NotificationOverlayOEM
                   isOpen={isNotificationOpen}
@@ -160,6 +223,15 @@ export function TopNavBar({ userType = 'dealer', onOpenOEMDrawer, languageToggle
                   onOpenWebMonitoring={onOpenWebMonitoring || (() => {})}
                   onOpenPreApproval={onOpenPreApprovalFromNotif}
                   onOpenClaim={onOpenClaimFromNotif}
+                  // [FV] início — dealer-submitted solutions appear at the top
+                  solutionNotifs={oemSolutionNotifs}
+                  seenSolutionIds={oemSeenSolutionIds}
+                  onOpenSolution={onOpenSolutionFromNotif}
+                  // dealer-reported infractions appear at the top too
+                  reportedNotifs={oemReportedNotifs}
+                  seenReportedIds={oemSeenReportedIds}
+                  onOpenReported={onOpenReportedFromNotif}
+                  // [FV] fim
                 />
              ) : (
                 <NotificationOverlay
@@ -167,6 +239,17 @@ export function TopNavBar({ userType = 'dealer', onOpenOEMDrawer, languageToggle
                   onClose={() => setIsNotificationOpen(false)}
                   onOpenPreApproval={onOpenPreApprovalFromNotif}
                   onOpenClaim={onOpenClaimFromNotif}
+                  // [FV] início
+                  infractionNotifs={dealerInfractionNotifs}
+                  seenInfractionIds={dealerSeenInfractionIds}
+                  onOpenInfraction={onOpenInfractionFromNotif}
+                  submittedNotifs={dealerSubmittedNotifs}
+                  seenSubmittedIds={dealerSeenSubmittedIds}
+                  onOpenSubmitted={onOpenSubmittedFromNotif}
+                  caseUpdateNotifs={dealerCaseUpdateNotifs}
+                  seenCaseUpdateIds={seenCaseUpdateIds}
+                  onOpenCaseUpdate={onOpenCaseUpdateFromNotif}
+                  // [FV] fim
                 />
              )}
           </div>
@@ -191,6 +274,10 @@ export function TopNavBar({ userType = 'dealer', onOpenOEMDrawer, languageToggle
             bgColor="#bcbbc2"
             className="ml-2 cursor-pointer"
           />
+        ) : userType === 'dealer-emich' ? (
+          <div className="size-8 rounded-full overflow-hidden ml-2 cursor-pointer">
+            <img src={imgEmichAvatar} alt="" className="size-full object-cover object-[center_20%]" />
+          </div>
         ) : (
           <div className="size-8 rounded-full overflow-hidden ml-2 cursor-pointer">
             <img src={imgAvatar} alt="" className="size-full object-cover" />

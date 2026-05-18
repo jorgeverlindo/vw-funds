@@ -307,11 +307,13 @@ export function CreateProjectDialog({
   onOpenChange,
   onSave,
   brandOptions = [],
+  existingNames,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSave: (data: NewProjectInput) => void;
   brandOptions?: { id: string; name: string }[];
+  existingNames?: string[];
 }) {
   const [name, setName]           = useState("");
   const [account, setAccount]     = useState("");
@@ -331,6 +333,10 @@ export function CreateProjectDialog({
   const validate = (): FormErrors => {
     const e: FormErrors = {};
     if (!name.trim()) e.name      = "Project name is required";
+    const norm = (s: string) => s.trim().toLowerCase();
+    if (!e.name && existingNames?.some(n => norm(n) === norm(name))) {
+      e.name = "A project with this name already exists";
+    }
     if (!startDate)   e.startDate = "Start date is required";
     if (!endDate)     e.endDate   = "End date is required";
     if (startDate && endDate && endDate < startDate)

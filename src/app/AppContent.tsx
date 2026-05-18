@@ -15,13 +15,15 @@ import { ClaimsPanel } from './components/ClaimsPanel';
 import { MainPane, RightPane } from './components/LayoutWrappers';
 import { DateRange } from 'react-day-picker';
 import { PortalContent } from './components/portal/PortalContent';
-import { ProjectsScreen } from './components/projects/ProjectsScreen';
+import { ProjectsModule } from './components/projects/ProjectsModule';
 import { DrawerOEM } from './components/pre-approval/DrawerOEM';
 import { GuidelinesContent } from './components/GuidelinesContent';
 import { AgentPane } from './components/AgentPane';
+import { ProjectAgentPane } from './components/projects/ProjectAgentPane';
 import { WebMonitoringContent, WCM_DATA } from './components/WebMonitoringContent';
 import { WebMonitoringPanel } from './components/WebMonitoringPanel';
 import { WebMonitoringModal } from './components/WebMonitoringModal';
+import { WebMonitoringConfigModal } from './components/WebMonitoringConfigModal'; // [FV]
 import { useTranslation } from './contexts/LanguageContext';
 import { ClientSwitcher } from './components/ClientSwitcher';
 import { emitSnackbar } from './components/Snackbar';
@@ -29,6 +31,7 @@ import { useClient } from './contexts/ClientContext';
 import { useFilters } from './contexts/FilterContext';
 import { BreadcrumbBar } from './components/BreadcrumbBar';
 import { useWorkflow, WORKFLOW_DEALER, WORKFLOW_CAMPAIGN } from './contexts/WorkflowContext';
+import { useCompliance, getDealerIdentity } from './contexts/ComplianceContext'; // [FV]
 import type { Claim } from './components/ClaimsPanel';
 import type { PreApproval } from './components/FundsPreApprovalsContent';
 import imgMalloryManning from 'figma:asset/f0494d5017440bdc302141d9ab01c7c81e4a339a.png';
@@ -39,6 +42,7 @@ const DEALER_TABS = [
   { id: 'claims', label: 'Claims' },
   { id: 'cases', label: 'Cases' },
   { id: 'planner', label: 'Planner' },
+  { id: 'web-monitoring', label: 'Compliance' }, // [FV] dealer-view scoped subselection (renamed from Web Monitoring)
   { id: 'guidelines', label: 'Guidelines & Assets' },
 ];
 
@@ -48,7 +52,7 @@ const OEM_TABS = [
   { id: 'claims', label: 'Claims' },
   { id: 'cases', label: 'Cases' },
   { id: 'planner', label: 'Planner' },
-  { id: 'web-monitoring', label: 'Web Monitoring' },
+  { id: 'web-monitoring', label: 'Compliance' }, // [FV] renamed from Web Monitoring
 ];
 
 // ── URL routing helpers ───────────────────────────────────────────────────────
@@ -74,6 +78,7 @@ function buildUrl(role: UserType, clientId: string, tabId: string): string {
   }
   const brand = clientId === 'audi' ? 'Audi' : 'Volkswagen';
   if (role === 'dealer-singular') return `/${brand}/dealership-singular/${slug}`;
+  if (role === 'dealer-emich')    return `/${brand}/dealership-emich/${slug}`; // [FV]
   return `/${brand}/dealership/${slug}`;
 }
 
@@ -84,7 +89,7 @@ const defaultDateRange: DateRange = {
   to: new Date(2026, 11, 31),
 };
 
-export type UserType = 'dealer' | 'dealer-singular' | 'oem';
+export type UserType = 'dealer' | 'dealer-singular' | 'dealer-emich' | 'oem';
 
 export default function AppContent() {
   const { t } = useTranslation();
@@ -100,6 +105,7 @@ export default function AppContent() {
   // Derive initial tab/role from URL; useState only uses these once on mount
   const _initPath = location.pathname.toLowerCase();
   const _initRole: UserType = _initPath.includes('/dealership-singular/') ? 'dealer-singular'
+    : _initPath.includes('/dealership-emich/') ? 'dealer-emich' // [FV]
     : _initPath.includes('/dealership/') ? 'dealer' : 'oem';
   const _initTab = SLUG_TO_TAB[routeParams.tab ?? ''] ?? 'overview';
 
@@ -109,9 +115,48 @@ export default function AppContent() {
   const [dateRange, setDateRange] = useState<DateRange | undefined>(defaultDateRange);
   const [clientSwitcherOpen, setClientSwitcherOpen] = useState(false);
 
+  // [FV] compliance context — all infraction/solution/notification state
+  const {
+    userAddedInfractions,
+    deletedInfractionIds,
+    seenInfractionIds,
+    seenSubmittedIds,
+    caseSolutions,
+    oemSeenSolutionIds,
+    oemSolutionNotifs,
+    oemSolutionUnread,
+    oemReportedNotifs,
+    oemSeenReportedIds,
+    oemReportedUnread,
+    wcmComments,
+    addInfraction,
+    deleteInfraction,
+    updateInfractionStatus,
+    markSeenInfraction,
+    markSeenSubmitted,
+    submitCaseSolution,
+    markCaseSolved,
+    markOemSeenSolution,
+    markOemSeenReported,
+    addWcmComment,
+    dealerInfractionNotifs,
+    dealerInfractionUnread,
+    dealerSubmittedNotifs,
+    dealerSubmittedUnread,
+    caseUpdates,
+    seenCaseUpdateIds,
+    addDealerCaseUpdate,
+    markSeenCaseUpdate,
+    dealerCaseUpdateNotifs,
+    dealerCaseUpdateUnread,
+  } = useCompliance();
+
   // Sync data-mode to <html> so portals (rendered outside the wrapper div) also inherit CSS vars
-  // dealer-singular uses the same CSS vars as dealer
-  const cssMode = userType === 'dealer-singular' ? 'dealer' : userType;
+  // [FV] dealer-singular and dealer-emich both share the dealer CSS palette
+  const cssMode = (userType === 'dealer-singular' || userType === 'dealer-emich') ? 'dealer' : userType;
+
+  // [FV] current dealer identity (own dealership name + user) — drives Compliance scope, AI auto-fill, and labels
+  const currentDealerIdentity = getDealerIdentity(userType);
   useEffect(() => {
     document.documentElement.setAttribute('data-mode', cssMode);
   }, [cssMode]);
@@ -140,7 +185,14 @@ export default function AppContent() {
         lockDealership(WORKFLOW_DEALER.code);
         setUserType('dealer-singular');
         navigate(buildUrl('dealer-singular', client.clientId, activeTab), { replace: true });
-        emitSnackbar(`${WORKFLOW_DEALER.name} (d)`);
+        emitSnackbar('Jack Daniels Volkswagen (d)'); // [FV] toast label decoupled from WORKFLOW_DEALER.name
+      }
+      // [FV] 's' → Emich Volkswagen dealer view (used to demo cross-dealer compliance reports)
+      if (e.key === 's') {
+        unlockDealership();
+        setUserType('dealer-emich');
+        navigate(buildUrl('dealer-emich', client.clientId, activeTab), { replace: true });
+        emitSnackbar('Emich Volkswagen (s)');
       }
     };
     window.addEventListener('keydown', handleKey);
@@ -406,6 +458,7 @@ export default function AppContent() {
   useEffect(() => {
     const path = location.pathname.toLowerCase();
     const role: UserType = path.includes('/dealership-singular/') ? 'dealer-singular'
+      : path.includes('/dealership-emich/') ? 'dealer-emich' // [FV]
       : path.includes('/dealership/') ? 'dealer' : 'oem';
     const tabId = SLUG_TO_TAB[routeParams.tab ?? ''] ?? 'overview';
     const brandParam = routeParams.brand?.toLowerCase();
@@ -426,10 +479,16 @@ export default function AppContent() {
 
   const [selectedWebMonitoringId, setSelectedWebMonitoringId] = useState<string | null>(null);
   const [isWebMonitoringModalOpen, setIsWebMonitoringModalOpen] = useState(false);
+  const [isWebMonitoringConfigOpen, setIsWebMonitoringConfigOpen] = useState(false); // [FV]
+  const [isCreatingInfraction, setIsCreatingInfraction] = useState(false); // [FV]
 
-  const selectedWCMItem = useMemo(() =>
-    selectedWebMonitoringId ? WCM_DATA.find(i => i.id === selectedWebMonitoringId) ?? null : null
-  , [selectedWebMonitoringId]);
+  const selectedWCMItem = useMemo(() => {
+    if (!selectedWebMonitoringId) return null;
+    // [FV] also search user-added infractions
+    return userAddedInfractions.find(i => i.id === selectedWebMonitoringId)
+        ?? WCM_DATA.find(i => i.id === selectedWebMonitoringId)
+        ?? null;
+  }, [selectedWebMonitoringId, userAddedInfractions]);
 
   const showLanguageToggle = activeAppSection === 'campaigns';
 
@@ -461,6 +520,55 @@ export default function AppContent() {
         languageToggleActive={showLanguageToggle}
         onOpenAgentPane={() => setIsAgentPaneOpen(open => !open)}
         isAgentPaneOpen={isAgentPaneOpen}
+        // [FV] início — dealer-side infraction notifications driven by OEM-added rows
+        dealerInfractionNotifs={userType !== 'oem' ? dealerInfractionNotifs(currentDealerIdentity.dealership) : undefined}
+        dealerSeenInfractionIds={userType !== 'oem' ? seenInfractionIds : undefined}
+        dealerInfractionUnread={userType !== 'oem' ? dealerInfractionUnread(currentDealerIdentity.dealership) : 0}
+        onOpenInfractionFromNotif={(id) => {
+          markSeenInfraction(id);
+          setActiveTab('web-monitoring');
+          setSelectedWebMonitoringId(id);
+          setIsCreatingInfraction(false);
+          navigate(buildUrl(userType, client.clientId, 'web-monitoring'), { replace: true });
+        }}
+        dealerSubmittedNotifs={undefined}
+        dealerSeenSubmittedIds={undefined}
+        dealerSubmittedUnread={0}
+        onOpenSubmittedFromNotif={undefined}
+        dealerCaseUpdateNotifs={userType !== 'oem' ? dealerCaseUpdateNotifs(currentDealerIdentity.dealership) : undefined}
+        seenCaseUpdateIds={userType !== 'oem' ? seenCaseUpdateIds : undefined}
+        dealerCaseUpdateUnread={userType !== 'oem' ? dealerCaseUpdateUnread(currentDealerIdentity.dealership) : 0}
+        onOpenCaseUpdateFromNotif={(id) => {
+          markSeenCaseUpdate(id);
+          setActiveTab('web-monitoring');
+          const update = caseUpdates.find(u => u.id === id);
+          if (update) setSelectedWebMonitoringId(update.itemId);
+          setIsCreatingInfraction(false);
+          navigate(buildUrl(userType, client.clientId, 'web-monitoring'), { replace: true });
+        }}
+        // OEM-side: solutions submitted by dealers
+        oemSolutionNotifs={userType === 'oem' ? oemSolutionNotifs : undefined}
+        oemSeenSolutionIds={userType === 'oem' ? oemSeenSolutionIds : undefined}
+        oemSolutionUnread={userType === 'oem' ? oemSolutionUnread : 0}
+        onOpenSolutionFromNotif={(id) => {
+          markOemSeenSolution(id);
+          setActiveTab('web-monitoring');
+          setSelectedWebMonitoringId(id);
+          setIsCreatingInfraction(false);
+          navigate(buildUrl(userType, client.clientId, 'web-monitoring'), { replace: true });
+        }}
+        // OEM-side: dealer-reported infractions
+        oemReportedNotifs={userType === 'oem' ? oemReportedNotifs : undefined}
+        oemSeenReportedIds={userType === 'oem' ? oemSeenReportedIds : undefined}
+        oemReportedUnread={userType === 'oem' ? oemReportedUnread : 0}
+        onOpenReportedFromNotif={(id) => {
+          markOemSeenReported(id);
+          setActiveTab('web-monitoring');
+          setSelectedWebMonitoringId(id);
+          setIsCreatingInfraction(false);
+          navigate(buildUrl(userType, client.clientId, 'web-monitoring'), { replace: true });
+        }}
+        // [FV] fim
         onOpenWebMonitoring={(id) => {
           setActiveTab('web-monitoring');
           setSelectedWebMonitoringId(id);
@@ -518,9 +626,21 @@ export default function AppContent() {
                 {activeTab === 'overview' && (
                   <div className="h-full overflow-y-auto custom-scrollbar p-6">
                      {userType !== 'oem' ? (
-                       <FundsOverviewContent userType={userType} />
+                       <FundsOverviewContent
+                         userType={userType}
+                         // [FV] feed live compliance counts (mirrors Compliance tab subselection)
+                         userAddedInfractions={userAddedInfractions}
+                         caseSolutions={caseSolutions}
+                         complianceDealershipFilter={currentDealerIdentity.dealership}
+                         complianceReportedByFilter={currentDealerIdentity.userName}
+                         onNavigateToCompliance={() => handleTabChange('web-monitoring')}
+                       />
                      ) : (
-                       <FundsOverviewOEMContent />
+                       <FundsOverviewOEMContent
+                         userAddedInfractions={userAddedInfractions}
+                         caseSolutions={caseSolutions}
+                         onNavigateToCompliance={() => handleTabChange('web-monitoring')}
+                       />
                      )}
                   </div>
                 )}
@@ -579,9 +699,31 @@ export default function AppContent() {
                 {activeTab === 'web-monitoring' && (
                   <WebMonitoringContent
                     selectedId={selectedWebMonitoringId}
-                    onSelectItem={setSelectedWebMonitoringId}
+                    onSelectItem={(id) => {
+                      setSelectedWebMonitoringId(id);
+                      setIsCreatingInfraction(false);
+                    }}
                     dateRange={dateRange}
                     onDateRangeChange={setDateRange}
+                    // [FV] dealer-view sees its own dealership's rows + any rows it reported about other dealerships
+                    dealershipFilter={userType !== 'oem' ? currentDealerIdentity.dealership : undefined}
+                    reportedByFilter={userType !== 'oem' ? currentDealerIdentity.userName : undefined}
+                    // [FV] início — OEM Add Infraction wiring
+                    userType={userType}
+                    userAddedInfractions={userAddedInfractions}
+                    onAddInfraction={() => {
+                      setSelectedWebMonitoringId(null);
+                      setIsCreatingInfraction(true);
+                    }}
+                    onOpenWebMonitoringConfig={userType === 'oem' ? () => setIsWebMonitoringConfigOpen(true) : undefined}
+                    caseSolutions={caseSolutions}
+                    deletedInfractionIds={deletedInfractionIds}
+                    onDeleteInfraction={(id) => {
+                      deleteInfraction(id);
+                      setSelectedWebMonitoringId(prev => (prev === id ? null : prev));
+                    }}
+                    onReopenInfraction={(id) => updateInfractionStatus(id, 'Open')}
+                    // [FV] fim
                   />
                 )}
               </div>
@@ -596,7 +738,7 @@ export default function AppContent() {
           {/* PROJECTS SECTION */}
           {activeAppSection === 'projects' && (
              <div className="h-full overflow-hidden">
-               <ProjectsScreen />
+               <ProjectsModule />
              </div>
           )}
 
@@ -650,22 +792,78 @@ export default function AppContent() {
             )}
 
             {/* Web Monitoring Panel */}
-            {activeTab === 'web-monitoring' && selectedWCMItem && (
+            {activeTab === 'web-monitoring' && selectedWCMItem && !isCreatingInfraction && (
               <div className="flex-none h-full overflow-hidden w-[716px]">
                 <RightPane>
                   <WebMonitoringPanel
                     item={selectedWCMItem}
                     onClose={() => setSelectedWebMonitoringId(null)}
                     onOpenModal={() => setIsWebMonitoringModalOpen(true)}
+                    userType={userType} // [FV] dealer footer hides Assign Penalty/Cancel + adds Issue Solution
+                    currentDealerName={currentDealerIdentity.dealership} // [FV] hide reportedBy from target dealer
+                    // [FV] início — case solution wiring
+                    solution={caseSolutions[selectedWCMItem.id]}
+                    onSubmitSolution={(draft) => submitCaseSolution(selectedWCMItem.id, draft, currentDealerIdentity.userName)}
+                    onMarkSolved={() => {
+                      markCaseSolved(selectedWCMItem.id);
+                      if (userType === 'oem' && selectedWCMItem.dealership) {
+                        addDealerCaseUpdate(selectedWCMItem.id, `Compliance case resolved · ${selectedWCMItem.violationType ?? 'Infraction'}`, selectedWCMItem.dealership);
+                      }
+                    }}
+                    onAcceptReport={() => {
+                      updateInfractionStatus(selectedWCMItem.id, 'Open');
+                      if (userType === 'oem' && selectedWCMItem.dealership) {
+                        addDealerCaseUpdate(selectedWCMItem.id, `A compliance infraction was accepted against your dealership · ${selectedWCMItem.violationType ?? 'Compliance case'}`, selectedWCMItem.dealership);
+                      }
+                    }}
+                    // [FV] fim
+                    // Discussion thread
+                    wcmComments={wcmComments[selectedWCMItem.id] ?? []}
+                    onAddComment={(text) => {
+                      addWcmComment(selectedWCMItem.id, text, userType === 'oem' ? 'OEM' : currentDealerIdentity.userName, userType === 'oem' ? 'oem' : 'dealer');
+                      if (userType === 'oem' && selectedWCMItem.dealership) {
+                        addDealerCaseUpdate(selectedWCMItem.id, `OEM added a note on your compliance case`, selectedWCMItem.dealership);
+                      }
+                    }}
+                    currentUserName={userType === 'oem' ? 'OEM' : currentDealerIdentity.userName}
                   />
                 </RightPane>
               </div>
             )}
+
+            {/* [FV] início — Add Infraction (create mode) panel, OEM + dealer */}
+            {activeTab === 'web-monitoring' && isCreatingInfraction && (
+              <div className="flex-none h-full overflow-hidden w-[716px]">
+                <RightPane>
+                  <WebMonitoringPanel
+                    mode="create"
+                    userType={userType}
+                    currentDealerName={currentDealerIdentity.dealership}
+                    currentReporterName={currentDealerIdentity.userName}
+                    onClose={() => setIsCreatingInfraction(false)}
+                    onSave={(infraction) => {
+                      addInfraction(infraction);
+                      setIsCreatingInfraction(false);
+                      emitSnackbar(`Infraction ${infraction.id} added`);
+                    }}
+                  />
+                </RightPane>
+              </div>
+            )}
+            {/* [FV] fim */}
           </>
         )}
 
-        {/* Agent Pane — dealer + dealer-singular, global (any tab / section) */}
-        {(userType === 'dealer' || userType === 'dealer-singular') && (
+        {/* Projects section: AI project builder available for all user types */}
+        {activeAppSection === 'projects' && (
+          <ProjectAgentPane
+            isOpen={isAgentPaneOpen}
+            onClose={() => setIsAgentPaneOpen(false)}
+          />
+        )}
+
+        {/* All other sections: generic AgentPane — dealer-only */}
+        {activeAppSection !== 'projects' && (userType === 'dealer' || userType === 'dealer-singular' || userType === 'dealer-emich') && (
           <AgentPane
             isOpen={isAgentPaneOpen}
             onClose={() => setIsAgentPaneOpen(false)}
@@ -687,6 +885,12 @@ export default function AppContent() {
           setIsOEMDrawerOpen(false);
           setSelectedPreApprovalId(null);
         }}
+      />
+
+      {/* [FV] */}
+      <WebMonitoringConfigModal
+        open={isWebMonitoringConfigOpen}
+        onClose={() => setIsWebMonitoringConfigOpen(false)}
       />
 
       {isWebMonitoringModalOpen && selectedWCMItem && (

@@ -7,4 +7,5 @@ export const router = createBrowserRouter([
   { path: "/:brand/OEM/:tab",                    Component: AppContent },
   { path: "/:brand/dealership/:tab",             Component: AppContent },
   { path: "/:brand/dealership-singular/:tab",    Component: AppContent },
+  { path: "/:brand/dealership-emich/:tab",       Component: AppContent }, // [FV]
 ]);

@@ -1,8 +1,8 @@
 /**
- * WorkflowContext — shared state for the Volkswagen Anytown end-to-end demo workflow.
+ * WorkflowContext — shared state for the Jack Daniels Volkswagen end-to-end demo workflow.
  *
  * Manages the full pre-approval → claim lifecycle for the RFP demo scenario:
- *   Dealer: Volkswagen Anytown  |  Code: 12345
+ *   Dealer: Jack Daniels Volkswagen  |  Code: 12345
  *   Activity: March 1–31, 2026  |  $5,000 digital ad campaign
  *
  * Design principles:
@@ -43,9 +43,9 @@ export interface PortalSubmission {
 }
 
 export const WORKFLOW_DEALER = {
-  name: 'Volkswagen Any Town',
+  name: 'Jack Daniels Volkswagen',
   code: '12345',
-  city: 'Any Town',
+  city: 'Paramus',
   contact: 'Mallory Manning',
   email: 'mallory@vwanytown.com',
 };
@@ -63,7 +63,7 @@ export const WORKFLOW_CAMPAIGN = {
   mediaType: 'Digital Advertising',
   initiativeType: 'Digital Ad Campaign',
   description:
-    'March 2026 digital advertising campaign — Display Banners, Facebook, Paid Search, and Video targeting the Anytown metro area.',
+    'March 2026 digital advertising campaign — Display Banners, Facebook, Paid Search, and Video targeting the Paramus metro area.',
 };
 
 // ─── Status types ───────────────────────────────────────────────────────────
@@ -239,6 +239,9 @@ interface WorkflowContextType {
     status: PortalSubmission['status'],
     comment?: string,
   ) => void;
+
+  // Dealer notes (comment-only, no status change)
+  addDealerNote: (target: 'preApproval' | 'claim', text: string) => void;
 
   // Notifications
   markNotificationRead: (id: string) => void;
@@ -864,8 +867,17 @@ export function WorkflowProvider({ children }: { children: ReactNode }) {
       ...prev,
       portalSubmissions: [sub, ...prev.portalSubmissions],
     }));
+    // Notify OEM so the badge updates and they can review the new submission
+    pushNotif({
+      targetRole: 'oem',
+      type: 'pre-approval',
+      title: 'New pre-approval submitted',
+      body: `submitted a pre-approval for ${WORKFLOW_DEALER.name} ${WORKFLOW_DEALER.code}`,
+      referenceId: sub.id,
+      user: { name: WORKFLOW_DEALER.contact, initials: 'MM' },
+    });
     emitSnackbar('Pre-approval submitted');
-  }, []);
+  }, [pushNotif]);
 
   const updatePortalSubmissionStatus = useCallback((
     id: string,
@@ -878,11 +890,39 @@ export function WorkflowProvider({ children }: { children: ReactNode }) {
         s.id === id ? { ...s, status, oemComment: comment ?? s.oemComment } : s,
       ),
     }));
-    const label = status === 'Approved' ? 'Pre-approval approved'
-      : status === 'Declined' ? 'Pre-approval declined'
-      : 'Revision requested';
-    emitSnackbar(label);
-  }, []);
+    const notifTitle = status === 'Approved' ? 'Pre-Approval Approved'
+      : status === 'Declined' ? 'Pre-Approval declined'
+      : 'Pre-Approval requires adjustments';
+    const notifBody = status === 'Approved'
+      ? `approved your pre-approval for ${WORKFLOW_DEALER.name}. You may now create a claim.`
+      : status === 'Declined'
+      ? `declined your pre-approval for ${WORKFLOW_DEALER.name}`
+      : `requested revisions on your pre-approval for ${WORKFLOW_DEALER.name}`;
+    pushNotif({
+      targetRole: 'dealer',
+      type: 'pre-approval',
+      title: notifTitle,
+      body: notifBody,
+      referenceId: id,
+      user: { name: 'OEM Reviewer', initials: 'OR' },
+    });
+    emitSnackbar(status === 'Approved' ? 'Pre-approval approved' : status === 'Declined' ? 'Pre-approval declined' : 'Revision requested');
+  }, [pushNotif]);
+
+  // ── Dealer notes ──────────────────────────────────────────────────────────
+
+  const addDealerNote = useCallback(
+    (target: 'preApproval' | 'claim', text: string) => {
+      if (!text.trim()) return;
+      pushEvent(target, {
+        actor: 'Dealer',
+        actorName: WORKFLOW_DEALER.contact,
+        action: 'Comment',
+        comment: text.trim(),
+      });
+    },
+    [pushEvent],
+  );
 
   // ── Notification read state ───────────────────────────────────────────────
 
@@ -937,6 +977,7 @@ export function WorkflowProvider({ children }: { children: ReactNode }) {
         removeClaimDocument,
         resubmitPreApprovalWithComment,
         resubmitClaimWithComment,
+        addDealerNote,
         addPortalSubmission,
         peekNextPortalId,
         updatePortalSubmissionStatus,

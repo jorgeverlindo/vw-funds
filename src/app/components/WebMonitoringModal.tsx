@@ -21,6 +21,10 @@ export function WebMonitoringModal({ item, open, onClose }: WebMonitoringModalPr
   // FIX 2 — annotation toggle state; start closed (pin) per spec
   const [annotationStates, setAnnotationStates] = useState({ '1': false, '2': false });
 
+  // [FV] manually-added infractions show their own screenshot + a pin on the logo for OEM-logo violations
+  const screenshotSrc = item.screenshotDataUrl ?? imgDialog;
+  const showLogoPin = item.source === 'Manually Added' && /oem logo/i.test(item.violationType);
+
   return createPortal(
     <AnimatePresence>
       {open && (
@@ -67,41 +71,61 @@ export function WebMonitoringModal({ item, open, onClose }: WebMonitoringModalPr
                 {/* Image clipped at its own level */}
                 <div className="overflow-hidden rounded-xl">
                   <ImageWithFallback
-                    src={imgDialog}
-                    alt="Jack Daniels Volkswagen inventory page"
+                    src={screenshotSrc /* [FV] uploaded screenshot when present */}
+                    alt={item.dealership + ' inventory page'}
                     className="w-full object-cover"
                   />
                 </div>
 
-                {/* Annotation 1 — x={22} y={54} direction="top-right" */}
-                <InteractiveAnnotation
-                  id="modal-1"
-                  number={1}
-                  category="WCM"
-                  title={t('Missing Legal Disclaimer')}
-                  description={t('Offer card displays payment terms without required disclaimer language visible near the promotional copy.')}
-                  x={22}
-                  y={54}
-                  isOpen={annotationStates['1']}
-                  onToggle={() => setAnnotationStates(prev => ({ ...prev, '1': !prev['1'] }))}
-                  direction="top-right"
-                  showCategory={false}
-                />
+                {/* [FV] início — manually-added OEM-logo violations get a single pin on the logo area */}
+                {showLogoPin ? (
+                  <InteractiveAnnotation
+                    id="modal-logo-pin"
+                    number={1}
+                    category="WCM"
+                    title={t('Incorrect OEM logo usage')}
+                    description={t('The logo formatting, with address info between the OEM and the dealership logo, is a compliance infraction.')}
+                    x={26 /* [FV] over the address text — between VW and Jack Daniels logos */}
+                    y={5}
+                    isOpen={annotationStates['1']}
+                    onToggle={() => setAnnotationStates(prev => ({ ...prev, '1': !prev['1'] }))}
+                    direction="top-left"
+                    showCategory={false}
+                  />
+                ) : (
+                  <>
+                    {/* Annotation 1 — x={22} y={54} direction="top-right" */}
+                    <InteractiveAnnotation
+                      id="modal-1"
+                      number={1}
+                      category="WCM"
+                      title={t('Missing Legal Disclaimer')}
+                      description={t('Offer card displays payment terms without required disclaimer language visible near the promotional copy.')}
+                      x={22}
+                      y={54}
+                      isOpen={annotationStates['1']}
+                      onToggle={() => setAnnotationStates(prev => ({ ...prev, '1': !prev['1'] }))}
+                      direction="top-right"
+                      showCategory={false}
+                    />
 
-                {/* Annotation 2 — x={50} y={54} direction="top-left" */}
-                <InteractiveAnnotation
-                  id="modal-2"
-                  number={2}
-                  category="WCM"
-                  title={t('Missing Legal Disclaimer')}
-                  description={t('Offer card displays payment terms without required disclaimer language visible near the promotional copy.')}
-                  x={50}
-                  y={54}
-                  isOpen={annotationStates['2']}
-                  onToggle={() => setAnnotationStates(prev => ({ ...prev, '2': !prev['2'] }))}
-                  direction="top-left"
-                  showCategory={false}
-                />
+                    {/* Annotation 2 — x={50} y={54} direction="top-left" */}
+                    <InteractiveAnnotation
+                      id="modal-2"
+                      number={2}
+                      category="WCM"
+                      title={t('Missing Legal Disclaimer')}
+                      description={t('Offer card displays payment terms without required disclaimer language visible near the promotional copy.')}
+                      x={50}
+                      y={54}
+                      isOpen={annotationStates['2']}
+                      onToggle={() => setAnnotationStates(prev => ({ ...prev, '2': !prev['2'] }))}
+                      direction="top-left"
+                      showCategory={false}
+                    />
+                  </>
+                )}
+                {/* [FV] fim */}
               </div>
             </div>
 

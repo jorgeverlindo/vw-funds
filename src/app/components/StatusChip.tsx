@@ -39,7 +39,9 @@ export type ClaimStatus =
   | 'Penalty Applied'
   | 'Ready for Payment'
   | 'Paid'
-  | 'At risk';
+  | 'At risk'
+  | 'Solution Submitted' // [FV]
+  | 'Solved'; // [FV]
 
 interface StatusChipProps {
   status: ClaimStatus | string; // Allow string to support flexible API data, but type strongly where possible
@@ -66,12 +68,9 @@ export function StatusChip({ status, className }: StatusChipProps) {
       );
       break;
     case 'Pending':
-      styles = "bg-[#E1F5FE] text-[#014361]"; // Blue
-      icon = (
-        <div className="w-3.5 h-3.5 mr-1.5 flex items-center justify-center rounded-full border border-[#03A9F4] text-[#03A9F4]">
-            <MoreHorizontal className="w-2.5 h-2.5" />
-        </div>
-      );
+      // [FV] orange + Hourglass — matches Revision Requested / Solution Submitted (waiting state)
+      styles = "bg-[rgba(225,118,19,0.08)] text-[#613f02]";
+      icon = <Hourglass className="w-3.5 h-3.5 mr-1.5 text-[#E17613]" />;
       break;
     case 'Open':
       styles = "bg-[#E1F5FE] text-[#014361]"; // Blue — same palette as Pending, label reads "Open"
@@ -120,6 +119,20 @@ export function StatusChip({ status, className }: StatusChipProps) {
       styles = "bg-[rgba(210,50,63,0.08)] text-[#be0e1c]"; // Red error pattern
       icon = <AlertTriangle className="w-3.5 h-3.5 mr-1.5 text-[#D2323F]" />;
       break;
+    // [FV] início — compliance solution flow
+    case 'Solution Submitted':
+      styles = "bg-[rgba(225,118,19,0.08)] text-[#613f02]"; // Orange (same palette as Revision Requested)
+      icon = <Hourglass className="w-3.5 h-3.5 mr-1.5 text-[#E17613]" />;
+      break;
+    case 'Solved':
+      styles = "bg-[#E8F5E9] text-[#1b5e20]"; // Green (same palette as Approved)
+      icon = (
+        <div className="w-3.5 h-3.5 mr-1.5 flex items-center justify-center rounded-full border border-[#4CAF50]">
+          <Check className="w-2.5 h-2.5 text-[#4CAF50]" strokeWidth={3} />
+        </div>
+      );
+      break;
+    // [FV] fim
     default:
       // Fallback for unknown statuses
       styles = "bg-gray-100 text-gray-600";

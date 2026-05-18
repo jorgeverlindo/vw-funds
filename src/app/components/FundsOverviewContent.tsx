@@ -6,6 +6,7 @@ import { DateRangeInput } from './DateRangeInput';
 import { DateRangePicker } from './DateRangePicker';
 import { BalanceMetricsGroup } from './BalanceMetricsGroup';
 import { ClaimsMetricsGroup } from './ClaimsMetricsGroup';
+import { ComplianceMetricsGroup } from './ComplianceMetricsGroup'; // [FV]
 import { PaymentStatusTableCard } from './PaymentStatusTableCard';
 import { FundsPieCard } from './FundsPieCard';
 import { FundUtilizationDonutCard } from './FundUtilizationDonutCard';
@@ -19,8 +20,24 @@ import { BudgetForecastCard } from './BudgetForecastCard';
 import { useFilters } from '../contexts/FilterContext';
 import { useDealerships } from '../../data/access/useDealerships';
 import type { UserType } from '../AppContent';
+// [FV] compliance metrics live data
+import type { WCMItem } from './WebMonitoringContent';
 
-export function FundsOverviewContent({ userType = 'dealer' }: { userType?: UserType }) {
+interface FundsOverviewContentProps {
+  userType?: UserType;
+  // [FV] live compliance data so the metrics card mirrors the visible Compliance tab
+  userAddedInfractions?: WCMItem[];
+  caseSolutions?: Record<string, { solved?: boolean }>;
+  complianceDealershipFilter?: string;
+  complianceReportedByFilter?: string;
+  onNavigateToCompliance?: () => void;
+}
+
+export function FundsOverviewContent({
+  userType = 'dealer',
+  userAddedInfractions, caseSolutions, complianceDealershipFilter, complianceReportedByFilter, // [FV]
+  onNavigateToCompliance, // [FV]
+}: FundsOverviewContentProps) {
   const { filters, setArea, setDealership, setDateRange, resetFilters, isLockedDealership } = useFilters();
   const { areas, dealerships } = useDealerships();
   const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
@@ -89,9 +106,17 @@ export function FundsOverviewContent({ userType = 'dealer' }: { userType?: UserT
         </div>
       </div>
 
-      <div className="content-center flex flex-1 flex-wrap gap-3.5 items-center min-h-px min-w-px relative">
+      <div className="flex flex-1 flex-wrap gap-3.5 items-stretch min-h-px min-w-px relative">
         <BalanceMetricsGroup />
         <ClaimsMetricsGroup />
+        {/* [FV] live counts mirror the Compliance tab subselection */}
+        <ComplianceMetricsGroup
+          userAddedInfractions={userAddedInfractions}
+          caseSolutions={caseSolutions}
+          dealershipFilter={complianceDealershipFilter}
+          reportedByFilter={complianceReportedByFilter}
+          onNavigateToCompliance={onNavigateToCompliance}
+        />
       </div>
 
       <div className="grid grid-cols-3 gap-4">

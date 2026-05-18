@@ -166,13 +166,28 @@ function NumberStepper({ value, onChange, min = 1, max = 99 }: { value: number; 
 
 // ─── Schedule right panel ─────────────────────────────────────────────────────
 
-function SchedulePanel() {
-  const [enabled, setEnabled] = useState(false);
-  const [expanded, setExpanded] = useState(false);
-  const [repeatEvery, setRepeatEvery] = useState(1);
-  const [repeatUnit, setRepeatUnit] = useState('week');
+// [FV] init defaults so callers (e.g. WebMonitoringConfigModal) can preset the schedule
+interface SchedulePanelProps {
+  defaultEnabled?: boolean;
+  defaultExpanded?: boolean;
+  defaultRepeatEvery?: number;
+  defaultRepeatUnit?: string;
+  defaultEndsType?: EndsType;
+}
+
+export function SchedulePanel({
+  defaultEnabled = false,
+  defaultExpanded = false,
+  defaultRepeatEvery = 1,
+  defaultRepeatUnit = 'week',
+  defaultEndsType = 'never',
+}: SchedulePanelProps = {}) {
+  const [enabled, setEnabled] = useState(defaultEnabled);
+  const [expanded, setExpanded] = useState(defaultExpanded);
+  const [repeatEvery, setRepeatEvery] = useState(defaultRepeatEvery);
+  const [repeatUnit, setRepeatUnit] = useState(defaultRepeatUnit);
   const [activeDays, setActiveDays] = useState<number[]>([1]);
-  const [endsType, setEndsType] = useState<EndsType>('never');
+  const [endsType, setEndsType] = useState<EndsType>(defaultEndsType);
   const [endsDate, setEndsDate] = useState<Date | undefined>();
   const [endsAfter, setEndsAfter] = useState(10);
 

@@ -6,6 +6,7 @@ import { DateRangeInput } from './DateRangeInput';
 import { DateRangePicker } from './DateRangePicker';
 import { BalanceMetricsGroup } from './BalanceMetricsGroup';
 import { ClaimsMetricsGroup } from './ClaimsMetricsGroup';
+import { ComplianceMetricsGroup } from './ComplianceMetricsGroup'; // [FV]
 import {
   AccruedFundsRooftopCard,
   AccruedFundsRegionCard,
@@ -19,8 +20,19 @@ import { SpendBreakdownStackedBarCard } from './SpendBreakdownStackedBarCard';
 import { PreApprovalsPieCard } from './PreApprovalsPieCard';
 import { useFilters } from '../contexts/FilterContext';
 import { useDealerships } from '../../data/access/useDealerships';
+// [FV] compliance metrics live data
+import type { WCMItem } from './WebMonitoringContent';
 
-export function FundsOverviewOEMContent() {
+interface FundsOverviewOEMContentProps {
+  // [FV] live compliance data so the metrics card mirrors the visible Compliance tab (full list for OEM)
+  userAddedInfractions?: WCMItem[];
+  caseSolutions?: Record<string, { solved?: boolean }>;
+  onNavigateToCompliance?: () => void;
+}
+
+export function FundsOverviewOEMContent({
+  userAddedInfractions, caseSolutions, onNavigateToCompliance, // [FV]
+}: FundsOverviewOEMContentProps = {}) {
   const { filters, setArea, setDateRange, resetFilters } = useFilters();
   const { areas } = useDealerships();
   const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
@@ -80,9 +92,15 @@ export function FundsOverviewOEMContent() {
         </div>
       </div>
 
-      <div className="content-center flex flex-1 flex-wrap gap-3.5 items-center min-h-px min-w-px relative">
+      <div className="flex flex-1 flex-wrap gap-3.5 items-stretch min-h-px min-w-px relative">
         <BalanceMetricsGroup />
         <ClaimsMetricsGroup />
+        {/* [FV] OEM sees full dataset (no dealershipFilter) */}
+        <ComplianceMetricsGroup
+          userAddedInfractions={userAddedInfractions}
+          caseSolutions={caseSolutions}
+          onNavigateToCompliance={onNavigateToCompliance}
+        />
       </div>
 
       <div className="grid grid-cols-3 gap-4">

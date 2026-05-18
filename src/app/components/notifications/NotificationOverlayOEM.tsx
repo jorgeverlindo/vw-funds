@@ -1,76 +1,7 @@
-import { AlertTriangle } from 'lucide-react';
-import { NotificationItem, NotificationItemProps } from './NotificationItem';
+import { NotificationItem } from './NotificationItem';
 import { cn } from '@/lib/utils';
 import { useWorkflow } from '../../contexts/WorkflowContext';
-
-// Each entry in OEM_NOTIFICATIONS follows NotificationItemProps.
-// For items with user defined: the render loop composes message as [name / action text].
-// For the violation item (user: undefined): message is a ReactNode with icon + title + body,
-// rendered as-is since no avatar slot exists.
-const OEM_NOTIFICATIONS: NotificationItemProps[] = [
-  {
-    id: '1',
-    type: 'claim',
-    message: 'Submitted a new claim',
-    time: '8 min ago',
-    user: {
-      name: 'Felix Orbit',
-      initials: 'MS',
-    },
-  },
-  // Index 1 — Violation detected (web monitoring alert)
-  // user: undefined so NotificationItem renders no avatar slot;
-  // message is a ReactNode containing the icon container + title + body per spec.
-  {
-    id: 'violation',
-    type: 'claim',
-    time: '2 hours ago',
-    user: undefined,
-    message: (
-      <div className="flex items-start gap-3">
-        {/* Left icon container as specified */}
-        <div className="w-8 h-8 rounded-full bg-[rgba(210,50,63,0.08)] flex items-center justify-center flex-shrink-0">
-          <AlertTriangle size={16} color="#D2323F" />
-        </div>
-        {/* Title + body text column */}
-        <div className="flex flex-col items-start gap-0.5 min-w-0">
-          <span
-            className="font-normal text-[#1F1D25]"
-            style={{ fontSize: 14, lineHeight: '1.5', letterSpacing: '0.15px' }}
-          >
-            Violation detected
-          </span>
-          <span
-            className="font-normal text-[#1F1D25]"
-            style={{ fontSize: 12, lineHeight: '1.43', letterSpacing: '0.17px' }}
-          >
-            on Jack Daniels Volkswagen website. Review and take action.
-          </span>
-        </div>
-      </div>
-    ),
-  },
-  {
-    id: '2',
-    type: 'pre-approval',
-    message: 'Submitted a new pre-approval',
-    time: '1 day ago',
-    user: {
-      name: 'John Nash',
-      initials: 'MS',
-    },
-  },
-  {
-    id: '3',
-    type: 'claim',
-    message: 'Submitted a new claim review',
-    time: '2 days ago',
-    user: {
-      name: 'Any Silberstein',
-      initials: 'MS',
-    },
-  },
-];
+import type { WCMItem } from '../WebMonitoringContent';
 
 interface NotificationOverlayOEMProps {
   isOpen: boolean;
@@ -80,6 +11,12 @@ interface NotificationOverlayOEMProps {
   onOpenPreApproval?: (id: string) => void;
   onOpenClaim?: (id: string) => void;
   className?: string;
+  solutionNotifs?: { id: string; solution: { submittedBy: string; submittedAtISO: string; comment: string } }[];
+  seenSolutionIds?: Set<string>;
+  onOpenSolution?: (id: string) => void;
+  reportedNotifs?: WCMItem[];
+  seenReportedIds?: Set<string>;
+  onOpenReported?: (id: string) => void;
 }
 
 export function NotificationOverlayOEM({
@@ -90,57 +27,128 @@ export function NotificationOverlayOEM({
   onOpenPreApproval,
   onOpenClaim,
   className,
+  solutionNotifs, seenSolutionIds, onOpenSolution,
+  reportedNotifs, seenReportedIds, onOpenReported,
 }: NotificationOverlayOEMProps) {
   const { workflow, markNotificationRead } = useWorkflow();
 
   if (!isOpen) return null;
 
-  // Build workflow notifications as NotificationItemProps (OEM-targeted only)
-  const workflowNotifs: NotificationItemProps[] = workflow.notifications
+  // Suppress unused-variable warnings for props kept for API compatibility
+  void onOpenDrawer;
+  void onOpenWebMonitoring;
+
+  // ── Build a unified list sorted by recency (newest first) ──────────────────
+
+  type MergedItem = { key: string; sortMs: number; node: React.ReactNode };
+  const merged: MergedItem[] = [];
+
+  // Workflow notifications (OEM-targeted) — createdAt is a reliable ISO string
+  workflow.notifications
     .filter(n => n.targetRole === 'oem')
-    .map(n => ({
-      id: n.id,
-      type: n.type,
-      message: (
-        <div className="flex flex-col items-start gap-0.5">
-          <span className="font-normal text-[#1f1d25]">{n.user?.name ?? n.title}</span>
-          <span className="font-normal text-[#1f1d25] text-[12px]">{n.body}</span>
+    .forEach(n => {
+      merged.push({
+        key: n.id,
+        sortMs: new Date(n.createdAt).getTime(),
+        node: (
+          <div
+            onClick={() => {
+              markNotificationRead(n.id);
+              if (n.type === 'pre-approval') onOpenPreApproval?.(n.referenceId);
+              else if (n.type === 'claim') onOpenClaim?.(n.referenceId);
+              onClose();
+            }}
+            className={n.isRead ? 'opacity-70' : ''}
+          >
+            <NotificationItem
+              id={n.id}
+              type={n.type}
+              message={
+                <div className="flex flex-col items-start gap-0.5">
+                  <span className="font-normal text-[#1f1d25]">{n.user?.name ?? n.title}</span>
+                  <span className="font-normal text-[#1f1d25] text-[12px]">
+                    {n.body}{n.referenceId ? <> <span className="font-medium">{n.referenceId}</span></> : null}
+                  </span>
+                </div>
+              }
+              time={n.time}
+              isRead={n.isRead}
+              user={n.user ? { ...n.user, name: '' } : undefined}
+            />
+          </div>
+        ),
+      });
+    });
+
+  // Dealer-submitted solutions — submittedAtISO is a reliable ISO string
+  (solutionNotifs ?? []).forEach(({ id, solution }) => {
+    const isRead = seenSolutionIds?.has(id) ?? false;
+    merged.push({
+      key: `sol-${id}`,
+      sortMs: new Date(solution.submittedAtISO).getTime(),
+      node: (
+        <div
+          onClick={() => { onOpenSolution?.(id); onClose(); }}
+          className={isRead ? 'opacity-70' : ''}
+        >
+          <NotificationItem
+            id={id}
+            type="claim"
+            message={
+              <div className="flex flex-col items-start gap-0.5">
+                <span className="font-normal text-[#1f1d25]">{solution.submittedBy}</span>
+                <span className="font-normal text-[#1f1d25] text-[12px]">
+                  updated the infraction with a solution <span className="font-medium">{id}</span>
+                </span>
+              </div>
+            }
+            time={new Date(solution.submittedAtISO).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+            isRead={isRead}
+            user={{ name: '', initials: solution.submittedBy.split(' ').map(p => p[0]).slice(0, 2).join('').toUpperCase() }}
+          />
         </div>
       ),
-      time: n.time,
-      isRead: n.isRead,
-      user: n.user ? { ...n.user, name: '' } : undefined,
-    }));
+    });
+  });
 
-  const handleItemClick = (id: string) => {
-    // Workflow notification — mark read then navigate to the referenced item
-    if (id.startsWith('wf-notif-')) {
-      markNotificationRead(id);
-      const notif = workflow.notifications.find(n => n.id === id);
-      if (notif) {
-        if (notif.type === 'pre-approval') {
-          onOpenPreApproval?.(notif.referenceId);
-        } else if (notif.type === 'claim') {
-          onOpenClaim?.(notif.referenceId);
-        }
-      }
-      onClose();
-      return;
-    }
-    // Existing item click behavior — unchanged
-    if (id === '1') {
-      onOpenDrawer();
-      onClose();
-      return;
-    }
-    // New violation notification click
-    if (id === 'violation') {
-      onClose();
-      onOpenWebMonitoring('WCM-24091');
-      return;
-    }
-    // ids '2' and '3' — no action (unchanged)
-  };
+  // Dealer-reported infractions — use createdAtISO when available, fall back to detectedOn
+  (reportedNotifs ?? []).forEach((infr) => {
+    const isRead = seenReportedIds?.has(infr.id) ?? false;
+    const sortMs = infr.createdAtISO
+      ? new Date(infr.createdAtISO).getTime()
+      : new Date(infr.detectedOn).getTime() || 0;
+    merged.push({
+      key: `rep-${infr.id}`,
+      sortMs,
+      node: (
+        <div
+          onClick={() => { onOpenReported?.(infr.id); onClose(); }}
+          className={isRead ? 'opacity-70' : ''}
+        >
+          <NotificationItem
+            id={infr.id}
+            type="claim"
+            message={
+              <div className="flex flex-col items-start gap-0.5">
+                <span className="font-normal text-[#1f1d25]">{infr.reportedBy ?? 'Dealer'}</span>
+                <span className="font-normal text-[#1f1d25] text-[12px]">
+                  reported a compliance infraction by {infr.dealership} <span className="font-medium">{infr.id}</span>
+                </span>
+              </div>
+            }
+            time={infr.createdAtISO
+              ? new Date(infr.createdAtISO).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
+              : infr.detectedOn}
+            isRead={isRead}
+            user={{ name: '', initials: (infr.reportedBy ?? 'DR').split(' ').map(p => p[0]).slice(0, 2).join('').toUpperCase() }}
+          />
+        </div>
+      ),
+    });
+  });
+
+  // Sort newest first
+  merged.sort((a, b) => b.sortMs - a.sortMs);
 
   return (
     <div
@@ -151,38 +159,16 @@ export function NotificationOverlayOEM({
       onClick={(e) => e.stopPropagation()}
     >
       <div className="flex flex-col max-h-[480px] overflow-y-auto custom-scrollbar">
-        {/* Workflow notifications — dynamic, OEM-targeted, pinned at top */}
-        {workflowNotifs.map((notif) => (
-          <div
-            key={notif.id}
-            onClick={() => handleItemClick(notif.id as string)}
-            className={notif.isRead ? 'opacity-70' : ''}
-          >
-            <NotificationItem {...notif} />
-          </div>
+        {merged.map(m => (
+          <div key={m.key}>{m.node}</div>
         ))}
 
-        {/* Static OEM notifications */}
-        {OEM_NOTIFICATIONS.map((notif) => (
-          <div key={notif.id} onClick={() => handleItemClick(notif.id)}>
-            <NotificationItem
-              {...notif}
-              message={
-                notif.user
-                  ? (
-                      <div className="flex flex-col items-start gap-0.5">
-                        <span className="font-normal text-[#1f1d25]">{notif.user.name}</span>
-                        <span className="font-normal text-[#1f1d25] text-[12px]">
-                          {notif.message as string}
-                        </span>
-                      </div>
-                    )
-                  : notif.message
-              }
-              user={notif.user ? { ...notif.user, name: '' } : undefined}
-            />
+        {merged.length === 0 && (
+          <div className="flex flex-col items-center justify-center py-8 px-4 text-center gap-1.5">
+            <span className="text-[14px] font-medium text-[#1F1D25]">You're all caught up</span>
+            <span className="text-[12px] text-[#9C99A9]">No new notifications</span>
           </div>
-        ))}
+        )}
       </div>
     </div>
   );

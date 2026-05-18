@@ -1,0 +1,608 @@
+{
+  "website-2000x500": {
+    "canvasW": 2000,
+    "canvasH": 500,
+    "bgZone": {
+      "l": 540,
+      "top": 0,
+      "w": 1160,
+      "h": 500
+    },
+    "productSlots": [
+      {
+        "l": 700,
+        "top": -350,
+        "w": 1130,
+        "h": 1000
+      }
+    ],
+    "logoP": {
+      "l": 1743,
+      "top": 13,
+      "size": 170
+    },
+    "logoE": {
+      "l": 1742,
+      "top": 192,
+      "size": 197
+    },
+    "textLayout": {
+      "title": {
+        "l": 76,
+        "top": 29,
+        "fontSize": 48
+      },
+      "leaseLabel": {
+        "l": 76,
+        "top": 167,
+        "fontSize": 28
+      },
+      "price": {
+        "l": 76,
+        "top": 196,
+        "fontSize": 84
+      },
+      "termLabel": {
+        "l": 76,
+        "top": 307,
+        "fontSize": 28
+      },
+      "dueLabel": {
+        "l": 76,
+        "top": 346,
+        "fontSize": 28
+      },
+      "cta": {
+        "l": 76,
+        "top": 404,
+        "w": 99,
+        "h": 52,
+        "fontSize": 24
+      },
+      "disclaimer": {
+        "l": 1721,
+        "top": 415,
+        "fontSize": 18,
+        "w": 218,
+        "textAlign": "center"
+      }
+    }
+  },
+  "display-970x250": {
+    "canvasW": 970,
+    "canvasH": 250,
+    "bgZone": {
+      "l": 270,
+      "top": 0,
+      "w": 570,
+      "h": 250
+    },
+    "productSlots": [
+      {
+        "l": 380,
+        "top": -190,
+        "w": 550,
+        "h": 500
+      }
+    ],
+    "logoP": {
+      "l": 840,
+      "top": 17,
+      "size": 95
+    },
+    "logoE": {
+      "l": 840,
+      "top": 109,
+      "size": 95
+    },
+    "textLayout": {
+      "title": {
+        "l": 37,
+        "top": 18,
+        "fontSize": 23
+      },
+      "leaseLabel": {
+        "l": 37,
+        "top": 85,
+        "fontSize": 14
+      },
+      "price": {
+        "l": 37,
+        "top": 99,
+        "fontSize": 41
+      },
+      "termLabel": {
+        "l": 37,
+        "top": 153,
+        "fontSize": 14
+      },
+      "dueLabel": {
+        "l": 37,
+        "top": 172,
+        "fontSize": 14
+      },
+      "cta": {
+        "l": 37,
+        "top": 200,
+        "w": 80,
+        "h": 25,
+        "fontSize": 12
+      },
+      "disclaimer": {
+        "l": 835,
+        "top": 205,
+        "fontSize": 9,
+        "w": 106,
+        "textAlign": "center"
+      }
+    }
+  },
+  "display-300x250": {
+    "canvasW": 300,
+    "canvasH": 250,
+    "bgZone": {
+      "l": 100,
+      "top": 40,
+      "w": 190,
+      "h": 200
+    },
+    "productSlots": [
+      {
+        "l": 50,
+        "top": -10,
+        "w": 300,
+        "h": 280
+      }
+    ],
+    "logoP": {
+      "l": 4,
+      "top": 185,
+      "size": 49
+    },
+    "logoE": {
+      "l": 237,
+      "top": 13,
+      "size": 58
+    },
+    "textLayout": {
+      "title": {
+        "l": 15,
+        "top": 11,
+        "fontSize": 12
+      },
+      "leaseLabel": {
+        "l": 17,
+        "top": 50,
+        "fontSize": 10
+      },
+      "price": {
+        "l": 15,
+        "top": 61,
+        "fontSize": 28
+      },
+      "termLabel": {
+        "l": 18,
+        "top": 101,
+        "fontSize": 10
+      },
+      "dueLabel": {
+        "l": 18,
+        "top": 115,
+        "fontSize": 10
+      },
+      "cta": {
+        "l": 18,
+        "top": 138,
+        "w": 70,
+        "h": 23,
+        "fontSize": 10
+      },
+      "disclaimer": {
+        "l": 182,
+        "top": 219,
+        "fontSize": 9,
+        "w": 106,
+        "textAlign": "right"
+      }
+    }
+  },
+  "social-1080x1080": {
+    "canvasW": 1080,
+    "canvasH": 1080,
+    "bgZone": {
+      "l": 60,
+      "top": 380,
+      "w": 1020,
+      "h": 650
+    },
+    "productSlots": [
+      {
+        "l": 90,
+        "top": -100,
+        "w": 1150,
+        "h": 1200
+      }
+    ],
+    "logoP": {
+      "l": 849,
+      "top": 41,
+      "size": 180
+    },
+    "logoE": {
+      "l": 866,
+      "top": 886,
+      "size": 155
+    },
+    "textLayout": {
+      "title": {
+        "l": 67,
+        "top": 74,
+        "fontSize": 48
+      },
+      "leaseLabel": {
+        "l": 67,
+        "top": 177,
+        "fontSize": 28
+      },
+      "price": {
+        "l": 67,
+        "top": 206,
+        "fontSize": 84
+      },
+      "termLabel": {
+        "l": 67,
+        "top": 317,
+        "fontSize": 28
+      },
+      "dueLabel": {
+        "l": 67,
+        "top": 356,
+        "fontSize": 28
+      },
+      "cta": {
+        "l": 67,
+        "top": 430,
+        "w": 99,
+        "h": 52,
+        "fontSize": 24
+      },
+      "disclaimer": {
+        "l": 67,
+        "top": 1030,
+        "fontSize": 18
+      }
+    }
+  },
+  "website-600x450": {
+    "canvasW": 600,
+    "canvasH": 450,
+    "bgZone": {
+      "l": 140,
+      "top": 100,
+      "w": 450,
+      "h": 340
+    },
+    "productSlots": [
+      {
+        "l": 110,
+        "top": -100,
+        "w": 600,
+        "h": 600
+      }
+    ],
+    "logoP": {
+      "l": 483,
+      "top": 19,
+      "size": 97
+    },
+    "logoE": {
+      "l": 22,
+      "top": 353,
+      "size": 79
+    },
+    "textLayout": {
+      "title": {
+        "l": 34,
+        "top": 38,
+        "fontSize": 24
+      },
+      "leaseLabel": {
+        "l": 34,
+        "top": 84,
+        "fontSize": 14
+      },
+      "price": {
+        "l": 34,
+        "top": 99,
+        "fontSize": 42
+      },
+      "termLabel": {
+        "l": 34,
+        "top": 154,
+        "fontSize": 14
+      },
+      "dueLabel": {
+        "l": 34,
+        "top": 174,
+        "fontSize": 14
+      },
+      "cta": {
+        "l": 34,
+        "top": 203,
+        "w": 50,
+        "h": 26,
+        "fontSize": 12
+      },
+      "disclaimer": {
+        "l": 34,
+        "top": 241,
+        "fontSize": 9
+      }
+    }
+  },
+  "website-600x1067": {
+    "canvasW": 600,
+    "canvasH": 1067,
+    "bgZone": {
+      "l": 20,
+      "top": 500,
+      "w": 570,
+      "h": 500
+    },
+    "productSlots": [
+      {
+        "l": 50,
+        "top": 250,
+        "w": 680,
+        "h": 700
+      }
+    ],
+    "logoP": {
+      "l": 108,
+      "top": 33,
+      "size": 150
+    },
+    "logoE": {
+      "l": 23,
+      "top": 861,
+      "size": 122
+    },
+    "textLayout": {
+      "dealerName": {
+        "l": 0,
+        "top": 81,
+        "fontSize": 24
+      },
+      "title": {
+        "l": 4,
+        "top": 231,
+        "fontSize": 36
+      },
+      "leaseLabel": {
+        "l": 0,
+        "top": 296,
+        "fontSize": 28
+      },
+      "price": {
+        "l": 0,
+        "top": 330,
+        "fontSize": 84
+      },
+      "termLabel": {
+        "l": 117,
+        "top": 450,
+        "fontSize": 24
+      },
+      "dueLabel": {
+        "l": 107,
+        "top": 489,
+        "fontSize": 24
+      },
+      "cta": {
+        "l": 349,
+        "top": 983,
+        "w": 99,
+        "h": 52,
+        "fontSize": 24
+      },
+      "disclaimer": {
+        "l": 21,
+        "top": 997,
+        "fontSize": 18
+      }
+    }
+  },
+  "website-1969x1080-3prod": {
+    "canvasW": 1969,
+    "canvasH": 1080,
+    "bgZone": {
+      "l": 0,
+      "top": 0,
+      "w": 1969,
+      "h": 1080
+    },
+    "productSlots": [
+      {
+        "l": 85,
+        "top": 300,
+        "w": 985,
+        "h": 800
+      },
+      {
+        "l": 572,
+        "top": 320,
+        "w": 1000,
+        "h": 800
+      },
+      {
+        "l": 1102,
+        "top": 340,
+        "w": 1029,
+        "h": 800
+      }
+    ],
+    "logoP": {
+      "l": 30,
+      "top": 30,
+      "size": 240
+    },
+    "logoE": {
+      "l": 320,
+      "top": 30,
+      "size": 240
+    },
+    "textLayout": {
+      "titleLeft": 0,
+      "titleTop": 241,
+      "titleFontSize": 48,
+      "trimLeft": 0,
+      "trimTop": 310,
+      "trimFontSize": 36,
+      "priceLeft": 0,
+      "priceTop": 380,
+      "priceFontSize": 48,
+      "ctaLeft": 0,
+      "ctaTop": 458,
+      "ctaH": 68,
+      "ctaFontSize": 36,
+      "ctaPadding": 33,
+      "disclaimer": {
+        "l": 30,
+        "top": 1046,
+        "fontSize": 16
+      }
+    }
+  },
+  "social-1080x1080-3prod": {
+    "canvasW": 1080,
+    "canvasH": 1080,
+    "bgZone": {
+      "l": 0,
+      "top": 0,
+      "w": 1080,
+      "h": 1080
+    },
+    "productSlots": [
+      {
+        "l": 34,
+        "top": 325,
+        "w": 600,
+        "h": 560
+      },
+      {
+        "l": 280,
+        "top": 350,
+        "w": 620,
+        "h": 560
+      },
+      {
+        "l": 558,
+        "top": 375,
+        "w": 642,
+        "h": 560
+      }
+    ],
+    "logoP": {
+      "l": 20,
+      "top": 20,
+      "size": 240
+    },
+    "logoE": {
+      "l": 300,
+      "top": 20,
+      "size": 240
+    },
+    "textLayout": {
+      "titleLeft": 0,
+      "titleTop": 303,
+      "titleFontSize": 29,
+      "trimLeft": 0,
+      "trimTop": 342,
+      "trimFontSize": 21,
+      "priceLeft": 0,
+      "priceTop": 391,
+      "priceFontSize": 32,
+      "ctaLeft": 0,
+      "ctaTop": 447,
+      "ctaH": 34,
+      "ctaFontSize": 21,
+      "ctaPadding": 17,
+      "disclaimer": {
+        "l": 20,
+        "top": 1050,
+        "fontSize": 14
+      }
+    }
+  },
+  "social-1080x1080-keymsg": {
+    "canvasW": 1080,
+    "canvasH": 1080,
+    "bgZone": {
+      "l": 0,
+      "top": 0,
+      "w": 1080,
+      "h": 1080
+    },
+    "productSlots": [
+      {
+        "l": 27,
+        "top": 556,
+        "w": 750,
+        "h": 450
+      },
+      {
+        "l": 264,
+        "top": 576,
+        "w": 750,
+        "h": 450
+      },
+      {
+        "l": 501,
+        "top": 591,
+        "w": 750,
+        "h": 450
+      }
+    ],
+    "logoP": {
+      "l": 866,
+      "top": 58,
+      "size": 159
+    },
+    "logoE": {
+      "l": 678,
+      "top": 55,
+      "size": 159
+    },
+    "textLayout": {
+      "keyMessage": {
+        "l": 67,
+        "top": 110,
+        "fontSize": 84,
+        "w": 586
+      },
+      "year": {
+        "l": 67,
+        "top": 255,
+        "fontSize": 48
+      },
+      "modelLine": {
+        "l": 67,
+        "top": 324,
+        "fontSize": 48
+      },
+      "cta": {
+        "l": 71,
+        "top": 398,
+        "fontSize": 48,
+        "w": 197,
+        "h": 104
+      },
+      "disclaimer": {
+        "l": 67,
+        "top": 1004,
+        "fontSize": 18,
+        "w": 406
+      }
+    }
+  }
+}

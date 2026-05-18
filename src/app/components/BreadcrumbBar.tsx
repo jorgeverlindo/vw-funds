@@ -3,6 +3,7 @@ import { useTranslation } from '../contexts/LanguageContext';
 interface BreadcrumbItem {
   label: string;
   href?: string;
+  onClick?: () => void;
 }
 
 interface BreadcrumbBarProps {
@@ -41,10 +42,18 @@ export function BreadcrumbBar({ items, activeLabel }: BreadcrumbBarProps) {
             {item.href ? (
               <a
                 href={item.href}
-                className="text-[11px] text-[#686576] font-normal tracking-[0.4px] hover:text-[#1f1d25] transition-colors"
+                onClick={item.onClick}
+                className="text-[11px] text-[#686576] font-normal tracking-[0.4px] hover:text-[#1f1d25] transition-colors cursor-pointer"
               >
                 {translate(item.label)}
               </a>
+            ) : item.onClick ? (
+              <button
+                onClick={item.onClick}
+                className="text-[11px] text-[#686576] font-normal tracking-[0.4px] hover:text-[#1f1d25] transition-colors cursor-pointer bg-transparent border-none p-0"
+              >
+                {translate(item.label)}
+              </button>
             ) : (
               <span className="text-[11px] text-[#686576] font-normal tracking-[0.4px]">
                 {translate(item.label)}

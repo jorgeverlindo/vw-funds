@@ -64,6 +64,17 @@ function loadProjectState(projectId: string) {
   } catch { return null; }
 }
 
+// ─── makeUniqueName — dedup helper ───────────────────────────────────────────────
+
+function makeUniqueName(desired: string, existing: string[]): string {
+  const norm = (s: string) => s.trim().toLowerCase();
+  const set = new Set(existing.map(norm));
+  if (!set.has(norm(desired))) return desired;
+  let i = 1;
+  while (set.has(norm(`${desired} ${i}`))) i++;
+  return `${desired} ${i}`;
+}
+
 // ─── Local project type (extends mock, adds tags + createdAt + owner + platforms) ─
 
 type LocalProject = (typeof projects[0]) & {
@@ -360,8 +371,15 @@ function ProjectCard({
   isDragging: boolean;
 }) {
   const logoUrl = getProjectLogoUrl(project.id);
-  const offersCount = getProjectOffers(project.id).length;
-  const templatesCount = getProjectTemplates(project.id).length;
+  const offersCount    = (project.offerIds    ?? []).length;
+  const templatesCount = (project.templateIds ?? []).length;
+  const bgCount = (() => {
+    try {
+      const saved = JSON.parse(localStorage.getItem(`constellation_proj_state_${project.id}`) ?? 'null');
+      return saved?.bgId ? 1 : 0;
+    } catch { return 0; }
+  })();
+  const assetsCount = offersCount * templatesCount;
   const status = project.status as ProjectStatus;
   const isDark = status === "Assets Created";
 
@@ -449,10 +467,10 @@ function ProjectCard({
 
         {/* Stats */}
         <div className="flex items-center gap-3 mt-0.5">
-          <StatBadge icon={<FileText size={10} />} count={offersCount} />
-          <StatBadge icon={<Palette size={10} />} count={templatesCount} />
-          <StatBadge icon={<ImageIcon size={10} />} count={3} />
-          <StatBadge icon={<Layers size={10} />} count={24} />
+          <StatBadge icon={<FileText size={10} />}  count={offersCount} />
+          <StatBadge icon={<Palette size={10} />}   count={templatesCount} />
+          <StatBadge icon={<ImageIcon size={10} />} count={bgCount} />
+          <StatBadge icon={<Layers size={10} />}    count={assetsCount} />
         </div>
       </div>
     </div>
@@ -520,6 +538,7 @@ function ProjectsListView({
       open={showNewProject}
       onOpenChange={(v) => { if (!v) setShowNewProject(false); }}
       brandOptions={brandKits.map(k => ({ id: k.id, name: k.name }))}
+      existingNames={allProjects.map(p => p.name || ("dealerName" in p ? (p as any).dealerName : "") || "")}
       onSave={(data: NewProjectInput) => {
         const fmt  = (d: Date) => d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
         const id   = `project-${Date.now()}`;

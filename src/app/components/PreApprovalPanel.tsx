@@ -38,6 +38,7 @@ export function PreApprovalPanel({
     addPreApprovalDocument,
     removePreApprovalDocument,
     updatePortalSubmissionStatus,
+    addDealerNote,
   } = useWorkflow();
 
   const fileInputRef      = useRef<HTMLInputElement>(null);
@@ -137,6 +138,12 @@ export function PreApprovalPanel({
     resubmitPreApprovalWithComment(dealerDraftComment.trim());
     setDealerDraftComment('');
     onClose();
+  };
+
+  const handleSendDealerNote = () => {
+    if (!dealerDraftComment.trim()) return;
+    addDealerNote('preApproval', dealerDraftComment.trim());
+    setDealerDraftComment('');
   };
 
   // ── Double ⌥⌥ shortcut → fill focused input with OEM approval message ────
@@ -249,13 +256,31 @@ export function PreApprovalPanel({
     // (workflow items and portal items both get the full OEM/dealer action bars below)
     if (!isWorkflowItem && !isPortalItem) {
       return (
-        <div className="flex justify-end gap-3">
-          <button
-            onClick={onClose}
-            className="px-6 py-2 rounded-full text-sm font-medium text-[#111014]/60 hover:bg-black/5 transition-colors cursor-pointer"
-          >
-            {t('Close')}
-          </button>
+        <div className="space-y-3">
+          <textarea
+            ref={dealerTextareaRef}
+            value={dealerDraftComment}
+            onChange={(e) => setDealerDraftComment(e.target.value)}
+            placeholder="Add a note to the OEM (optional)…"
+            rows={1}
+            className="w-full rounded-xl border border-[#E0E0E0] px-3 py-2 text-[13px] text-[#1f1d25] placeholder:text-[#9C99A9] resize-none overflow-hidden focus:outline-none focus:border-[var(--brand-accent)] transition-colors"
+          />
+          <div className="flex justify-end gap-3">
+            <button
+              onClick={onClose}
+              className="px-6 py-2 rounded-full text-sm font-medium text-[#111014]/60 hover:bg-black/5 transition-colors cursor-pointer"
+            >
+              {t('Close')}
+            </button>
+            {dealerDraftComment.trim() && (
+              <button
+                onClick={handleSendDealerNote}
+                className="px-5 py-2 bg-[var(--brand-accent)] hover:bg-[var(--brand-accent-hover)] text-white rounded-full text-sm font-medium transition-colors cursor-pointer"
+              >
+                Send Note
+              </button>
+            )}
+          </div>
         </div>
       );
     }
@@ -376,13 +401,31 @@ export function PreApprovalPanel({
 
     // Submitted / Resubmitted / In Review — read-only for dealer
     return (
-      <div className="flex justify-end">
-        <button
-          onClick={onClose}
-          className="px-6 py-2 rounded-full text-sm font-medium text-[#111014]/60 hover:bg-black/5 transition-colors cursor-pointer"
-        >
-          {t('Close')}
-        </button>
+      <div className="space-y-3">
+        <textarea
+          ref={dealerTextareaRef}
+          value={dealerDraftComment}
+          onChange={(e) => setDealerDraftComment(e.target.value)}
+          placeholder="Add a note to the OEM (optional)…"
+          rows={1}
+          className="w-full rounded-xl border border-[#E0E0E0] px-3 py-2 text-[13px] text-[#1f1d25] placeholder:text-[#9C99A9] resize-none overflow-hidden focus:outline-none focus:border-[var(--brand-accent)] transition-colors"
+        />
+        <div className="flex justify-end gap-3">
+          <button
+            onClick={onClose}
+            className="px-6 py-2 rounded-full text-sm font-medium text-[#111014]/60 hover:bg-black/5 transition-colors cursor-pointer"
+          >
+            {t('Close')}
+          </button>
+          {dealerDraftComment.trim() && (
+            <button
+              onClick={handleSendDealerNote}
+              className="px-5 py-2 bg-[var(--brand-accent)] hover:bg-[var(--brand-accent-hover)] text-white rounded-full text-sm font-medium transition-colors cursor-pointer"
+            >
+              Send Note
+            </button>
+          )}
+        </div>
       </div>
     );
   };

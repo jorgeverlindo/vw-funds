@@ -47,11 +47,11 @@ export function ProjectsRevisionWrapper({
 
                    return (
                    <div key={globalIdx} className="relative group aspect-square bg-gray-50 border border-gray-100 p-2 flex items-center justify-center">
-                      <ImageWithFallback 
+                      <imgWithFallback 
                         src={asset} 
                         className="max-w-full max-h-full object-contain"
                         alt={`Ad ${globalIdx}`}
-                      />
+                       />
                       
                       {/* Contextual Annotation Pins */}
                       {showAnnotations && (

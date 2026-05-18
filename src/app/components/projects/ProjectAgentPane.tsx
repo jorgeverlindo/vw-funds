@@ -579,11 +579,13 @@ function WhyThese({ content }: { content: React.ReactNode }) {
 }
 
 // ─── Name deduplication helper ─────────────────────────────────────────────────
-function deduplicateName(base: string, existing: string[]): string {
-  if (!existing.map(n => n.toLowerCase()).includes(base.toLowerCase())) return base;
-  let i = 2;
-  while (existing.map(n => n.toLowerCase()).includes(`${base} ${i}`.toLowerCase())) i++;
-  return `${base} ${i}`;
+function deduplicateName(desired: string, existing: string[]): string {
+  const norm = (s: string) => s.trim().toLowerCase();
+  const set = new Set(existing.map(norm));
+  if (!set.has(norm(desired))) return desired;
+  let i = 1;
+  while (set.has(norm(`${desired} ${i}`))) i++;
+  return `${desired} ${i}`;
 }
 
 // ─── Setup Project Card ────────────────────────────────────────────────────────
@@ -602,7 +604,10 @@ function SetupProjectCard({ input, existingNames = [], onApply, onDismiss }: Set
   const [endDate,   setEndDate]   = useState(input.end_date);
   const [ownerId,   setOwnerId]   = useState(input.owner ? (PROJECT_OWNERS.find(o => o.name === input.owner)?.id ?? "jorge-verlindo") : "jorge-verlindo");
   const [platforms, setPlatforms] = useState<string[]>(input.platforms ?? []);
-  const [applied,   setApplied]   = useState(false);
+  const [applied,         setApplied]         = useState(false);
+  const [nameError,       setNameError]       = useState("");
+  const [startDateError,  setStartDateError]  = useState("");
+  const [endDateError,    setEndDateError]    = useState("");
   const wasDeduplicated = dedupedName !== input.project_name;
 
   if (applied) {
@@ -644,15 +649,19 @@ function SetupProjectCard({ input, existingNames = [], onApply, onDismiss }: Set
         {/* Name */}
         <div>
           <p className={labelCls} style={f}>Project name</p>
-          <input type="text" value={name} onChange={e => setName(e.target.value)}
+          <input type="text" value={name} onChange={e => { setName(e.target.value); setNameError(""); }}
             onFocus={e => e.target.select()}
             placeholder="e.g. Honda Summer Lease Event"
             className={inputCls} style={f} />
-          <p className="mt-[4px]" style={{ ...f, fontSize: 10, color: "#9c99a9", fontStyle: "italic" }}>
-            {wasDeduplicated
-              ? `"${input.project_name}" already exists — adjusted to avoid a collision. Edit to customise.`
-              : "Suggested name — edit to customise."}
-          </p>
+          {nameError ? (
+            <p className="mt-[4px]" style={{ ...f, fontSize: 10, color: "#D2323F" }}>{nameError}</p>
+          ) : (
+            <p className="mt-[4px]" style={{ ...f, fontSize: 10, color: "#9c99a9", fontStyle: "italic" }}>
+              {wasDeduplicated
+                ? `"${input.project_name}" already exists — adjusted to avoid a collision. Edit to customise.`
+                : "Suggested name — edit to customise."}
+            </p>
+          )}
         </div>
 
         {/* Account + Brand row */}
@@ -713,13 +722,21 @@ function SetupProjectCard({ input, existingNames = [], onApply, onDismiss }: Set
         <div className="flex gap-[8px]">
           <div className="flex-1">
             <p className={labelCls} style={f}>Start date</p>
-            <input type="text" value={startDate} onChange={e => setStartDate(e.target.value)}
-              className={inputCls} style={f} placeholder="Jun 1, 2026" />
+            <input type="text" value={startDate}
+              onChange={e => { setStartDate(e.target.value); setStartDateError(""); }}
+              className={inputCls + (startDateError ? " border-[#D2323F]!" : "")} style={f} placeholder="Jun 1, 2026" />
+            {startDateError && (
+              <p className="mt-[4px]" style={{ ...f, fontSize: 10, color: "#D2323F" }}>{startDateError}</p>
+            )}
           </div>
           <div className="flex-1">
             <p className={labelCls} style={f}>End date</p>
-            <input type="text" value={endDate} onChange={e => setEndDate(e.target.value)}
-              className={inputCls} style={f} placeholder="Jun 30, 2026" />
+            <input type="text" value={endDate}
+              onChange={e => { setEndDate(e.target.value); setEndDateError(""); }}
+              className={inputCls + (endDateError ? " border-[#D2323F]!" : "")} style={f} placeholder="Jun 30, 2026" />
+            {endDateError && (
+              <p className="mt-[4px]" style={{ ...f, fontSize: 10, color: "#D2323F" }}>{endDateError}</p>
+            )}
           </div>
         </div>
 
@@ -781,6 +798,27 @@ function SetupProjectCard({ input, existingNames = [], onApply, onDismiss }: Set
         <div className="flex items-center gap-[8px] pt-[2px]">
           <button
             onClick={() => {
+              const norm = (s: string) => s.trim().toLowerCase();
+              let hasError = false;
+              if ((existingNames ?? []).some(n => norm(n) === norm(name))) {
+                setNameError("Already exists — choose a different name");
+                hasError = true;
+              } else {
+                setNameError("");
+              }
+              if (!startDate.trim()) {
+                setStartDateError("Start date is required");
+                hasError = true;
+              } else {
+                setStartDateError("");
+              }
+              if (!endDate.trim()) {
+                setEndDateError("End date is required");
+                hasError = true;
+              } else {
+                setEndDateError("");
+              }
+              if (hasError) return;
               const ownerName = PROJECT_OWNERS.find(o => o.id === ownerId)?.name ?? "Jorge Verlindo";
               onApply(name, account, oem, startDate, endDate, ownerName, platforms);
               setApplied(true);
@@ -1094,13 +1132,23 @@ function TemplatesProposalCard({ input, context, onApply, onDismiss }: Templates
 }
 
 // ─── Brand Proposal Card ──────────────────────────────────────────────────────
+// Normalize an OEM string to a known brand — strips underscores, case-insensitive prefix match
+function normalizeOem(raw: string): string {
+  if (!raw) return "";
+  const direct = AVAILABLE_BRANDS.find(b => b === raw);
+  if (direct) return direct;
+  const cleaned = raw.replace(/_/g, " ").trim().toLowerCase();
+  return AVAILABLE_BRANDS.find(b => cleaned.startsWith(b.toLowerCase()) || b.toLowerCase().startsWith(cleaned)) ?? raw;
+}
+
 interface BrandCardProps {
   input: BrandInput;
+  projectName?: string;
   onApply: (oem: string) => void;
   onDismiss: () => void;
 }
-function BrandProposalCard({ input, onApply, onDismiss }: BrandCardProps) {
-  const [oem,     setOem]     = useState(input.oem);
+function BrandProposalCard({ input, projectName, onApply, onDismiss }: BrandCardProps) {
+  const [oem,     setOem]     = useState(() => normalizeOem(input.oem));
   const [applied, setApplied] = useState(false);
   const f = { fontFamily: "'Roboto', sans-serif" };
 
@@ -1136,6 +1184,13 @@ function BrandProposalCard({ input, onApply, onDismiss }: BrandCardProps) {
       {/* Items card */}
       <div className="rounded-[14px] border border-[rgba(0,0,0,0.1)] bg-white overflow-hidden"
         style={{ boxShadow: "0 2px 12px rgba(0,0,0,0.06)" }}>
+        {projectName && (
+          <div className="px-[14px] pt-[10px] pb-[8px] border-b border-[rgba(0,0,0,0.06)] bg-[#fafafa]">
+            <p style={{ ...f, fontSize: 10.5, color: "#9c99a9" }}>
+              Project: <span style={{ color: "#1f1d25", fontWeight: 600 }}>{projectName}</span>
+            </p>
+          </div>
+        )}
         <div className="flex flex-col gap-[10px] px-[14px] py-[12px]">
           <div>
             <p className={labelCls} style={f}>Brand / Theme Kit</p>
@@ -1184,7 +1239,7 @@ interface BackgroundsCardProps {
   onDismiss: () => void;
 }
 function BackgroundsProposalCard({ input, onApply, onDismiss }: BackgroundsCardProps) {
-  const [selectedIds, setSelectedIds] = useState<string[]>(input.background_ids);
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [applied, setApplied] = useState(false);
   const f = { fontFamily: "'Roboto', sans-serif" };
 
@@ -2569,6 +2624,7 @@ function MessageBubble({
     return (
       <BrandProposalCard
         input={message.input}
+        projectName={projectName}
         onApply={onBrandApply}
         onDismiss={onBrandDismiss}
       />

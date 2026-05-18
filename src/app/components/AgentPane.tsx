@@ -295,6 +295,8 @@ export function AgentInput({ onSubmit, compact = false }: AgentInputProps) {
   const ampArrayRef    = useRef<Uint8Array | null>(null);
   const ampRafRef      = useRef<number | null>(null);
   const textareaRef    = useRef<HTMLTextAreaElement>(null);
+  // Saved cursor position — captured on blur so mic-button click doesn't lose it
+  const savedSelectionRef = useRef<{ start: number; end: number } | null>(null);
   const isReadyToSend  = value.trim().length > 0 || !!attachment;
 
   const startAmpLoop = useCallback(() => {
@@ -318,34 +320,72 @@ export function AgentInput({ onSubmit, compact = false }: AgentInputProps) {
 
   const startListening = useCallback(async () => {
     setIsListening(true);
+
+    // Resolve insertion point: prefer the saved selection (captured on blur before mic click)
+    // so clicking the mic button doesn't lose the cursor position.
+    const sel = savedSelectionRef.current;
+    const insertStart = sel?.start ?? textareaRef.current?.selectionStart ?? value.length;
+    const insertEnd   = sel?.end   ?? textareaRef.current?.selectionEnd   ?? insertStart;
+    const beforeCursor = value.slice(0, insertStart);
+    const afterCursor  = value.slice(insertEnd);
+    // Determine whether a space separator is needed at the insertion seam
+    const needSpaceBefore = beforeCursor.length > 0 && !/\s$/.test(beforeCursor);
+    const needSpaceAfter  = afterCursor.length  > 0 && !/^\s/.test(afterCursor);
+
+    /** Compose the full textarea value from the transcribed segment + surrounding text */
+    const compose = (transcribed: string) => {
+      if (!transcribed) return value; // nothing yet — keep original
+      const pre  = beforeCursor + (needSpaceBefore ? ' ' : '');
+      const post = (needSpaceAfter ? ' ' : '') + afterCursor;
+      return pre + transcribed + post;
+    };
+
     const SpeechRec = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     let usingRealASR = false;
+
     if (SpeechRec) {
       try {
         const recognition: SpeechRecognition = new SpeechRec();
         recognition.continuous = true; recognition.interimResults = true; recognition.lang = 'en-US';
-        let finalText = value;
+
+        // `confirmed` accumulates finalized utterances for this session only
+        let confirmed = '';
+
         recognition.onresult = (evt: SpeechRecognitionEvent) => {
           let interim = '';
           for (let i = evt.resultIndex; i < evt.results.length; i++) {
-            const t = evt.results[i][0].transcript;
-            if (evt.results[i].isFinal) { finalText += (finalText ? ' ' : '') + t; } else interim = t;
+            const t = evt.results[i][0].transcript.trim();
+            if (evt.results[i].isFinal) {
+              confirmed += (confirmed ? ' ' : '') + t;
+            } else {
+              interim = t;
+            }
           }
-          setValue(finalText + (interim ? (finalText ? ' ' : '') + interim : ''));
+          // Show confirmed words + currently-in-progress interim word(s)
+          const live = confirmed + (interim ? (confirmed ? ' ' : '') + interim : '');
+          setValue(compose(live));
         };
+
         recognition.onerror = () => stopListening();
         recognition.onend   = () => { if (recognitionRef.current) stopListening(); };
         recognition.start(); recognitionRef.current = recognition; usingRealASR = true;
       } catch (_) {}
     }
+
     if (!usingRealASR) {
-      setValue('');
+      // Simulation fallback — builds phrase progressively at cursor
+      let simAccum = '';
       let idx = 0;
       simTimerRef.current = setInterval(() => {
-        if (idx >= SIM_PHRASES.length) { if (simTimerRef.current !== null) { clearInterval(simTimerRef.current); simTimerRef.current = null; } return; }
-        setValue(prev => prev + SIM_PHRASES[idx++]);
+        if (idx >= SIM_PHRASES.length) {
+          if (simTimerRef.current !== null) { clearInterval(simTimerRef.current); simTimerRef.current = null; }
+          return;
+        }
+        simAccum += SIM_PHRASES[idx++];
+        setValue(compose(simAccum));
       }, 650);
     }
+
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
       const AudioCx = window.AudioContext || (window as any).webkitAudioContext;
@@ -429,7 +469,18 @@ export function AgentInput({ onSubmit, compact = false }: AgentInputProps) {
           )}
         </AnimatePresence>
         <div className="flex items-center w-full pb-[4px]">
-          <textarea value={value} onChange={e => setValue(e.target.value)} onFocus={() => setIsFocused(true)} onBlur={() => setIsFocused(false)} onKeyDown={handleKeyDown}
+          <textarea value={value} onChange={e => setValue(e.target.value)} onFocus={() => setIsFocused(true)}
+            onBlur={() => {
+              setIsFocused(false);
+              // Save cursor position before focus leaves — mic-button click would otherwise reset it
+              if (textareaRef.current) {
+                savedSelectionRef.current = {
+                  start: textareaRef.current.selectionStart,
+                  end:   textareaRef.current.selectionEnd,
+                };
+              }
+            }}
+            onKeyDown={handleKeyDown}
             ref={textareaRef}
             placeholder={isListening ? '' : 'Ask anything'}
             className="flex-1 resize-none bg-transparent border-none outline-none text-[14px] text-[#1f1d25] placeholder-[#9c99a9] tracking-[0.15px] leading-[1.5] min-h-[22px] custom-scrollbar"

@@ -1,11 +1,524 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 import Anthropic from "@anthropic-ai/sdk";
-import { agentTools, executeTool } from "../_lib/tools";
-import { buildSystemPrompt, type ProjectContext } from "../_lib/system-prompt";
 
 // Use Node.js runtime (not Edge) — the Anthropic SDK uses EventEmitter
 // which is a Node.js built-in not available in the Edge runtime.
 export const config = { maxDuration: 60 };
+
+// ─── Types (inlined from _lib/system-prompt) ──────────────────────────────────
+
+interface OfferSummary {
+  id: string;
+  year: string;
+  make: string;
+  model: string;
+  trim: string;
+  offerType: string;
+  monthlyPayment: number;
+  term: number;
+  pvi: number;
+  aging: number;
+  stock: number;
+}
+
+interface TemplateSummary {
+  id: string;
+  name: string;
+  format: string;
+  width: number;
+  height: number;
+  brand: string;
+}
+
+interface ProjectContext {
+  projectId: string;
+  projectName: string;
+  oem: string;
+  currentOfferIds: string[];
+  currentTemplateIds: string[];
+  availableOffers: OfferSummary[];
+  availableTemplates: TemplateSummary[];
+  availableBackgrounds?: Array<{ id: string; name: string }>;
+}
+
+// ─── System Prompt Builder (inlined from _lib/system-prompt) ─────────────────
+
+function buildSystemPrompt(ctx: ProjectContext): string {
+  const offerList = ctx.availableOffers
+    .map(
+      (o) =>
+        `  • ${o.id}: ${o.year} ${o.make} ${o.model} ${o.trim} | ${o.offerType} $${o.monthlyPayment}/mo × ${o.term}mo | PVI ${o.pvi} | Aging ${o.aging}d | Stock ${o.stock}`,
+    )
+    .join("\n");
+
+  const templateList = ctx.availableTemplates
+    .map(
+      (t) =>
+        `  • ${t.id}: ${t.name} | ${t.format} | ${t.width}×${t.height} | Brand: ${t.brand}`,
+    )
+    .join("\n");
+
+  const bgList = [
+    "  • dirt-road: Dirt Road | Scene: rural road environment",
+    "  • gold-flare: Gold Flare | Scene: golden light/bokeh",
+    "  • purple-city: Purple City | Scene: urban night cityscape",
+    "  • snow-house: Snow House | Scene: winter residential",
+    "  • ballon-festival: Balloon Festival | Scene: hot air balloons sky",
+    "  • beach-sunset: Beach Sunset | Scene: coastal sunset",
+    "  • desert-day: Desert Day | Scene: sandy desert landscape",
+    "  • desert-pyramid-night-sky: Desert Pyramid Night Sky | Scene: desert night/stars",
+    "  • docks-midday: Docks Midday | Scene: marina waterfront",
+    "  • field-with-mountain: Field With Mountain | Scene: outdoor scenic",
+    "  • forest-lodge: Forest Lodge | Scene: wooded resort setting",
+    "  • frozen-lake-night: Frozen Lake Night | Scene: winter lake at night",
+    "  • ice-lab: Ice Lab | Scene: futuristic cold interior",
+    "  • stadium-night: Stadium Night | Scene: sports arena at night",
+  ].join("\n");
+
+  const currentOffers = ctx.currentOfferIds.length
+    ? ctx.currentOfferIds.join(", ")
+    : "none";
+
+  const currentTemplates = ctx.currentTemplateIds.length
+    ? ctx.currentTemplateIds.join(", ")
+    : "none";
+
+  return `You are Constellation AI, an intelligent assistant built into the Verlindo Funds platform — a co-op marketing funds management tool for automotive dealerships.
+
+Your role is to help dealership users build advertising projects efficiently. You can:
+- Recommend and add offers (vehicle lease/APR/purchase deals) based on campaign goals
+- Select appropriate ad templates (banner sizes, social formats, display ads)
+- Rename and configure projects
+- Remove items that don't fit the campaign strategy
+
+━━━ KNOWN CONTACTS ━━━
+Constellation team (internal):
+  • Luke Theobald — luke.theobald@helloconstellation.com
+  • Jenny Park — jenny.park@helloconstellation.com
+  • Sonya Koh — sonya.koh@helloconstellation.com
+  • Zak Flaten — zak.flaten@helloconstellation.com
+  • Rachel Hui — rachel.hui@helloconstellation.com
+Dealer contacts:
+  • Mike Henderson — mike.henderson@hondaofanywhere.com
+  • Sarah Collins — sarah.collins@hondaofanywhere.com
+  • James Whitaker — james.whitaker@hondaofanywhere.com
+  • Ashley Morgan — ashley.morgan@hondaofanywhere.com
+
+When the user mentions a name (e.g. "send to Luke", "share with Sarah"), match it to this list and pass their full name in recipient_hint. Never ask who they are — you already know them.
+
+━━━ CURRENT PROJECT ━━━
+Name: ${ctx.projectName}
+ID: ${ctx.projectId}
+OEM / Brand: ${ctx.oem}
+Current offers: ${currentOffers}
+Current templates: ${currentTemplates}
+
+━━━ AVAILABLE OFFER CATALOG ━━━
+${offerList || "  (no offers available for this brand)"}
+
+━━━ AVAILABLE TEMPLATE CATALOG ━━━
+${templateList || "  (no templates available for this brand)"}
+
+━━━ AVAILABLE BACKGROUND CATALOG ━━━
+${bgList}
+
+━━━ CAMPAIGN BUILDING FLOW ━━━
+
+INTENT DETECTION — use this decision tree to pick flow_scope for setup_project:
+
+  1. Does the user explicitly mention email / send / share at the end?
+     YES → does the user also want offers (not just templates)?
+       YES (offers + email, no templates) → flow_scope: "offers_and_email"
+       NO  (templates + email)            → flow_scope: "templates_and_email"
+     NO → continue to step 2
+
+  2. Does the user want a complete campaign (full build)?
+     YES → flow_scope: "full"
+
+  3. Does the user want only specific pieces?
+     Only offers                       → flow_scope: "offers_only"
+     Only templates                    → flow_scope: "templates_only"
+     Offers + templates (no email)     → flow_scope: "offers_and_templates"
+
+  Examples:
+    "build a full campaign" → "full"
+    "pick offers" / "just pick some offers" / "offers only" / "I want to pick offers for a new project" → "offers_only"
+    "pick templates" / "just templates" / "I want to pick templates for a new project" → "templates_only"
+    "create a project, add some offers and send via email to Luke" → "offers_and_email"  ← KEY CASE
+    "create a project with offers and email it" → "offers_and_email"
+    "pick templates and send to Sarah" → "templates_and_email"
+    "add offers and templates" → "offers_and_templates"
+    (no clear scope) → "full"
+
+  ⚠️  RULE: If the user says "email", "send", "share" as a final step with NO mention of templates/backgrounds/brand,
+  the scope ends at email — do NOT proceed to templates. Use "offers_and_email" or "templates_and_email".
+
+FLOW STEPS BY SCOPE (new project, no project open):
+  ⚠️  ALWAYS call setup_project as the FIRST action — NO EXCEPTIONS.
+  NEVER ask the user any clarifying question before calling setup_project — not for OEM, not for name, not for dates.
+  If OEM/brand is not stated: infer from the available offers catalog (e.g. "Honda" if all offers are Honda).
+  If the catalog is empty: use OEM "General" and project_name "New Project". The setup card lets the user correct any field before confirming.
+
+  flow_scope "full":
+    Step 1: setup_project → user confirms
+    Step 2: "Project created. Propose offers." → propose_offers → user confirms
+    Step 3: "Offers confirmed. Propose templates." → propose_templates → user confirms
+    Step 3.5: "Templates confirmed. Propose backgrounds." → propose_backgrounds → user confirms
+    Step 4: "Backgrounds confirmed/skipped. Propose brand." → propose_brand → done
+
+  flow_scope "templates_only":
+    Step 1: setup_project → user confirms
+    Step 2: "Project created. User wants templates only — propose templates directly, skip offers." → propose_templates → STOP (the UI will show a follow-up question automatically)
+
+  flow_scope "offers_only":
+    Step 1: setup_project → user confirms
+    Step 2: "Project created. Propose offers." → propose_offers → STOP (the UI will show a follow-up question automatically — do NOT proceed to templates or anything else)
+
+  flow_scope "offers_and_templates":
+    Step 1: setup_project → user confirms
+    Step 2: "Project created. Propose offers." → propose_offers → user confirms
+    Step 3: "Offers confirmed. Propose templates." → propose_templates → done
+
+  flow_scope "templates_and_email":
+    Step 1: setup_project → user confirms
+    Step 2: "Project created. User wants templates only — propose templates directly, skip offers." → propose_templates → user confirms
+    Step 3: "Templates confirmed. Now propose the email share." → propose_email → done
+
+  flow_scope "offers_and_email":
+    Step 1: setup_project → user confirms
+    Step 2: "Project created. Propose offers." → propose_offers → user confirms
+    Step 3: "Offers confirmed. Now propose the email share." → propose_email → done
+
+INDIVIDUAL REQUESTS (project already open — respond to specific asks):
+  - "add offers" / "change offers" → call propose_offers directly
+  - "add templates" / "change templates" → call propose_templates directly
+  - "add backgrounds" / "change backgrounds" → call propose_backgrounds directly
+  - "add brand" / "change theme" → call propose_brand directly
+  - "full refresh" → call propose_project (offers + templates together)
+  - "send by email" / "share by email" / "email this" → call propose_email directly
+  Do NOT restart the full flow. Respond ONLY to what was asked.
+
+KEY RULES:
+- NEVER write a text description or markdown table of the proposal — the UI renders it as an interactive card.
+- NEVER call add_offers_to_project or add_templates_to_project as part of a build request — use the propose tools.
+- Each step shows one card at a time. The user confirms before you move to the next step.
+- The continuation messages are automated — respond immediately with the next tool call based on the scope.
+- If a project IS already open and the user asks for a full campaign, ask if they want to replace existing items or add to them.
+
+OFFER SELECTION LOGIC:
+- Prioritise PVI (Performance Value Index — projected return per vehicle at current price) > 90, stock ≥ 10 units, healthy aging spread across the selection
+- Include at least one low-aging and one high-aging offer when building a full project build
+- Prefer brand-matched offers to the project OEM
+- In the offer rationale, always define PVI on first mention: "PVI > 90 (Performance Value Index — return per vehicle at current price)"
+- Replace vague stock descriptions with a concrete figure: "≥ 10 units in stock per model"
+- Never write "strong stock levels" — always cite the actual number
+
+TEMPLATE SELECTION LOGIC:
+- Cover the main digital formats: website banner + display leaderboard + display medium rectangle + social square
+- Prefer templates whose brand tag matches the project OEM
+
+BACKGROUND SELECTION LOGIC:
+- Choose 2–3 backgrounds that complement the campaign mood and OEM brand
+- Prefer environments that contrast or frame vehicles well (open roads, cityscapes, scenic)
+- Avoid backgrounds that look generic for the brand — vary mood/lighting
+
+PROJECT NAMING:
+- project_name in propose_project is a short, human-readable campaign name (e.g. "Honda Summer Lease Event", "Spring SUV Push").
+- Never generate WF-code identifiers (WF12345_...) — those are internal system codes, not campaign names.
+- If the project already has a name, leave project_name blank (the field is optional).
+
+COMMUNICATION:
+- Be concise. Say at most ONE short sentence before calling a tool (e.g. "Here's my proposal:").
+- After calling propose_project, say nothing — the interactive card speaks for itself.
+- Never reproduce the proposal contents as text or markdown — the interactive card handles that.
+- When answering questions (not building), use markdown tables to present structured data — they render beautifully in this UI.
+- Never ask more than one clarifying question at a time.
+- Don't add items already in the project (check current offers/templates above).
+
+EMAIL SHARING:
+- When the user says "send by email", "share by email", "email this", or mentions sending to someone → call propose_email immediately.
+- If the user names a recipient (e.g. "send to Maria"), put that name in recipient_hint.
+- Write a friendly, professional default message referencing the project name. Always use "project" — never "campaign" — in the generated email copy.
+- Email body pattern: "I'd like to share the [OEM] project "[Project Name]" with you. You can view and collaborate on it using the link below:\\n\\n[Project link]"
+- Email subject pattern: "[OEM] Project shared: [Project Name]"
+- Include a placeholder for the project link.
+
+Today's date: ${new Date().toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}.`;
+}
+
+// ─── Tool Definitions (inlined from _lib/tools) ───────────────────────────────
+
+const agentTools: Anthropic.Tool[] = [
+  // ── Step 1: project setup ──────────────────────────────────────────────────
+  {
+    name: "setup_project",
+    description:
+      "Propose project metadata — name, account, brand, and date range — for the user to confirm " +
+      "before the project is created. Use this as the FIRST step when the user wants to build a " +
+      "campaign and no project is currently open. Always set flow_scope to match the user's intent. " +
+      "After the user confirms, the project is created and you will receive a continuation message " +
+      "telling you what to propose next based on the scope.",
+    input_schema: {
+      type: "object" as const,
+      properties: {
+        project_name: { type: "string", description: "Human-readable campaign name (e.g. 'Honda Summer Lease Event'). Never use WF codes." },
+        account:      { type: "string", description: "Dealer/account name from the available accounts list" },
+        oem:          { type: "string", description: "Brand / OEM (e.g. 'Honda', 'BMW')" },
+        start_date:   { type: "string", description: "Campaign start date (e.g. 'Jun 1, 2026')" },
+        end_date:     { type: "string", description: "Campaign end date (e.g. 'Jun 30, 2026')" },
+        flow_scope: {
+          type: "string",
+          enum: ["full", "offers_only", "templates_only", "offers_and_templates", "templates_and_email", "offers_and_email"],
+          description:
+            "Scope of this build flow based on what the user asked for. " +
+            "full = complete campaign (offers→templates→backgrounds→brand). " +
+            "templates_only = just propose templates, then stop. " +
+            "offers_only = just propose offers, then stop. " +
+            "offers_and_templates = propose offers then templates, skip backgrounds & brand. " +
+            "templates_and_email = propose templates then email share, skip backgrounds & brand. " +
+            "offers_and_email = propose offers then email share, skip templates/backgrounds/brand.",
+        },
+        owner: {
+          type: "string",
+          description: "Full name of the project owner (e.g. 'Jorge Verlindo'). Leave blank to default to the current user.",
+        },
+        platforms: {
+          type: "array",
+          items: { type: "string" },
+          description: "Ad platforms for this project. Valid values: 'Google PMax', 'Google Display', 'Meta', 'Website', 'TikTok', 'YouTube', 'Email'.",
+        },
+      },
+      required: ["project_name", "oem", "start_date", "end_date", "flow_scope"],
+    },
+  },
+
+  // ── Step 2: offer selection ────────────────────────────────────────────────
+  {
+    name: "propose_offers",
+    description:
+      "Propose a curated set of offers for the user to review. Use this after a project has been " +
+      "set up (or when the user asks to add/change offers on an existing project). " +
+      "Select offers intelligently: prioritise PVI > 90, stock > 5, healthy aging spread. " +
+      "After the user confirms, you will receive a continuation message to propose templates.",
+    input_schema: {
+      type: "object" as const,
+      properties: {
+        offer_ids: {
+          type: "array",
+          items: { type: "string" },
+          description: "Proposed offer IDs from the available catalog",
+        },
+        rationale: {
+          type: "string",
+          description: "1–2 sentence rationale for this offer selection",
+        },
+      },
+      required: ["offer_ids", "rationale"],
+    },
+  },
+
+  // ── Step 3: template selection ─────────────────────────────────────────────
+  {
+    name: "propose_templates",
+    description:
+      "Propose a curated set of ad templates for the user to review. Use this after offers have " +
+      "been confirmed (or when the user asks to add/change templates). " +
+      "Cover the main digital formats: website banner + display leaderboard + display medium rectangle + social square. " +
+      "Prefer templates matching the project OEM brand.",
+    input_schema: {
+      type: "object" as const,
+      properties: {
+        template_ids: {
+          type: "array",
+          items: { type: "string" },
+          description: "Proposed template IDs from the available catalog",
+        },
+        rationale: {
+          type: "string",
+          description: "1–2 sentence rationale for this template selection",
+        },
+      },
+      required: ["template_ids", "rationale"],
+    },
+  },
+
+  // ── Step 3.5: background selection ────────────────────────────────────────
+  {
+    name: "propose_backgrounds",
+    description:
+      "Propose 1–3 background collections for the user to review. Use this as Step 3.5 after " +
+      "templates have been confirmed. Choose scene/environment backgrounds (no vehicles) that " +
+      "complement the campaign mood. After the user confirms, you will receive a continuation " +
+      "message to propose the brand kit.",
+    input_schema: {
+      type: "object" as const,
+      properties: {
+        background_ids: {
+          type: "array",
+          items: { type: "string" },
+          description: "Proposed background collection IDs from the available catalog",
+        },
+        rationale: {
+          type: "string",
+          description: "1–2 sentence rationale for this background selection",
+        },
+      },
+      required: ["background_ids", "rationale"],
+    },
+  },
+
+  // ── Step 4: brand / theme kit ──────────────────────────────────────────────
+  {
+    name: "propose_brand",
+    description:
+      "Propose a brand kit (theme and logos) for the project. Use this as the FOURTH step after " +
+      "templates have been confirmed. The user selects which brand kit to activate.",
+    input_schema: {
+      type: "object" as const,
+      properties: {
+        oem: { type: "string", description: "The brand/OEM to activate (e.g. 'Honda', 'BMW')" },
+        rationale: { type: "string", description: "One sentence on why this brand kit fits." },
+      },
+      required: ["oem", "rationale"],
+    },
+  },
+
+  // ── Full proposal (existing projects only) ─────────────────────────────────
+  {
+    name: "propose_project",
+    description:
+      "Propose offers AND templates together — use this ONLY when a project already exists and " +
+      "the user wants a full refresh of both. For new projects, use the 3-step flow instead: " +
+      "setup_project → propose_offers → propose_templates.",
+    input_schema: {
+      type: "object" as const,
+      properties: {
+        offer_ids:    { type: "array", items: { type: "string" }, description: "Proposed offer IDs" },
+        template_ids: { type: "array", items: { type: "string" }, description: "Proposed template IDs" },
+        rationale:    { type: "string", description: "1–3 sentence strategy rationale" },
+      },
+      required: ["offer_ids", "template_ids", "rationale"],
+    },
+  },
+
+  // ── Direct actions ─────────────────────────────────────────────────────────
+  {
+    name: "add_offers_to_project",
+    description: "Directly add one or more offers to the current project (no review step). Use for small additions after initial setup.",
+    input_schema: {
+      type: "object" as const,
+      properties: {
+        offer_ids: { type: "array", items: { type: "string" }, description: "Offer IDs to add" },
+      },
+      required: ["offer_ids"],
+    },
+  },
+  {
+    name: "remove_offers_from_project",
+    description: "Remove one or more offers from the current project.",
+    input_schema: {
+      type: "object" as const,
+      properties: {
+        offer_ids: { type: "array", items: { type: "string" } },
+      },
+      required: ["offer_ids"],
+    },
+  },
+  {
+    name: "add_templates_to_project",
+    description: "Directly add one or more ad templates to the current project (no review step).",
+    input_schema: {
+      type: "object" as const,
+      properties: {
+        template_ids: { type: "array", items: { type: "string" } },
+      },
+      required: ["template_ids"],
+    },
+  },
+  {
+    name: "remove_templates_from_project",
+    description: "Remove one or more ad templates from the current project.",
+    input_schema: {
+      type: "object" as const,
+      properties: {
+        template_ids: { type: "array", items: { type: "string" } },
+      },
+      required: ["template_ids"],
+    },
+  },
+  {
+    name: "set_project_name",
+    description: "Update the project name.",
+    input_schema: {
+      type: "object" as const,
+      properties: {
+        name: { type: "string", description: "The new project name" },
+      },
+      required: ["name"],
+    },
+  },
+
+  // ── Email sharing ──────────────────────────────────────────────────────────
+  {
+    name: "propose_email",
+    description:
+      "Propose sending a project share link via email. Use this when the user asks to share or " +
+      "send the project by email. The UI will show a contact selector and editable message. " +
+      "Provide a suggested recipient name (if known) and a default message body.",
+    input_schema: {
+      type: "object" as const,
+      properties: {
+        recipient_hint: {
+          type: "string",
+          description: "Name or email address of the intended recipient if mentioned by the user. Leave empty if unknown.",
+        },
+        message: {
+          type: "string",
+          description: "Default email message body. Should reference the project name and include a placeholder for the project link.",
+        },
+      },
+      required: ["message"],
+    },
+  },
+];
+
+// ─── Tool Executor (inlined from _lib/tools) ──────────────────────────────────
+
+function executeTool(
+  toolName: string,
+  input: Record<string, unknown>,
+): Record<string, unknown> {
+  switch (toolName) {
+    case "setup_project":
+      return { success: true, setup: input, message: "Project setup proposal ready for user review." };
+    case "propose_offers":
+      return { success: true, offers: input, message: "Offers proposal ready for user review." };
+    case "propose_templates":
+      return { success: true, templates: input, message: "Templates proposal ready for user review." };
+    case "propose_backgrounds":
+      return { success: true, backgrounds: input, message: "Backgrounds proposal ready for user review." };
+    case "propose_brand":
+      return { success: true, brand: input, message: "Brand kit proposal ready for user review." };
+    case "propose_project":
+      return { success: true, proposal: input, message: "Full proposal ready for user review." };
+    case "add_offers_to_project":
+      return { success: true, added: input.offer_ids, message: `Added ${(input.offer_ids as string[]).length} offer(s) to the project.` };
+    case "remove_offers_from_project":
+      return { success: true, removed: input.offer_ids, message: `Removed ${(input.offer_ids as string[]).length} offer(s) from the project.` };
+    case "add_templates_to_project":
+      return { success: true, added: input.template_ids, message: `Added ${(input.template_ids as string[]).length} template(s) to the project.` };
+    case "remove_templates_from_project":
+      return { success: true, removed: input.template_ids, message: `Removed ${(input.template_ids as string[]).length} template(s) from the project.` };
+    case "set_project_name":
+      return { success: true, name: input.name, message: `Project renamed to "${input.name}".` };
+    case "propose_email":
+      return { success: true, email: input, message: "Email proposal ready for user review." };
+    default:
+      return { success: false, message: `Unknown tool: ${toolName}` };
+  }
+}
+
+// ─── Handler ──────────────────────────────────────────────────────────────────
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   // CORS

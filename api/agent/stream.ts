@@ -1,7 +1,7 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 import Anthropic from "@anthropic-ai/sdk";
-import { agentTools, executeTool } from "../../server/tools";
-import { buildSystemPrompt, type ProjectContext } from "../../server/system-prompt";
+import { agentTools, executeTool } from "../_lib/tools";
+import { buildSystemPrompt, type ProjectContext } from "../_lib/system-prompt";
 
 // Use Node.js runtime (not Edge) — the Anthropic SDK uses EventEmitter
 // which is a Node.js built-in not available in the Edge runtime.

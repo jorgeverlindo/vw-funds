@@ -1007,6 +1007,8 @@ function ProjectDetailView({
   // Agent-added IDs (arrive via window events from ProjectAgentPane, persisted per project)
   const [agentAddedOfferIds,    setAgentAddedOfferIds]    = useState<string[]>(saved?.addedOfferIds ?? []);
   const [agentAddedTemplateIds, setAgentAddedTemplateIds] = useState<string[]>(saved?.addedTemplateIds ?? []);
+  // Custom offers from file extraction (not in catalog)
+  const [customOffers, setCustomOffers] = useState<import("@projects/ProjectAgentPane").CustomOffer[]>([]);
   // Backgrounds: additive model — only show what the agent (or user) explicitly adds
   const [agentAddedBgIds,       setAgentAddedBgIds]       = useState<string[]>(saved?.agentAddedBgIds ?? []);
   // Brand/theme kit: only activated when agent explicitly confirms it (not auto-derived from OEM)
@@ -1146,6 +1148,10 @@ function ProjectDetailView({
         const { oem } = payload as { oem: string };
         setExpandedSections((prev) => ({ ...prev, theme: true }));
         setTimeout(() => setAgentActivatedOem(oem), 220);
+      } else if (action === "add_custom_offers") {
+        const { offers } = payload as { offers: import("@projects/ProjectAgentPane").CustomOffer[] };
+        setExpandedSections((prev) => ({ ...prev, offers: true }));
+        setTimeout(() => setCustomOffers((prev) => [...prev, ...offers]), 220);
       }
     };
     window.addEventListener(PROJECT_AGENT_ACTION_EVENT, handler);
@@ -1341,6 +1347,42 @@ function ProjectDetailView({
                     label: `${(o as any).year} ${(o as any).make} ${(o as any).model} ${(o as any).trim}`,
                   })}
                 />
+              </motion.div>
+            ))}
+            {/* Custom offers from file extraction */}
+            {customOffers.map((co) => (
+              <motion.div
+                key={co.id}
+                className="flex-shrink-0"
+                variants={{ hidden: { opacity: 0, x: -16 }, show: { opacity: 1, x: 0, transition: { duration: 0.28, ease: "easeOut" } } }}
+              >
+                <div className="relative w-[200px] rounded-[10px] border border-dashed border-[rgba(71,59,171,0.4)] bg-[rgba(71,59,171,0.03)] p-[10px] flex flex-col gap-[4px]">
+                  <div className="flex items-center gap-[5px] mb-[2px]">
+                    <span className="text-[9px] px-[5px] py-[1px] rounded-full bg-[rgba(71,59,171,0.1)] text-[#473bab] tracking-[0.3px]"
+                      style={{ fontFamily: "'Roboto', sans-serif", fontWeight: 600 }}>CUSTOM</span>
+                  </div>
+                  <p className="text-[12px] text-[#1f1d25] truncate"
+                    style={{ fontFamily: "'Roboto', sans-serif", fontWeight: 500 }}>
+                    {co.year} {co.make} {co.model} {co.trim}
+                  </p>
+                  <p className="text-[11px] text-[#473bab]"
+                    style={{ fontFamily: "'Roboto', sans-serif" }}>
+                    {co.offerType === "Finance" && co.apr
+                      ? `${co.apr}% APR · ${co.term} mo`
+                      : `$${co.monthlyPayment}/mo · ${co.term} mo`}
+                  </p>
+                  {co.dueAtSigning && co.dueAtSigning !== "0" && (
+                    <p className="text-[10px] text-[#9c99a9]" style={{ fontFamily: "'Roboto', sans-serif" }}>
+                      ${co.dueAtSigning} due at signing
+                    </p>
+                  )}
+                  <button
+                    onClick={() => setCustomOffers(prev => prev.filter(x => x.id !== co.id))}
+                    className="absolute top-[6px] right-[6px] text-[#9c99a9] hover:text-[#dc2626] transition-colors"
+                  >
+                    <XCircle size={11} />
+                  </button>
+                </div>
               </motion.div>
             ))}
           </motion.div>

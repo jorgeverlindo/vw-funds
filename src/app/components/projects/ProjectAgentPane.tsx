@@ -39,6 +39,21 @@ export interface ProjectContextPayload {
   }[];
 }
 
+// Custom offer (from file upload / extracted by AI)
+export interface CustomOffer {
+  id: string;
+  year: string;
+  make: string;
+  model: string;
+  trim: string;
+  offerType: string;
+  monthlyPayment: string;
+  term: string;
+  dueAtSigning: string;
+  apr?: string;
+  notes?: string;
+}
+
 export type AgentActionPayload =
   | { action: "add_offers";       offerIds: string[] }
   | { action: "remove_offers";    offerIds: string[] }
@@ -48,7 +63,16 @@ export type AgentActionPayload =
   | { action: "create_project";   name: string; account: string; oem: string; startDate: string; endDate: string; owner?: string; platforms?: string[] }
   | { action: "set_brand";        oem: string }
   | { action: "add_backgrounds";  backgroundIds: string[] }
-  | { action: "send_email";       recipient: string; message: string };
+  | { action: "send_email";       recipient: string; message: string }
+  | { action: "add_custom_offers"; offers: CustomOffer[] };
+
+// ─── Multimodal API types ─────────────────────────────────────────────────────
+type ApiContentBlock =
+  | { type: "text"; text: string }
+  | { type: "image"; source: { type: "base64"; media_type: string; data: string } }
+  | { type: "document"; source: { type: "base64"; media_type: "application/pdf"; data: string } };
+
+type ApiMessage = { role: "user" | "assistant"; content: string | ApiContentBlock[] };
 
 // ─── Message model ─────────────────────────────────────────────────────────────
 type Role = "user" | "assistant";
@@ -64,7 +88,12 @@ interface BackgroundsMsg  { id: string; role: "assistant"; type: "backgrounds"; 
 interface PreviewMsg      { id: string; role: "assistant"; type: "preview";     offerIds: string[];       templateIds: string[] }
 interface ContinuationMsg { id: string; role: "user";     type: "continuation"; content: string }
 interface EmailMsg        { id: string; role: "assistant"; type: "email";       input: EmailInput;        applied: boolean }
-type Message = TextMessage | ToolChipMsg | ProposalMsg | SetupMsg | OffersMsg | TemplatesMsg | BrandMsg | BackgroundsMsg | PreviewMsg | ContinuationMsg | EmailMsg;
+// File upload message (shown in chat as user bubble with file chip)
+interface UserFileMsg     { id: string; role: "user"; type: "user_file"; text: string; fileName: string; fileType: string; apiContent: ApiContentBlock[] }
+// Parsed offers from AI extraction of uploaded file
+interface ParsedOffersMsg { id: string; role: "assistant"; type: "parsed_offers"; input: ParsedOffersInput; applied: boolean }
+
+type Message = TextMessage | ToolChipMsg | ProposalMsg | SetupMsg | OffersMsg | TemplatesMsg | BrandMsg | BackgroundsMsg | PreviewMsg | ContinuationMsg | EmailMsg | UserFileMsg | ParsedOffersMsg;
 
 interface ProposalInput {
   project_name?: string;
@@ -103,6 +132,28 @@ interface BackgroundsInput {
 interface EmailInput {
   recipient_hint?: string;
   message: string;
+}
+
+// Offer row extracted from a file by Claude
+interface ParsedOfferRow {
+  id: string;
+  year: string;
+  make: string;
+  model: string;
+  trim?: string;
+  offer_type: string;
+  monthly_payment: string;
+  term: string;
+  due_at_signing?: string;
+  apr?: string;
+  notes?: string;
+  field_confidence: Record<string, "high" | "medium" | "low">;
+}
+
+interface ParsedOffersInput {
+  source: string;
+  offers: ParsedOfferRow[];
+  extraction_notes?: string;
 }
 
 // ─── Custom header icons (from exported SVGs — pixel-perfect, color via currentColor) ────
@@ -229,13 +280,46 @@ function useConstellationAnim(running: boolean) {
   return arcs;
 }
 
+// ─── File helpers ─────────────────────────────────────────────────────────────
+
+/** Read a File as a base64 string (no data-URL prefix) */
+async function fileToBase64(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const result = reader.result as string;
+      resolve(result.split(",")[1] ?? "");
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+/** Parse an Excel file to a readable text representation using xlsx */
+async function parseExcelToText(file: File): Promise<string> {
+  try {
+    const xlsx = await import("xlsx");
+    const buf = await file.arrayBuffer();
+    const wb = xlsx.read(buf, { type: "array" });
+    const lines: string[] = [`[Excel file: ${file.name}]`];
+    for (const sheetName of wb.SheetNames) {
+      const ws = wb.Sheets[sheetName];
+      const csv = xlsx.utils.sheet_to_csv(ws);
+      if (csv.trim()) lines.push(`\nSheet: ${sheetName}\n${csv}`);
+    }
+    return lines.join("\n");
+  } catch {
+    return `[Excel file: ${file.name} — could not parse]`;
+  }
+}
+
 // ─── SSE streaming hook ────────────────────────────────────────────────────────
 function useAgentStream() {
   const [streaming, setStreaming] = useState(false);
   const abortRef = useRef<AbortController | null>(null);
   const streamMessage = useCallback(
     async (
-      messages: { role: Role; content: string }[],
+      messages: ApiMessage[],
       ctx: ProjectContextPayload,
       onDelta:  (d: string) => void,
       onTool:   (name: string, input: Record<string, unknown>) => void,
@@ -1877,6 +1961,229 @@ function PreviewStrip({ msg, context }: { msg: PreviewMsg; context: ProjectConte
   );
 }
 
+// ─── ParsedOffersCard ─────────────────────────────────────────────────────────
+// Inline-editable offer rows extracted from a file by Claude
+function ParsedOffersCard({
+  input, applied, onApply, onDismiss,
+}: {
+  input: ParsedOffersInput;
+  applied: boolean;
+  onApply: (offers: CustomOffer[]) => void;
+  onDismiss: () => void;
+}) {
+  // Each row can be checked, unchecked, or edited
+  type RowState = ParsedOfferRow & { checked: boolean };
+  const [rows, setRows] = useState<RowState[]>(() =>
+    input.offers.map(o => ({ ...o, checked: true }))
+  );
+  const [editingField, setEditingField] = useState<{ rowId: string; field: string } | null>(null);
+
+  const checkedCount = rows.filter(r => r.checked).length;
+
+  const updateRow = (id: string, field: string, value: string) => {
+    setRows(prev => prev.map(r => r.id === id ? { ...r, [field]: value } : r));
+  };
+
+  const toggleRow = (id: string) => {
+    setRows(prev => prev.map(r => r.id === id ? { ...r, checked: !r.checked } : r));
+  };
+
+  const handleApply = () => {
+    const selected: CustomOffer[] = rows
+      .filter(r => r.checked)
+      .map(r => ({
+        id: `custom-${r.id}-${Date.now()}`,
+        year: r.year,
+        make: r.make,
+        model: r.model,
+        trim: r.trim ?? "",
+        offerType: r.offer_type,
+        monthlyPayment: r.monthly_payment,
+        term: r.term,
+        dueAtSigning: r.due_at_signing ?? "0",
+        apr: r.apr,
+        notes: r.notes,
+      }));
+    onApply(selected);
+  };
+
+  // Inline editable field
+  const EditableField = ({
+    rowId, field, value, className,
+  }: {
+    rowId: string; field: string; value: string; className?: string;
+  }) => {
+    const conf = rows.find(r => r.id === rowId)?.field_confidence?.[field] ?? "high";
+    const isEditing = editingField?.rowId === rowId && editingField?.field === field;
+    const highlight = conf === "low" ? "bg-[#fff3cd] border-[#f59e0b]" : conf === "medium" ? "bg-[#fff8e1] border-[#fbbf24]" : "";
+
+    if (isEditing) {
+      return (
+        <input
+          autoFocus
+          className={cn(
+            "text-[11px] bg-white border rounded px-[4px] py-[1px] outline-none min-w-0 w-full",
+            "border-[#473bab] focus:ring-1 focus:ring-[rgba(71,59,171,0.2)]",
+            className
+          )}
+          style={{ fontFamily: "'Roboto', sans-serif" }}
+          value={value}
+          onChange={e => updateRow(rowId, field, e.target.value)}
+          onBlur={() => setEditingField(null)}
+          onKeyDown={e => { if (e.key === "Enter" || e.key === "Escape") setEditingField(null); }}
+        />
+      );
+    }
+
+    return (
+      <span
+        onClick={() => setEditingField({ rowId, field })}
+        title={conf !== "high" ? `Confidence: ${conf} — click to edit` : "Click to edit"}
+        className={cn(
+          "text-[11px] cursor-pointer rounded px-[3px] py-[1px] border transition-colors hover:bg-[rgba(71,59,171,0.06)] whitespace-nowrap",
+          conf !== "high" ? cn("border", highlight) : "border-transparent",
+          className
+        )}
+        style={{ fontFamily: "'Roboto', sans-serif" }}
+      >
+        {value || <span className="text-[#f59e0b] italic">?</span>}
+      </span>
+    );
+  };
+
+  if (applied) {
+    return (
+      <div className="ml-[32px]">
+        <ConfirmedChip label={`${checkedCount} custom offer${checkedCount === 1 ? "" : "s"} added`} />
+      </div>
+    );
+  }
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.22 }}
+      className="rounded-[12px] border border-[rgba(0,0,0,0.1)] overflow-hidden bg-white"
+    >
+      {/* Header */}
+      <div className="flex items-center gap-[8px] px-[12px] py-[10px] bg-[#fafafb] border-b border-[rgba(0,0,0,0.07)]">
+        <div className="w-[28px] h-[28px] rounded-[6px] bg-[rgba(71,59,171,0.08)] flex items-center justify-center shrink-0">
+          <FileText size={14} className="text-[#473bab]" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="text-[12px] text-[#1f1d25] truncate" style={{ fontFamily: "'Roboto', sans-serif", fontWeight: 500 }}>
+            {input.source}
+          </p>
+          <p className="text-[11px] text-[#686576]" style={{ fontFamily: "'Roboto', sans-serif" }}>
+            {input.offers.length} offer{input.offers.length === 1 ? "" : "s"} extracted
+          </p>
+        </div>
+        <button onClick={onDismiss} className="shrink-0 text-[#9c99a9] hover:text-[#686576] transition-colors">
+          <X size={14} />
+        </button>
+      </div>
+
+      {/* Confidence legend */}
+      {rows.some(r => Object.values(r.field_confidence ?? {}).some(c => c !== "high")) && (
+        <div className="px-[12px] py-[6px] flex items-center gap-[8px] border-b border-[rgba(0,0,0,0.05)] bg-[#fffdf3]">
+          <div className="w-[8px] h-[8px] rounded bg-[#fbbf24] shrink-0" />
+          <span className="text-[10px] text-[#92400e]" style={{ fontFamily: "'Roboto', sans-serif" }}>
+            Yellow fields had low extraction confidence — click to edit
+          </span>
+        </div>
+      )}
+
+      {/* Offer rows */}
+      <div className="divide-y divide-[rgba(0,0,0,0.06)]">
+        {rows.map(row => (
+          <div key={row.id} className={cn("px-[12px] py-[8px] flex gap-[8px] items-start transition-opacity", !row.checked && "opacity-50")}>
+            {/* Checkbox */}
+            <button
+              onClick={() => toggleRow(row.id)}
+              className="mt-[2px] shrink-0 w-[15px] h-[15px] rounded-[3px] border-[1.5px] flex items-center justify-center transition-all"
+              style={{ borderColor: row.checked ? "#473bab" : "rgba(0,0,0,0.25)", background: row.checked ? "#473bab" : "white" }}
+            >
+              {row.checked && <Check size={9} className="text-white" strokeWidth={3} />}
+            </button>
+
+            {/* Content */}
+            <div className="flex-1 min-w-0">
+              {/* Vehicle line */}
+              <div className="flex flex-wrap items-center gap-[4px] mb-[4px]">
+                <EditableField rowId={row.id} field="year"  value={row.year}  className="font-medium text-[#1f1d25]" />
+                <EditableField rowId={row.id} field="make"  value={row.make}  className="font-medium text-[#1f1d25]" />
+                <EditableField rowId={row.id} field="model" value={row.model} className="font-medium text-[#1f1d25]" />
+                {row.trim && <EditableField rowId={row.id} field="trim" value={row.trim} className="text-[#686576]" />}
+                <span className="px-[5px] py-[1px] rounded-[4px] text-[10px] tracking-[0.3px] ml-[2px]"
+                  style={{ fontFamily: "'Roboto', sans-serif", fontWeight: 500,
+                    background: row.offer_type === "Lease" ? "rgba(71,59,171,0.08)" : "rgba(0,0,0,0.06)",
+                    color: row.offer_type === "Lease" ? "#473bab" : "#686576" }}>
+                  {row.offer_type}
+                </span>
+              </div>
+              {/* Financial line */}
+              <div className="flex flex-wrap items-center gap-[6px]">
+                {row.offer_type === "Finance" && row.apr ? (
+                  <>
+                    <EditableField rowId={row.id} field="apr" value={`${row.apr}% APR`} />
+                    <span className="text-[#ccc] select-none">·</span>
+                  </>
+                ) : (
+                  <>
+                    <span className="text-[11px] text-[#686576]" style={{ fontFamily: "'Roboto', sans-serif" }}>$</span>
+                    <EditableField rowId={row.id} field="monthly_payment" value={row.monthly_payment} />
+                    <span className="text-[11px] text-[#686576]" style={{ fontFamily: "'Roboto', sans-serif" }}>/mo</span>
+                    <span className="text-[#ccc] select-none">·</span>
+                  </>
+                )}
+                <EditableField rowId={row.id} field="term" value={`${row.term} mo`} />
+                {row.due_at_signing && row.due_at_signing !== "0" && (
+                  <>
+                    <span className="text-[#ccc] select-none">·</span>
+                    <span className="text-[11px] text-[#9c99a9]" style={{ fontFamily: "'Roboto', sans-serif" }}>$</span>
+                    <EditableField rowId={row.id} field="due_at_signing" value={row.due_at_signing} />
+                    <span className="text-[11px] text-[#9c99a9]" style={{ fontFamily: "'Roboto', sans-serif" }}>due</span>
+                  </>
+                )}
+              </div>
+              {row.notes && (
+                <p className="text-[10px] text-[#9c99a9] mt-[3px]" style={{ fontFamily: "'Roboto', sans-serif" }}>{row.notes}</p>
+              )}
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Extraction notes */}
+      {input.extraction_notes && (
+        <div className="px-[12px] py-[7px] border-t border-[rgba(0,0,0,0.06)] bg-[#fafafa]">
+          <p className="text-[10px] text-[#9c99a9] leading-[1.5]" style={{ fontFamily: "'Roboto', sans-serif" }}>
+            ℹ️ {input.extraction_notes}
+          </p>
+        </div>
+      )}
+
+      {/* Footer */}
+      <div className="px-[12px] py-[10px] border-t border-[rgba(0,0,0,0.08)]">
+        <button
+          onClick={handleApply}
+          disabled={checkedCount === 0}
+          className={cn(
+            "w-full py-[8px] px-[14px] rounded-full text-[13px] tracking-[0.46px] transition-all duration-200",
+            checkedCount > 0
+              ? "bg-[#473bab] hover:bg-[#392e8a] text-white cursor-pointer shadow-sm"
+              : "bg-[#473bab] opacity-40 text-white cursor-not-allowed"
+          )}
+          style={{ fontFamily: "'Roboto', sans-serif", fontWeight: 500 }}
+        >
+          {checkedCount === 0
+            ? "Select offers to add"
+            : `Add ${checkedCount} offer${checkedCount === 1 ? "" : "s"} to project`}
+        </button>
+      </div>
+    </motion.div>
+  );
+}
+
 // ─── Tool chip (for non-proposal tools) ───────────────────────────────────────
 function ToolChipView({ name, input }: { name: string; input: Record<string, unknown> }) {
   const cfg: Record<string, { label: string; icon: React.ReactNode; color: string; bg: string }> = {
@@ -2064,6 +2371,11 @@ export function ProjectAgentPane({ isOpen, onClose }: ProjectAgentPaneProps) {
         id: `proposal-${Date.now()}`, role: "assistant", type: "proposal",
         input: toolInput as ProposalInput, applied: false,
       } as ProposalMsg]);
+    } else if (toolName === "propose_parsed_offers") {
+      setMessages(prev => [...prev, {
+        id: `parsed-${Date.now()}`, role: "assistant", type: "parsed_offers",
+        input: toolInput as ParsedOffersInput, applied: false,
+      } as ParsedOffersMsg]);
     } else {
       setMessages(prev => [...prev, {
         id: `tool-${Date.now()}`, role: "assistant", type: "tool", name: toolName, input: toolInput,
@@ -2093,9 +2405,12 @@ export function ProjectAgentPane({ isOpen, onClose }: ProjectAgentPaneProps) {
       currentOfferIds: [], currentTemplateIds: [], availableOffers: [], availableTemplates: [],
     };
     // Build history from ref (includes all messages added before this call)
-    const history = [...messagesRef.current, contMsg]
-      .filter((m): m is TextMessage | ContinuationMsg => m.type === "text" || m.type === "continuation")
-      .map(m => ({ role: m.role, content: m.content }));
+    const history: ApiMessage[] = [...messagesRef.current, contMsg]
+      .filter((m): m is TextMessage | ContinuationMsg | UserFileMsg => m.type === "text" || m.type === "continuation" || m.type === "user_file")
+      .map(m => ({
+        role: m.role as "user" | "assistant",
+        content: m.type === "user_file" ? m.apiContent : (m as TextMessage | ContinuationMsg).content,
+      }));
 
     accRef.current = ""; setStreamingText("");
     await streamMessage(history, ctx,
@@ -2110,23 +2425,72 @@ export function ProjectAgentPane({ isOpen, onClose }: ProjectAgentPaneProps) {
     );
   }, [streamMessage, handleToolResult]); // stable — reads state via refs, not closure
 
-  const send = useCallback(async (text: string, _attachment: File | null) => {
-    if (!text.trim() || streaming) return;
-    const userMsg: TextMessage = { id: `u-${Date.now()}`, role: "user", type: "text", content: text };
-    setMessages(prev => [...prev, userMsg]);
+  const send = useCallback(async (text: string, attachment: File | null) => {
+    if (!text.trim() && !attachment || streaming) return;
+
     const ctx: ProjectContextPayload = projectContext ?? {
       projectId: "", projectName: "(no project open)", oem: "",
       currentOfferIds: [], currentTemplateIds: [], availableOffers: [], availableTemplates: [],
     };
-    const history = [...messages, userMsg]
-      .filter((m): m is TextMessage | ContinuationMsg => m.type === "text" || m.type === "continuation")
-      .map(m => ({ role: m.role, content: m.content }));
+
+    let userMsg: TextMessage | UserFileMsg;
+
+    if (attachment) {
+      // Build multimodal content blocks
+      const blocks: ApiContentBlock[] = [];
+      if (text.trim()) blocks.push({ type: "text", text: text.trim() });
+
+      try {
+        if (attachment.type.startsWith("image/")) {
+          const b64 = await fileToBase64(attachment);
+          blocks.push({ type: "image", source: { type: "base64", media_type: attachment.type, data: b64 } });
+        } else if (attachment.type === "application/pdf") {
+          const b64 = await fileToBase64(attachment);
+          blocks.push({ type: "document", source: { type: "base64", media_type: "application/pdf", data: b64 } });
+        } else if (/\.xlsx?$/i.test(attachment.name) || attachment.type.includes("spreadsheet") || attachment.type.includes("excel")) {
+          // Excel → convert to text, merge with any user text
+          const excelText = await parseExcelToText(attachment);
+          // Replace or append to existing text block
+          const textIdx = blocks.findIndex(b => b.type === "text");
+          const combined = (textIdx >= 0 ? (blocks[textIdx] as { type: "text"; text: string }).text + "\n\n" : "") + excelText;
+          if (textIdx >= 0) blocks.splice(textIdx, 1);
+          blocks.unshift({ type: "text", text: combined });
+        } else {
+          // Unknown type — treat as text attachment note
+          blocks.push({ type: "text", text: `[Attached file: ${attachment.name}]` });
+        }
+      } catch {
+        blocks.push({ type: "text", text: `[File: ${attachment.name} — could not process]` });
+      }
+
+      // Ensure there's at least one text block hinting at extraction
+      if (!blocks.some(b => b.type === "text")) {
+        blocks.unshift({ type: "text", text: `Please extract offers from this file: ${attachment.name}` });
+      }
+
+      userMsg = {
+        id: `u-${Date.now()}`, role: "user", type: "user_file",
+        text: text.trim(), fileName: attachment.name, fileType: attachment.type,
+        apiContent: blocks,
+      };
+    } else {
+      userMsg = { id: `u-${Date.now()}`, role: "user", type: "text", content: text };
+    }
+
+    setMessages(prev => [...prev, userMsg]);
+
+    const history: ApiMessage[] = [...messages, userMsg]
+      .filter((m): m is TextMessage | ContinuationMsg | UserFileMsg => m.type === "text" || m.type === "continuation" || m.type === "user_file")
+      .map(m => ({
+        role: m.role as "user" | "assistant",
+        content: m.type === "user_file" ? m.apiContent : (m as TextMessage | ContinuationMsg).content,
+      }));
+
     accRef.current = ""; setStreamingText("");
     await streamMessage(history, ctx,
       d => { accRef.current += d; setStreamingText(accRef.current); },
       handleToolResult,
       () => {
-        // Capture before clearing — accRef.current is read lazily inside setMessages callbacks
         const finalText = accRef.current;
         accRef.current = ""; setStreamingText("");
         if (finalText.trim()) setMessages(prev => [...prev, { id: `a-${Date.now()}`, role: "assistant", type: "text", content: finalText } as TextMessage]);
@@ -2229,6 +2593,22 @@ export function ProjectAgentPane({ isOpen, onClose }: ProjectAgentPaneProps) {
   }, [dispatchAction]);
 
   const handleEmailDismiss = useCallback(() => {}, []);
+
+  // ── ParsedOffers card ────────────────────────────────────────────────────────
+  const handleParsedOffersApply = useCallback((msgId: string, offers: CustomOffer[]) => {
+    setMessages(prev => prev.map(m => m.id === msgId ? { ...m, applied: true } as ParsedOffersMsg : m));
+    dispatchAction({ action: "add_custom_offers", offers });
+    if (offers.length > 0) {
+      setMessages(prev => [...prev, {
+        id: `a-${Date.now()}`, role: "assistant", type: "text",
+        content: `✅ Added ${offers.length} custom offer${offers.length === 1 ? "" : "s"} to the project.`,
+      } as TextMessage]);
+    }
+  }, [dispatchAction]);
+
+  const handleParsedOffersDismiss = useCallback((msgId: string) => {
+    setMessages(prev => prev.filter(m => m.id !== msgId));
+  }, []);
 
   // ── Brand card ──────────────────────────────────────────────────────────────
   const handleBrandApply = useCallback((oem: string) => {
@@ -2535,6 +2915,8 @@ export function ProjectAgentPane({ isOpen, onClose }: ProjectAgentPaneProps) {
                           onProposalDismiss={() => handleProposalDismiss(msg.id)}
                           onEmailApply={handleEmailApply}
                           onEmailDismiss={handleEmailDismiss}
+                          onParsedOffersApply={(offers) => handleParsedOffersApply(msg.id, offers)}
+                          onParsedOffersDismiss={() => handleParsedOffersDismiss(msg.id)}
                         />
                       ))}
 
@@ -2587,6 +2969,7 @@ function MessageBubble({
   onBrandApply, onBrandDismiss,
   onProposalApply, onProposalDismiss,
   onEmailApply, onEmailDismiss,
+  onParsedOffersApply, onParsedOffersDismiss,
 }: {
   message: Message;
   context: ProjectContextPayload | null;
@@ -2606,9 +2989,41 @@ function MessageBubble({
   onProposalDismiss: () => void;
   onEmailApply: (recipient: string, message: string) => void;
   onEmailDismiss: () => void;
+  onParsedOffersApply: (offers: CustomOffer[]) => void;
+  onParsedOffersDismiss: () => void;
 }) {
   if (message.type === "continuation") {
     return null;
+  }
+
+  if (message.type === "user_file") {
+    return (
+      <div className="flex justify-end">
+        <div className="ml-[40px] bg-[#fafaff] rounded-bl-[12px] rounded-tl-[12px] rounded-tr-[12px] px-[12px] py-[10px] relative">
+          <div aria-hidden="true" className="absolute inset-0 rounded-bl-[12px] rounded-tl-[12px] rounded-tr-[12px] border border-[rgba(99,86,225,0.5)] pointer-events-none" />
+          {message.text && (
+            <p className="text-[12px] text-[#1f1d25] leading-[1.43] tracking-[0.17px] mb-[6px]"
+              style={{ fontFamily: "'Roboto', sans-serif" }}>{message.text}</p>
+          )}
+          <div className="flex items-center gap-[6px] px-[8px] py-[5px] bg-[rgba(71,59,171,0.06)] border border-[rgba(71,59,171,0.18)] rounded-[8px] w-fit">
+            <FileText size={11} className="text-[#473bab] shrink-0" />
+            <span className="text-[11px] text-[#473bab] truncate max-w-[160px]"
+              style={{ fontFamily: "'Roboto', sans-serif", fontWeight: 500 }}>{message.fileName}</span>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (message.type === "parsed_offers") {
+    return (
+      <ParsedOffersCard
+        input={message.input}
+        applied={message.applied}
+        onApply={onParsedOffersApply}
+        onDismiss={onParsedOffersDismiss}
+      />
+    );
   }
 
   if (message.type === "tool") {

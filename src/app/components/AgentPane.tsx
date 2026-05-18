@@ -384,6 +384,23 @@ export function AgentInput({ onSubmit, compact = false }: AgentInputProps) {
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSubmit(); } };
 
+  const handlePaste = useCallback((e: React.ClipboardEvent<HTMLTextAreaElement>) => {
+    const items = e.clipboardData?.items;
+    if (!items) return;
+    for (let i = 0; i < items.length; i++) {
+      const item = items[i];
+      if (item.type.startsWith('image/')) {
+        const file = item.getAsFile();
+        if (file) {
+          e.preventDefault();
+          const named = new File([file], `clipboard-image-${Date.now()}.png`, { type: file.type });
+          setAttachment({ file: named, url: URL.createObjectURL(named) });
+          return;
+        }
+      }
+    }
+  }, []);
+
   // Auto-resize: grow with content, never scroll internally
   useEffect(() => {
     const el = textareaRef.current;
@@ -416,7 +433,8 @@ export function AgentInput({ onSubmit, compact = false }: AgentInputProps) {
             ref={textareaRef}
             placeholder={isListening ? '' : 'Ask anything'}
             className="flex-1 resize-none bg-transparent border-none outline-none text-[14px] text-[#1f1d25] placeholder-[#9c99a9] tracking-[0.15px] leading-[1.5] min-h-[22px] custom-scrollbar"
-            style={{ fontFamily: "'Roboto', sans-serif" }} />
+            style={{ fontFamily: "'Roboto', sans-serif" }}
+            onPaste={handlePaste} />
         </div>
         <VoiceWaveRegion isActive={isListening} amplitudeData={amplitudeData} />
         <VoiceStatus isActive={isListening} />
@@ -456,7 +474,7 @@ export function AgentInput({ onSubmit, compact = false }: AgentInputProps) {
           </div>
         </div>
       </div>
-      <input ref={fileRef} type="file" className="hidden" onChange={e => handleAttach(e.target.files)} />
+      <input ref={fileRef} type="file" accept=".pdf,.xlsx,.xls,.png,.jpg,.jpeg,image/png,image/jpeg,application/pdf" className="hidden" onChange={e => handleAttach(e.target.files)} />
     </div>
   );
 }

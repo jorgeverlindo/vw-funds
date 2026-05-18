@@ -210,6 +210,19 @@ EMAIL SHARING:
 - Email subject pattern: "[OEM] Project shared: [Project Name]"
 - Include a placeholder for the project link.
 
+FILE UPLOAD — OFFER EXTRACTION:
+- When the user attaches an image, PDF, or spreadsheet (Excel/CSV), inspect it and call propose_parsed_offers immediately.
+- Extract ALL visible offer rows — do not skip any.
+- For each offer, assign per-field confidence:
+  "high"   = clearly visible and unambiguous
+  "medium" = partially legible or inferred from context
+  "low"    = guessed / unclear — the user will need to correct it
+- Set field_confidence for: monthly_payment, term, due_at_signing, trim, year, apr
+- If a field is missing, leave it blank (don't invent values) but mark it "low" confidence so the UI highlights it.
+- In extraction_notes, summarize any ambiguities, missing data, or quality issues.
+- For Excel/CSV uploads, each data row is typically one offer.
+- Be thorough — users upload these files specifically to import many offers at once.
+
 Today's date: ${new Date().toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}.`;
 }
 
@@ -424,6 +437,56 @@ const agentTools: Anthropic.Tool[] = [
     },
   },
 
+  // ── Offer extraction from uploaded file ───────────────────────────────────
+  {
+    name: "propose_parsed_offers",
+    description:
+      "Extract and propose offers from an uploaded image, PDF, or spreadsheet. " +
+      "Use this when the user attaches a file (flyer, rate sheet, Excel, screenshot) that contains offer data. " +
+      "Parse all visible offers and return them structured with per-field confidence scores. " +
+      "The UI will show an interactive card where the user can review, edit, check/uncheck offers, and confirm which ones to add.",
+    input_schema: {
+      type: "object" as const,
+      properties: {
+        source: {
+          type: "string",
+          description: "Description of the source file, e.g. 'Honda Summer Flyer (uploaded PDF)' or 'clipboard screenshot'.",
+        },
+        offers: {
+          type: "array",
+          description: "List of offers extracted from the file.",
+          items: {
+            type: "object",
+            properties: {
+              id:               { type: "string", description: "Unique ID for this offer row, e.g. 'p1', 'p2'." },
+              year:             { type: "string", description: "Model year, e.g. '2025'." },
+              make:             { type: "string", description: "Vehicle make, e.g. 'Honda'." },
+              model:            { type: "string", description: "Vehicle model, e.g. 'Civic'." },
+              trim:             { type: "string", description: "Trim level, e.g. 'LX'." },
+              offer_type:       { type: "string", description: "'Lease', 'Finance', or 'Purchase'." },
+              monthly_payment:  { type: "string", description: "Monthly payment amount, e.g. '299'." },
+              term:             { type: "string", description: "Term in months, e.g. '36'." },
+              due_at_signing:   { type: "string", description: "Amount due at signing, e.g. '3999'. Use '0' if not specified." },
+              apr:              { type: "string", description: "APR percentage for finance offers, e.g. '1.9'." },
+              notes:            { type: "string", description: "Any additional notes or caveats for this offer." },
+              field_confidence: {
+                type: "object",
+                description: "Per-field confidence: 'high' = clearly visible, 'medium' = partially legible, 'low' = guessed.",
+                additionalProperties: { type: "string", enum: ["high", "medium", "low"] },
+              },
+            },
+            required: ["id", "year", "make", "model", "offer_type", "monthly_payment", "term"],
+          },
+        },
+        extraction_notes: {
+          type: "string",
+          description: "Optional notes about extraction quality, ambiguities, or what could not be read.",
+        },
+      },
+      required: ["source", "offers"],
+    },
+  },
+
   // ── Email sharing ──────────────────────────────────────────────────────────
   {
     name: "propose_email",
@@ -479,6 +542,8 @@ function executeTool(
       return { success: true, name: input.name, message: `Project renamed to "${input.name}".` };
     case "propose_email":
       return { success: true, email: input, message: "Email proposal ready for user review." };
+    case "propose_parsed_offers":
+      return { success: true, parsed_offers: input, message: `${(input.offers as unknown[]).length} offer(s) extracted and ready for user review.` };
     default:
       return { success: false, message: `Unknown tool: ${toolName}` };
   }
@@ -534,7 +599,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const PROPOSAL_TOOLS = new Set([
       "setup_project", "propose_offers", "propose_templates",
       "propose_backgrounds", "propose_brand", "propose_project",
-      "propose_email",
+      "propose_email", "propose_parsed_offers",
     ]);
 
     while (iterations < MAX_ITERATIONS) {

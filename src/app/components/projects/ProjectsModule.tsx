@@ -1200,7 +1200,7 @@ function ProjectDetailView({
         <div className="mb-2.5">
           <BreadcrumbBar
             items={[{ label: "Projects", onClick: onBack }]}
-            activeLabel={"code" in project && (project as any).code ? (project as any).code : project.name}
+            activeLabel={project.name}
           />
         </div>
 

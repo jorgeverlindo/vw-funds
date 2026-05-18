@@ -2477,13 +2477,37 @@ export function ProjectAgentPane({ isOpen, onClose }: ProjectAgentPaneProps) {
       projectId: "", projectName: "(no project open)", oem: "",
       currentOfferIds: [], currentTemplateIds: [], availableOffers: [], availableTemplates: [],
     };
+    // If offers were already extracted from a document, strip the PDF blob from the history.
+    // Without this, the agent sees the PDF on every continuation turn and re-runs
+    // propose_parsed_offers (Step 1 of the decision tree), producing duplicate cards/projects.
+    const offersAlreadyExtracted = messagesRef.current.some(m => m.type === "parsed_offers");
+
     // Build history from ref (includes all messages added before this call)
-    const history: ApiMessage[] = [...messagesRef.current, contMsg]
-      .filter((m): m is TextMessage | ContinuationMsg | UserFileMsg => m.type === "text" || m.type === "continuation" || m.type === "user_file")
-      .map(m => ({
-        role: m.role as "user" | "assistant",
-        content: m.type === "user_file" ? m.apiContent : (m as TextMessage | ContinuationMsg).content,
-      }));
+    const rawMsgs = [...messagesRef.current, contMsg]
+      .filter((m): m is TextMessage | ContinuationMsg | UserFileMsg =>
+        m.type === "text" || m.type === "continuation" || m.type === "user_file"
+      );
+
+    const history: ApiMessage[] = [];
+    for (const m of rawMsgs) {
+      if (m.type === "user_file" && offersAlreadyExtracted) {
+        // Strip the blob — keep only the user's text so the agent doesn't re-extract
+        history.push({ role: "user", content: (m as UserFileMsg).text || "Document uploaded." });
+        // Inject a ghost assistant turn so the history alternates roles and the agent
+        // knows the extraction step is already complete
+        history.push({
+          role: "assistant",
+          content: "The vehicle offers have been extracted from the uploaded document and are ready.",
+        });
+      } else {
+        history.push({
+          role: m.role as "user" | "assistant",
+          content: m.type === "user_file"
+            ? (m as UserFileMsg).apiContent
+            : (m as TextMessage | ContinuationMsg).content,
+        });
+      }
+    }
 
     // If the continuation explicitly requests propose_parsed_offers, force it so the model cannot refuse.
     const forcedTool = text.includes("Call propose_parsed_offers") ? "propose_parsed_offers" : undefined;
@@ -2556,12 +2580,32 @@ export function ProjectAgentPane({ isOpen, onClose }: ProjectAgentPaneProps) {
 
     setMessages(prev => [...prev, userMsg]);
 
-    const history: ApiMessage[] = [...messages, userMsg]
-      .filter((m): m is TextMessage | ContinuationMsg | UserFileMsg => m.type === "text" || m.type === "continuation" || m.type === "user_file")
-      .map(m => ({
-        role: m.role as "user" | "assistant",
-        content: m.type === "user_file" ? m.apiContent : (m as TextMessage | ContinuationMsg).content,
-      }));
+    // Same blob-stripping logic as sendInternal: if offers were already extracted,
+    // replace document blobs with text-only so the agent doesn't re-run extraction.
+    const offersExtracted = messages.some(m => m.type === "parsed_offers");
+    const rawSendMsgs = [...messages, userMsg]
+      .filter((m): m is TextMessage | ContinuationMsg | UserFileMsg =>
+        m.type === "text" || m.type === "continuation" || m.type === "user_file"
+      );
+
+    const history: ApiMessage[] = [];
+    for (const m of rawSendMsgs) {
+      if (m.type === "user_file" && offersExtracted && m !== userMsg) {
+        // Prior file upload: strip blob, inject ghost assistant bridge
+        history.push({ role: "user", content: (m as UserFileMsg).text || "Document uploaded." });
+        history.push({
+          role: "assistant",
+          content: "The vehicle offers have been extracted from the uploaded document and are ready.",
+        });
+      } else {
+        history.push({
+          role: m.role as "user" | "assistant",
+          content: m.type === "user_file"
+            ? (m as UserFileMsg).apiContent
+            : (m as TextMessage | ContinuationMsg).content,
+        });
+      }
+    }
 
     // When the user uploads an image, PDF, or Excel — use the dedicated extract endpoint.
     // That endpoint has ONLY propose_parsed_offers as a tool with tool_choice forced,

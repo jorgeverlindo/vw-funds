@@ -602,10 +602,6 @@ function ProjectsListView({
           <Plus size={13} />
           New Project
         </button>
-        <button className="flex items-center gap-1.5 border border-[var(--brand-accent)] text-[var(--brand-accent)] hover:bg-[var(--brand-accent)/5] text-xs font-semibold px-3 py-1.5 rounded-full transition cursor-pointer">
-          <History size={13} />
-          Recent Activity
-        </button>
         <button className="w-7 h-7 flex items-center justify-center text-gray-400 hover:text-gray-600 transition cursor-pointer">
           <MoreVertical size={15} />
         </button>

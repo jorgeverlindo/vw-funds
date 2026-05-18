@@ -12,6 +12,7 @@ import { AgentInput } from "../AgentPane";
 import {
   DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem,
 } from "../ui/dropdown-menu";
+import * as Tooltip from "@radix-ui/react-tooltip";
 import imgAgentAvatar from "figma:asset/a66b3945941bddb97efa53207e606703467e02b3.png";
 import { AvatarInitials } from "../ui/AvatarInitials";
 import { PROJECT_OWNERS, PLATFORM_OPTIONS } from "./CreateProjectDialog";
@@ -2309,14 +2310,26 @@ export function ProjectAgentPane({ isOpen, onClose }: ProjectAgentPaneProps) {
           <div className="flex flex-col h-full pt-[12px] px-[16px]">
 
             {/* ── Top bar ─────────────────────────────────────────── */}
+            <Tooltip.Provider delayDuration={400}>
             <div className="relative flex items-center gap-[4px] pb-[12px] shrink-0">
-              <button
-                aria-label={showHistory ? "Back to conversation" : "Back"}
-                onClick={() => { if (showHistory) setShowHistory(false); }}
-                className="flex items-center justify-center rounded-full w-[28px] h-[28px] hover:bg-black/5 transition-colors cursor-pointer shrink-0"
-              >
-                <ChevronLeft size={16} strokeWidth={1.5} className="text-[rgba(17,16,20,0.56)]" />
-              </button>
+              <Tooltip.Root>
+                <Tooltip.Trigger asChild>
+                  <button
+                    aria-label={showHistory ? "Back to conversation" : "Nudge close panel"}
+                    onClick={() => { if (showHistory) setShowHistory(false); }}
+                    className="flex items-center justify-center rounded-full w-[28px] h-[28px] hover:bg-black/5 transition-colors cursor-pointer shrink-0"
+                  >
+                    <ChevronLeft size={16} strokeWidth={1.5} className="text-[rgba(17,16,20,0.56)]" />
+                  </button>
+                </Tooltip.Trigger>
+                <Tooltip.Portal>
+                  <Tooltip.Content sideOffset={5} className="z-[999] px-[8px] py-[4px] rounded-[6px] text-[11px] font-medium text-white bg-[#1f1d25] shadow-md select-none" style={{ fontFamily: "'Roboto', sans-serif" }}>
+                    {showHistory ? "Back to conversation" : "Nudge close panel"}
+                    <Tooltip.Arrow className="fill-[#1f1d25]" />
+                  </Tooltip.Content>
+                </Tooltip.Portal>
+              </Tooltip.Root>
+
               <span className="ml-0.5 text-[16px] text-[#1f1d25] tracking-[0.15px] whitespace-nowrap shrink-0"
                 style={{ fontFamily: "'Roboto', sans-serif", fontWeight: 500, lineHeight: "1.5" }}>
                 AI Agent Auto
@@ -2326,22 +2339,56 @@ export function ProjectAgentPane({ isOpen, onClose }: ProjectAgentPaneProps) {
                   <ChevronDown size={12} strokeWidth={1.5} className="text-[rgba(17,16,20,0.56)]" />
                 </div>
               </button>
+
               <div className="absolute right-[-6px] top-0 flex items-center gap-[2px]">
-                <button
-                  aria-label={showHistory ? "Back to chat" : "Thread history"}
-                  onClick={() => { setShowHistory(h => !h); setHistorySearch(""); }}
-                  className={cn("flex items-center justify-center rounded-full w-[28px] h-[28px] hover:bg-black/5 transition-colors cursor-pointer text-[rgba(17,16,20,0.56)]", showHistory && "bg-black/5")}
-                >
-                  <IconHistory />
-                </button>
-                <button aria-label="New thread" onClick={handleNewThread} className="flex items-center justify-center rounded-full w-[28px] h-[28px] hover:bg-black/5 transition-colors cursor-pointer text-[rgba(17,16,20,0.56)]">
-                  <IconExpand />
-                </button>
-                <button onClick={onClose} aria-label="Close" className="flex items-center justify-center rounded-full w-[28px] h-[28px] hover:bg-black/5 transition-colors cursor-pointer text-[rgba(17,16,20,0.56)]">
-                  <IconClose />
-                </button>
+                <Tooltip.Root>
+                  <Tooltip.Trigger asChild>
+                    <button
+                      aria-label={showHistory ? "Back to chat" : "Thread history"}
+                      onClick={() => { setShowHistory(h => !h); setHistorySearch(""); }}
+                      className={cn("flex items-center justify-center rounded-full w-[28px] h-[28px] hover:bg-black/5 transition-colors cursor-pointer text-[rgba(17,16,20,0.56)]", showHistory && "bg-black/5")}
+                    >
+                      <IconHistory />
+                    </button>
+                  </Tooltip.Trigger>
+                  <Tooltip.Portal>
+                    <Tooltip.Content sideOffset={5} className="z-[999] px-[8px] py-[4px] rounded-[6px] text-[11px] font-medium text-white bg-[#1f1d25] shadow-md select-none" style={{ fontFamily: "'Roboto', sans-serif" }}>
+                      Thread history
+                      <Tooltip.Arrow className="fill-[#1f1d25]" />
+                    </Tooltip.Content>
+                  </Tooltip.Portal>
+                </Tooltip.Root>
+
+                <Tooltip.Root>
+                  <Tooltip.Trigger asChild>
+                    <button aria-label="Fullscreen" onClick={handleNewThread} className="flex items-center justify-center rounded-full w-[28px] h-[28px] hover:bg-black/5 transition-colors cursor-pointer text-[rgba(17,16,20,0.56)]">
+                      <IconExpand />
+                    </button>
+                  </Tooltip.Trigger>
+                  <Tooltip.Portal>
+                    <Tooltip.Content sideOffset={5} className="z-[999] px-[8px] py-[4px] rounded-[6px] text-[11px] font-medium text-white bg-[#1f1d25] shadow-md select-none" style={{ fontFamily: "'Roboto', sans-serif" }}>
+                      Fullscreen
+                      <Tooltip.Arrow className="fill-[#1f1d25]" />
+                    </Tooltip.Content>
+                  </Tooltip.Portal>
+                </Tooltip.Root>
+
+                <Tooltip.Root>
+                  <Tooltip.Trigger asChild>
+                    <button onClick={onClose} aria-label="Close panel" className="flex items-center justify-center rounded-full w-[28px] h-[28px] hover:bg-black/5 transition-colors cursor-pointer text-[rgba(17,16,20,0.56)]">
+                      <IconClose />
+                    </button>
+                  </Tooltip.Trigger>
+                  <Tooltip.Portal>
+                    <Tooltip.Content sideOffset={5} className="z-[999] px-[8px] py-[4px] rounded-[6px] text-[11px] font-medium text-white bg-[#1f1d25] shadow-md select-none" style={{ fontFamily: "'Roboto', sans-serif" }}>
+                      Close panel
+                      <Tooltip.Arrow className="fill-[#1f1d25]" />
+                    </Tooltip.Content>
+                  </Tooltip.Portal>
+                </Tooltip.Root>
               </div>
             </div>
+            </Tooltip.Provider>
 
             {/* ── Body ────────────────────────────────────────────── */}
             <div className="flex flex-col flex-1 min-h-0">

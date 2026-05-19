@@ -192,12 +192,12 @@ FLOW STEPS BY SCOPE (new project, no project open):
   If OEM/brand is not stated: infer from the available offers catalog (e.g. "Honda" if all offers are Honda).
   If the catalog is empty: use OEM "General" and project_name "New Project". The setup card lets the user correct any field before confirming.
 
-SETUP_PROJECT FIELD EXTRACTION — read the user's message carefully and extract ALL of these before calling:
-  • project_name : Use the EXACT name the user states (e.g. "offers in a napkin" → project_name: "offers in a napkin"). Never replace with a generated name if the user gave one.
-  • oem          : Use what the user explicitly says ("Audi", "VW", "Honda"). Do NOT default to what offers imply if the user stated a brand.
-  • start_date   : "início de junho" / "start of June" / "beginning of June" → "Jun 1, 2026". "início de [month]" = "[Month] 1, [year]".
-  • end_date     : "dia 31" in June / "end of June" / "June 31" → "Jun 30, 2026" (June has 30 days). "fim de [month]" = last day of that month.
-  • platforms    : Map from natural language → "Google Performance Max" / "Performance Max" / "PMax" → "Google PMax"; "Meta" / "Instagram" / "Facebook" → "Meta"; "TikTok" → "TikTok"; "YouTube" → "YouTube".
+SETUP_PROJECT FIELD EXTRACTION — explicit user input always wins; fall back to inference only when not stated:
+  • project_name : If the user gives a name ("offers in a napkin", "VW June push") → use it VERBATIM. If no name given → infer a short descriptive name from the offers/brand (e.g. "Audi Summer Lease Event").
+  • oem          : If the user explicitly states a brand ("Audi", "VW", "Honda") → use it. If not stated → infer from offer makes or context. Last resort: "General".
+  • start_date   : "início de junho" / "start of June" / "beginning of June" → "Jun 1, 2026". "início de [month]" = "[Month] 1, [year]". If not mentioned → use the first day of the current month.
+  • end_date     : "dia 31" in June / "end of June" / "June 31" → "Jun 30, 2026" (June has 30 days). "fim de [month]" = last day of that month. If not mentioned → one month after start.
+  • platforms    : Map from natural language → "Google Performance Max" / "Performance Max" / "PMax" → "Google PMax"; "Meta" / "Instagram" / "Facebook" → "Meta"; "TikTok" → "TikTok"; "YouTube" → "YouTube". If not mentioned → leave empty.
 
   flow_scope "full":
     Step 1: setup_project → user confirms

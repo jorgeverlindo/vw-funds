@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import svgPaths from '@/imports/svg-kh2cdc4deu';
 import imgAvatar from 'figma:asset/f0494d5017440bdc302141d9ab01c7c81e4a339a.png';
 import imgEmichAvatar from '../../assets/Emich_Avatar.jpeg';
+import imgConstellationAvatar from '../../assets/logos/Projects + Website Campaigns/Brand Logo/Constellation.png';
 import { NotificationOverlay } from './notifications/NotificationOverlay';
 import { NotificationOverlayOEM } from './notifications/NotificationOverlayOEM';
 import { AvatarInitials } from './ui/AvatarInitials';
@@ -280,6 +281,10 @@ export function TopNavBar({
         ) : userType === 'dealer-emich' ? (
           <div className="size-8 rounded-full overflow-hidden ml-2 cursor-pointer">
             <img src={imgEmichAvatar} alt="" className="size-full object-cover object-[center_20%]" />
+          </div>
+        ) : userType === 'dealer' ? (
+          <div className="size-8 rounded-full overflow-hidden ml-2 cursor-pointer bg-[#0d0d12] flex items-center justify-center p-1">
+            <img src={imgConstellationAvatar} alt="Constellation" className="size-full object-contain" />
           </div>
         ) : (
           <div className="size-8 rounded-full overflow-hidden ml-2 cursor-pointer">

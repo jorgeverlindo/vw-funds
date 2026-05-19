@@ -2080,7 +2080,7 @@ function PreviewStrip({ msg, context }: { msg: PreviewMsg; context: ProjectConte
 }
 
 // ─── ParsedOffersCard ─────────────────────────────────────────────────────────
-// Inline-editable offer rows extracted from a file by Claude
+// Offer rows extracted from a file — rendered as regular OfferCards (no metrics)
 function ParsedOffersCard({
   input, applied, onApply, onDismiss,
 }: {
@@ -2089,102 +2089,72 @@ function ParsedOffersCard({
   onApply: (offers: CustomOffer[]) => void;
   onDismiss: () => void;
 }) {
-  // Each row can be checked, unchecked, or edited
-  type RowState = ParsedOfferRow & { checked: boolean };
-  const [rows, setRows] = useState<RowState[]>(() =>
-    input.offers.map(o => ({ ...o, checked: true }))
+  const [checkedIds, setCheckedIds] = useState<Set<string>>(
+    () => new Set(input.offers.map(o => o.id))
   );
-  const [editingField, setEditingField] = useState<{ rowId: string; field: string } | null>(null);
   const selectAllRef = useRef<HTMLInputElement>(null);
 
-  const checkedCount = rows.filter(r => r.checked).length;
-  const allChecked = checkedCount === rows.length;
-  const someChecked = checkedCount > 0 && checkedCount < rows.length;
+  const checkedCount = checkedIds.size;
+  const allChecked  = checkedCount === input.offers.length;
+  const someChecked = checkedCount > 0 && checkedCount < input.offers.length;
 
-  // Keep the native indeterminate state in sync
   useEffect(() => {
     if (selectAllRef.current) selectAllRef.current.indeterminate = someChecked;
   }, [someChecked]);
 
   const toggleAll = () => {
-    setRows(prev => prev.map(r => ({ ...r, checked: !allChecked })));
+    setCheckedIds(allChecked ? new Set() : new Set(input.offers.map(o => o.id)));
   };
 
-  const updateRow = (id: string, field: string, value: string) => {
-    setRows(prev => prev.map(r => r.id === id ? { ...r, [field]: value } : r));
+  const toggleRow = (id: string, checked: boolean) => {
+    setCheckedIds(prev => {
+      const next = new Set(prev);
+      checked ? next.add(id) : next.delete(id);
+      return next;
+    });
   };
 
-  const toggleRow = (id: string) => {
-    setRows(prev => prev.map(r => r.id === id ? { ...r, checked: !r.checked } : r));
-  };
+  /** Map a ParsedOfferRow to the OfferCard Offer shape (regular variant — pvi=0) */
+  const toCardData = (row: ParsedOfferRow): OfferCardData => ({
+    id: row.id,
+    year:  row.year,
+    make:  row.make,
+    model: row.model,
+    trim:  row.trim ?? "",
+    image: "",                             // silhouette placeholder
+    stock: 0,
+    offerType: row.offer_type,
+    tags:  row.apr ? [`${row.apr}% APR`] : [],
+    pvi:   0,                              // forces "regular" variant
+    aging: 0, sales: 0, inventory: 0,
+    monthlyPayment:   parseFloat(row.monthly_payment)    || 0,
+    term:             parseInt(row.term)                 || 0,
+    totalDueAtSigning: parseFloat(row.due_at_signing ?? "0") || 0,
+  });
 
   const handleApply = () => {
-    const selected: CustomOffer[] = rows
-      .filter(r => r.checked)
+    const selected: CustomOffer[] = input.offers
+      .filter(r => checkedIds.has(r.id))
       .map(r => ({
-        id: `custom-${r.id}-${Date.now()}`,
-        year: r.year,
-        make: r.make,
-        model: r.model,
-        trim: r.trim ?? "",
-        offerType: r.offer_type,
+        id:             `custom-${r.id}-${Date.now()}`,
+        year:           r.year,
+        make:           r.make,
+        model:          r.model,
+        trim:           r.trim ?? "",
+        offerType:      r.offer_type,
         monthlyPayment: r.monthly_payment,
-        term: r.term,
-        dueAtSigning: r.due_at_signing ?? "0",
-        apr: r.apr,
-        notes: r.notes,
+        term:           r.term,
+        dueAtSigning:   r.due_at_signing ?? "0",
+        apr:            r.apr,
+        notes:          r.notes,
       }));
     onApply(selected);
-  };
-
-  // Inline editable field
-  const EditableField = ({
-    rowId, field, value, className,
-  }: {
-    rowId: string; field: string; value: string; className?: string;
-  }) => {
-    const conf = rows.find(r => r.id === rowId)?.field_confidence?.[field] ?? "high";
-    const isEditing = editingField?.rowId === rowId && editingField?.field === field;
-    const highlight = conf === "low" ? "bg-[#fff3cd] border-[#f59e0b]" : conf === "medium" ? "bg-[#fff8e1] border-[#fbbf24]" : "";
-
-    if (isEditing) {
-      return (
-        <input
-          autoFocus
-          className={cn(
-            "text-[11px] bg-white border rounded px-[4px] py-[1px] outline-none min-w-0 w-full",
-            "border-[#473bab] focus:ring-1 focus:ring-[rgba(71,59,171,0.2)]",
-            className
-          )}
-          style={{ fontFamily: "'Roboto', sans-serif" }}
-          value={value}
-          onChange={e => updateRow(rowId, field, e.target.value)}
-          onBlur={() => setEditingField(null)}
-          onKeyDown={e => { if (e.key === "Enter" || e.key === "Escape") setEditingField(null); }}
-        />
-      );
-    }
-
-    return (
-      <span
-        onClick={() => setEditingField({ rowId, field })}
-        title={conf !== "high" ? `Confidence: ${conf} — click to edit` : "Click to edit"}
-        className={cn(
-          "text-[11px] cursor-pointer rounded px-[3px] py-[1px] border transition-colors hover:bg-[rgba(71,59,171,0.06)] whitespace-nowrap",
-          conf !== "high" ? cn("border", highlight) : "border-transparent",
-          className
-        )}
-        style={{ fontFamily: "'Roboto', sans-serif" }}
-      >
-        {value || <span className="text-[#f59e0b] italic">?</span>}
-      </span>
-    );
   };
 
   if (applied) {
     return (
       <div className="ml-[32px]">
-        <ConfirmedChip label={`${checkedCount} custom offer${checkedCount === 1 ? "" : "s"} added`} />
+        <ConfirmedChip label={`${checkedCount} offer${checkedCount === 1 ? "" : "s"} added`} />
       </div>
     );
   }
@@ -2192,8 +2162,6 @@ function ParsedOffersCard({
   return (
     <motion.div
       initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.22 }}
-      // overflow:clip preserves rounded corners without creating a scroll context,
-      // so position:sticky children stick relative to the chat panel scroll
       className="rounded-[12px] border border-[rgba(0,0,0,0.1)] bg-white"
       style={{ overflow: "clip" }}
     >
@@ -2215,20 +2183,9 @@ function ParsedOffersCard({
         </button>
       </div>
 
-      {/* Confidence legend */}
-      {rows.some(r => Object.values(r.field_confidence ?? {}).some(c => c !== "high")) && (
-        <div className="px-[12px] py-[6px] flex items-center gap-[8px] border-b border-[rgba(0,0,0,0.05)] bg-[#fffdf3]">
-          <div className="w-[8px] h-[8px] rounded bg-[#fbbf24] shrink-0" />
-          <span className="text-[10px] text-[#92400e]" style={{ fontFamily: "'Roboto', sans-serif" }}>
-            Yellow fields had low extraction confidence — click to edit
-          </span>
-        </div>
-      )}
-
-      {/* ── Sticky "Select all" bar ──────────────────────────────────────── */}
+      {/* Sticky select-all bar */}
       <div className="sticky top-0 z-10 flex items-center gap-[8px] px-[12px] py-[7px] bg-white border-b border-[rgba(0,0,0,0.07)] shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
         <label className="flex items-center gap-[8px] cursor-pointer select-none group">
-          {/* Custom checkbox wrapping a native input for indeterminate support */}
           <span className="relative flex items-center justify-center shrink-0 w-[15px] h-[15px]">
             <input
               ref={selectAllRef}
@@ -2241,93 +2198,36 @@ function ParsedOffersCard({
               className="w-[15px] h-[15px] rounded-[3px] border-[1.5px] flex items-center justify-center transition-all pointer-events-none"
               style={{
                 borderColor: allChecked || someChecked ? "#473bab" : "rgba(0,0,0,0.25)",
-                background: allChecked ? "#473bab" : "white",
+                background:  allChecked ? "#473bab" : "white",
               }}
             >
-              {allChecked && <Check size={9} className="text-white" strokeWidth={3} />}
+              {allChecked  && <Check size={9} className="text-white" strokeWidth={3} />}
               {someChecked && <span className="w-[7px] h-[1.5px] rounded bg-[#473bab]" />}
             </span>
           </span>
-          <span className="text-[11px] text-[#686576] group-hover:text-[#1f1d25] transition-colors" style={{ fontFamily: "'Roboto', sans-serif" }}>
+          <span className="text-[11px] text-[#686576] group-hover:text-[#1f1d25] transition-colors"
+            style={{ fontFamily: "'Roboto', sans-serif" }}>
             {allChecked ? "Deselect all" : someChecked ? `${checkedCount} selected` : "Select all"}
           </span>
         </label>
         <span className="ml-auto text-[10px] text-[#9c99a9]" style={{ fontFamily: "'Roboto', sans-serif" }}>
-          {rows.length} total
+          {input.offers.length} total
         </span>
       </div>
 
-      {/* Offer rows */}
-      <div className="divide-y divide-[rgba(0,0,0,0.06)]">
-        {rows.map(row => (
-          <div key={row.id} className={cn("px-[12px] py-[8px] flex gap-[8px] items-start transition-opacity", !row.checked && "opacity-50")}>
-            {/* Checkbox */}
-            <button
-              onClick={() => toggleRow(row.id)}
-              className="mt-[2px] shrink-0 w-[15px] h-[15px] rounded-[3px] border-[1.5px] flex items-center justify-center transition-all"
-              style={{ borderColor: row.checked ? "#473bab" : "rgba(0,0,0,0.25)", background: row.checked ? "#473bab" : "white" }}
-            >
-              {row.checked && <Check size={9} className="text-white" strokeWidth={3} />}
-            </button>
-
-            {/* Content */}
-            <div className="flex-1 min-w-0">
-              {/* Vehicle line */}
-              <div className="flex flex-wrap items-center gap-[4px] mb-[4px]">
-                <EditableField rowId={row.id} field="year"  value={row.year}  className="font-medium text-[#1f1d25]" />
-                <EditableField rowId={row.id} field="make"  value={row.make}  className="font-medium text-[#1f1d25]" />
-                <EditableField rowId={row.id} field="model" value={row.model} className="font-medium text-[#1f1d25]" />
-                {row.trim && <EditableField rowId={row.id} field="trim" value={row.trim} className="text-[#686576]" />}
-                <span className="px-[5px] py-[1px] rounded-[4px] text-[10px] tracking-[0.3px] ml-[2px]"
-                  style={{ fontFamily: "'Roboto', sans-serif", fontWeight: 500,
-                    background: row.offer_type === "Lease" ? "rgba(71,59,171,0.08)" : "rgba(0,0,0,0.06)",
-                    color: row.offer_type === "Lease" ? "#473bab" : "#686576" }}>
-                  {row.offer_type}
-                </span>
-              </div>
-              {/* Financial line */}
-              <div className="flex flex-wrap items-center gap-[6px]">
-                {row.offer_type === "Finance" && row.apr ? (
-                  <>
-                    <EditableField rowId={row.id} field="apr" value={`${row.apr}% APR`} />
-                    <span className="text-[#ccc] select-none">·</span>
-                  </>
-                ) : (
-                  <>
-                    <span className="text-[11px] text-[#686576]" style={{ fontFamily: "'Roboto', sans-serif" }}>$</span>
-                    <EditableField rowId={row.id} field="monthly_payment" value={row.monthly_payment} />
-                    <span className="text-[11px] text-[#686576]" style={{ fontFamily: "'Roboto', sans-serif" }}>/mo</span>
-                    <span className="text-[#ccc] select-none">·</span>
-                  </>
-                )}
-                <EditableField rowId={row.id} field="term" value={`${row.term} mo`} />
-                {row.due_at_signing && row.due_at_signing !== "0" && (
-                  <>
-                    <span className="text-[#ccc] select-none">·</span>
-                    <span className="text-[11px] text-[#9c99a9]" style={{ fontFamily: "'Roboto', sans-serif" }}>$</span>
-                    <EditableField rowId={row.id} field="due_at_signing" value={row.due_at_signing} />
-                    <span className="text-[11px] text-[#9c99a9]" style={{ fontFamily: "'Roboto', sans-serif" }}>due</span>
-                  </>
-                )}
-              </div>
-              {row.notes && (
-                <p className="text-[10px] text-[#9c99a9] mt-[3px]" style={{ fontFamily: "'Roboto', sans-serif" }}>{row.notes}</p>
-              )}
-            </div>
-          </div>
+      {/* Offer cards */}
+      <div className="flex flex-col gap-[8px] p-[10px]">
+        {input.offers.map(row => (
+          <OfferCard
+            key={row.id}
+            offer={toCardData(row)}
+            selected={checkedIds.has(row.id)}
+            onSelect={(_, checked) => toggleRow(row.id, checked)}
+          />
         ))}
       </div>
 
-      {/* Extraction notes */}
-      {input.extraction_notes && (
-        <div className="px-[12px] py-[7px] border-t border-[rgba(0,0,0,0.06)] bg-[#fafafa]">
-          <p className="text-[10px] text-[#9c99a9] leading-[1.5]" style={{ fontFamily: "'Roboto', sans-serif" }}>
-            ℹ️ {input.extraction_notes}
-          </p>
-        </div>
-      )}
-
-      {/* ── Sticky "Add X offers" footer ─────────────────────────────────── */}
+      {/* Sticky footer */}
       <div className="sticky bottom-0 z-10 px-[12px] py-[10px] bg-white border-t border-[rgba(0,0,0,0.08)] shadow-[0_-1px_4px_rgba(0,0,0,0.06)]">
         <button
           onClick={handleApply}

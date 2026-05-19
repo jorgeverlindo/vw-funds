@@ -326,6 +326,27 @@ export const agentTools: Anthropic.Tool[] = [
       required: [],
     },
   },
+
+  // ── Notify task owners ─────────────────────────────────────────────────────────
+  {
+    name: "propose_notify_owners",
+    description:
+      "Show a card to notify all current task owners via Email or Platform. " +
+      "Use this when the user says 'notify task owners', 'send to the task owners', " +
+      "'notifique os responsáveis', or any similar phrasing. " +
+      "Pass the known owners from the project context as hints.",
+    input_schema: {
+      type: "object" as const,
+      properties: {
+        owners: {
+          type: "object",
+          description: "Map of section → owner name from the project context taskOwners field. Pass what you know.",
+          additionalProperties: { type: "string" },
+        },
+      },
+      required: [],
+    },
+  },
 ];
 
 // ─── Tool Executor ────────────────────────────────────────────────────────────
@@ -438,6 +459,13 @@ export function executeTool(
         success: true,
         taskOwners: input,
         message: "Task owner proposal ready for user review.",
+      };
+
+    case "propose_notify_owners":
+      return {
+        success: true,
+        notifyOwners: input,
+        message: "Notify owners card ready for user.",
       };
 
     default:

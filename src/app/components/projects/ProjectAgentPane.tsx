@@ -43,6 +43,8 @@ export interface ProjectContextPayload {
   }[];
   /** OEM name of the currently active brand kit, if any (e.g. "Honda") */
   activeBrandOem?: string;
+  /** Per-section task owner names, keyed by section id (e.g. "offers", "templates") */
+  taskOwners?: Record<string, string>;
 }
 
 // Custom offer (from file upload / extracted by AI)
@@ -96,12 +98,13 @@ interface PreviewMsg      { id: string; role: "assistant"; type: "preview";     
 interface ContinuationMsg { id: string; role: "user";     type: "continuation"; content: string }
 interface EmailMsg        { id: string; role: "assistant"; type: "email";       input: EmailInput;        applied: boolean }
 interface ShareMsg        { id: string; role: "assistant"; type: "share";       input: ShareInput;        applied: boolean }
+interface NotifyOwnersMsg { id: string; role: "assistant"; type: "notify_owners"; input: NotifyOwnersInput; applied: boolean; liveOwners?: Record<string, string>; }
 // File upload message (shown in chat as user bubble with file chip)
 interface UserFileMsg     { id: string; role: "user"; type: "user_file"; text: string; fileName: string; fileType: string; apiContent: ApiContentBlock[] }
 // Parsed offers from AI extraction of uploaded file
 interface ParsedOffersMsg { id: string; role: "assistant"; type: "parsed_offers"; input: ParsedOffersInput; applied: boolean }
 
-type Message = TextMessage | ToolChipMsg | ProposalMsg | SetupMsg | OffersMsg | TemplatesMsg | BrandMsg | BackgroundsMsg | PreviewMsg | ContinuationMsg | EmailMsg | ShareMsg | UserFileMsg | ParsedOffersMsg;
+type Message = TextMessage | ToolChipMsg | ProposalMsg | SetupMsg | OffersMsg | TemplatesMsg | BrandMsg | BackgroundsMsg | PreviewMsg | ContinuationMsg | EmailMsg | ShareMsg | UserFileMsg | ParsedOffersMsg | NotifyOwnersMsg;
 
 interface ProposalInput {
   project_name?: string;
@@ -144,6 +147,9 @@ interface EmailInput {
 interface ShareInput {
   recipient_hint: string;
   project_name?: string;
+}
+interface NotifyOwnersInput {
+  owners?: Record<string, string>; // section → owner name hint from agent
 }
 
 // Offer row extracted from a file by Claude
@@ -1534,6 +1540,232 @@ function ShareChooserCard({
   );
 }
 
+// ─── Notify Owners Card ───────────────────────────────────────────────────────
+
+function NotifyOwnersCard({
+  liveOwners,
+  projectName,
+  onApply,
+}: {
+  liveOwners?: Record<string, string>;
+  projectName: string;
+  onApply: () => void;
+}) {
+  const f = { fontFamily: "'Roboto', sans-serif" };
+  const [chosen, setChosen] = useState<"email" | "platform" | null>(null);
+  const [emailSent, setEmailSent] = useState(false);
+  const [message, setMessage] = useState("");
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  // Resolve owner IDs or names → PROJECT_OWNERS entries
+  const resolvedOwners = useMemo(() => {
+    const map = liveOwners ?? {};
+    const seen = new Set<string>();
+    return Object.entries(map)
+      .map(([section, idOrName]) => {
+        // Try ID lookup first (ProjectsModule stores IDs), then name lookup (agent hints)
+        const owner = PROJECT_OWNERS.find(o => o.id === idOrName)
+          ?? PROJECT_OWNERS.find(o => o.name.toLowerCase() === idOrName.toLowerCase());
+        if (!owner || seen.has(owner.id)) return null;
+        seen.add(owner.id);
+        return { section, owner };
+      })
+      .filter((x): x is { section: string; owner: typeof PROJECT_OWNERS[number] } => x !== null);
+  }, [liveOwners]);
+
+  // Default email body
+  useEffect(() => {
+    setMessage(
+      `Hi team,\n\nI'd like to share the project "${projectName}" with you for your review and action.\n\nPlease find the project link below:\n\n[Project link]\n\nThank you!`
+    );
+  }, [projectName]);
+
+  useEffect(() => {
+    const el = textareaRef.current;
+    if (!el) return;
+    el.style.height = "auto";
+    el.style.height = el.scrollHeight + "px";
+  }, [message, chosen]);
+
+  if (resolvedOwners.length === 0) {
+    return (
+      <div className="ml-[32px] mt-[4px]">
+        <ConfirmedChip label="No task owners assigned yet" />
+      </div>
+    );
+  }
+
+  // ── Platform confirmed ──
+  if (chosen === "platform") {
+    return (
+      <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}
+        className="ml-[32px] mt-[4px] rounded-[14px] border border-[rgba(0,0,0,0.10)] bg-white overflow-hidden"
+        style={{ boxShadow: "0 2px 12px rgba(0,0,0,0.06)" }}>
+        <div className="px-[14px] pt-[10px] pb-[8px] border-b border-[rgba(0,0,0,0.06)] bg-[#f0faf7]">
+          <div className="flex items-center gap-[7px]">
+            <div className="w-4 h-4 rounded-full bg-[#0d7a5f] flex items-center justify-center shrink-0">
+              <svg width="9" height="9" viewBox="0 0 10 10" fill="none"><path d="M2 5.5l2 2 4-4" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+            </div>
+            <p style={{ ...f, fontSize: 11, fontWeight: 600, color: "#0d7a5f" }}>Task owners notified via platform</p>
+          </div>
+        </div>
+        <div className="flex flex-col gap-[2px] px-[14px] py-[10px]">
+          {resolvedOwners.map(({ section, owner }) => (
+            <div key={owner.id} className="flex items-center gap-[8px] py-[4px]">
+              {owner.avatar
+                ? <img src={owner.avatar} alt={owner.name} className="w-[22px] h-[22px] rounded-full object-cover shrink-0" />
+                : <AvatarInitials initials={owner.initials} size={22} bgColor={owner.color} />
+              }
+              <span style={{ ...f, fontSize: 12, color: "#1f1d25" }}>{owner.name}</span>
+              <span style={{ ...f, fontSize: 10.5, color: "#9c99a9", textTransform: "capitalize" }}>{section}</span>
+            </div>
+          ))}
+        </div>
+      </motion.div>
+    );
+  }
+
+  // ── Email compose + sent state ──
+  if (chosen === "email") {
+    if (emailSent) {
+      const names = resolvedOwners.map(({ owner }) => owner.name.split(" ")[0]).join(", ");
+      return (
+        <div className="ml-[32px] mt-[4px]">
+          <ConfirmedChip label={`Email sent to ${names}`} />
+        </div>
+      );
+    }
+
+    return (
+      <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}
+        className="ml-[32px] mt-[4px] rounded-[14px] border border-[rgba(0,0,0,0.10)] bg-white overflow-hidden"
+        style={{ boxShadow: "0 2px 12px rgba(0,0,0,0.06)" }}>
+        {/* Header */}
+        <div className="px-[14px] pt-[10px] pb-[8px] border-b border-[rgba(0,0,0,0.06)] bg-[#fafafa] flex items-center justify-between">
+          <p style={{ ...f, fontSize: 11, fontWeight: 600, color: "#1f1d25" }}>Email to task owners</p>
+          <button onClick={() => setChosen(null)} className="text-[#9c99a9] hover:text-[#1f1d25] transition-colors cursor-pointer">
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M1 1l10 10M11 1L1 11" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>
+          </button>
+        </div>
+
+        <div className="px-[14px] py-[12px] flex flex-col gap-[10px]">
+          {/* Recipients */}
+          <div>
+            <p style={{ ...f, fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.06em", color: "#9c99a9", marginBottom: 6 }}>To</p>
+            <div className="flex flex-wrap gap-[5px]">
+              {resolvedOwners.map(({ owner }) => (
+                <div key={owner.id} className="flex items-center gap-[5px] px-[8px] py-[3px] rounded-full bg-[#F4F5F6]">
+                  {owner.avatar
+                    ? <img src={owner.avatar} alt={owner.name} className="w-[14px] h-[14px] rounded-full object-cover shrink-0" />
+                    : <AvatarInitials initials={owner.initials} size={14} bgColor={owner.color} />
+                  }
+                  <span style={{ ...f, fontSize: 11, color: "#1f1d25" }}>{owner.name}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Subject */}
+          <div>
+            <p style={{ ...f, fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.06em", color: "#9c99a9", marginBottom: 6 }}>Subject</p>
+            <p style={{ ...f, fontSize: 12, color: "#1f1d25" }}>Project shared: {projectName}</p>
+          </div>
+
+          {/* Message body */}
+          <div>
+            <p style={{ ...f, fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.06em", color: "#9c99a9", marginBottom: 6 }}>Message</p>
+            <textarea
+              ref={textareaRef}
+              value={message}
+              onChange={(e) => setMessage(e.target.value)}
+              className="w-full resize-none text-[12px] text-[#1f1d25] bg-[#F9FAFA] border border-[#E4E4E8] rounded-[8px] px-[10px] py-[8px] outline-none focus:border-[var(--brand-accent)] transition-colors overflow-hidden"
+              style={{ ...f, minHeight: 80 }}
+            />
+          </div>
+
+          {/* Send button */}
+          <button
+            onClick={() => { onApply(); setEmailSent(true); }}
+            className="self-end flex items-center gap-[6px] px-[14px] py-[7px] rounded-full text-white text-[12px] font-medium cursor-pointer transition-opacity hover:opacity-90"
+            style={{ background: "linear-gradient(135deg, #6356E1 0%, #8B5CF6 100%)", ...f }}
+          >
+            <svg width="13" height="13" viewBox="0 0 20 20" fill="none">
+              <path d="M3 10l14-7-7 14V10H3z" fill="white"/>
+            </svg>
+            Send to all
+          </button>
+        </div>
+      </motion.div>
+    );
+  }
+
+  // ── Choice card ──
+  return (
+    <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}
+      className="ml-[32px] mt-[4px] rounded-[14px] border border-[rgba(0,0,0,0.10)] bg-white overflow-hidden"
+      style={{ boxShadow: "0 2px 12px rgba(0,0,0,0.06)" }}>
+      {/* Header */}
+      <div className="px-[14px] pt-[10px] pb-[8px] border-b border-[rgba(0,0,0,0.06)] bg-[#fafafa]">
+        <p style={{ ...f, fontSize: 11, color: "#686576", lineHeight: 1.5 }}>
+          Notify <strong style={{ color: "#1f1d25" }}>{resolvedOwners.length} task owner{resolvedOwners.length !== 1 ? "s" : ""}</strong>. How would you like to send?
+        </p>
+      </div>
+
+      <div className="flex flex-col gap-[8px] px-[14px] py-[12px]">
+        {/* Email option */}
+        <button
+          onClick={() => setChosen("email")}
+          className="flex items-center gap-[10px] px-[12px] py-[10px] rounded-[10px] border border-[rgba(0,0,0,0.10)] bg-white hover:bg-[#f5f4ff] hover:border-[rgba(99,86,225,0.35)] text-left transition-all cursor-pointer"
+        >
+          <div className="w-[30px] h-[30px] rounded-full flex items-center justify-center shrink-0" style={{ background: "rgba(99,86,225,0.10)" }}>
+            <svg width="14" height="14" viewBox="0 0 20 20" fill="none">
+              <rect x="2" y="5" width="16" height="11" rx="2" stroke="#6356E1" strokeWidth="1.5"/>
+              <path d="M2 7l8 5 8-5" stroke="#6356E1" strokeWidth="1.5" strokeLinecap="round"/>
+            </svg>
+          </div>
+          <div className="flex-1 min-w-0">
+            <p style={{ ...f, fontSize: 12, fontWeight: 500, color: "#1f1d25" }}>Send via Email</p>
+            <p style={{ ...f, fontSize: 10.5, color: "#9c99a9" }}>One email to all task owners</p>
+          </div>
+          <ChevronDown size={13} strokeWidth={1.5} style={{ color: "#9c99a9", transform: "rotate(-90deg)", flexShrink: 0 }} />
+        </button>
+
+        {/* Platform option */}
+        <button
+          onClick={() => { setChosen("platform"); onApply(); }}
+          className="flex items-center gap-[10px] px-[12px] py-[10px] rounded-[10px] border border-[rgba(0,0,0,0.10)] bg-white hover:bg-[#f0faf7] hover:border-[rgba(13,122,95,0.35)] text-left transition-all cursor-pointer"
+        >
+          <div className="w-[30px] h-[30px] rounded-full flex items-center justify-center shrink-0" style={{ background: "rgba(13,122,95,0.10)" }}>
+            <svg width="14" height="14" viewBox="0 0 20 20" fill="none">
+              <path d="M10 2.5C7.1 2.5 4.7 4.7 4.7 7.5V11.5L3 13v.5h14V13l-1.7-1.5V7.5C15.3 4.7 12.9 2.5 10 2.5Z" stroke="#0d7a5f" strokeWidth="1.5" strokeLinejoin="round"/>
+              <path d="M8 13.5c0 1.1.9 2 2 2s2-.9 2-2" stroke="#0d7a5f" strokeWidth="1.5" strokeLinecap="round"/>
+            </svg>
+          </div>
+          <div className="flex-1 min-w-0">
+            <p style={{ ...f, fontSize: 12, fontWeight: 500, color: "#1f1d25" }}>Platform Communications</p>
+            <p style={{ ...f, fontSize: 10.5, color: "#9c99a9" }}>In-app notification to all owners</p>
+          </div>
+          <ChevronDown size={13} strokeWidth={1.5} style={{ color: "#9c99a9", transform: "rotate(-90deg)", flexShrink: 0 }} />
+        </button>
+      </div>
+
+      {/* Owner preview */}
+      <div className="px-[14px] pb-[10px] flex flex-wrap gap-[4px]">
+        {resolvedOwners.map(({ section, owner }) => (
+          <div key={owner.id} className="flex items-center gap-[4px] px-[7px] py-[3px] rounded-full bg-[#F4F5F6]">
+            {owner.avatar
+              ? <img src={owner.avatar} alt={owner.name} className="w-[14px] h-[14px] rounded-full object-cover shrink-0" />
+              : <AvatarInitials initials={owner.initials} size={14} bgColor={owner.color} />
+            }
+            <span style={{ ...f, fontSize: 11, color: "#1f1d25" }}>{owner.name.split(" ")[0]}</span>
+            <span style={{ ...f, fontSize: 10, color: "#9c99a9", textTransform: "capitalize" }}>· {section}</span>
+          </div>
+        ))}
+      </div>
+    </motion.div>
+  );
+}
+
 // ─── Email Proposal Card ──────────────────────────────────────────────────────
 
 interface EmailCardProps {
@@ -2436,6 +2668,12 @@ export function ProjectAgentPane({ isOpen, onClose }: ProjectAgentPaneProps) {
         id: `backgrounds-${Date.now()}`, role: "assistant", type: "backgrounds",
         input: toolInput as BackgroundsInput, applied: false,
       } as BackgroundsMsg]);
+    } else if (toolName === "propose_notify_owners") {
+      setMessages(prev => [...prev, {
+        id: `notify-owners-${Date.now()}`, role: "assistant", type: "notify_owners",
+        input: toolInput as NotifyOwnersInput, applied: false,
+        liveOwners: ctxRef.current?.taskOwners,
+      } as NotifyOwnersMsg]);
     } else if (toolName === "propose_share") {
       setMessages(prev => [...prev, {
         id: `share-${Date.now()}`, role: "assistant", type: "share",
@@ -3278,6 +3516,7 @@ export function ProjectAgentPane({ isOpen, onClose }: ProjectAgentPaneProps) {
                           onShareChoosePlatform={handleShareChoosePlatform}
                           onParsedOffersApply={(offers) => handleParsedOffersApply(msg.id, offers)}
                           onParsedOffersDismiss={() => handleParsedOffersDismiss(msg.id)}
+                          onNotifyOwnersApply={() => setMessages(prev => prev.map(m => m.id === msg.id ? { ...m, applied: true } : m))}
                         />
                       ))}
 
@@ -3332,6 +3571,7 @@ function MessageBubble({
   onEmailApply, onEmailDismiss,
   onShareChooseEmail, onShareChoosePlatform,
   onParsedOffersApply, onParsedOffersDismiss,
+  onNotifyOwnersApply,
 }: {
   message: Message;
   context: ProjectContextPayload | null;
@@ -3355,6 +3595,7 @@ function MessageBubble({
   onShareChoosePlatform: (recipientName: string) => void;
   onParsedOffersApply: (offers: CustomOffer[]) => void;
   onParsedOffersDismiss: () => void;
+  onNotifyOwnersApply: () => void;
 }) {
   if (message.type === "continuation") {
     return null;
@@ -3453,6 +3694,18 @@ function MessageBubble({
         onApply={onEmailApply}
         onDismiss={onEmailDismiss}
       />
+    );
+  }
+
+  if (message.type === "notify_owners") {
+    return (
+      <div key={message.id}>
+        <NotifyOwnersCard
+          liveOwners={message.liveOwners}
+          projectName={context?.projectName ?? "this project"}
+          onApply={onNotifyOwnersApply}
+        />
+      </div>
     );
   }
 

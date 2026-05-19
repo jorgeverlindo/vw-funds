@@ -1209,6 +1209,10 @@ function ProjectDetailView({
       currentOfferIds:    visibleOfferIds,
       currentTemplateIds: visibleTemplateIds,
       activeBrandOem:     brandKit?.oem,
+      taskOwners:         Object.fromEntries(
+        Object.entries(taskOwners)
+          .map(([section, id]) => [section, PROJECT_OWNERS.find(o => o.id === id)?.name ?? id])
+      ),
       availableOffers:    combinedOfferLibrary.map((o) => ({
         id: o.id, year: o.year, make: o.make, model: o.model, trim: o.trim,
         offerType: o.offerType, monthlyPayment: o.monthlyPayment,
@@ -1222,7 +1226,7 @@ function ProjectDetailView({
     // Defer so ProjectAgentPane's listener effect has time to register first
     setTimeout(() => window.dispatchEvent(new CustomEvent(PROJECT_CONTEXT_EVENT, { detail: payload })), 0);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [project.id, visibleOffers.length, visibleTemplates.length, customOfferLibrary.length, brandKit?.oem]);
+  }, [project.id, visibleOffers.length, visibleTemplates.length, customOfferLibrary.length, brandKit?.oem, taskOwners]);
 
   // ── Listen for agent actions from ProjectAgentPane ────────────────────────
   useEffect(() => {

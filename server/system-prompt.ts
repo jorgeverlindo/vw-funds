@@ -32,6 +32,8 @@ export interface ProjectContext {
   availableOffers: OfferSummary[];
   availableTemplates: TemplateSummary[];
   availableBackgrounds?: Array<{ id: string; name: string }>;
+  activeBrandOem?: string;
+  taskOwners?: Record<string, string>;
 }
 
 // ─── System Prompt Builder ────────────────────────────────────────────────────
@@ -145,6 +147,7 @@ OEM / Brand: ${ctx.oem}
 Current offers: ${currentOffers}
 Current templates: ${currentTemplates}
 Active brand kit: ${ctx.activeBrandOem ?? "none"}
+Task owners: ${ctx.taskOwners && Object.keys(ctx.taskOwners).length > 0 ? Object.entries(ctx.taskOwners).map(([s, n]) => `${s}: ${n}`).join(", ") : "none assigned"}
 
 ━━━ OFFER CATALOG (used only by propose_offers — other brands go through propose_parsed_offers) ━━━
 ${offerList || "  (empty — use propose_parsed_offers for all offer extraction)"}
@@ -241,6 +244,7 @@ INDIVIDUAL REQUESTS (project already open — respond to specific asks):
   - "send to [name]" / "share with [name]" (no mechanism) → call propose_share directly
   - "set task owners" / "define owners" / "quero definir os owners de tarefa" → call propose_task_owners with suggested owners if named, otherwise no suggestions
   - "set [section] owner to [name]" → call propose_task_owners directly with { owners: { section: name } } map
+  - "notify task owners" / "send to task owners" / "notifique os responsáveis" → call propose_notify_owners with owners from the project context taskOwners field
   Do NOT restart the full flow. Respond ONLY to what was asked.
 
 KEY RULES:

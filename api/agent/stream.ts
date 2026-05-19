@@ -197,6 +197,7 @@ INDIVIDUAL REQUESTS (project already open):
   - "send by email" / "share" / "email this" → call propose_email directly
   - "set task owners" / "define owners" / "quero definir os owners de tarefa" → call propose_task_owners with suggested owners if named, otherwise no suggestions
   - "set [section] owner to [name]" → call propose_task_owners directly with { owners: { section: name } } map
+  - "notify task owners" / "send to task owners" / "notifique os responsáveis" → call propose_notify_owners with owners from the project context taskOwners field
   Do NOT restart the full flow. Respond ONLY to what was asked.
 
 KEY RULES:
@@ -609,6 +610,23 @@ const agentTools: Anthropic.Tool[] = [
       required: [],
     },
   },
+
+  // ── Notify task owners ─────────────────────────────────────────────────────────
+  {
+    name: "propose_notify_owners",
+    description: "Show a card to notify all current task owners via Email or Platform. Use this when the user says 'notify task owners', 'send to the task owners', 'notifique os responsáveis', or similar. Pass known owners from the project context taskOwners field.",
+    input_schema: {
+      type: "object" as const,
+      properties: {
+        owners: {
+          type: "object",
+          description: "Map of section → owner name from context. Pass what you know.",
+          additionalProperties: { type: "string" },
+        },
+      },
+      required: [],
+    },
+  },
 ];
 
 // ─── Tool Executor (inlined from _lib/tools) ──────────────────────────────────
@@ -646,6 +664,8 @@ function executeTool(
       return { success: true, parsed_offers: input, message: `${(input.offers as unknown[]).length} offer(s) extracted and ready for user review.` };
     case "propose_task_owners":
       return { success: true, taskOwners: input, message: "Task owner proposal ready for user review." };
+    case "propose_notify_owners":
+      return { success: true, notifyOwners: input, message: "Notify owners card ready." };
     default:
       return { success: false, message: `Unknown tool: ${toolName}` };
   }
@@ -704,7 +724,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       "setup_project", "propose_offers", "propose_templates",
       "propose_backgrounds", "propose_brand", "propose_project",
       "propose_email", "propose_share", "propose_parsed_offers",
-      "propose_task_owners",
+      "propose_task_owners", "propose_notify_owners",
     ]);
 
     // Diagnostic: log tool names so we can verify in Vercel logs

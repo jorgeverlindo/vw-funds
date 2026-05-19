@@ -15,11 +15,11 @@ export const agentTools: Anthropic.Tool[] = [
     input_schema: {
       type: "object" as const,
       properties: {
-        project_name: { type: "string", description: "Human-readable campaign name (e.g. 'Honda Summer Lease Event'). Never use WF codes." },
+        project_name: { type: "string", description: "If the user gives an explicit name (e.g. 'offers in a napkin', 'VW June push'), use it VERBATIM. Only generate a name if none was given." },
         account:      { type: "string", description: "Dealer/account name from the available accounts list" },
-        oem:          { type: "string", description: "Brand / OEM (e.g. 'Honda', 'BMW')" },
-        start_date:   { type: "string", description: "Campaign start date (e.g. 'Jun 1, 2026')" },
-        end_date:     { type: "string", description: "Campaign end date (e.g. 'Jun 30, 2026')" },
+        oem:          { type: "string", description: "Brand / OEM (e.g. 'Honda', 'BMW', 'Audi'). Use what the user explicitly states. If not stated, infer from offer content." },
+        start_date:   { type: "string", description: "Campaign start date (e.g. 'Jun 1, 2026'). Parse natural language: 'start of June' / 'início de junho' = 'Jun 1, 2026'." },
+        end_date:     { type: "string", description: "Campaign end date (e.g. 'Jun 30, 2026'). Note: June has 30 days — 'June 31' = 'Jun 30, 2026'. 'end of June' = 'Jun 30, 2026'." },
         flow_scope: {
           type: "string",
           enum: ["full", "offers_only", "templates_only", "offers_and_templates", "templates_and_email", "offers_and_email"],
@@ -39,7 +39,7 @@ export const agentTools: Anthropic.Tool[] = [
         platforms: {
           type: "array",
           items: { type: "string" },
-          description: "Ad platforms for this project. Valid values: 'Google PMax', 'Google Display', 'Meta', 'Website', 'TikTok', 'YouTube', 'Email'.",
+          description: "Ad platforms. Valid values: 'Google PMax', 'Google Display', 'Meta', 'Website', 'TikTok', 'YouTube', 'Email'. Map user language: 'Google Performance Max' / 'Performance Max' / 'PMax' → 'Google PMax'; 'Meta' / 'Instagram' / 'Facebook' → 'Meta'.",
         },
       },
       required: ["project_name", "oem", "start_date", "end_date", "flow_scope"],

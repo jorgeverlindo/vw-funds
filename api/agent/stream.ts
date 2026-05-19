@@ -168,6 +168,13 @@ Rules:
 ⚠️ If no project is open and the user wants to build one: call setup_project first (see decision tree above).
 ⚠️ If OEM unknown: infer from image/text the user provided, or use "General" / "New Project". Never ask.
 
+SETUP_PROJECT FIELD EXTRACTION — read the user's message carefully and extract ALL of these before calling setup_project:
+  • project_name : Use the EXACT name the user states (e.g. "offers in a napkin" → project_name: "offers in a napkin"). Never replace with a generated name if the user gave one.
+  • oem          : Use what the user explicitly says ("Audi", "VW", "Honda"). Do NOT default to what offers imply if the user stated a brand.
+  • start_date   : "início de junho" / "start of June" / "beginning of June" → "Jun 1, 2026". "início de [month]" = "[Month] 1, [year]".
+  • end_date     : "dia 31" in June / "end of June" / "June 31" → "Jun 30, 2026" (June has 30 days). "fim de [month]" = last day of that month.
+  • platforms    : Map from natural language → "Google Performance Max" / "Performance Max" / "PMax" → "Google PMax"; "Meta" / "Instagram" / "Facebook" → "Meta"; "TikTok" → "TikTok"; "YouTube" → "YouTube".
+
 CONTINUATION MESSAGES (automated — the UI sends these after each step is confirmed):
   Any message containing "Next: propose_offers"      → call propose_offers immediately (NO text)
   Any message containing "Next: propose_templates"   → call propose_templates immediately (NO text)
@@ -280,11 +287,11 @@ const agentTools: Anthropic.Tool[] = [
     input_schema: {
       type: "object" as const,
       properties: {
-        project_name: { type: "string", description: "Human-readable campaign name (e.g. 'Honda Summer Lease Event'). Never use WF codes." },
+        project_name: { type: "string", description: "If the user gives an explicit name (e.g. 'offers in a napkin', 'VW June push'), use it VERBATIM. Only generate a name if none was given." },
         account:      { type: "string", description: "Dealer/account name from the available accounts list" },
-        oem:          { type: "string", description: "Brand / OEM (e.g. 'Honda', 'BMW')" },
-        start_date:   { type: "string", description: "Campaign start date (e.g. 'Jun 1, 2026')" },
-        end_date:     { type: "string", description: "Campaign end date (e.g. 'Jun 30, 2026')" },
+        oem:          { type: "string", description: "Brand / OEM (e.g. 'Honda', 'BMW', 'Audi'). Use what the user explicitly states. If not stated, infer from offer content." },
+        start_date:   { type: "string", description: "Campaign start date (e.g. 'Jun 1, 2026'). Parse natural language: 'start of June' / 'início de junho' = 'Jun 1, 2026'." },
+        end_date:     { type: "string", description: "Campaign end date (e.g. 'Jun 30, 2026'). Note: June has 30 days — 'June 31' = 'Jun 30, 2026'. 'end of June' = 'Jun 30, 2026'." },
         flow_steps: {
           type: "array",
           items: { type: "string", enum: ["offers", "templates", "backgrounds", "brand", "email"] },
@@ -303,7 +310,7 @@ const agentTools: Anthropic.Tool[] = [
         platforms: {
           type: "array",
           items: { type: "string" },
-          description: "Ad platforms for this project. Valid values: 'Google PMax', 'Google Display', 'Meta', 'Website', 'TikTok', 'YouTube', 'Email'.",
+          description: "Ad platforms. Valid values: 'Google PMax', 'Google Display', 'Meta', 'Website', 'TikTok', 'YouTube', 'Email'. Map user language: 'Google Performance Max' / 'Performance Max' / 'PMax' → 'Google PMax'; 'Meta' / 'Instagram' / 'Facebook' → 'Meta'.",
         },
       },
       required: ["project_name", "oem", "start_date", "end_date", "flow_steps"],

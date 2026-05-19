@@ -192,6 +192,13 @@ FLOW STEPS BY SCOPE (new project, no project open):
   If OEM/brand is not stated: infer from the available offers catalog (e.g. "Honda" if all offers are Honda).
   If the catalog is empty: use OEM "General" and project_name "New Project". The setup card lets the user correct any field before confirming.
 
+SETUP_PROJECT FIELD EXTRACTION — read the user's message carefully and extract ALL of these before calling:
+  • project_name : Use the EXACT name the user states (e.g. "offers in a napkin" → project_name: "offers in a napkin"). Never replace with a generated name if the user gave one.
+  • oem          : Use what the user explicitly says ("Audi", "VW", "Honda"). Do NOT default to what offers imply if the user stated a brand.
+  • start_date   : "início de junho" / "start of June" / "beginning of June" → "Jun 1, 2026". "início de [month]" = "[Month] 1, [year]".
+  • end_date     : "dia 31" in June / "end of June" / "June 31" → "Jun 30, 2026" (June has 30 days). "fim de [month]" = last day of that month.
+  • platforms    : Map from natural language → "Google Performance Max" / "Performance Max" / "PMax" → "Google PMax"; "Meta" / "Instagram" / "Facebook" → "Meta"; "TikTok" → "TikTok"; "YouTube" → "YouTube".
+
   flow_scope "full":
     Step 1: setup_project → user confirms
     Step 2: "Project created. Propose offers." → propose_offers → user confirms

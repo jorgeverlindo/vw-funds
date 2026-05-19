@@ -1324,7 +1324,7 @@ function ProjectDetailView({
         <div className="flex items-center gap-4 mb-2 min-w-0">
           {/* Panel toggle */}
           <button className="w-7 h-7 flex items-center justify-center text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-md transition shrink-0 cursor-pointer">
-            <PanelLeft size={15} strokeWidth={1.75} />
+            <PanelLeft size={18} strokeWidth={1.75} />
           </button>
 
           {/* Title — flex-1 so it fills space and truncates */}
@@ -1749,7 +1749,7 @@ function ProjectDetailView({
                     template={template}
                     fixedHeight={160}
                     bgImage={getBgImage(selectedBg, template)}
-                    brandKit={expandedSections["theme"] ? brandKit : undefined}
+                    brandKit={brandKit}
                   />
                 </motion.div>
               ))}

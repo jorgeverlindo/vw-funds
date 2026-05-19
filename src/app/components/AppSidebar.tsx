@@ -32,7 +32,7 @@ function ClientLogoImg({ src, alt, scale = 1, noPadding = false }: { src: string
         width: 40,
         height: 40,
         borderRadius: 4,
-        background: '#fff',
+        background: noPadding ? 'transparent' : '#fff',
         padding: noPadding ? 0 : '0 5px',
         display: 'flex',
         alignItems: 'center',
@@ -44,9 +44,11 @@ function ClientLogoImg({ src, alt, scale = 1, noPadding = false }: { src: string
         src={src}
         alt={alt}
         style={{
-          maxWidth: '100%',
-          maxHeight: '100%',
-          objectFit: 'contain',
+          width: noPadding ? '100%' : undefined,
+          height: noPadding ? '100%' : undefined,
+          maxWidth: noPadding ? undefined : '100%',
+          maxHeight: noPadding ? undefined : '100%',
+          objectFit: noPadding ? 'cover' : 'contain',
           display: 'block',
           transform: scale !== 1 ? `scale(${scale})` : undefined,
           transformOrigin: 'center',

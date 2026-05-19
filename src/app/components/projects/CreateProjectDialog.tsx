@@ -220,7 +220,7 @@ function PlatformMultiSelect({
               >
                 {active && <Check size={9} strokeWidth={3} color="white" />}
               </span>
-              <img src={p.icon} alt="" className="w-[13px] h-[13px] shrink-0 object-contain" />
+              <img src={p.icon} alt="" className="w-[16px] h-[16px] shrink-0 object-contain" />
               <span style={R}>{p.label}</span>
             </DropdownMenuItem>
           );

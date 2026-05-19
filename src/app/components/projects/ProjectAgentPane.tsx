@@ -170,7 +170,7 @@ interface ParsedOffersInput {
 function IconHistory() {
   // Icon.svg — 34×30 viewBox — clock with circular arrow
   return (
-    <svg width="20" height="20" viewBox="0 0 34 30" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <svg width="24" height="24" viewBox="0 0 34 30" fill="none" xmlns="http://www.w3.org/2000/svg">
       <path d="M17 11.4583V14.9999L19.9167 17.9166" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
       <path d="M9.28906 8.95825V12.2916H12.6224" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
       <path d="M9.71094 17.5695C10.7707 20.5634 13.6301 22.7084 16.9913 22.7084C21.2547 22.7084 24.7109 19.2573 24.7109 15.0001C24.7109 10.7429 21.2547 7.29175 16.9913 7.29175C13.7927 7.29175 11.0484 9.2343 9.87716 12.0024" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
@@ -180,7 +180,7 @@ function IconHistory() {
 function IconExpand() {
   // Open Left Pane.svg — 30×30 viewBox — expand arrows
   return (
-    <svg width="20" height="20" viewBox="0 0 30 30" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <svg width="24" height="24" viewBox="0 0 30 30" fill="none" xmlns="http://www.w3.org/2000/svg">
       <path d="M16.4583 8.125H21.875V13.5417M16.4583 13.5417L21.2305 8.76953M13.5417 16.4583L8.76953 21.2305M8.125 16.4583V21.875H13.5417" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
     </svg>
   );
@@ -188,7 +188,7 @@ function IconExpand() {
 function IconClose() {
   // Close.svg — 30×30 viewBox — X
   return (
-    <svg width="20" height="20" viewBox="0 0 30 30" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <svg width="24" height="24" viewBox="0 0 30 30" fill="none" xmlns="http://www.w3.org/2000/svg">
       <path d="M11.4609 11.4583L18.5443 18.5416M18.5443 11.4583L11.4609 18.5416" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
     </svg>
   );

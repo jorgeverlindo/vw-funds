@@ -41,6 +41,8 @@ export interface ProjectContextPayload {
   availableTemplates: {
     id: string; name: string; format: string; width: number; height: number; brand: string;
   }[];
+  /** OEM name of the currently active brand kit, if any (e.g. "Honda") */
+  activeBrandOem?: string;
 }
 
 // Custom offer (from file upload / extracted by AI)
@@ -2761,7 +2763,13 @@ export function ProjectAgentPane({ isOpen, onClose }: ProjectAgentPaneProps) {
     const nextStep = idx >= 0 && idx < steps.length - 1 ? steps[idx + 1] : null;
     if (!nextStep) return; // flow complete
 
-    if (nextStep === "offers") {
+    // Skip brand step if a brand kit is already active — no need to offer it again
+    const effectiveNext = (nextStep === "brand" && ctxRef.current?.activeBrandOem)
+      ? (steps[idx + 2] ?? null)
+      : nextStep;
+    if (!effectiveNext) return; // flow complete after skip
+
+    if (effectiveNext === "offers") {
       const setupMsg = messagesRef.current.filter((m): m is SetupMsg => m.type === "setup").at(-1);
       const oem = setupMsg?.input.oem ?? ctxRef.current?.oem ?? "";
       setTimeout(() => sendInternal(buildOffersContinuation("Step complete", oem)), 400);
@@ -2774,7 +2782,7 @@ export function ProjectAgentPane({ isOpen, onClose }: ProjectAgentPaneProps) {
       brand:       "Step complete. Next: propose_brand",
       email:       "Step complete. Next: propose_email",
     };
-    const msg = continuations[nextStep];
+    const msg = continuations[effectiveNext];
     if (msg) setTimeout(() => sendInternal(msg), 400);
   }, [getFlowSteps, sendInternal, buildOffersContinuation]);
 

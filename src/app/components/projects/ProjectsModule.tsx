@@ -1183,6 +1183,7 @@ function ProjectDetailView({
       oem:                project.oem ?? project.dealerName,
       currentOfferIds:    visibleOfferIds,
       currentTemplateIds: visibleTemplateIds,
+      activeBrandOem:     brandKit?.oem,
       availableOffers:    combinedOfferLibrary.map((o) => ({
         id: o.id, year: o.year, make: o.make, model: o.model, trim: o.trim,
         offerType: o.offerType, monthlyPayment: o.monthlyPayment,
@@ -1196,7 +1197,7 @@ function ProjectDetailView({
     // Defer so ProjectAgentPane's listener effect has time to register first
     setTimeout(() => window.dispatchEvent(new CustomEvent(PROJECT_CONTEXT_EVENT, { detail: payload })), 0);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [project.id, visibleOffers.length, visibleTemplates.length, customOfferLibrary.length]);
+  }, [project.id, visibleOffers.length, visibleTemplates.length, customOfferLibrary.length, brandKit?.oem]);
 
   // ── Listen for agent actions from ProjectAgentPane ────────────────────────
   useEffect(() => {

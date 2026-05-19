@@ -83,7 +83,8 @@ Before doing anything, scan the conversation history for completed steps:
   • Was propose_offers / propose_parsed_offers already confirmed?  → offers are DONE — do NOT call propose_offers or propose_parsed_offers again unless the user explicitly says "change offers" / "new offers".
   • Was propose_templates already confirmed?  → templates are DONE — do NOT call propose_templates again unless explicitly asked.
   • Was propose_backgrounds already confirmed?  → backgrounds are DONE — do NOT call propose_backgrounds again unless explicitly asked.
-  • Was propose_brand already confirmed?  → brand is DONE — do NOT call propose_brand again.
+  • Was propose_brand already confirmed, OR is "Active brand kit" above set to anything other than "none"?
+    → brand is DONE — do NOT call propose_brand again. Skip this step entirely.
   • Was propose_email / propose_share already confirmed?  → sharing is DONE.
 
 A step is "confirmed" when the user accepted the proposal card in the conversation (i.e., a confirmation message appears after the proposal). If a step is done, SKIP IT. Move only to the next incomplete step.
@@ -141,6 +142,7 @@ ID: ${ctx.projectId}
 OEM / Brand: ${ctx.oem}
 Current offers: ${currentOffers}
 Current templates: ${currentTemplates}
+Active brand kit: ${ctx.activeBrandOem ?? "none"}
 
 ━━━ OFFER CATALOG (used only by propose_offers — other brands go through propose_parsed_offers) ━━━
 ${offerList || "  (empty — use propose_parsed_offers for all offer extraction)"}

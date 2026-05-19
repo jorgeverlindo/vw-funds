@@ -126,6 +126,7 @@ Dealer contacts:
   • Sarah Collins — sarah.collins@hondaofanywhere.com
   • James Whitaker — james.whitaker@hondaofanywhere.com
   • Ashley Morgan — ashley.morgan@hondaofanywhere.com
+  • Katelyn Gray — katelyn.gray@emichvw.com
 
 When the user mentions a name (e.g. "send to Luke", "share with Sarah"), match it to this list and pass their full name in recipient_hint. Never ask who they are — you already know them.
 
@@ -232,10 +233,11 @@ COMMUNICATION:
 - Never ask more than one clarifying question at a time.
 - Don't add items already in the project (check current offers/templates above).
 
-EMAIL SHARING:
-- When the user says "send by email", "share by email", "email this", or mentions sending to someone → call propose_email immediately.
-- If the user names a recipient (e.g. "send to Maria"), put that name in recipient_hint.
-- Write a friendly, professional default message referencing the project name. Always use "project" — never "campaign" — in the generated email copy.
+EMAIL / PLATFORM SHARING:
+- "send by email" / "share by email" / "email this" / "email to [name]" → call propose_email immediately.
+- "send to [name]" / "share with [name]" / "share this with [name]" WITHOUT the word "email" → call propose_share immediately. Do NOT assume email.
+- If the user just says "send to [name]" with no mechanism, use propose_share — it lets the user pick Email or Platform Communications.
+- For propose_email: write a friendly, professional default message referencing the project name. Always use "project" — never "campaign" — in the email copy.
 - Email body pattern: "I'd like to share the [OEM] project "[Project Name]" with you. You can view and collaborate on it using the link below:\\n\\n[Project link]"
 - Email subject pattern: "[OEM] Project shared: [Project Name]"
 - Include a placeholder for the project link.
@@ -528,12 +530,36 @@ const agentTools: Anthropic.Tool[] = [
     },
   },
 
+  // ── Platform / channel share (user picks Email or Platform Communications) ──
+  {
+    name: "propose_share",
+    description:
+      "Propose sharing a project when the user says 'send to [name]' or 'share with [name]' " +
+      "WITHOUT specifying email or platform. The UI shows two choices: Send via Email or " +
+      "Platform Communications (in-app notification). Use this instead of propose_email when " +
+      "no mechanism is specified.",
+    input_schema: {
+      type: "object" as const,
+      properties: {
+        recipient_hint: {
+          type: "string",
+          description: "Full name of the intended recipient as known from the contacts list.",
+        },
+        project_name: {
+          type: "string",
+          description: "Name of the current project, for display in the share card.",
+        },
+      },
+      required: ["recipient_hint"],
+    },
+  },
+
   // ── Email sharing ──────────────────────────────────────────────────────────
   {
     name: "propose_email",
     description:
-      "Propose sending a project share link via email. Use this when the user asks to share or " +
-      "send the project by email. The UI will show a contact selector and editable message. " +
+      "Propose sending a project share link via email. Use this when the user explicitly asks to " +
+      "share or send the project BY EMAIL. The UI will show a contact selector and editable message. " +
       "Provide a suggested recipient name (if known) and a default message body.",
     input_schema: {
       type: "object" as const,
@@ -642,7 +668,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const PROPOSAL_TOOLS = new Set([
       "setup_project", "propose_offers", "propose_templates",
       "propose_backgrounds", "propose_brand", "propose_project",
-      "propose_email", "propose_parsed_offers",
+      "propose_email", "propose_share", "propose_parsed_offers",
     ]);
 
     // Diagnostic: log tool names so we can verify in Vercel logs

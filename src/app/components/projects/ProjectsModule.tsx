@@ -1550,6 +1550,7 @@ function ProjectDetailView({
           title="Platforms"
           count={(project.platforms?.length ?? 0) > 0 ? project.platforms!.length : undefined}
           statusSlot={(project.platforms?.length ?? 0) > 0 ? <ProjectStatusChip status="Done" /> : undefined}
+          ownerSlot={<TaskOwner ownerId={taskOwners["platforms"]} onChange={(id) => setTaskOwner("platforms", id)} />}
           expanded={expandedSections["platforms"]}
           onExpandedChange={(v) => toggleSection("platforms", v)}
           emptyContent={
@@ -1858,6 +1859,7 @@ function ProjectDetailView({
         <div data-agent-section="adshells">
         <ProjectAccordionSection
           title="Ad Shells"
+          ownerSlot={<TaskOwner ownerId={taskOwners["adshells"]} onChange={(id) => setTaskOwner("adshells", id)} />}
           expanded={expandedSections["adshells"]}
           onExpandedChange={(v) => toggleSection("adshells", v)}
           emptyContent={
@@ -1872,6 +1874,7 @@ function ProjectDetailView({
         {/* Campaigns */}
         <ProjectAccordionSection
           title="Campaigns"
+          ownerSlot={<TaskOwner ownerId={taskOwners["campaigns"]} onChange={(id) => setTaskOwner("campaigns", id)} />}
           expanded={expandedSections["campaigns"]}
           onExpandedChange={(v) => toggleSection("campaigns", v)}
           emptyContent={

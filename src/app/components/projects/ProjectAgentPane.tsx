@@ -68,7 +68,8 @@ export type AgentActionPayload =
   | { action: "set_brand";        oem: string }
   | { action: "add_backgrounds";  backgroundIds: string[] }
   | { action: "send_email";       recipient: string; message: string }
-  | { action: "add_custom_offers"; offers: CustomOffer[] };
+  | { action: "add_custom_offers"; offers: CustomOffer[] }
+  | { action: "edit_offer"; offerId: string; patches: Partial<{ monthlyPayment: number; term: number; totalDueAtSigning: number; offerType: string; trim: string; year: string; make: string; model: string }> };
 
 // ─── Multimodal API types ─────────────────────────────────────────────────────
 type ApiContentBlock =
@@ -2374,6 +2375,9 @@ export function ProjectAgentPane({ isOpen, onClose }: ProjectAgentPaneProps) {
   const pendingParsedOffersRef = useRef<CustomOffer[] | null>(null);
   // Stores the original user text from a file upload so pipeline intent survives the extraction step
   const pendingPipelineTextRef = useRef<string>("");
+  // Set to true right before create_project is dispatched so the project-ID-change effect
+  // doesn't wipe the conversation history (the project was created BY this conversation).
+  const projectCreatedByConversationRef = useRef(false);
   useEffect(() => { ctxRef.current      = projectContext; }, [projectContext]);
   useEffect(() => { messagesRef.current = messages;       }, [messages]);
 
@@ -2488,6 +2492,18 @@ export function ProjectAgentPane({ isOpen, onClose }: ProjectAgentPaneProps) {
         dispatchAction({ action: "remove_templates",templateIds: toolInput.template_ids as string[] });
       else if (toolName === "set_project_name")
         dispatchAction({ action: "set_project_name", name: toolInput.name as string });
+      else if (toolName === "edit_offer") {
+        const patches: Record<string, unknown> = {};
+        if (toolInput.monthly_payment      != null) patches.monthlyPayment      = toolInput.monthly_payment;
+        if (toolInput.term                 != null) patches.term                = toolInput.term;
+        if (toolInput.total_due_at_signing != null) patches.totalDueAtSigning   = toolInput.total_due_at_signing;
+        if (toolInput.offer_type           != null) patches.offerType           = toolInput.offer_type;
+        if (toolInput.trim                 != null) patches.trim                = toolInput.trim;
+        if (toolInput.year                 != null) patches.year                = toolInput.year;
+        if (toolInput.make                 != null) patches.make                = toolInput.make;
+        if (toolInput.model                != null) patches.model               = toolInput.model;
+        dispatchAction({ action: "edit_offer", offerId: toolInput.offer_id as string, patches: patches as never });
+      }
     }
   }, [dispatchAction]);
 
@@ -2764,6 +2780,7 @@ export function ProjectAgentPane({ isOpen, onClose }: ProjectAgentPaneProps) {
 
   // ── Setup card ──────────────────────────────────────────────────────────────
   const handleSetupApply = useCallback((name: string, account: string, oem: string, startDate: string, endDate: string, owner: string, platforms: string[]) => {
+    projectCreatedByConversationRef.current = true; // suppress the project-ID-change reset
     dispatchAction({ action: "create_project", name, account, oem, startDate, endDate, owner, platforms });
     setKnownProjectNames(prev => [...prev, name]);
     setTimeout(() => {
@@ -2926,12 +2943,19 @@ export function ProjectAgentPane({ isOpen, onClose }: ProjectAgentPaneProps) {
     setShowHistory(false);
   }, []);
 
-  // Reset thread when the user switches to a different project
+  // Reset thread when the user switches to a different project.
+  // Exception: if the project was just created by this conversation (setup card confirmed),
+  // we must NOT reset — the history contains the full pipeline context.
   const prevProjectIdRef = useRef<string | null>(null);
   useEffect(() => {
     const newId = projectContext?.projectId ?? "";
     if (prevProjectIdRef.current !== null && prevProjectIdRef.current !== newId) {
-      handleNewThread();
+      if (projectCreatedByConversationRef.current) {
+        // Project created from this conversation — keep the history intact
+        projectCreatedByConversationRef.current = false;
+      } else {
+        handleNewThread();
+      }
     }
     prevProjectIdRef.current = newId;
   }, [projectContext?.projectId, handleNewThread]);

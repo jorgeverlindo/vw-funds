@@ -9,6 +9,7 @@ import audiLogoPacific from '../../assets/logos/Audi-Pacific.png';
 import vwLogoDealer from '../../assets/logos/JackDanielsVW.png'; // [FV] new Jack Daniels mark
 import vwLogoOEM from '../../assets/logos/VW-Logo.jpg'; // [FV] new VW OEM mark
 import vwLogoEmich from '../../assets/logos/Emich.png'; // [FV] Emich Volkswagen mark
+import constellationLogo from '../../assets/logos/Projects + Website Campaigns/Brand Logo/Constellation.png'; // [FV] Agency view
 
 interface NavItemProps {
   icon: React.ReactNode;
@@ -99,7 +100,7 @@ function NavItem({ icon, label, isActive = false, onClick, iconColor = '#ACABFF'
 interface AppSidebarProps {
   activeRoute?: string;
   onNavigate?: (route: string) => void;
-  userType?: 'dealer' | 'dealer-emich' | 'oem'; // [FV] added dealer-emich
+  userType?: 'dealer' | 'dealer-singular' | 'dealer-emich' | 'oem'; // [FV] added dealer-emich, dealer-singular
   onToggleUserType?: () => void;
   onOpenClientSwitcher?: () => void;
   clientSwitcherOpen?: boolean;
@@ -128,7 +129,9 @@ export function AppSidebar({
       ? <ClientLogoImg src={vwLogoOEM}    alt="Volkswagen" noPadding />
       : userType === 'dealer-emich'
         ? <ClientLogoImg src={vwLogoEmich}  alt="Emich Volkswagen" /> /* [FV] */
-        : <ClientLogoImg src={vwLogoDealer} alt="Jack Daniels Volkswagen" />
+        : userType === 'dealer'
+          ? <ClientLogoImg src={constellationLogo} alt="Constellation" /> /* [FV] Agency view */
+          : <ClientLogoImg src={vwLogoDealer} alt="Jack Daniels Volkswagen" />
   ) : (
     // Fallback — Constellation brand logo for any other client
     <div className="bg-white overflow-clip relative rounded size-10">

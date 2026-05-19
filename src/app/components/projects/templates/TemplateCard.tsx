@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { Pencil, MoreHorizontal, Trash2 } from "lucide-react";
+import { createPortal } from "react-dom";
+import { Pencil, MoreHorizontal, Trash2, Eye, X } from "lucide-react";
 import { TemplateWireframe } from "@projects/templates/TemplateWireframe";
 import { TemplateZoneEditor } from "@projects/templates/TemplateZoneEditor";
 import { AssetCard } from "@projects/ui/AssetCard";
@@ -83,8 +84,112 @@ function TemplatePreview({
   );
 }
 
+// ─── Template Preview Modal ────────────────────────────────────────────────────
+
+function TemplatePreviewModal({
+  template,
+  onClose,
+  onEditZones,
+}: {
+  template: Template;
+  onClose: () => void;
+  onEditZones: () => void;
+}) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [scale, setScale] = useState(0);
+
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    const update = () => {
+      const { width, height } = el.getBoundingClientRect();
+      const padding = 48;
+      const s = Math.min(
+        (width  - padding) / template.width,
+        (height - padding) / template.height,
+      );
+      setScale(Math.max(0, s));
+    };
+    update();
+    const ro = new ResizeObserver(update);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [template.width, template.height]);
+
+  // Close on Escape
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [onClose]);
+
+  return createPortal(
+    <div className="fixed inset-0 z-[10000] flex items-center justify-center p-6">
+      {/* Backdrop */}
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
+
+      {/* Card */}
+      <div className="relative bg-white rounded-[16px] shadow-2xl flex flex-col w-full max-w-[860px] max-h-[90vh] overflow-hidden">
+
+        {/* Header */}
+        <div className="flex items-center justify-between px-6 py-4 border-b border-[#E8E6F0] shrink-0">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="w-8 h-8 rounded-[8px] bg-[#f0f2f4] flex items-center justify-center shrink-0">
+              <Eye size={14} className="text-[#686576]" />
+            </div>
+            <div className="min-w-0">
+              <p className="text-[14px] font-medium text-[#1f1d25] truncate">{template.name}</p>
+              <p className="text-[11px] text-[#9c99a9]">
+                {template.format} · {template.width}×{template.height} · {template.brand}
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={onClose}
+            className="p-2 hover:bg-gray-100 rounded-full transition-colors cursor-pointer ml-4 shrink-0"
+          >
+            <X size={18} className="text-[#686576]" />
+          </button>
+        </div>
+
+        {/* Preview area */}
+        <div
+          ref={containerRef}
+          className="flex-1 flex items-center justify-center bg-[#f0f2f4] overflow-hidden"
+          style={{ minHeight: 320 }}
+        >
+          {scale > 0 && (
+            <TemplateWireframe templateId={template.id} scale={scale} showText />
+          )}
+        </div>
+
+        {/* Footer */}
+        <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-[#E8E6F0] shrink-0 bg-white">
+          <button
+            onClick={onClose}
+            className="px-4 py-[7px] rounded-full text-[13px] font-medium text-[#686576] hover:bg-[#f0f2f4] transition-colors cursor-pointer"
+          >
+            Close
+          </button>
+          <button
+            onClick={() => { onClose(); onEditZones(); }}
+            className="flex items-center gap-2 px-4 py-[7px] rounded-full text-[13px] font-medium bg-[#473bab] hover:bg-[#392e8a] text-white transition-colors cursor-pointer shadow-sm"
+          >
+            <Pencil size={12} />
+            Edit zones
+          </button>
+        </div>
+      </div>
+    </div>,
+    document.body,
+  );
+}
+
+// ─── Template Card ─────────────────────────────────────────────────────────────
+
 export function TemplateCard({ template, selected = false, onSelect, onDelete }: TemplateCardProps) {
   const [editorOpen, setEditorOpen] = useState(false);
+  const [previewOpen, setPreviewOpen] = useState(false);
 
   return (
     <>
@@ -107,6 +212,13 @@ export function TemplateCard({ template, selected = false, onSelect, onDelete }:
               sideOffset={4}
               onClick={(e) => e.stopPropagation()}
             >
+              <DropdownMenuItem
+                className="flex items-center gap-2 px-3 py-2 rounded-lg text-[13px] text-[#1f1d25] cursor-pointer outline-none focus:bg-gray-50 data-[highlighted]:bg-gray-50"
+                onClick={(e) => { e.stopPropagation(); setPreviewOpen(true); }}
+              >
+                <Eye size={13} className="text-gray-400" />
+                Preview
+              </DropdownMenuItem>
               <DropdownMenuItem
                 className="flex items-center gap-2 px-3 py-2 rounded-lg text-[13px] text-[#1f1d25] cursor-pointer outline-none focus:bg-gray-50 data-[highlighted]:bg-gray-50"
                 onClick={(e) => { e.stopPropagation(); setEditorOpen(true); }}
@@ -164,6 +276,14 @@ export function TemplateCard({ template, selected = false, onSelect, onDelete }:
           </>
         }
       />
+
+      {previewOpen && (
+        <TemplatePreviewModal
+          template={template}
+          onClose={() => setPreviewOpen(false)}
+          onEditZones={() => setEditorOpen(true)}
+        />
+      )}
 
       {editorOpen && (
         <TemplateZoneEditor

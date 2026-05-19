@@ -77,7 +77,7 @@ export function NotificationOverlay({
                 <div className="flex flex-col items-start gap-0.5">
                   <span className="font-normal text-[#1f1d25]">{n.user?.name ?? n.title}</span>
                   <span className="font-normal text-[#1f1d25] text-[12px]">
-                    {n.body}{n.referenceId ? <> <span className="font-medium">{n.referenceId}</span></> : null}
+                    {n.body}{n.type !== 'project-mention' && n.referenceId ? <> <span className="font-medium">{n.referenceId}</span></> : null}
                   </span>
                 </div>
               }

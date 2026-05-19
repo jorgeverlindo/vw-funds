@@ -9,7 +9,7 @@ import {
   Loader2, Hourglass, CheckCircle2,
   FileText, Palette, Image as ImageIcon, Layers,
   Pencil, AlertTriangle, XCircle, Archive,
-  PanelLeft, ChevronsUpDown, Trash2,
+  LayoutPanelLeft, ChevronsUpDown, Trash2,
   Eye, Wand2,
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
@@ -1340,11 +1340,11 @@ function ProjectDetailView({
         <div className="flex items-center gap-4 mb-2 min-w-0">
           {/* Panel toggle */}
           <button className="w-7 h-7 flex items-center justify-center text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-md transition shrink-0 cursor-pointer">
-            <PanelLeft size={18} strokeWidth={1.75} />
+            <LayoutPanelLeft size={18} strokeWidth={1.75} />
           </button>
 
-          {/* Title — flex-1 so it fills space and truncates */}
-          <h1 className="text-[18px] font-bold text-[#1f1d25] leading-tight flex-1 min-w-0 truncate">
+          {/* Title — max-w so items stay left-aligned, truncates on overflow */}
+          <h1 className="text-[18px] font-bold text-[#1f1d25] leading-tight min-w-0 truncate max-w-[220px] shrink">
             {project.name && !project.name.startsWith("WF") && !project.name.match(/^[A-Z]{2}\d/)
               ? project.name
               : project.dealerName}
@@ -1402,18 +1402,15 @@ function ProjectDetailView({
           {/* Tag chips */}
           {tags.map((t) => <TagChip key={t} label={t} />)}
 
-          <span className="text-gray-200 mx-1">|</span>
-          <span className="text-[12px]">
+          <span className="text-[11px]">
             <span className="font-medium text-[#1f1d25]">Last Updated:</span>{" "}
             <span className="text-[#686576]">just now</span>
           </span>
-          <span className="text-gray-200 mx-1">|</span>
-          <span className="text-[12px]">
+          <span className="text-[11px]">
             <span className="font-medium text-[#1f1d25]">Created:</span>{" "}
             <span className="text-[#686576]">{createdDateStr}</span>
           </span>
-          <span className="text-gray-200 mx-1">|</span>
-          <span className="text-[12px]">
+          <span className="text-[11px]">
             <span className="font-medium text-[#1f1d25]">Creator:</span>{" "}
             <span className="text-[#686576]">{project.assignee.name}</span>
           </span>
@@ -1431,7 +1428,7 @@ function ProjectDetailView({
 
       {/* ── Accordion sections ───────────────────────────────────────── */}
       <div className="flex-1 overflow-y-auto">
-        <div className="flex flex-col gap-2 px-4 py-3">
+        <div className="flex flex-col gap-1 px-4 py-3">
 
         {/* Offers */}
         <div data-agent-section="offers">

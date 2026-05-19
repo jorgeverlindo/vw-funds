@@ -69,7 +69,7 @@ export function ProjectAccordionSection({
           : undefined
         }
         className={[
-          "flex items-center gap-2.5 px-5 py-[14px] min-h-[52px] select-none",
+          "flex items-center gap-2.5 px-5 py-[11px] min-h-[44px] select-none",
           isInteractive ? "cursor-pointer hover:bg-[#ECEDF0] active:bg-[#E4E5E9] transition-colors" : "",
         ].join(" ")}
       >
@@ -77,8 +77,8 @@ export function ProjectAccordionSection({
         {isInteractive && (
           <span className="shrink-0 text-gray-400 flex items-center">
             {expanded
-              ? <ChevronDown size={14} strokeWidth={2} />
-              : <ChevronRight size={14} strokeWidth={2} />
+              ? <ChevronDown size={16} strokeWidth={2} />
+              : <ChevronRight size={16} strokeWidth={2} />
             }
           </span>
         )}
@@ -105,9 +105,9 @@ export function ProjectAccordionSection({
         {onDetails && isInteractive && (
           <button
             onClick={(e) => { e.stopPropagation(); onDetails(); }}
-            className="flex items-center gap-1 text-[12px] text-[var(--brand-accent)] hover:opacity-75 shrink-0 transition-opacity font-normal cursor-pointer"
+            className="flex items-center gap-1 text-[12px] text-[#686576] hover:text-[#1f1d25] shrink-0 transition-colors font-normal cursor-pointer"
           >
-            <ExternalLink size={11} strokeWidth={2} />
+            <ExternalLink size={13} strokeWidth={1.75} />
             Details
           </button>
         )}

@@ -2,7 +2,7 @@
  * ProjectsModule — Full Projects experience ported from constellation-app.
  */
 
-import React, { useState, useMemo, useEffect } from "react";
+import React, { useState, useMemo, useEffect, useRef } from "react";
 import {
   ChevronDown, ChevronRight, Check, Plus,
   Search, MoreVertical, History,
@@ -135,8 +135,17 @@ type ProjectPage = "offers" | "templates" | "logos-backgrounds" | "preview";
 
 // ─── Main module export ────────────────────────────────────────────────────────
 
-export function ProjectsModule() {
-  const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
+export function ProjectsModule({ openProjectId }: { openProjectId?: string | null }) {
+  const [selectedProjectId, setSelectedProjectId] = useState<string | null>(openProjectId ?? null);
+
+  // When a notification requests a specific project to be opened, honour it.
+  const prevOpenRef = useRef<string | null | undefined>(undefined);
+  useEffect(() => {
+    if (openProjectId && openProjectId !== prevOpenRef.current) {
+      setSelectedProjectId(openProjectId);
+    }
+    prevOpenRef.current = openProjectId;
+  }, [openProjectId]);
 
   return (
     <ProjectStoreProvider>

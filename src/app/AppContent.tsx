@@ -477,6 +477,9 @@ export default function AppContent() {
   // Agent Pane State — dealer-only
   const [isAgentPaneOpen, setIsAgentPaneOpen] = useState(false);
 
+  // Project to open from a notification tap
+  const [notifOpenProjectId, setNotifOpenProjectId] = useState<string | null>(null);
+
   const [selectedWebMonitoringId, setSelectedWebMonitoringId] = useState<string | null>(null);
   const [isWebMonitoringModalOpen, setIsWebMonitoringModalOpen] = useState(false);
   const [isWebMonitoringConfigOpen, setIsWebMonitoringConfigOpen] = useState(false); // [FV]
@@ -584,8 +587,9 @@ export default function AppContent() {
           setSelectedClaimId(id);
           navigate(buildUrl(userType, client.clientId, 'claims'), { replace: true });
         }}
-        onOpenProjectFromNotif={(_projectId) => {
+        onOpenProjectFromNotif={(projectId) => {
           setActiveAppSection('projects');
+          setNotifOpenProjectId(projectId);
         }}
       />
 
@@ -741,7 +745,7 @@ export default function AppContent() {
           {/* PROJECTS SECTION */}
           {activeAppSection === 'projects' && (
              <div className="h-full overflow-hidden">
-               <ProjectsModule />
+               <ProjectsModule openProjectId={notifOpenProjectId} />
              </div>
           )}
 

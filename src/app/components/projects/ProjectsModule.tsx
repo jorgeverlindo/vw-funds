@@ -45,6 +45,7 @@ import {
   type NewProjectInput,
 } from "./CreateProjectDialog";
 import { ChannelChip } from "../ui/ChannelChip";
+import { emitSnackbar } from "../Snackbar";
 
 // ─── Custom offer library (localStorage store for non-catalog offers) ─────────
 
@@ -1019,6 +1020,7 @@ function JellyBeanCard({
 
 const SECTION_IDS = ["offers", "templates", "platforms", "backgrounds", "theme", "preview", "assets", "adshells", "campaigns"] as const;
 type SectionId = typeof SECTION_IDS[number];
+type GeneratedAsset = { key: string; offer: Offer; template: Template; bgId: string | null };
 
 function ProjectDetailView({
   project,
@@ -1113,6 +1115,10 @@ function ProjectDetailView({
   });
   const [selectedBgId, setSelectedBgId] = useState<string | null>(saved?.bgId ?? null);
   const selectedBg = backgroundCollections.find(b => b.id === selectedBgId) ?? null;
+
+  // Generate Assets modal & generated asset state
+  const [showGenerateModal, setShowGenerateModal] = useState(false);
+  const [generatedAssets, setGeneratedAssets] = useState<GeneratedAsset[]>([]);
 
   // ── Auto-expand Preview when both offers AND templates are present ───────────
   useEffect(() => {
@@ -1722,8 +1728,11 @@ function ProjectDetailView({
           count={visibleOffers.length > 0 && visibleTemplates.length > 0 ? visibleOffers.length * visibleTemplates.length : undefined}
           statusSlot={
             visibleOffers.length > 0 && visibleTemplates.length > 0
-              ? <button className="flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-medium text-white cursor-pointer"
-                  style={{ background: "linear-gradient(99deg, #473bab 0%, #6356e1 100%)", fontFamily: "'Roboto', sans-serif" }}>
+              ? <button
+                  className="flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-medium text-white cursor-pointer"
+                  style={{ background: "linear-gradient(99deg, #473bab 0%, #6356e1 100%)", fontFamily: "'Roboto', sans-serif" }}
+                  onClick={() => setShowGenerateModal(true)}
+                >
                   <Wand2 size={11} strokeWidth={2} />
                   Generate Assets
                 </button>
@@ -1771,20 +1780,50 @@ function ProjectDetailView({
         <div data-agent-section="assets">
         <ProjectAccordionSection
           title="Assets"
+          count={generatedAssets.length > 0 ? generatedAssets.length : undefined}
           expanded={expandedSections["assets"]}
           onExpandedChange={(v) => toggleSection("assets", v)}
           emptyContent={
             <div className="flex flex-col gap-2 items-start">
-              <button className={actnBtn}>
+              <button className={actnBtn} onClick={() => visibleOffers.length > 0 && visibleTemplates.length > 0 ? setShowGenerateModal(true) : undefined}>
                 <Wand2 size={12} strokeWidth={2} />
                 Add Assets
               </button>
               <p className="text-[12px] text-gray-400 leading-relaxed">
-                Please click to Generate Assets in the Preview task.
+                Please click to Generate Assets in the Preview section.
               </p>
             </div>
           }
-        />
+        >
+          {generatedAssets.length > 0 && (
+            <motion.div
+              key={`assets-${generatedAssets.length}`}
+              className="flex gap-3 overflow-x-auto pb-2"
+              variants={{ hidden: {}, show: { transition: { staggerChildren: 0.06, delayChildren: 0.1 } } }}
+              initial="hidden"
+              animate="show"
+            >
+              {generatedAssets.map(({ key, offer, template, bgId }) => {
+                const bg = bgId ? backgroundCollections.find(b => b.id === bgId) ?? null : null;
+                return (
+                  <motion.div
+                    key={key}
+                    className="flex-shrink-0"
+                    variants={{ hidden: { opacity: 0, y: 10, scale: 0.96 }, show: { opacity: 1, y: 0, scale: 1, transition: { duration: 0.25, ease: "easeOut" } } }}
+                  >
+                    <JellyBeanCard
+                      offer={offer as any}
+                      template={template}
+                      fixedHeight={160}
+                      bgImage={getBgImage(bg, template)}
+                      brandKit={brandKit}
+                    />
+                  </motion.div>
+                );
+              })}
+            </motion.div>
+          )}
+        </ProjectAccordionSection>
         </div>
 
         {/* Ad Shells */}
@@ -1866,6 +1905,88 @@ function ProjectDetailView({
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* ── Generate Assets confirmation modal ──────────────────────────── */}
+      {(() => {
+        const bgCount   = visibleBackgrounds.length > 0 ? visibleBackgrounds.length : 1;
+        const genTotal  = visibleOffers.length * visibleTemplates.length * bgCount;
+        const genBreakdown =
+          visibleBackgrounds.length > 0
+            ? `${visibleBackgrounds.length} background${visibleBackgrounds.length > 1 ? "s" : ""} × ${visibleOffers.length} offer${visibleOffers.length > 1 ? "s" : ""} × ${visibleTemplates.length} template${visibleTemplates.length > 1 ? "s" : ""}`
+            : `${visibleOffers.length} offer${visibleOffers.length > 1 ? "s" : ""} × ${visibleTemplates.length} template${visibleTemplates.length > 1 ? "s" : ""}`;
+
+        const handleGenerate = () => {
+          const bgsToUse = visibleBackgrounds.length > 0 ? visibleBackgrounds.map(b => b.id) : [null as null];
+          const assets: GeneratedAsset[] = [];
+          bgsToUse.forEach(bgId => {
+            visibleTemplates.forEach(template => {
+              visibleOffers.forEach(offer => {
+                assets.push({ key: `${bgId ?? "none"}-${template.id}-${offer.id}`, offer, template, bgId });
+              });
+            });
+          });
+          setGeneratedAssets(assets);
+          setExpandedSections(prev => ({ ...prev, assets: true }));
+          setShowGenerateModal(false);
+          emitSnackbar(`${genTotal} asset${genTotal > 1 ? "s" : ""} created`);
+        };
+
+        return (
+          <AnimatePresence>
+            {showGenerateModal && (
+              <motion.div
+                key="generate-modal-overlay"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.15 }}
+                className="fixed inset-0 z-[500] flex items-center justify-center bg-black/30 backdrop-blur-[2px]"
+                onClick={() => setShowGenerateModal(false)}
+              >
+                <motion.div
+                  initial={{ scale: 0.95, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  exit={{ scale: 0.95, opacity: 0 }}
+                  transition={{ duration: 0.15 }}
+                  className="bg-white rounded-2xl shadow-2xl p-6 w-[400px] mx-4"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <div className="w-10 h-10 rounded-full flex items-center justify-center mb-4"
+                    style={{ background: "linear-gradient(135deg, #EDE9FF 0%, #D8D2FF 100%)" }}>
+                    <Wand2 size={18} className="text-[#473bab]" />
+                  </div>
+                  <h3 className="text-[16px] font-semibold text-[#1f1d25] mb-1.5">
+                    Generate Assets
+                  </h3>
+                  <p className="text-[13px] text-[#686576] leading-relaxed mb-2">
+                    You're about to generate{" "}
+                    <span className="font-semibold text-[#1f1d25]">{genTotal} asset{genTotal > 1 ? "s" : ""}</span>
+                    {" "}({genBreakdown}).
+                  </p>
+                  <p className="text-[13px] text-[#686576] leading-relaxed mb-6">
+                    Total: <span className="font-semibold text-[#1f1d25]">{genTotal}</span>
+                  </p>
+                  <div className="flex gap-2 justify-end">
+                    <button
+                      onClick={() => setShowGenerateModal(false)}
+                      className="px-4 py-2 rounded-full text-[13px] font-medium text-[#686576] border border-[#CAC9CF] hover:bg-gray-50 transition cursor-pointer"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={handleGenerate}
+                      className="px-4 py-2 rounded-full text-[13px] font-semibold text-white transition cursor-pointer"
+                      style={{ background: "linear-gradient(99deg, #473bab 0%, #6356e1 100%)" }}
+                    >
+                      Generate {genTotal} Asset{genTotal > 1 ? "s" : ""}
+                    </button>
+                  </div>
+                </motion.div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        );
+      })()}
     </div>
   );
 }

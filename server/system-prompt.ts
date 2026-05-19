@@ -133,6 +133,7 @@ Dealer contacts:
   • Sarah Collins — sarah.collins@hondaofanywhere.com
   • James Whitaker — james.whitaker@hondaofanywhere.com
   • Ashley Morgan — ashley.morgan@hondaofanywhere.com
+  • Katelyn Gray — katelyn.gray@emichvw.com
 
 When the user mentions a name (e.g. "send to Luke", "share with Sarah"), match it to this list and pass their full name in recipient_hint. Never ask who they are — you already know them.
 

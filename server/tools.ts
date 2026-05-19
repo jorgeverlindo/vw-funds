@@ -168,6 +168,50 @@ export const agentTools: Anthropic.Tool[] = [
     },
   },
   {
+    name: "edit_offer",
+    description:
+      "Edit one or more fields on an offer that is already in the current project. " +
+      "Use this when the user asks to correct or change a value on an existing offer — " +
+      "e.g. 'fix the monthly payment to $322', 'change the term to 48 months', " +
+      "'correct the due at signing'. " +
+      "Look up the offer ID from the current offer IDs list in the project context. " +
+      "Only include the fields that need to change.",
+    input_schema: {
+      type: "object" as const,
+      properties: {
+        offer_id: {
+          type: "string",
+          description: "ID of the offer to edit — must be in the current project.",
+        },
+        monthly_payment: {
+          type: "number",
+          description: "New monthly payment amount (dollars, no symbol).",
+        },
+        term: {
+          type: "number",
+          description: "New lease/finance term in months.",
+        },
+        total_due_at_signing: {
+          type: "number",
+          description: "New total due at signing (dollars).",
+        },
+        offer_type: {
+          type: "string",
+          description: "New offer type: 'Lease', 'Finance', or 'Purchase'.",
+        },
+        trim: {
+          type: "string",
+          description: "New trim level label.",
+        },
+        year: { type: "string", description: "New model year." },
+        make: { type: "string", description: "New make." },
+        model: { type: "string", description: "New model name." },
+      },
+      required: ["offer_id"],
+    },
+  },
+
+  {
     name: "remove_offers_from_project",
     description: "Remove one or more offers from the current project.",
     input_schema: {
@@ -315,6 +359,13 @@ export function executeTool(
         success: true,
         added: input.offer_ids,
         message: `Added ${(input.offer_ids as string[]).length} offer(s) to the project.`,
+      };
+
+    case "edit_offer":
+      return {
+        success: true,
+        edited: input.offer_id,
+        message: `Offer ${input.offer_id} updated.`,
       };
 
     case "remove_offers_from_project":

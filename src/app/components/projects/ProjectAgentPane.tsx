@@ -559,6 +559,7 @@ const MOCK_CONTACTS = [
   { name: "Sarah Collins",   email: "sarah.collins@hondaofanywhere.com",  group: "dealer" as const },
   { name: "James Whitaker",  email: "james.whitaker@hondaofanywhere.com", group: "dealer" as const },
   { name: "Ashley Morgan",   email: "ashley.morgan@hondaofanywhere.com",  group: "dealer" as const },
+  { name: "Katelyn Gray",    email: "katelyn.gray@emichvw.com",           group: "dealer" as const },
 ];
 
 // ─── Shared custom select (replaces native <select>) ─────────────────────────
@@ -2761,13 +2762,31 @@ export function ProjectAgentPane({ isOpen, onClose }: ProjectAgentPaneProps) {
     const steps = getFlowSteps();
     const idx = steps.indexOf(completedStep);
     const nextStep = idx >= 0 && idx < steps.length - 1 ? steps[idx + 1] : null;
-    if (!nextStep) return; // flow complete
 
     // Skip brand step if a brand kit is already active — no need to offer it again
     const effectiveNext = (nextStep === "brand" && ctxRef.current?.activeBrandOem)
       ? (steps[idx + 2] ?? null)
       : nextStep;
-    if (!effectiveNext) return; // flow complete after skip
+
+    if (!nextStep || !effectiveNext) {
+      // Flow is complete — proactively offer asset generation if offers + templates are present
+      const ctx = ctxRef.current;
+      const offerCount    = ctx?.currentOfferIds.length ?? 0;
+      const templateCount = ctx?.currentTemplateIds.length ?? 0;
+      if (offerCount > 0 && templateCount > 0) {
+        // Approximate total: if backgrounds were added they'd be in ctx as well — use 1 as floor
+        const total = offerCount * templateCount;
+        setTimeout(() => {
+          setMessages(prev => [...prev, {
+            id: `a-${Date.now()}`,
+            role: "assistant",
+            type: "text",
+            content: `You now have everything ready to generate your assets — ${offerCount} offer${offerCount > 1 ? "s" : ""} × ${templateCount} template${templateCount > 1 ? "s" : ""} = **${total} asset${total > 1 ? "s" : ""}**. Click **Generate Assets** in the Preview section whenever you're ready.`,
+          } as TextMessage]);
+        }, 600);
+      }
+      return;
+    }
 
     if (effectiveNext === "offers") {
       const setupMsg = messagesRef.current.filter((m): m is SetupMsg => m.type === "setup").at(-1);
@@ -2784,7 +2803,7 @@ export function ProjectAgentPane({ isOpen, onClose }: ProjectAgentPaneProps) {
     };
     const msg = continuations[effectiveNext];
     if (msg) setTimeout(() => sendInternal(msg), 400);
-  }, [getFlowSteps, sendInternal, buildOffersContinuation]);
+  }, [getFlowSteps, sendInternal, buildOffersContinuation, setMessages]);
 
   // ── Setup card ──────────────────────────────────────────────────────────────
   const handleSetupApply = useCallback((name: string, account: string, oem: string, startDate: string, endDate: string, owner: string, platforms: string[]) => {

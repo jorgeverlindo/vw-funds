@@ -130,7 +130,7 @@ export function AppSidebar({
       : userType === 'dealer-emich'
         ? <ClientLogoImg src={vwLogoEmich}  alt="Emich Volkswagen" /> /* [FV] */
         : userType === 'dealer'
-          ? <ClientLogoImg src={constellationLogo} alt="Constellation" /> /* [FV] Agency view */
+          ? <ClientLogoImg src={constellationLogo} alt="Constellation" noPadding /> /* [FV] Agency view — bleed to edges */
           : <ClientLogoImg src={vwLogoDealer} alt="Jack Daniels Volkswagen" />
   ) : (
     // Fallback — Constellation brand logo for any other client

@@ -1236,6 +1236,32 @@ function ProjectDetailView({
         });
         setExpandedSections((prev) => ({ ...prev, offers: true }));
         setTimeout(() => setAgentAddedOfferIds((prev) => [...new Set([...prev, ...newIds])]), 220);
+      } else if (action === "edit_offer") {
+        const { offerId, patches } = payload as { offerId: string; patches: Partial<StoredOffer> };
+        if (offerId.startsWith("custom-")) {
+          // Custom offer already in the mutable library — update in-place
+          setCustomOfferLibrary((prev) => {
+            const updated = prev.map((o) => o.id === offerId ? { ...o, ...patches } : o);
+            saveCustomOfferLibrary(updated);
+            return updated;
+          });
+        } else {
+          // Static catalog offer — create an edited copy in customOfferLibrary,
+          // swap the old ID out and the new one in
+          const newId = `custom-edited-${offerId}`;
+          setCustomOfferLibrary((prev) => {
+            const base = [...offerLibrary, ...prev].find((o) => o.id === offerId);
+            if (!base) return prev;
+            const editedOffer: StoredOffer = { ...(base as StoredOffer), ...patches, id: newId };
+            const without = prev.filter((o) => o.id !== newId);
+            const updated = [...without, editedOffer];
+            saveCustomOfferLibrary(updated);
+            return updated;
+          });
+          // Remove old catalog ID, add new custom ID
+          setRemovedOfferIds((prev) => new Set([...prev, offerId]));
+          setAgentAddedOfferIds((prev) => [...new Set([...prev, newId])]);
+        }
       }
     };
     window.addEventListener(PROJECT_AGENT_ACTION_EVENT, handler);
@@ -1295,7 +1321,7 @@ function ProjectDetailView({
         </div>
 
         {/* Title row */}
-        <div className="flex items-center gap-2 mb-2 min-w-0">
+        <div className="flex items-center gap-4 mb-2 min-w-0">
           {/* Panel toggle */}
           <button className="w-7 h-7 flex items-center justify-center text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-md transition shrink-0 cursor-pointer">
             <PanelLeft size={15} strokeWidth={1.75} />
@@ -1308,7 +1334,7 @@ function ProjectDetailView({
               : project.dealerName}
           </h1>
 
-          {/* Kebab */}
+          {/* Kebab — 16px from title (gap-4) */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <button className="w-7 h-7 flex items-center justify-center text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-md transition shrink-0 cursor-pointer">
@@ -1334,23 +1360,20 @@ function ProjectDetailView({
             </DropdownMenuContent>
           </DropdownMenu>
 
-          {/* Account + Creator — 32px after kebab */}
-          <div className="flex items-center gap-3 ml-8 shrink-0">
-            {/* Account logo + name */}
-            <div className="flex items-center gap-1.5 text-[12px] text-[#686576]">
-              <div className="w-6 h-6 rounded-md bg-gray-50 border border-gray-100 overflow-hidden shrink-0 flex items-center justify-center">
-                <img src={logoUrl} alt={accountName} className="w-full h-full object-contain p-0.5" />
-              </div>
-              <span className="truncate max-w-[130px]">{accountName}</span>
+          {/* Account logo + name — 16px from kebab (gap-4) */}
+          <div className="flex items-center gap-1.5 text-[12px] text-[#686576] shrink-0">
+            <div className="w-6 h-6 rounded-md bg-gray-50 border border-gray-100 overflow-hidden shrink-0 flex items-center justify-center">
+              <img src={logoUrl} alt={accountName} className="w-full h-full object-contain p-0.5" />
             </div>
+            <span className="truncate max-w-[130px]">{accountName}</span>
+          </div>
 
-            {/* Creator avatar + name */}
-            <div className="flex items-center gap-1.5 text-[12px] text-[#686576]">
-              <div className="w-6 h-6 rounded-full bg-[var(--brand-accent)] text-white text-[9px] font-semibold flex items-center justify-center shrink-0">
-                {initials}
-              </div>
-              <span className="truncate max-w-[110px]">{project.assignee.name}</span>
+          {/* Creator avatar + name — 16px from account (gap-4) */}
+          <div className="flex items-center gap-1.5 text-[12px] text-[#686576] shrink-0">
+            <div className="w-6 h-6 rounded-full bg-[var(--brand-accent)] text-white text-[9px] font-semibold flex items-center justify-center shrink-0">
+              {initials}
             </div>
+            <span className="truncate max-w-[110px]">{project.assignee.name}</span>
           </div>
         </div>
 

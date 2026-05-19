@@ -51,12 +51,11 @@ export function TaskOwner({
     return () => { window.removeEventListener("scroll", close, true); window.removeEventListener("resize", close); };
   }, [open]);
 
-  // Tooltip position: centred above the button
+  // Tooltip position: right-aligned with the button, above it, caret points down
   const tooltipStyle = coords ? {
     position: "fixed" as const,
-    top:  coords.top - 8,  // will be moved up via transform
-    left: coords.left + coords.width / 2,
-    transform: "translateX(-50%) translateY(-100%)",
+    bottom: window.innerHeight - coords.top + 6,
+    right:  window.innerWidth  - coords.right,
     zIndex: 9999,
   } : {};
 
@@ -106,7 +105,8 @@ export function TaskOwner({
               className="whitespace-nowrap text-[11px] font-medium text-white bg-[#1f1d25] rounded-lg px-2.5 py-1.5 pointer-events-none shadow-md"
             >
               Click to change task owner
-              <span className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-[#1f1d25]" />
+              {/* Caret pointing down toward the avatar */}
+              <span className="absolute bottom-[-7px] right-2 border-4 border-transparent border-t-[#1f1d25]" />
             </motion.div>
           )}
         </AnimatePresence>,

@@ -121,6 +121,7 @@ Constellation team (internal):
   • Sonya Koh — sonya.koh@helloconstellation.com
   • Zak Flaten — zak.flaten@helloconstellation.com
   • Rachel Hui — rachel.hui@helloconstellation.com
+  • Jenni Eckhart — jenni.eckhart@helloconstellation.com
 Dealer contacts:
   • Mike Henderson — mike.henderson@hondaofanywhere.com
   • Sarah Collins — sarah.collins@hondaofanywhere.com
@@ -194,6 +195,8 @@ INDIVIDUAL REQUESTS (project already open):
   - "add brand" / "change theme"             → call propose_brand directly
   - "full refresh"                           → call propose_project (offers + templates)
   - "send by email" / "share" / "email this" → call propose_email directly
+  - "set task owners" / "define owners" / "quero definir os owners de tarefa" → call propose_task_owners with suggested owners if named, otherwise no suggestions
+  - "set [section] owner to [name]" → call propose_task_owners directly with { owners: { section: name } } map
   Do NOT restart the full flow. Respond ONLY to what was asked.
 
 KEY RULES:
@@ -583,6 +586,29 @@ const agentTools: Anthropic.Tool[] = [
       required: ["message"],
     },
   },
+
+  // ── Task owner assignment ──────────────────────────────────────────────────────
+  {
+    name: "propose_task_owners",
+    description:
+      "Show a card that lets the user assign a task owner to each project section " +
+      "(Offers, Templates, Backgrounds, Brand, Assets). Use this when the user asks to " +
+      "define or set task owners, regardless of language. " +
+      "Pass suggested owners if the user named them, otherwise leave sections empty.",
+    input_schema: {
+      type: "object" as const,
+      properties: {
+        owners: {
+          type: "object",
+          description:
+            "Suggested owner names per section. Keys: 'offers', 'templates', 'backgrounds', 'brand', 'assets'. " +
+            "Values: full person name (e.g. 'Jenni Eckhart'). Omit sections with no suggestion.",
+          additionalProperties: { type: "string" },
+        },
+      },
+      required: [],
+    },
+  },
 ];
 
 // ─── Tool Executor (inlined from _lib/tools) ──────────────────────────────────
@@ -618,6 +644,8 @@ function executeTool(
       return { success: true, email: input, message: "Email proposal ready for user review." };
     case "propose_parsed_offers":
       return { success: true, parsed_offers: input, message: `${(input.offers as unknown[]).length} offer(s) extracted and ready for user review.` };
+    case "propose_task_owners":
+      return { success: true, taskOwners: input, message: "Task owner proposal ready for user review." };
     default:
       return { success: false, message: `Unknown tool: ${toolName}` };
   }
@@ -676,6 +704,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       "setup_project", "propose_offers", "propose_templates",
       "propose_backgrounds", "propose_brand", "propose_project",
       "propose_email", "propose_share", "propose_parsed_offers",
+      "propose_task_owners",
     ]);
 
     // Diagnostic: log tool names so we can verify in Vercel logs

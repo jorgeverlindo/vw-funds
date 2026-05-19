@@ -9,7 +9,7 @@ import {
   Loader2, Hourglass, CheckCircle2,
   FileText, Palette, Image as ImageIcon, Layers,
   Pencil, AlertTriangle, XCircle, Archive,
-  LayoutPanelLeft, ChevronsUpDown, Trash2,
+  ChevronsUpDown, Trash2,
   Eye, Wand2,
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
@@ -46,6 +46,17 @@ import {
 } from "./CreateProjectDialog";
 import { ChannelChip } from "../ui/ChannelChip";
 import { emitSnackbar } from "../Snackbar";
+import { TaskOwner } from "@projects/ui/TaskOwner";
+
+// ─── Left-pane toggle icon (from design asset) ────────────────────────────────
+function LeftPaneIcon({ className }: { className?: string }) {
+  return (
+    <svg width="18" height="18" viewBox="0 0 30 30" fill="none" xmlns="http://www.w3.org/2000/svg" className={className}>
+      <path d="M7.29175 9.79171C7.29175 9.33147 7.66484 8.95837 8.12508 8.95837H21.8751C22.3353 8.95837 22.7084 9.33147 22.7084 9.79171V20.2084C22.7084 20.6686 22.3353 21.0417 21.8751 21.0417H8.12508C7.66484 21.0417 7.29175 20.6686 7.29175 20.2084V9.79171Z" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round"/>
+      <path d="M11.875 9.16663V15V20.8333" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round"/>
+    </svg>
+  );
+}
 
 // ─── Custom offer library (localStorage store for non-catalog offers) ─────────
 
@@ -1116,6 +1127,14 @@ function ProjectDetailView({
   const [selectedBgId, setSelectedBgId] = useState<string | null>(saved?.bgId ?? null);
   const selectedBg = backgroundCollections.find(b => b.id === selectedBgId) ?? null;
 
+  // Edit Project dialog
+  const [showEditProject, setShowEditProject] = useState(false);
+
+  // Task owners per section
+  const [taskOwners, setTaskOwners] = useState<Record<string, string>>({});
+  const setTaskOwner = (section: string, ownerId: string) =>
+    setTaskOwners((prev) => ({ ...prev, [section]: ownerId }));
+
   // Generate Assets modal & generated asset state
   const [showGenerateModal, setShowGenerateModal] = useState(false);
   const [generatedAssets, setGeneratedAssets] = useState<GeneratedAsset[]>([]);
@@ -1340,7 +1359,7 @@ function ProjectDetailView({
         <div className="flex items-center gap-4 mb-2 min-w-0">
           {/* Panel toggle */}
           <button className="w-7 h-7 flex items-center justify-center text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-md transition shrink-0 cursor-pointer">
-            <LayoutPanelLeft size={18} strokeWidth={1.75} />
+            <LeftPaneIcon />
           </button>
 
           {/* Title — max-w so items stay left-aligned, truncates on overflow */}
@@ -1362,7 +1381,10 @@ function ProjectDetailView({
               align="end"
               sideOffset={4}
             >
-              <DropdownMenuItem className="flex items-center gap-2 px-3 py-2 rounded-lg text-[13px] text-[#1f1d25] cursor-pointer outline-none focus:bg-gray-50 data-[highlighted]:bg-gray-50">
+              <DropdownMenuItem
+                className="flex items-center gap-2 px-3 py-2 rounded-lg text-[13px] text-[#1f1d25] cursor-pointer outline-none focus:bg-gray-50 data-[highlighted]:bg-gray-50"
+                onClick={() => setShowEditProject(true)}
+              >
                 <Pencil size={13} className="text-gray-400" />
                 Edit Project
               </DropdownMenuItem>
@@ -1439,6 +1461,7 @@ function ProjectDetailView({
           onDetails={visibleOffersCount ? () => {} : undefined}
           expanded={expandedSections["offers"]}
           onExpandedChange={(v) => toggleSection("offers", v)}
+          ownerSlot={<TaskOwner ownerId={taskOwners["offers"]} onChange={(id) => setTaskOwner("offers", id)} />}
           emptyContent={
             <button className={actnBtn}>
               <Plus size={12} strokeWidth={2.5} />
@@ -1482,6 +1505,7 @@ function ProjectDetailView({
           onDetails={visibleTemplateCount ? () => {} : undefined}
           expanded={expandedSections["templates"]}
           onExpandedChange={(v) => toggleSection("templates", v)}
+          ownerSlot={<TaskOwner ownerId={taskOwners["templates"]} onChange={(id) => setTaskOwner("templates", id)} />}
           emptyContent={
             <button className={actnBtn}>
               <Plus size={12} strokeWidth={2.5} />
@@ -1558,6 +1582,7 @@ function ProjectDetailView({
           count={visibleBackgrounds.length > 0 ? visibleBackgrounds.length : undefined}
           expanded={expandedSections["backgrounds"]}
           onExpandedChange={(v) => toggleSection("backgrounds", v)}
+          ownerSlot={<TaskOwner ownerId={taskOwners["backgrounds"]} onChange={(id) => setTaskOwner("backgrounds", id)} />}
           emptyContent={
             <button className={actnBtn}>
               <Plus size={12} strokeWidth={2.5} />
@@ -1643,6 +1668,7 @@ function ProjectDetailView({
           statusSlot={activeBrandKits.length > 0 ? <ProjectStatusChip status="Done" /> : undefined}
           expanded={expandedSections["theme"]}
           onExpandedChange={(v) => toggleSection("theme", v)}
+          ownerSlot={<TaskOwner ownerId={taskOwners["brand"]} onChange={(id) => setTaskOwner("brand", id)} />}
           emptyContent={
             <button className={actnBtn}>
               <Plus size={12} strokeWidth={2.5} />
@@ -1780,6 +1806,7 @@ function ProjectDetailView({
           count={generatedAssets.length > 0 ? generatedAssets.length : undefined}
           expanded={expandedSections["assets"]}
           onExpandedChange={(v) => toggleSection("assets", v)}
+          ownerSlot={<TaskOwner ownerId={taskOwners["assets"]} onChange={(id) => setTaskOwner("assets", id)} />}
           emptyContent={
             <div className="flex flex-col gap-2 items-start">
               <button className={actnBtn} onClick={() => visibleOffers.length > 0 && visibleTemplates.length > 0 ? setShowGenerateModal(true) : undefined}>
@@ -1984,6 +2011,33 @@ function ProjectDetailView({
           </AnimatePresence>
         );
       })()}
+
+      {/* Edit Project dialog */}
+      <CreateProjectDialog
+        open={showEditProject}
+        onOpenChange={setShowEditProject}
+        mode="edit"
+        initialData={{
+          name: project.name,
+          account: project.dealerName,
+          ownerId: PROJECT_OWNERS.find(o => o.name === project.assignee.name)?.id ?? "jorge-verlindo",
+          startDate: project.dateRange ? (() => { try { return new Date(project.dateRange.split(" - ")[0]); } catch { return undefined; } })() : undefined,
+          endDate: project.dateRange ? (() => { try { return new Date(project.dateRange.split(" - ")[1]); } catch { return undefined; } })() : undefined,
+          platforms: (project as any).platforms ?? [],
+          tags: (project as any).tags ?? [],
+        }}
+        brandOptions={brandKits.map(k => ({ id: k.id, name: k.name }))}
+        existingNames={[]}
+        onSave={(data) => {
+          const fmt = (d: Date) => d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+          // fire an update event so the store can react
+          window.dispatchEvent(new CustomEvent("project:edit", {
+            detail: { id: project.id, name: data.name, account: data.account, platforms: data.platforms, tags: data.tags, dateRange: `${fmt(data.startDate)} - ${fmt(data.endDate)}` }
+          }));
+          setShowEditProject(false);
+          emitSnackbar({ message: "Project updated", type: "success" });
+        }}
+      />
     </div>
   );
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { Check, ChevronDown, X } from "lucide-react";
 import {
   Dialog,
@@ -60,6 +60,7 @@ export const PROJECT_OWNERS = [
   { id: "sarah-collins",   name: "Sarah Collins",   email: "sarah.collins@hondaofanywhere.com",      initials: "SC", color: "#0891b2", avatar: null },
   { id: "james-whitaker",  name: "James Whitaker",  email: "james.whitaker@hondaofanywhere.com",     initials: "JW", color: "#65a30d", avatar: null },
   { id: "ashley-morgan",   name: "Ashley Morgan",   email: "ashley.morgan@hondaofanywhere.com",      initials: "AM", color: "#ea580c", avatar: null },
+  { id: "jenni-eckhart",   name: "Jenni Eckhart",   email: "jenni.eckhart@helloconstellation.com",    initials: "JE", color: "#0e7490", avatar: null },
 ] as const;
 
 export type ProjectOwner = typeof PROJECT_OWNERS[number];
@@ -293,12 +294,16 @@ export function CreateProjectDialog({
   onSave,
   brandOptions = [],
   existingNames,
+  initialData,
+  mode = "create",
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSave: (data: NewProjectInput) => void;
   brandOptions?: { id: string; name: string }[];
   existingNames?: string[];
+  initialData?: Partial<NewProjectInput>;
+  mode?: "create" | "edit";
 }) {
   const [name, setName]           = useState("");
   const [account, setAccount]     = useState("");
@@ -314,6 +319,20 @@ export function CreateProjectDialog({
   const [errors, setErrors] = useState<FormErrors>({});
 
   void brandOptions; // available for future brand selector
+
+  // Populate form when editing an existing project
+  useEffect(() => {
+    if (open && initialData) {
+      if (initialData.name    !== undefined) setName(initialData.name);
+      if (initialData.account !== undefined) setAccount(initialData.account);
+      if (initialData.brand   !== undefined) setBrand(initialData.brand);
+      if (initialData.ownerId !== undefined) setOwnerId(initialData.ownerId);
+      if (initialData.startDate !== undefined) setStartDate(initialData.startDate);
+      if (initialData.endDate   !== undefined) setEndDate(initialData.endDate);
+      if (initialData.platforms !== undefined) setPlatforms(initialData.platforms);
+      if (initialData.tags      !== undefined) setTags(initialData.tags);
+    }
+  }, [open, initialData]);
 
   const validate = (): FormErrors => {
     const e: FormErrors = {};
@@ -357,12 +376,12 @@ export function CreateProjectDialog({
         className="w-full max-w-[900px] sm:max-w-[900px] p-0 rounded-[24px] gap-0 [&>button]:hidden border-0"
         style={{ boxShadow: "0 11px 15px rgba(0,0,0,0.2), 0 24px 38px 3px rgba(0,0,0,0.14), 0 9px 46px 8px rgba(0,0,0,0.12)" }}
       >
-        <DialogTitle className="sr-only">Create Project</DialogTitle>
+        <DialogTitle className="sr-only">{mode === "edit" ? "Edit Project" : "Create Project"}</DialogTitle>
 
         {/* ── Header — no bottom border ───────────────────────────────── */}
         <div className="flex items-center justify-between px-4 pt-4 pb-2 rounded-t-[24px] bg-white">
           <h2 className="text-[20px] font-medium text-[#1f1d25] leading-tight" style={R}>
-            Create Project
+            {mode === "edit" ? "Edit Project" : "Create Project"}
           </h2>
           <button
             onClick={handleCancel}
@@ -549,7 +568,7 @@ export function CreateProjectDialog({
             className="px-4 py-1.5 rounded-full text-[14px] font-semibold text-white transition-all cursor-pointer disabled:opacity-50"
             style={{ background: "#473bab", ...R }}
           >
-            Create Project
+            {mode === "edit" ? "Save Changes" : "Create Project"}
           </button>
         </div>
       </DialogContent>

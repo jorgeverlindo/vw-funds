@@ -27,6 +27,8 @@ export interface ProjectAccordionSectionProps {
   children?: React.ReactNode;
   /** Start expanded (only relevant when count is defined). */
   defaultExpanded?: boolean;
+  /** Avatar/button slot for the task owner, shown in the header's right area. */
+  ownerSlot?: React.ReactNode;
   /** Controlled expanded state — when provided, overrides internal state. */
   expanded?: boolean;
   /** Called when the section is toggled (controlled mode). */
@@ -43,6 +45,7 @@ export function ProjectAccordionSection({
   defaultExpanded = false,
   expanded: controlledExpanded,
   onExpandedChange,
+  ownerSlot,
 }: ProjectAccordionSectionProps) {
   const [internalExpanded, setInternalExpanded] = useState(defaultExpanded);
   const isNullState = count === undefined;
@@ -83,23 +86,18 @@ export function ProjectAccordionSection({
           </span>
         )}
 
-        {/* Title + optional count */}
-        <div className={`flex items-baseline gap-1.5 flex-1 min-w-0 ${isNullState ? "pl-0" : ""}`}>
+        {/* Title + count + inline status badge */}
+        <div className={`flex items-center gap-1.5 flex-1 min-w-0 ${isNullState ? "pl-0" : ""}`}>
           <span className="text-[14px] font-semibold text-[#1f1d25] leading-tight">{title}</span>
           {isInteractive && count !== undefined && (
             <span className="text-[13px] text-[#9C99A9] font-normal">({count})</span>
           )}
+          {statusSlot && isInteractive && (
+            <div className="flex items-center shrink-0" onClick={(e) => e.stopPropagation()}>
+              {statusSlot}
+            </div>
+          )}
         </div>
-
-        {/* Right: status / action slot */}
-        {statusSlot && isInteractive && (
-          <div
-            className="flex items-center gap-2 shrink-0"
-            onClick={(e) => e.stopPropagation()}
-          >
-            {statusSlot}
-          </div>
-        )}
 
         {/* Details ↗ link */}
         {onDetails && isInteractive && (
@@ -110,6 +108,13 @@ export function ProjectAccordionSection({
             <ExternalLink size={13} strokeWidth={1.75} />
             Details
           </button>
+        )}
+
+        {/* Task owner avatar */}
+        {ownerSlot && isInteractive && (
+          <div className="shrink-0" onClick={(e) => e.stopPropagation()}>
+            {ownerSlot}
+          </div>
         )}
       </div>
 

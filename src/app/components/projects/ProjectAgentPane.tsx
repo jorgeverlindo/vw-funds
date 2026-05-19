@@ -560,6 +560,7 @@ const MOCK_CONTACTS = [
   { name: "James Whitaker",  email: "james.whitaker@hondaofanywhere.com", group: "dealer" as const },
   { name: "Ashley Morgan",   email: "ashley.morgan@hondaofanywhere.com",  group: "dealer" as const },
   { name: "Katelyn Gray",    email: "katelyn.gray@emichvw.com",           group: "dealer" as const },
+  { name: "Jenni Eckhart",   email: "jenni.eckhart@helloconstellation.com", group: "internal" as const },
 ];
 
 // ─── Shared custom select (replaces native <select>) ─────────────────────────

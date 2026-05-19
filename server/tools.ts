@@ -303,6 +303,29 @@ export const agentTools: Anthropic.Tool[] = [
       required: ["message"],
     },
   },
+
+  // ── Task owner assignment ──────────────────────────────────────────────────────
+  {
+    name: "propose_task_owners",
+    description:
+      "Show a card that lets the user assign a task owner to each project section " +
+      "(Offers, Templates, Backgrounds, Brand, Assets). Use this when the user asks to " +
+      "define or set task owners, regardless of language. " +
+      "Pass suggested owners if the user named them, otherwise leave sections empty.",
+    input_schema: {
+      type: "object" as const,
+      properties: {
+        owners: {
+          type: "object",
+          description:
+            "Suggested owner names per section. Keys: 'offers', 'templates', 'backgrounds', 'brand', 'assets'. " +
+            "Values: full person name (e.g. 'Jenni Eckhart'). Omit sections with no suggestion.",
+          additionalProperties: { type: "string" },
+        },
+      },
+      required: [],
+    },
+  },
 ];
 
 // ─── Tool Executor ────────────────────────────────────────────────────────────
@@ -408,6 +431,13 @@ export function executeTool(
         success: true,
         email: input,
         message: "Email proposal ready for user review.",
+      };
+
+    case "propose_task_owners":
+      return {
+        success: true,
+        taskOwners: input,
+        message: "Task owner proposal ready for user review.",
       };
 
     default:

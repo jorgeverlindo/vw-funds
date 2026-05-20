@@ -110,8 +110,8 @@ export function ProjectAccordionSection({
           </button>
         )}
 
-        {/* Task owner avatar */}
-        {ownerSlot && isInteractive && (
+        {/* Task owner avatar — always visible so users can assign even on empty sections */}
+        {ownerSlot && (
           <div className="shrink-0" onClick={(e) => e.stopPropagation()}>
             {ownerSlot}
           </div>

@@ -4,6 +4,6 @@
   "framework": "vite",
   "alias": ["vw-funds-2.vercel.app"],
   "rewrites": [
-    { "source": "/((?!api/).*)", "destination": "/index.html" }
+    { "source": "/((?!api/)(?!.*\\.).*)", "destination": "/index.html" }
   ]
 }

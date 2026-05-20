@@ -274,14 +274,14 @@ function VoiceStatus({ isActive }: { isActive: boolean }) {
 }
 
 // ─── AgentInput ───────────────────────────────────────────────────────────────
-export interface AgentInputProps { onSubmit?: (text: string, attachment: File | null) => void; compact?: boolean; }
+export interface AgentInputProps { onSubmit?: (text: string, attachment: File | null) => void; compact?: boolean; accountName?: string; }
 
 const SIM_PHRASES = [
   'Raise what I have in accrued funds', ' and plan strategies based on my inventory',
   ' for April.', ' Order them by priority', ' and justify each one', ' with the corresponding budget allocation.',
 ];
 
-export function AgentInput({ onSubmit, compact = false }: AgentInputProps) {
+export function AgentInput({ onSubmit, compact = false, accountName }: AgentInputProps) {
   const [value, setValue]             = useState('');
   const [isFocused, setIsFocused]     = useState(false);
   const [attachment, setAttachment]   = useState<AttachmentEntry | null>(null);
@@ -501,7 +501,7 @@ export function AgentInput({ onSubmit, compact = false }: AgentInputProps) {
                   <path d={svgPaths.p2fb20000} fill="#111014" fillOpacity="0.56" />
                 </svg>
               </div>
-              <span className="text-[13px] text-[rgba(17,16,20,0.56)] tracking-[0.46px] whitespace-nowrap" style={{ fontFamily: "'Roboto', sans-serif", fontWeight: 500 }}>Jack Daniels Volkswagen</span>
+              <span className="text-[13px] text-[rgba(17,16,20,0.56)] tracking-[0.46px] whitespace-nowrap" style={{ fontFamily: "'Roboto', sans-serif", fontWeight: 500 }}>{accountName ?? "Jack Daniels Volkswagen"}</span>
             </button>
           </div>
           <div className="flex items-center gap-[10px]">

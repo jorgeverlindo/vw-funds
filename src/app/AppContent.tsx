@@ -884,6 +884,7 @@ export default function AppContent() {
           <ProjectAgentPane
             isOpen={isAgentPaneOpen}
             onClose={() => setIsAgentPaneOpen(false)}
+            userType={userType}
           />
         )}
 

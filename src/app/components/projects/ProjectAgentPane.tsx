@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import { cn } from "../../../lib/utils";
 import { AgentInput } from "../AgentPane";
+import type { UserType } from "../../AppContent";
 import {
   DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem,
 } from "../ui/dropdown-menu";
@@ -2880,14 +2881,15 @@ function ToolChipView({ name, input }: { name: string; input: Record<string, unk
 }
 
 // ─── Category chips ────────────────────────────────────────────────────────────
-const PROJECT_CATEGORIES = ["Create a project", "Pick offers", "Pick templates", "Duplicate a project"];
+const PROJECT_CATEGORIES = ["Create a project", "Pick offers", "Pick templates", "Duplicate a project", "Create proactive project"];
 
 // What each category chip sends to the agent — explicit phrasing ensures correct flow_scope
 const CATEGORY_MESSAGES: Record<string, string> = {
-  "Create a project":   "Create a project",
-  "Pick offers":        "I want to pick offers for a new project. Offers only — no need for templates, backgrounds, or brand.",
-  "Pick templates":     "I want to pick templates for a new project. Templates only — no need for offers, backgrounds, or brand.",
-  "Duplicate a project": "Duplicate a project",
+  "Create a project":          "Create a project",
+  "Pick offers":               "I want to pick offers for a new project. Offers only — no need for templates, backgrounds, or brand.",
+  "Pick templates":            "I want to pick templates for a new project. Templates only — no need for offers, backgrounds, or brand.",
+  "Duplicate a project":       "Duplicate a project",
+  "Create proactive project":  "Build a full project proactively",
 };
 
 function CategoryChip({ label, onClick }: { label: string; onClick?: () => void }) {
@@ -2903,9 +2905,12 @@ function CategoryChip({ label, onClick }: { label: string; onClick?: () => void 
 }
 
 // ─── Main component ────────────────────────────────────────────────────────────
-interface ProjectAgentPaneProps { isOpen: boolean; onClose: () => void }
+// Honda accounts available to the Agency user
+const HONDA_ACCOUNTS = ["Honda of Anywhere", "Honda City"];
 
-export function ProjectAgentPane({ isOpen, onClose }: ProjectAgentPaneProps) {
+interface ProjectAgentPaneProps { isOpen: boolean; onClose: () => void; userType?: UserType; }
+
+export function ProjectAgentPane({ isOpen, onClose, userType }: ProjectAgentPaneProps) {
   const [messages,      setMessages]      = useState<Message[]>([]);
   const [streamingText, setStreamingText] = useState("");
   const [projectContext, setProjectContext] = useState<ProjectContextPayload | null>(null);
@@ -2973,6 +2978,8 @@ export function ProjectAgentPane({ isOpen, onClose }: ProjectAgentPaneProps) {
 
   const proactiveModeRef = useRef(false);
   const [proactiveMode, setProactiveMode] = useState(false);
+  // Agency (dealer) user: active Honda account context shown in the gear chip + focus label
+  const [selectedAccount, setSelectedAccount] = useState(HONDA_ACCOUNTS[0]);
 
   // Refs that stay in sync with state — avoids stale closures in callbacks/timeouts
   const accRef      = useRef("");
@@ -3684,7 +3691,11 @@ export function ProjectAgentPane({ isOpen, onClose }: ProjectAgentPaneProps) {
   const handleProposalDismiss = useCallback((msgId: string) =>
     setMessages(prev => prev.filter(m => m.id !== msgId)), []);
 
-  const focusLabel = projectContext?.projectName ?? "Honda City";
+  // Agency user → focus is account-based; others → project-based
+  const isAgency = userType === 'dealer';
+  const focusLabel = isAgency
+    ? selectedAccount
+    : (projectContext?.projectName ?? "(no project open)");
   const hasMessages = messages.length > 0 || streaming || simulatingStream;
   const arcState = useConstellationAnim((streaming && !streamingText) || simulatingStream);
 
@@ -3886,7 +3897,7 @@ export function ProjectAgentPane({ isOpen, onClose }: ProjectAgentPaneProps) {
                   </div>
                   <div className="flex-1" />
                   <div className="flex flex-col items-center gap-[8px] pb-[16px] shrink-0">
-                    <AgentInput onSubmit={send} />
+                    <AgentInput onSubmit={send} accountName={isAgency ? selectedAccount : undefined} />
                     <div className="flex flex-wrap gap-[8px] items-center justify-center w-full">
                       {PROJECT_CATEGORIES.map(cat => (
                         <CategoryChip key={cat} label={cat} onClick={cat === "Create a project" ? handleCreateProjectClick : () => send(CATEGORY_MESSAGES[cat] ?? cat, null)} />
@@ -3956,7 +3967,7 @@ export function ProjectAgentPane({ isOpen, onClose }: ProjectAgentPaneProps) {
                   </div>
 
                   <div className="flex flex-col items-center gap-[8px] pb-[16px] shrink-0 pt-[8px]">
-                    <AgentInput onSubmit={send} />
+                    <AgentInput onSubmit={send} accountName={isAgency ? selectedAccount : undefined} />
                     <div className="flex flex-wrap gap-[8px] items-center justify-center w-full">
                       {PROJECT_CATEGORIES.map(cat => (
                         <CategoryChip key={cat} label={cat} onClick={cat === "Create a project" ? handleCreateProjectClick : () => send(CATEGORY_MESSAGES[cat] ?? cat, null)} />

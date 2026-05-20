@@ -3189,9 +3189,15 @@ export function ProjectAgentPane({ isOpen, onClose, userType }: ProjectAgentPane
         input: toolInput as ShareInput, applied: false,
       } as ShareMsg]);
     } else if (toolName === "propose_email") {
+      const emailInput = toolInput as EmailInput;
+      const projectId = ctxRef.current?.projectId;
+      const projectUrl = projectId
+        ? `https://constellation-ux-app.vercel.app/OEM/Projects?project=${projectId}`
+        : "https://constellation-ux-app.vercel.app/OEM/Projects";
+      emailInput.message = (emailInput.message ?? "").replace(/\[Project link\]/gi, projectUrl);
       setMessages(prev => [...prev, {
         id: `email-${Date.now()}`, role: "assistant", type: "email",
-        input: toolInput as EmailInput, applied: false,
+        input: emailInput, applied: false,
       } as EmailMsg]);
     } else if (toolName === "propose_brand") {
       setMessages(prev => [...prev, {
@@ -3720,9 +3726,12 @@ export function ProjectAgentPane({ isOpen, onClose, userType }: ProjectAgentPane
     const ctx = ctxRef.current;
     const name = ctx?.projectName ?? "this project";
     const oem  = ctx?.oem ?? "";
+    const projectUrl = ctx?.projectId
+      ? `https://constellation-ux-app.vercel.app/OEM/Projects?project=${ctx.projectId}`
+      : "https://constellation-ux-app.vercel.app/OEM/Projects";
     const emailInput: EmailInput = {
       recipient_hint: recipientHint,
-      message: `I'd like to share the ${oem} project "${name}" with you. You can view and collaborate on it using the link below:\n\nhttps://constellation-ux-app.vercel.app/OEM/Projects`,
+      message: `I'd like to share the ${oem} project "${name}" with you. You can view and collaborate on it using the link below:\n\n${projectUrl}`,
     };
     setMessages(prev => [...prev, {
       id: `email-${Date.now()}`, role: "assistant", type: "email",

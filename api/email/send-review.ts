@@ -136,7 +136,7 @@ function buildEmailHtml(body: SendReviewBody): string {
 
               <!-- CTA -->
               <div style="margin-top:32px;text-align:center;">
-                <a href="${appUrl}/OEM/Projects"
+                <a href="${appUrl}/campaign-review.html"
                    style="display:inline-block;background:#473bab;color:#ffffff;text-decoration:none;font-size:14px;font-weight:600;padding:12px 28px;border-radius:10px;letter-spacing:.02em;">
                   Review Project
                 </a>

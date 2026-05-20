@@ -117,7 +117,7 @@ interface ProactiveQuestionsMsg {
   applied: boolean;
 }
 // File upload message (shown in chat as user bubble with file chip)
-interface UserFileMsg     { id: string; role: "user"; type: "user_file"; text: string; fileName: string; fileType: string; apiContent: ApiContentBlock[] }
+interface UserFileMsg     { id: string; role: "user"; type: "user_file"; text: string; files: { name: string; type: string }[]; apiContent: ApiContentBlock[] }
 // Parsed offers from AI extraction of uploaded file
 interface ParsedOffersMsg { id: string; role: "assistant"; type: "parsed_offers"; input: ParsedOffersInput; applied: boolean }
 
@@ -3198,8 +3198,8 @@ export function ProjectAgentPane({ isOpen, onClose, userType }: ProjectAgentPane
     );
   }, [streamMessage, handleToolResult]); // stable — reads state via refs, not closure
 
-  const send = useCallback(async (text: string, attachment: File | null) => {
-    if (!text.trim() && !attachment || streaming) return;
+  const send = useCallback(async (text: string, attachments: File[]) => {
+    if (!text.trim() && !attachments.length || streaming) return;
 
     const ctx: ProjectContextPayload = projectContext ?? {
       projectId: "", projectName: "(no project open)", oem: "",
@@ -3208,42 +3208,42 @@ export function ProjectAgentPane({ isOpen, onClose, userType }: ProjectAgentPane
 
     let userMsg: TextMessage | UserFileMsg;
 
-    if (attachment) {
-      // Build multimodal content blocks
+    if (attachments.length > 0) {
+      // Build multimodal content blocks for all attachments
       const blocks: ApiContentBlock[] = [];
       if (text.trim()) blocks.push({ type: "text", text: text.trim() });
 
-      try {
-        if (attachment.type.startsWith("image/")) {
-          const b64 = await fileToBase64(attachment);
-          blocks.push({ type: "image", source: { type: "base64", media_type: attachment.type, data: b64 } });
-        } else if (attachment.type === "application/pdf") {
-          const b64 = await fileToBase64(attachment);
-          blocks.push({ type: "document", source: { type: "base64", media_type: "application/pdf", data: b64 } });
-        } else if (/\.xlsx?$/i.test(attachment.name) || attachment.type.includes("spreadsheet") || attachment.type.includes("excel")) {
-          // Excel → convert to text, merge with any user text
-          const excelText = await parseExcelToText(attachment);
-          // Replace or append to existing text block
-          const textIdx = blocks.findIndex(b => b.type === "text");
-          const combined = (textIdx >= 0 ? (blocks[textIdx] as { type: "text"; text: string }).text + "\n\n" : "") + excelText;
-          if (textIdx >= 0) blocks.splice(textIdx, 1);
-          blocks.unshift({ type: "text", text: combined });
-        } else {
-          // Unknown type — treat as text attachment note
-          blocks.push({ type: "text", text: `[Attached file: ${attachment.name}]` });
+      for (const attachment of attachments) {
+        try {
+          if (attachment.type.startsWith("image/")) {
+            const b64 = await fileToBase64(attachment);
+            blocks.push({ type: "image", source: { type: "base64", media_type: attachment.type, data: b64 } });
+          } else if (attachment.type === "application/pdf") {
+            const b64 = await fileToBase64(attachment);
+            blocks.push({ type: "document", source: { type: "base64", media_type: "application/pdf", data: b64 } });
+          } else if (/\.xlsx?$/i.test(attachment.name) || attachment.type.includes("spreadsheet") || attachment.type.includes("excel")) {
+            const excelText = await parseExcelToText(attachment);
+            const textIdx = blocks.findIndex(b => b.type === "text");
+            const combined = (textIdx >= 0 ? (blocks[textIdx] as { type: "text"; text: string }).text + "\n\n" : "") + excelText;
+            if (textIdx >= 0) blocks.splice(textIdx, 1);
+            blocks.unshift({ type: "text", text: combined });
+          } else {
+            blocks.push({ type: "text", text: `[Attached file: ${attachment.name}]` });
+          }
+        } catch {
+          blocks.push({ type: "text", text: `[File: ${attachment.name} — could not process]` });
         }
-      } catch {
-        blocks.push({ type: "text", text: `[File: ${attachment.name} — could not process]` });
       }
 
       // Ensure there's at least one text block hinting at extraction
       if (!blocks.some(b => b.type === "text")) {
-        blocks.unshift({ type: "text", text: `Please extract offers from this file: ${attachment.name}` });
+        blocks.unshift({ type: "text", text: `Please extract offers from these files: ${attachments.map(f => f.name).join(", ")}` });
       }
 
       userMsg = {
         id: `u-${Date.now()}`, role: "user", type: "user_file",
-        text: text.trim(), fileName: attachment.name, fileType: attachment.type,
+        text: text.trim(),
+        files: attachments.map(f => ({ name: f.name, type: f.type })),
         apiContent: blocks,
       };
     } else {
@@ -3284,9 +3284,11 @@ export function ProjectAgentPane({ isOpen, onClose, userType }: ProjectAgentPane
     // so the model MUST extract offers. No system-prompt games needed.
     const isFileUpload = userMsg.type === "user_file";
     const isImageOrDocument = isFileUpload && (
-      (userMsg as UserFileMsg).fileType.startsWith("image/") ||
-      (userMsg as UserFileMsg).fileType === "application/pdf" ||
-      /\.xlsx?$/i.test((userMsg as UserFileMsg).fileName)
+      (userMsg as UserFileMsg).files.some(f =>
+        f.type.startsWith("image/") ||
+        f.type === "application/pdf" ||
+        /\.xlsx?$/i.test(f.name)
+      )
     );
 
     accRef.current = ""; setStreamingText("");
@@ -4051,10 +4053,14 @@ function MessageBubble({
             <p className="text-[12px] text-[#1f1d25] leading-[1.43] tracking-[0.17px] mb-[6px]"
               style={{ fontFamily: "'Roboto', sans-serif" }}>{message.text}</p>
           )}
-          <div className="flex items-center gap-[6px] px-[8px] py-[5px] bg-[rgba(71,59,171,0.06)] border border-[rgba(71,59,171,0.18)] rounded-[8px] w-fit">
-            <FileText size={11} className="text-[#473bab] shrink-0" />
-            <span className="text-[11px] text-[#473bab] truncate max-w-[160px]"
-              style={{ fontFamily: "'Roboto', sans-serif", fontWeight: 500 }}>{message.fileName}</span>
+          <div className="flex flex-wrap gap-[6px]">
+            {message.files.map((f, i) => (
+              <div key={i} className="flex items-center gap-[6px] px-[8px] py-[5px] bg-[rgba(71,59,171,0.06)] border border-[rgba(71,59,171,0.18)] rounded-[8px]">
+                <FileText size={11} className="text-[#473bab] shrink-0" />
+                <span className="text-[11px] text-[#473bab] truncate max-w-[160px]"
+                  style={{ fontFamily: "'Roboto', sans-serif", fontWeight: 500 }}>{f.name}</span>
+              </div>
+            ))}
           </div>
         </div>
       </div>

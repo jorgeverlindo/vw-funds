@@ -274,7 +274,7 @@ function VoiceStatus({ isActive }: { isActive: boolean }) {
 }
 
 // ─── AgentInput ───────────────────────────────────────────────────────────────
-export interface AgentInputProps { onSubmit?: (text: string, attachment: File | null) => void; compact?: boolean; accountName?: string; }
+export interface AgentInputProps { onSubmit?: (text: string, attachments: File[]) => void; compact?: boolean; accountName?: string; }
 
 const SIM_PHRASES = [
   'Raise what I have in accrued funds', ' and plan strategies based on my inventory',
@@ -284,7 +284,7 @@ const SIM_PHRASES = [
 export function AgentInput({ onSubmit, compact = false, accountName }: AgentInputProps) {
   const [value, setValue]             = useState('');
   const [isFocused, setIsFocused]     = useState(false);
-  const [attachment, setAttachment]   = useState<AttachmentEntry | null>(null);
+  const [attachments, setAttachments] = useState<AttachmentEntry[]>([]);
   const [isListening, setIsListening] = useState(false);
   const [amplitudeData, setAmplitudeData] = useState<Uint8Array | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
@@ -297,7 +297,7 @@ export function AgentInput({ onSubmit, compact = false, accountName }: AgentInpu
   const textareaRef    = useRef<HTMLTextAreaElement>(null);
   // Saved cursor position — captured on blur so mic-button click doesn't lose it
   const savedSelectionRef = useRef<{ start: number; end: number } | null>(null);
-  const isReadyToSend  = value.trim().length > 0 || !!attachment;
+  const isReadyToSend  = value.trim().length > 0 || attachments.length > 0;
 
   const startAmpLoop = useCallback(() => {
     function poll() {
@@ -409,17 +409,26 @@ export function AgentInput({ onSubmit, compact = false, accountName }: AgentInpu
 
   const handleAttach = useCallback((files: FileList | null) => {
     if (!files?.length) return;
-    const file = files[0];
-    setAttachment({ file, url: URL.createObjectURL(file) });
+    const newEntries = Array.from(files).map(file => ({ file, url: URL.createObjectURL(file) }));
+    setAttachments(prev => [...prev, ...newEntries]);
+    if (fileRef.current) fileRef.current.value = ''; // allow re-selecting same file
   }, []);
 
-  const removeAttachment = () => { if (attachment) URL.revokeObjectURL(attachment.url); setAttachment(null); if (fileRef.current) fileRef.current.value = ''; };
+  const removeAttachment = useCallback((index: number) => {
+    setAttachments(prev => {
+      URL.revokeObjectURL(prev[index].url);
+      return prev.filter((_, i) => i !== index);
+    });
+  }, []);
 
   const handleSubmit = () => {
     if (isListening) stopListening();
     if (!isReadyToSend) return;
-    onSubmit?.(value.trim(), attachment?.file ?? null);
-    setValue(''); removeAttachment();
+    onSubmit?.(value.trim(), attachments.map(a => a.file));
+    setValue('');
+    attachments.forEach(a => URL.revokeObjectURL(a.url));
+    setAttachments([]);
+    if (fileRef.current) fileRef.current.value = '';
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSubmit(); } };
@@ -434,7 +443,7 @@ export function AgentInput({ onSubmit, compact = false, accountName }: AgentInpu
         if (file) {
           e.preventDefault();
           const named = new File([file], `clipboard-image-${Date.now()}.png`, { type: file.type });
-          setAttachment({ file: named, url: URL.createObjectURL(named) });
+          setAttachments(prev => [...prev, { file: named, url: URL.createObjectURL(named) }]);
           return;
         }
       }
@@ -456,14 +465,30 @@ export function AgentInput({ onSubmit, compact = false, accountName }: AgentInpu
     )}>
       <div className="flex flex-col gap-[8px] p-[12px]">
         <AnimatePresence>
-          {attachment && (
+          {attachments.length > 0 && (
             <motion.div initial={{ opacity: 0, y: -4, height: 0 }} animate={{ opacity: 1, y: 0, height: 'auto' }} exit={{ opacity: 0, y: -4, height: 0 }} transition={{ duration: 0.18 }} className="overflow-hidden">
-              <div className="flex items-center gap-2 pb-1">
-                <div className="flex items-center gap-1.5 pl-2 pr-1.5 py-1 bg-[rgba(71,59,171,0.06)] border border-[rgba(71,59,171,0.18)] rounded-[8px] text-[12px] text-[#473bab] max-w-full">
-                  {attachment.file.type.startsWith('image/') ? <img src={attachment.url} alt="" className="w-5 h-5 rounded object-cover shrink-0" /> : <svg className="w-3.5 h-3.5 shrink-0 opacity-70" fill="none" viewBox="0 0 12 17"><path d={svgPaths.pb4add00} stroke="#473bab" strokeLinecap="round" strokeOpacity="0.9" strokeWidth="1.5" /></svg>}
-                  <span className="truncate max-w-[160px] font-medium">{attachment.file.name}</span>
-                  <button onClick={removeAttachment} className="ml-0.5 text-[#473bab]/60 hover:text-[#473bab] transition-colors p-0.5 rounded shrink-0" tabIndex={-1}><X className="w-3 h-3" /></button>
-                </div>
+              <div className="flex flex-wrap items-end gap-2 pb-1">
+                {attachments.map((att, idx) => (
+                  att.file.type.startsWith('image/')
+                    ? (
+                      /* Claude-style image thumbnail */
+                      <div key={idx} className="relative shrink-0 group">
+                        <img src={att.url} alt={att.file.name} className="w-14 h-14 rounded-[8px] object-cover border border-[rgba(0,0,0,0.08)]" />
+                        <button
+                          onClick={() => removeAttachment(idx)}
+                          className="absolute -top-1.5 -right-1.5 w-[18px] h-[18px] bg-white border border-[rgba(0,0,0,0.12)] rounded-full flex items-center justify-center shadow-sm hover:bg-[rgba(0,0,0,0.04)] transition-colors cursor-pointer"
+                          tabIndex={-1}
+                        ><X className="w-2.5 h-2.5 text-[#686576]" /></button>
+                      </div>
+                    ) : (
+                      /* PDF / Excel pill chip */
+                      <div key={idx} className="flex items-center gap-1.5 pl-2 pr-1.5 py-1 bg-[rgba(71,59,171,0.06)] border border-[rgba(71,59,171,0.18)] rounded-[8px] text-[12px] text-[#473bab]">
+                        <svg className="w-3.5 h-3.5 shrink-0 opacity-70" fill="none" viewBox="0 0 12 17"><path d={svgPaths.pb4add00} stroke="#473bab" strokeLinecap="round" strokeOpacity="0.9" strokeWidth="1.5" /></svg>
+                        <span className="truncate max-w-[160px] font-medium">{att.file.name}</span>
+                        <button onClick={() => removeAttachment(idx)} className="ml-0.5 text-[#473bab]/60 hover:text-[#473bab] transition-colors p-0.5 rounded shrink-0" tabIndex={-1}><X className="w-3 h-3" /></button>
+                      </div>
+                    )
+                ))}
               </div>
             </motion.div>
           )}
@@ -1072,8 +1097,8 @@ export function AgentPane({ isOpen, onClose }: AgentPaneProps) {
 
   useEffect(() => { if (!isOpen) { setTimeout(() => setPaneState('null'), 350); } }, [isOpen]);
 
-  const handleSubmit = (text: string, attachment: File | null) => {
-    setSubmittedPrompt(text); setSubmittedAttachment(attachment); setPaneState('loading');
+  const handleSubmit = (text: string, attachments: File[]) => {
+    setSubmittedPrompt(text); setSubmittedAttachment(attachments[0] ?? null); setPaneState('loading');
   };
 
   return (

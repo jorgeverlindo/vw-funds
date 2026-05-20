@@ -108,7 +108,7 @@ function buildEmailHtml(body: SendReviewBody): string {
           <!-- Logo -->
           <tr>
             <td style="padding-bottom:24px;" align="center">
-              <img src="${appUrl}/constellation-logo.png" height="22" alt="Constellation" style="display:block;" />
+              <img src="${appUrl}/constellation-logo-2024.svg" height="22" alt="Constellation" style="display:block;" />
             </td>
           </tr>
 

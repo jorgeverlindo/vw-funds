@@ -899,6 +899,7 @@ export default function AppContent() {
           <AgentPane
             isOpen={isAgentPaneOpen}
             onClose={() => setIsAgentPaneOpen(false)}
+            accountName={userType === 'dealer' ? 'Honda of Anywhere' : undefined}
           />
         )}
       </main>

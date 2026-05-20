@@ -29,13 +29,15 @@ function NavTooltip({ label, shortcut, children }: {
       <AnimatePresence>
         {visible && (
           <motion.div
-            initial={{ opacity: 0, y: -6 }}
+            initial={{ opacity: 0, y: -4 }}
             animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -6 }}
+            exit={{ opacity: 0, y: -4 }}
             transition={{ duration: 0.35, ease: [0.25, 0.1, 0.25, 1] }}
-            className="absolute bottom-full mb-[8px] pointer-events-none z-[9999] px-[8px] py-[5px] bg-[#1f1d25] text-white rounded-[6px] whitespace-nowrap"
+            className="absolute top-full mt-[8px] pointer-events-none z-[9999] px-[8px] py-[5px] bg-[#1f1d25] text-white rounded-[6px] whitespace-nowrap"
             style={{ fontSize: 11, fontFamily: "'Roboto', sans-serif", letterSpacing: '0.17px', lineHeight: '1.43' }}
           >
+            {/* Arrow pointing up toward the icon */}
+            <div className="absolute left-1/2 -translate-x-1/2 bottom-full w-0 h-0 border-l-[4px] border-r-[4px] border-b-[4px] border-l-transparent border-r-transparent border-b-[#1f1d25]" />
             <div className="flex items-center gap-[6px]">
               <span>{label}</span>
               {shortcut && (
@@ -44,8 +46,6 @@ function NavTooltip({ label, shortcut, children }: {
                 </span>
               )}
             </div>
-            {/* Arrow pointing down */}
-            <div className="absolute left-1/2 -translate-x-1/2 top-full w-0 h-0 border-l-[4px] border-r-[4px] border-t-[4px] border-l-transparent border-r-transparent border-t-[#1f1d25]" />
           </motion.div>
         )}
       </AnimatePresence>

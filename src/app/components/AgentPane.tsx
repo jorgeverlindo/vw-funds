@@ -1085,12 +1085,12 @@ function AgentTopBar({ onClose }: { onClose: () => void }) {
 }
 
 // ─── AgentPane ────────────────────────────────────────────────────────────────
-interface AgentPaneProps { isOpen: boolean; onClose: () => void; }
+interface AgentPaneProps { isOpen: boolean; onClose: () => void; accountName?: string; }
 
 // TASK 1 — "Nauman" → "Mallory" everywhere
 const CATEGORIES = ['Reports', 'Find a Specific Vehicle', 'Competitive Inventory', 'Create', 'Favorites'];
 
-export function AgentPane({ isOpen, onClose }: AgentPaneProps) {
+export function AgentPane({ isOpen, onClose, accountName }: AgentPaneProps) {
   const [paneState, setPaneState]                 = useState<PaneState>('null');
   const [submittedPrompt, setSubmittedPrompt]     = useState('');
   const [submittedAttachment, setSubmittedAttachment] = useState<File | null>(null);
@@ -1131,7 +1131,7 @@ export function AgentPane({ isOpen, onClose }: AgentPaneProps) {
                         <button className="flex items-center cursor-pointer">
                           <span className="text-[14px] tracking-[0.15px] leading-[1.5] opacity-90 whitespace-nowrap"
                             style={{ fontFamily: "'Roboto', sans-serif", fontWeight: 700, backgroundImage: 'linear-gradient(90deg, #473bab, #acabff)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>
-                            Jack Daniels Volkswagen
+                            {accountName ?? "Jack Daniels Volkswagen"}
                           </span>
                           <div className="size-[24px] flex items-center justify-center ml-[-2px]">
                             <svg className="w-[9px] h-[5px]" fill="none" viewBox="0 0 9.5 5.29289"><path d={svgPaths.p14229000} stroke="#473BAB" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" /></svg>
@@ -1141,7 +1141,7 @@ export function AgentPane({ isOpen, onClose }: AgentPaneProps) {
                     </div>
                     <div className="flex-1" />
                     <div className="flex flex-col items-center gap-[8px] pb-[16px] shrink-0">
-                      <AgentInput onSubmit={handleSubmit} />
+                      <AgentInput onSubmit={handleSubmit} accountName={accountName} />
                       <div className="flex flex-wrap gap-[8px] items-center justify-center w-full">
                         {CATEGORIES.map(cat => <CategoryChip key={cat} label={cat} />)}
                       </div>

@@ -3670,6 +3670,42 @@ export function ProjectAgentPane({ isOpen, onClose, userType }: ProjectAgentPane
   // ── Email card ──────────────────────────────────────────────────────────────
   const handleEmailApply = useCallback((recipient: string, message: string) => {
     dispatchAction({ action: "send_email", recipient, message });
+
+    // Fire-and-forget: send a real email via /api/email/send-review
+    const ctx = ctxRef.current;
+    const projectOffers = ctx
+      ? ctx.availableOffers.filter(o => ctx.currentOfferIds.includes(o.id))
+      : [];
+    const projectTemplates = ctx
+      ? ctx.availableTemplates.filter(t => ctx.currentTemplateIds.includes(t.id))
+      : [];
+
+    fetch("/api/email/send-review", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        recipient_email: recipient,
+        message,
+        project: {
+          projectId:   ctx?.projectId,
+          projectName: ctx?.projectName ?? "Campaign",
+          oem:         ctx?.oem,
+          offers:      projectOffers.map(o => ({
+            id: o.id, year: o.year, make: o.make, model: o.model, trim: o.trim,
+            offerType: o.offerType, monthlyPayment: o.monthlyPayment, term: o.term,
+          })),
+          templates: projectTemplates.map(t => ({
+            id: t.id, name: t.name, format: t.format,
+          })),
+        },
+      }),
+    })
+      .then(r => r.json())
+      .then(data => {
+        if (!data.success) console.warn("[email] send-review error:", data.error);
+      })
+      .catch(err => console.warn("[email] send-review fetch failed:", err));
+
     setMessages(prev => [...prev, {
       id: `a-${Date.now()}`, role: "assistant", type: "text",
       content: `✅ Email sent to **${recipient}** with the project link.`,

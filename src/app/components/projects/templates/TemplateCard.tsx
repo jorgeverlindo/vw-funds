@@ -9,6 +9,7 @@ import { AssetCard } from "@projects/ui/AssetCard";
 import {
   DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem,
 } from "../../ui/dropdown-menu";
+import { useComments } from "@comments";
 
 interface Template {
   id: string;
@@ -190,6 +191,7 @@ function TemplatePreviewModal({
 export function TemplateCard({ template, selected = false, onSelect, onDelete }: TemplateCardProps) {
   const [editorOpen, setEditorOpen] = useState(false);
   const [previewOpen, setPreviewOpen] = useState(false);
+  const commentsCtx = useComments();
 
   return (
     <>
@@ -197,7 +199,22 @@ export function TemplateCard({ template, selected = false, onSelect, onDelete }:
         selected={selected}
         onSelect={(checked) => onSelect?.(template.id, checked)}
         menuButton={
-          <DropdownMenu>
+          <div className="flex items-center gap-1">
+            {commentsCtx && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  commentsCtx.openPanelForEntity({ id: template.id, label: template.name, type: "template" });
+                }}
+                title="Comment on this template"
+                className="flex items-center justify-center w-6 h-6 rounded-md bg-white/80 hover:bg-white text-gray-500 hover:text-gray-700 transition-colors cursor-pointer"
+              >
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                </svg>
+              </button>
+            )}
+            <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <button
                 onClick={(e) => e.stopPropagation()}
@@ -237,6 +254,7 @@ export function TemplateCard({ template, selected = false, onSelect, onDelete }:
               )}
             </DropdownMenuContent>
           </DropdownMenu>
+          </div>
         }
         preview={
           <TemplatePreview

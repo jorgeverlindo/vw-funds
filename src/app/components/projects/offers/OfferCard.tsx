@@ -5,6 +5,7 @@ import { MoreVertical, Info, Trash2 } from "lucide-react";
 import {
   DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem,
 } from "../../ui/dropdown-menu";
+import { useComments } from "@comments";
 
 export interface Offer {
   id: string;
@@ -53,6 +54,7 @@ export function OfferCard({ offer, selected = false, onSelect, onDelete, variant
   const variant = resolveVariant(offer, variantProp);
   const fullName = `${offer.year} ${offer.make} ${offer.model} ${offer.trim}`;
   const [hovered, setHovered] = useState(false);
+  const commentsCtx = useComments();
 
   const borderColor = selected
     ? "#6356E1"
@@ -140,6 +142,21 @@ export function OfferCard({ offer, selected = false, onSelect, onDelete, variant
             }}>
               {fullName}
             </span>
+            {/* Comment button — only shown when CommentsProvider is present */}
+            {commentsCtx && (
+              <button
+                onClick={e => {
+                  e.stopPropagation();
+                  commentsCtx.openPanelForEntity({ id: offer.id, label: fullName, type: "offer" });
+                }}
+                title="Comment on this offer"
+                style={{ color: "rgba(104,101,118,0.7)", flexShrink: 0, background: "none", border: "none", padding: "2px", cursor: "pointer", borderRadius: 4, display: "flex", alignItems: "center" }}
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                </svg>
+              </button>
+            )}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <button

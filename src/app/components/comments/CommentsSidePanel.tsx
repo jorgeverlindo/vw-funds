@@ -72,10 +72,26 @@ export function CommentsSidePanel() {
     addReply,
     editReply,
     deleteReply,
+    pendingEntity,
+    clearPendingEntity,
   } = ctx;
 
+  // Entity type → readable label
+  const ENTITY_TYPE_LABEL: Record<string, string> = {
+    offer: "Offer",
+    template: "Template",
+    background: "Background",
+    preview: "Preview",
+  };
+
   const handleNewComment = (html: string) => {
-    addComment({ message: html, replies: [], attachments: [] });
+    addComment({
+      message: html,
+      replies: [],
+      attachments: [],
+      ...(pendingEntity ? { entityMention: pendingEntity } : {}),
+    });
+    clearPendingEntity();
     // Scroll to top (newest comment appears there)
     requestAnimationFrame(() => {
       scrollRef.current?.scrollTo({ top: 0, behavior: "smooth" });
@@ -152,6 +168,33 @@ export function CommentsSidePanel() {
 
           {/* ── Composer ──────────────────────────────────────────────────── */}
           <div className="shrink-0 px-3 pb-3 pt-2 border-t border-[#e8e7ef]">
+            {/* Entity banner — shown when a card triggered the panel */}
+            {pendingEntity && (
+              <div className="flex items-center justify-between gap-2 mb-2 px-2.5 py-1.5 rounded-lg bg-[rgba(71,59,171,0.06)] border border-[rgba(71,59,171,0.15)]">
+                <div className="flex items-center gap-1.5 min-w-0">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#473bab" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="flex-shrink-0">
+                    <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
+                    <polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/>
+                  </svg>
+                  <span className="text-[11px] text-[#686576] flex-shrink-0">
+                    {ENTITY_TYPE_LABEL[pendingEntity.type] ?? pendingEntity.type}:
+                  </span>
+                  <span className="text-[11px] text-[#473bab] font-medium truncate">
+                    {pendingEntity.label}
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  onClick={clearPendingEntity}
+                  aria-label="Remove entity reference"
+                  className="flex-shrink-0 text-[#9c99a9] hover:text-[#686576] transition-colors"
+                >
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+                    <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                  </svg>
+                </button>
+              </div>
+            )}
             <CommentComposer
               onSubmit={handleNewComment}
               placeholder={`Comment as ${currentUser.name.split(" ")[0]}…`}

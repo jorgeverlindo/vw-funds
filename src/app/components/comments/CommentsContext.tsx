@@ -111,6 +111,7 @@ export function CommentsProvider({ projectId, projectName = "", children }: Comm
 
   const [isPanelOpen, setIsPanelOpen] = useState(false);
   const [isNotifOpen, setIsNotifOpen] = useState(false);
+  const [pendingEntity, setPendingEntity] = useState<import("./types").EntityRef | null>(null);
 
   // ── Persist on change ─────────────────────────────────────────────────────
   // useRef tracks latest so we can save without stale-closure issues
@@ -257,6 +258,14 @@ export function CommentsProvider({ projectId, projectName = "", children }: Comm
   const closeNotif  = useCallback(() => setIsNotifOpen(false), []);
   const toggleNotif = useCallback(() => setIsNotifOpen(p => { if (!p) setIsPanelOpen(false); return !p; }), []);
 
+  const openPanelForEntity = useCallback((entity: import("./types").EntityRef) => {
+    setPendingEntity(entity);
+    setIsPanelOpen(true);
+    setIsNotifOpen(false);
+  }, []);
+
+  const clearPendingEntity = useCallback(() => setPendingEntity(null), []);
+
   // ── Derived ───────────────────────────────────────────────────────────────
   const pinnedIds   = useMemo(() => new Set(comments.filter(c => c.isPinned).map(c => c.id)), [comments]);
   const unreadCount = useMemo(() => notifications.filter(n => !n.isRead && n.recipientId === CURRENT_USER.id).length, [notifications]);
@@ -287,12 +296,16 @@ export function CommentsProvider({ projectId, projectName = "", children }: Comm
     openNotif,
     closeNotif,
     toggleNotif,
+    pendingEntity,
+    openPanelForEntity,
+    clearPendingEntity,
   }), [
     comments, notifications, unreadCount, pinnedIds,
     addComment, editComment, deleteComment, pinComment,
     addReply, editReply, deleteReply, markRead, markAllRead,
     isPanelOpen, openPanel, closePanel, togglePanel,
     isNotifOpen, openNotif, closeNotif, toggleNotif,
+    pendingEntity, openPanelForEntity, clearPendingEntity,
   ]);
 
   return <CommentsCtx.Provider value={value}>{children}</CommentsCtx.Provider>;

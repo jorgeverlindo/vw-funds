@@ -124,4 +124,12 @@ export interface CommentsContextValue {
   openNotif:      () => void;
   closeNotif:     () => void;
   toggleNotif:    () => void;
+
+  // ── Entity attach (Etapa 3) ───────────────────────────────────────────────
+  /** The entity card pre-selected for the next comment. Cleared after submit. */
+  pendingEntity:       EntityRef | null;
+  /** Open the panel and pre-load an entity so the next comment is linked to it. */
+  openPanelForEntity:  (entity: EntityRef) => void;
+  /** Clear the pending entity (user dismissed the banner). */
+  clearPendingEntity:  () => void;
 }

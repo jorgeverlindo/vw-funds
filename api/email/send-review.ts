@@ -97,7 +97,7 @@ function buildEmailHtml(body: SendReviewBody): string {
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Campaign Review — ${project.projectName}</title>
+  <title>Project Review — ${project.projectName}</title>
 </head>
 <body style="margin:0;padding:0;background:#f5f4f9;font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;">
   <table width="100%" cellpadding="0" cellspacing="0" style="background:#f5f4f9;padding:40px 16px;">
@@ -108,7 +108,7 @@ function buildEmailHtml(body: SendReviewBody): string {
           <!-- Logo -->
           <tr>
             <td style="padding-bottom:24px;" align="center">
-              <img src="${appUrl}/constellation-logo-2024.svg" height="22" alt="Constellation" style="display:block;" />
+              <img src="${appUrl}/constellation-logo-2024.svg" height="33" alt="Constellation" style="display:block;" />
             </td>
           </tr>
 
@@ -117,7 +117,7 @@ function buildEmailHtml(body: SendReviewBody): string {
             <td style="background:#ffffff;border-radius:16px;padding:32px 32px 36px;box-shadow:0 1px 4px rgba(0,0,0,.06);">
 
               <!-- Header -->
-              <p style="margin:0 0 4px;font-size:12px;font-weight:600;color:#8f8c9c;text-transform:uppercase;letter-spacing:.08em;">Campaign Review</p>
+              <p style="margin:0 0 4px;font-size:12px;font-weight:600;color:#8f8c9c;text-transform:uppercase;letter-spacing:.08em;">Project Review</p>
               <h1 style="margin:0 0 6px;font-size:22px;font-weight:700;color:#1f1d25;line-height:1.2;">
                 ${project.projectName}
               </h1>
@@ -136,9 +136,9 @@ function buildEmailHtml(body: SendReviewBody): string {
 
               <!-- CTA -->
               <div style="margin-top:32px;text-align:center;">
-                <a href="${appUrl}/campaign-review.html"
-                   style="display:inline-block;background:#1f1d25;color:#ffffff;text-decoration:none;font-size:14px;font-weight:600;padding:12px 28px;border-radius:10px;letter-spacing:.02em;">
-                  Review Campaign →
+                <a href="${appUrl}/OEM/Projects"
+                   style="display:inline-block;background:#473bab;color:#ffffff;text-decoration:none;font-size:14px;font-weight:600;padding:12px 28px;border-radius:10px;letter-spacing:.02em;">
+                  Review Project
                 </a>
               </div>
 

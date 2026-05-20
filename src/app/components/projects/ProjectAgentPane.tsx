@@ -2056,7 +2056,7 @@ function NotifyOwnersCard({
   // Default email body
   useEffect(() => {
     setMessage(
-      `Hi team,\n\nI'd like to share the project "${projectName}" with you for your review and action.\n\nPlease find the project link below:\n\n[Project link]\n\nThank you!`
+      `Hi team,\n\nI'd like to share the project "${projectName}" with you for your review and action.\n\nPlease find the project link below:\n\nhttps://constellation-ux-app.vercel.app/OEM/Projects\n\nThank you!`
     );
   }, [projectName]);
 
@@ -3722,7 +3722,7 @@ export function ProjectAgentPane({ isOpen, onClose, userType }: ProjectAgentPane
     const oem  = ctx?.oem ?? "";
     const emailInput: EmailInput = {
       recipient_hint: recipientHint,
-      message: `I'd like to share the ${oem} project "${name}" with you. You can view and collaborate on it using the link below:\n\n[Project link]`,
+      message: `I'd like to share the ${oem} project "${name}" with you. You can view and collaborate on it using the link below:\n\nhttps://constellation-ux-app.vercel.app/OEM/Projects`,
     };
     setMessages(prev => [...prev, {
       id: `email-${Date.now()}`, role: "assistant", type: "email",

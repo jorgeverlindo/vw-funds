@@ -1098,6 +1098,10 @@ interface OffersCardProps {
 function OffersProposalCard({ input, context, onApply, onDismiss, proactive }: OffersCardProps) {
   const [offerIds, setOfferIds] = useState<string[]>(input.offer_ids);
   const [applied,  setApplied]  = useState(false);
+  const [customizeMode, setCustomizeMode] = useState(false);
+  const [customizations, setCustomizations] = useState<Record<string, {
+    monthlyPayment: number; term: number; totalDueAtSigning: number;
+  }>>({});
   const offers = context?.availableOffers ?? [];
   const [manualMode, setManualMode] = useState(false);
   const autoApplyRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -1182,6 +1186,36 @@ function OffersProposalCard({ input, context, onApply, onDismiss, proactive }: O
                 variant="recommendation"
                 onDelete={() => setOfferIds(p => p.filter(x => x !== id))}
               />
+              <AnimatePresence>
+                {customizeMode && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: "auto" }}
+                    exit={{ opacity: 0, height: 0 }}
+                    className="overflow-hidden mt-[4px] px-[12px] py-[10px] rounded-[10px] bg-[rgba(71,59,171,0.04)] border border-[rgba(71,59,171,0.12)] flex flex-wrap gap-x-[16px] gap-y-[8px]"
+                  >
+                    {[
+                      { key: "monthlyPayment", label: "Monthly Payment ($)", defaultVal: (offers.find(x => x.id === id)?.monthlyPayment ?? 0) },
+                      { key: "term",           label: "Term (mo)",           defaultVal: (offers.find(x => x.id === id)?.term ?? 36)          },
+                      { key: "totalDueAtSigning", label: "Due at Signing ($)", defaultVal: (customizations[id]?.totalDueAtSigning ?? 0)        },
+                    ].map(({ key, label, defaultVal }) => (
+                      <label key={key} style={{ ...f, fontSize: 11 }} className="flex flex-col gap-[3px] text-[#686576]">
+                        {label}
+                        <input
+                          type="number"
+                          defaultValue={customizations[id]?.[key as keyof typeof customizations[string]] ?? defaultVal}
+                          onChange={e => setCustomizations(prev => ({
+                            ...prev,
+                            [id]: { ...prev[id], [key]: Number(e.target.value) },
+                          }))}
+                          className="w-[90px] px-[8px] py-[4px] rounded-[6px] border border-[rgba(0,0,0,0.12)] text-[12px] text-[#1f1d25] bg-white outline-none focus:border-[#473bab] focus:ring-1 focus:ring-[rgba(71,59,171,0.15)]"
+                          style={f}
+                        />
+                      </label>
+                    ))}
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </motion.div>
           );
         })}
@@ -1203,6 +1237,16 @@ function OffersProposalCard({ input, context, onApply, onDismiss, proactive }: O
             className="flex-1 py-[8px] rounded-full text-[13px] font-medium tracking-[0.46px] text-white transition-all cursor-pointer disabled:opacity-40"
             style={{ background: "linear-gradient(99deg, #473bab 0%, #6356e1 100%)", ...f }}>
             Add {offerIds.length} offer{offerIds.length !== 1 ? "s" : ""}
+          </button>
+          <button
+            onClick={() => setCustomizeMode(m => !m)}
+            className={cn("px-[14px] py-[8px] rounded-full text-[13px] font-medium border transition-colors cursor-pointer",
+              customizeMode
+                ? "bg-[rgba(71,59,171,0.08)] border-[rgba(71,59,171,0.3)] text-[#473bab]"
+                : "border-[rgba(0,0,0,0.12)] text-[#686576] hover:bg-black/5"
+            )}
+            style={f}>
+            {customizeMode ? "Done" : "Customize"}
           </button>
           <button onClick={onDismiss} className="px-[14px] py-[8px] rounded-full text-[13px] text-[#686576] hover:bg-black/5 transition-colors cursor-pointer" style={f}>
             Dismiss
@@ -1396,6 +1440,20 @@ function TemplatesProposalCard({ input, context, onApply, onDismiss, proactive }
                 .map(t => ({ value: t.id, label: `${t.name} — ${t.format}` }))}
             />
           </motion.div>
+        </div>
+        {/* Customize hint */}
+        <div className="flex items-start gap-[6px] px-[2px] pt-[2px]">
+          <svg width="12" height="12" viewBox="0 0 12 12" fill="none" className="shrink-0 mt-[1px]">
+            <circle cx="6" cy="6" r="5.5" stroke="#473bab" strokeOpacity="0.5"/>
+            <path d="M6 5.5V8.5M6 3.5V4.5" stroke="#473bab" strokeOpacity="0.7" strokeLinecap="round"/>
+          </svg>
+          <p style={{ ...f, fontSize: 11, color: "#686576", lineHeight: 1.5 }}>
+            These templates are all customizable. Click the{" "}
+            <span style={{ fontWeight: 600, color: "#1f1d25" }}>⋮</span>
+            {" "}menu on any template card and select{" "}
+            <span style={{ fontWeight: 600, color: "#473bab" }}>Edit Zone</span>
+            {" "}to customize.
+          </p>
         </div>
         <div className="flex items-center gap-[8px] pt-[2px]">
           <button onClick={() => { onApply(templateIds); setApplied(true); }}
@@ -2995,6 +3053,20 @@ export function ProjectAgentPane({ isOpen, onClose, userType }: ProjectAgentPane
   useEffect(() => { ctxRef.current      = projectContext; }, [projectContext]);
   useEffect(() => { messagesRef.current = messages;       }, [messages]);
 
+  // Agency (dealer) users → Honda-only catalog
+  const filteredContext = useMemo((): ProjectContextPayload | null => {
+    if (!projectContext) return null;
+    if (userType !== 'dealer') return projectContext;
+    return {
+      ...projectContext,
+      availableOffers:    projectContext.availableOffers.filter(o => o.make === 'Honda'),
+      availableTemplates: projectContext.availableTemplates.filter(t => t.brand === 'Honda'),
+    };
+  }, [projectContext, userType]);
+
+  const filteredCtxRef = useRef<ProjectContextPayload | null>(null);
+  useEffect(() => { filteredCtxRef.current = filteredContext; }, [filteredContext]);
+
   // Auto-save messages to localStorage thread on every message change
   useEffect(() => {
     if (messages.length === 0) return;
@@ -3145,7 +3217,7 @@ export function ProjectAgentPane({ isOpen, onClose, userType }: ProjectAgentPane
     setMessages(prev => [...prev, contMsg]);
 
     // Read current state from refs (not stale closure values)
-    const ctx: ProjectContextPayload = ctxRef.current ?? {
+    const ctx: ProjectContextPayload = filteredCtxRef.current ?? ctxRef.current ?? {
       projectId: "", projectName: "(no project open)", oem: "",
       currentOfferIds: [], currentTemplateIds: [], availableOffers: [], availableTemplates: [],
     };
@@ -3201,7 +3273,7 @@ export function ProjectAgentPane({ isOpen, onClose, userType }: ProjectAgentPane
   const send = useCallback(async (text: string, attachments: File[]) => {
     if (!text.trim() && !attachments.length || streaming) return;
 
-    const ctx: ProjectContextPayload = projectContext ?? {
+    const ctx: ProjectContextPayload = filteredContext ?? projectContext ?? {
       projectId: "", projectName: "(no project open)", oem: "",
       currentOfferIds: [], currentTemplateIds: [], availableOffers: [], availableTemplates: [],
     };
@@ -3915,7 +3987,7 @@ export function ProjectAgentPane({ isOpen, onClose, userType }: ProjectAgentPane
 
                       {messages.map(msg => (
                         <MessageBubble
-                          key={msg.id} message={msg} context={projectContext}
+                          key={msg.id} message={msg} context={filteredContext}
                           projectName={projectContext?.projectName ?? "this project"}
                           existingProjectNames={knownProjectNames}
                           onSetupApply={handleSetupApply}

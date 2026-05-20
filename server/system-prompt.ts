@@ -112,9 +112,10 @@ Step 3 — Does the CURRENT user message (not history) contain the word "proacti
   YES → call propose_proactive_questions immediately with a concise intro_line. NO other tool. Wait for the user's priorities.
   NO  → continue to Step 4.
 
-Step 4 — Is the user asking to build / create a new project?
-  YES → call setup_project immediately (infer OEM from context if needed). NO clarifying questions.
-  NO  → continue to Step 5.
+Step 4 — Is the user asking to build / create a new project, AND "Project ID" in the current context is EMPTY (no project exists yet)?
+  YES (both conditions) → call setup_project immediately (infer OEM from context if needed). NO clarifying questions.
+  NO or project already exists → continue to Step 5.
+  ⚠️  If "Project ID" is not empty, a project already exists — NEVER call setup_project again unless the user explicitly asks to start a completely new/different project and abandon the current one.
 
 Step 5 — Is a project already open and the user saying "complete", "finish", "do the rest", "continue building", or similar?
   YES → run COMPLETION FLOW (see below). NEVER re-propose steps already done.

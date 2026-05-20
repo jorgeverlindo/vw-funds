@@ -119,9 +119,10 @@ Step 3 — Does the CURRENT user message (not history) contain the word "proacti
   YES → call propose_proactive_questions immediately with a concise intro_line. NO other tool. Wait for the user's priorities.
   NO  → continue to Step 4.
 
-Step 4 — Is the user asking to build / create a new project?
-  YES → call setup_project immediately (infer OEM from context if needed). NO clarifying questions.
-  NO  → continue to Step 5.
+Step 4 — Is the user asking to build / create a new project, AND "Project ID" in the current context is EMPTY (no project exists yet)?
+  YES (both conditions) → call setup_project immediately (infer OEM from context if needed). NO clarifying questions.
+  NO or project already exists → continue to Step 5.
+  ⚠️  If "Project ID" is not empty, a project already exists — NEVER call setup_project again unless the user explicitly asks to start a completely new/different project and abandon the current one.
 
 Step 5 — Is a project already open and the user saying "complete", "finish", "do the rest", "continue building", or similar?
   YES → run COMPLETION FLOW (see below). NEVER re-propose steps already done per project state.
@@ -232,7 +233,7 @@ SETUP_PROJECT FIELD EXTRACTION — explicit user input always wins; fall back to
   • oem          : If the user explicitly states a brand ("Audi", "VW", "Honda") → use it. If not stated → infer from offer makes or context. Last resort: "General".
   • start_date   : "início de junho" / "start of June" / "beginning of June" → "Jun 1, 2026". "início de [month]" = "[Month] 1, [year]". If not mentioned → use the first day of the current month.
   • end_date     : "dia 31" in June / "end of June" / "June 31" → "Jun 30, 2026" (June has 30 days). "fim de [month]" = last day of that month. If not mentioned → one month after start.
-  • platforms    : Map from natural language → "Google Performance Max" / "Performance Max" / "PMax" → "Google PMax"; "Meta" / "Instagram" / "Facebook" → "Meta"; "TikTok" → "TikTok"; "YouTube" → "YouTube". If not mentioned → leave empty.
+  • platforms    : Map from natural language → "Google PMax"; "Meta"/"Instagram" → "Meta"; "Facebook" → "Facebook"; "social"/"social media" → ["Meta","Facebook"]; "TikTok" → "TikTok"; "YouTube" → "YouTube". If not mentioned → leave empty.
 
 CONTINUATION MESSAGES (automated — the UI sends these after each step is confirmed):
   Any message containing "Next: propose_offers"      → call propose_offers immediately (NO text)
@@ -375,7 +376,7 @@ const agentTools: Anthropic.Tool[] = [
         platforms: {
           type: "array",
           items: { type: "string" },
-          description: "Ad platforms. Valid values: 'Google PMax', 'Google Display', 'Meta', 'Website', 'TikTok', 'YouTube', 'Email'. Map user language: 'Google Performance Max' / 'Performance Max' / 'PMax' → 'Google PMax'; 'Meta' / 'Instagram' / 'Facebook' → 'Meta'.",
+          description: "Ad platforms. Valid values: 'Google PMax', 'Google Display', 'Meta', 'Facebook', 'Website', 'TikTok', 'YouTube', 'Email'. Map user language: 'Google Performance Max' / 'Performance Max' / 'PMax' → 'Google PMax'; 'Meta' / 'Instagram' → 'Meta'; 'Facebook' → 'Facebook'; 'social' / 'social media' → ['Meta', 'Facebook'].",
         },
       },
       required: ["project_name", "oem", "start_date", "end_date", "flow_steps"],

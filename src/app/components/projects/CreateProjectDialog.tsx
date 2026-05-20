@@ -46,6 +46,7 @@ export const PLATFORM_OPTIONS: PlatformOption[] = [
   { id: "google-pmax",    label: "Google PMax",    icon: imgGoogle  },
   { id: "google-display", label: "Google Display", icon: imgGoogle  },
   { id: "meta",           label: "Meta",           icon: imgMeta    },
+  { id: "facebook",       label: "Facebook",       icon: imgMeta    },
   { id: "website",        label: "Website",        icon: imgWebsite },
 ];
 

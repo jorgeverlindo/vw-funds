@@ -3315,6 +3315,18 @@ export function ProjectAgentPane({ isOpen, onClose, userType }: ProjectAgentPane
   const send = useCallback(async (text: string, attachments: File[]) => {
     if (!text.trim() && !attachments.length || streaming) return;
 
+    // Intercept "create a project" / "build a project" / "create proactive project" when one is already open
+    if (!attachments.length && ctxRef.current?.projectId &&
+        /\b(create|build|start|new)\b.*(project|campaign)/i.test(text.trim())) {
+      const name = ctxRef.current.projectName;
+      setMessages(prev => [...prev,
+        { id: `u-${Date.now()}`, role: "user", type: "text", content: text } as TextMessage,
+        { id: `a-${Date.now()}`, role: "assistant", type: "text",
+          content: `**${name}** is already open — I won't start a new project mid-flow. Ask me to add offers, templates, backgrounds, or share the project instead.` } as TextMessage,
+      ]);
+      return;
+    }
+
     // Intercept "generate assets" command — trigger the modal directly
     if (!attachments.length && /generate\s+assets?/i.test(text.trim())) {
       window.dispatchEvent(new CustomEvent(AGENT_GENERATE_ASSETS_EVENT));
@@ -3772,6 +3784,18 @@ export function ProjectAgentPane({ isOpen, onClose, userType }: ProjectAgentPane
   const handleCreateProjectClick = useCallback(() => {
     if (simulatingStream) return; // prevent double-tap
     const ctx = ctxRef.current;
+
+    // ⚠️ GUARD: if a project is already open, never inject a setup card.
+    // The chip is still visible in the chat state, but we redirect the user conversationally.
+    if (ctx?.projectId) {
+      setMessages(prev => [...prev,
+        { id: `u-${Date.now()}`, role: "user", type: "text", content: "Create a project" } as TextMessage,
+        { id: `a-${Date.now()}`, role: "assistant", type: "text",
+          content: `**${ctx.projectName}** is already open. I can add or change offers, templates, backgrounds, or share it — just ask. To start a completely new project, close this one first.` } as TextMessage,
+      ]);
+      return;
+    }
+
     // Infer OEM from the first available offer; fall back to "General"
     const oem = ctx?.availableOffers?.[0]?.make ?? "General";
     const now  = new Date();

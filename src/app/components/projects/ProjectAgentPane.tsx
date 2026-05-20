@@ -3189,12 +3189,15 @@ export function ProjectAgentPane({ isOpen, onClose, userType }: ProjectAgentPane
         input: toolInput as ShareInput, applied: false,
       } as ShareMsg]);
     } else if (toolName === "propose_email") {
-      const emailInput = toolInput as EmailInput;
+      const raw = toolInput as EmailInput;
       const projectId = ctxRef.current?.projectId;
       const projectUrl = projectId
-        ? `https://constellation-ux-app.vercel.app/OEM/Projects?project=${projectId}`
+        ? `https://constellation-ux-app.vercel.app/OEM/Projects?project=${encodeURIComponent(projectId)}`
         : "https://constellation-ux-app.vercel.app/OEM/Projects";
-      emailInput.message = (emailInput.message ?? "").replace(/\[Project link\]/gi, projectUrl);
+      const emailInput: EmailInput = {
+        ...raw,
+        message: (raw.message ?? "").replace(/\[Project link\]/gi, projectUrl),
+      };
       setMessages(prev => [...prev, {
         id: `email-${Date.now()}`, role: "assistant", type: "email",
         input: emailInput, applied: false,

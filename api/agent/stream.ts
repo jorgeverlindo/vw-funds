@@ -108,6 +108,10 @@ Step 1 — Does the conversation contain an image, PDF, or document with vehicle
         (propose_parsed_offers works for ANY brand — it does not need catalog entries.)
   NO  → continue to Step 2.
 
+Step 1.5 — Does the user's message contain the word "proactively"?
+  YES → call propose_proactive_questions immediately with a concise intro_line. NO other tool. Wait for the user's priorities in the continuation.
+  NO  → continue to Step 2.
+
 Step 2 — Is the user asking to build / create a new project?
   YES → call setup_project immediately (infer OEM from context if needed). NO clarifying questions.
   NO  → continue to Step 3.
@@ -240,6 +244,8 @@ Never write any text before firing a continuation tool — not even "Here's my p
 VIOLATION: writing any text instead of calling the named tool is a critical error.
 
 INDIVIDUAL REQUESTS (project already open):
+  - message contains "proactively" → call propose_proactive_questions immediately
+  - message contains "Proactive build. User priorities:" → call setup_project immediately with flow_steps ["offers","templates","backgrounds","brand"]. Use the stated Goal/Timeline/Offer-focus to select the best options. NO text output.
   - "complete" / "finish the rest" / "do the rest" / "continue building" → COMPLETION FLOW
   - "complete and notify owners" / "finish and send to task owners" / "complete … send to task owners" → COMPLETION FLOW + propose_notify_owners at end
   - "add offers" / "change offers"           → call propose_offers directly
@@ -664,6 +670,26 @@ const agentTools: Anthropic.Tool[] = [
     },
   },
 
+  // ── Proactive questions card ───────────────────────────────────────────────
+  {
+    name: "propose_proactive_questions",
+    description:
+      "Show a 3-question priority card before starting a proactive full campaign build. " +
+      "Use this ONLY when the user's message contains the word 'proactively'. " +
+      "After the user submits their answers, you will receive a continuation message with those " +
+      "priorities to guide your selections across the full build.",
+    input_schema: {
+      type: "object" as const,
+      properties: {
+        intro_line: {
+          type: "string",
+          description: "Short sentence shown above the questions, e.g. \"I've reviewed your catalog and team data — let me ask three quick questions.\"",
+        },
+      },
+      required: [],
+    },
+  },
+
   // ── Notify task owners ─────────────────────────────────────────────────────────
   {
     name: "propose_notify_owners",
@@ -719,6 +745,8 @@ function executeTool(
       return { success: true, taskOwners: input, message: "Task owner proposal ready for user review." };
     case "propose_notify_owners":
       return { success: true, notifyOwners: input, message: "Notify owners card ready." };
+    case "propose_proactive_questions":
+      return { success: true, proactiveQuestions: input, message: "Proactive questions card ready for user." };
     default:
       return { success: false, message: `Unknown tool: ${toolName}` };
   }
@@ -778,6 +806,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       "propose_backgrounds", "propose_brand", "propose_project",
       "propose_email", "propose_share", "propose_parsed_offers",
       "propose_task_owners", "propose_notify_owners",
+      "propose_proactive_questions",
     ]);
 
     // Diagnostic: log tool names so we can verify in Vercel logs

@@ -256,6 +256,26 @@ export const agentTools: Anthropic.Tool[] = [
     },
   },
 
+  // ── Proactive questions card ───────────────────────────────────────────────
+  {
+    name: "propose_proactive_questions",
+    description:
+      "Show a 3-question priority card before starting a proactive full campaign build. " +
+      "Use this ONLY when the user's message contains the word 'proactively'. " +
+      "After the user submits their answers, you will receive a continuation message with those " +
+      "priorities to guide your selections across the full build.",
+    input_schema: {
+      type: "object" as const,
+      properties: {
+        intro_line: {
+          type: "string",
+          description: "Short sentence shown above the questions, e.g. \"I've reviewed your catalog and team data — let me ask three quick questions.\"",
+        },
+      },
+      required: [],
+    },
+  },
+
   // ── Sharing mechanism chooser ──────────────────────────────────────────────────
   {
     name: "propose_share",
@@ -466,6 +486,13 @@ export function executeTool(
         success: true,
         notifyOwners: input,
         message: "Notify owners card ready for user.",
+      };
+
+    case "propose_proactive_questions":
+      return {
+        success: true,
+        proactiveQuestions: input,
+        message: "Proactive questions card ready for user.",
       };
 
     default:

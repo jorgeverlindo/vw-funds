@@ -101,6 +101,10 @@ Step 1 — Does the conversation contain an image, PDF, or document with vehicle
         (propose_parsed_offers works for ANY brand — it does not need catalog entries.)
   NO  → continue to Step 2.
 
+Step 1.5 — Does the user's message contain the word "proactively"?
+  YES → call propose_proactive_questions immediately with a concise intro_line. NO other tool. Wait for the user's priorities in the continuation.
+  NO  → continue to Step 2.
+
 Step 2 — Is the user asking to build / create a new project?
   YES → call setup_project immediately (infer OEM from context if needed). NO clarifying questions.
   NO  → continue to Step 3.
@@ -273,6 +277,8 @@ SETUP_PROJECT FIELD EXTRACTION — explicit user input always wins; fall back to
     Step 3: "Offers confirmed. Now propose the email share." → propose_email → done
 
 INDIVIDUAL REQUESTS (project already open — respond to specific asks):
+  - message contains "proactively" → call propose_proactive_questions immediately
+  - message contains "Proactive build. User priorities:" → call setup_project immediately with flow_steps ["offers","templates","backgrounds","brand"]. Use the stated Goal/Timeline/Offer-focus to select the best options. NO text output.
   - "complete" / "finish the rest" / "do the rest" / "continue building" → COMPLETION FLOW
   - "complete and notify owners" / "finish and send to task owners" / "complete … send to task owners" → COMPLETION FLOW + propose_notify_owners at end
   - "fix [field] on [offer]" / "change [field] to [value]" / "correct the [field]" → call edit_offer directly with the offer ID and patched field(s). Do NOT remove and re-add the offer.

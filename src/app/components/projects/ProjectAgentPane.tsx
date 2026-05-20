@@ -105,12 +105,22 @@ interface TaskOwnersInput {
   owners?: Record<string, string>; // section → owner name suggestions from agent
 }
 interface TaskOwnersMsg { id: string; role: "assistant"; type: "task_owners"; input: TaskOwnersInput; applied: boolean; liveOwners?: Record<string, string>; }
+interface ProactiveQuestionsInput {
+  intro_line?: string;
+}
+interface ProactiveQuestionsMsg {
+  id: string;
+  role: "assistant";
+  type: "proactive_questions";
+  input: ProactiveQuestionsInput;
+  applied: boolean;
+}
 // File upload message (shown in chat as user bubble with file chip)
 interface UserFileMsg     { id: string; role: "user"; type: "user_file"; text: string; fileName: string; fileType: string; apiContent: ApiContentBlock[] }
 // Parsed offers from AI extraction of uploaded file
 interface ParsedOffersMsg { id: string; role: "assistant"; type: "parsed_offers"; input: ParsedOffersInput; applied: boolean }
 
-type Message = TextMessage | ToolChipMsg | ProposalMsg | SetupMsg | OffersMsg | TemplatesMsg | BrandMsg | BackgroundsMsg | PreviewMsg | ContinuationMsg | EmailMsg | ShareMsg | UserFileMsg | ParsedOffersMsg | NotifyOwnersMsg | TaskOwnersMsg;
+type Message = TextMessage | ToolChipMsg | ProposalMsg | SetupMsg | OffersMsg | TemplatesMsg | BrandMsg | BackgroundsMsg | PreviewMsg | ContinuationMsg | EmailMsg | ShareMsg | UserFileMsg | ParsedOffersMsg | NotifyOwnersMsg | TaskOwnersMsg | ProactiveQuestionsMsg;
 
 interface ProposalInput {
   project_name?: string;
@@ -699,14 +709,123 @@ function deduplicateName(desired: string, existing: string[]): string {
   return `${desired} ${i}`;
 }
 
+// ─── Proactive Auto-Apply Progress Bar ───────────────────────────────────────
+function ProactiveAutoApplyBar({ delay, onCancel }: { delay: number; onCancel: () => void }) {
+  const [progress, setProgress] = useState(0);
+  const startRef = useRef(Date.now());
+  const f = { fontFamily: "'Roboto', sans-serif" };
+
+  useEffect(() => {
+    startRef.current = Date.now();
+    let rafId: number;
+    const tick = () => {
+      const p = Math.min((Date.now() - startRef.current) / delay * 100, 100);
+      setProgress(p);
+      if (p < 100) rafId = requestAnimationFrame(tick);
+    };
+    rafId = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(rafId);
+  }, [delay]);
+
+  return (
+    <div className="px-[14px] py-[8px] border-t border-[rgba(71,59,171,0.1)] bg-[#f8f7ff]">
+      <div className="flex items-center justify-between mb-[5px]">
+        <span style={{ ...f, fontSize: 10, color: "#686576" }}>Applying automatically…</span>
+        <button onClick={onCancel} style={{ ...f, fontSize: 10, color: "#473bab", fontWeight: 500 }} className="cursor-pointer hover:text-[#6356e1] transition-colors">
+          Edit manually
+        </button>
+      </div>
+      <div className="h-[3px] bg-[rgba(71,59,171,0.12)] rounded-full overflow-hidden">
+        <div className="h-full rounded-full" style={{ width: `${progress}%`, background: "linear-gradient(90deg, #473bab, #6356e1)", transition: "none" }} />
+      </div>
+    </div>
+  );
+}
+
+// ─── Proactive Questions Card ─────────────────────────────────────────────────
+const PROACTIVE_OPTIONS = {
+  goal:       ["Brand Awareness", "Conquest", "Retention", "Service Drive"] as const,
+  timeline:   ["Weekend Event", "Month-long", "Seasonal", "Flexible"] as const,
+  offerFocus: ["Lease-heavy", "Finance-heavy", "Mixed", "No preference"] as const,
+};
+
+function ProactiveQuestionsCard({
+  input, applied, onSubmit,
+}: {
+  input: ProactiveQuestionsInput;
+  applied: boolean;
+  onSubmit: (goal: string, timeline: string, offerFocus: string) => void;
+}) {
+  const f = { fontFamily: "'Roboto', sans-serif" };
+  const [goal,       setGoal]       = useState<string | null>(null);
+  const [timeline,   setTimeline]   = useState<string | null>(null);
+  const [offerFocus, setOfferFocus] = useState<string | null>(null);
+
+  if (applied) {
+    return (
+      <div className="ml-[32px] mt-[4px]">
+        <ConfirmedChip label="Proactive build started" />
+      </div>
+    );
+  }
+
+  const canStart = goal !== null && timeline !== null && offerFocus !== null;
+  const introLine = input.intro_line ?? "I've reviewed your catalog and team data — let me ask three quick questions to guide my selections.";
+
+  function ChipRow({ label, options, value, onChange }: { label: string; options: readonly string[]; value: string | null; onChange: (v: string) => void }) {
+    return (
+      <div>
+        <p style={{ ...f, fontSize: 10, fontWeight: 600, color: "#9c99a9", textTransform: "uppercase" as const, letterSpacing: "0.06em", marginBottom: 6 }}>{label}</p>
+        <div className="flex flex-wrap gap-[6px]">
+          {options.map(opt => (
+            <button key={opt} onClick={() => onChange(opt)} style={{ ...f, fontSize: 11.5 }}
+              className={["px-[10px] py-[5px] rounded-full border font-medium transition-all cursor-pointer",
+                value === opt ? "bg-[#473bab] border-[#473bab] text-white" : "bg-white border-[rgba(0,0,0,0.12)] text-[#686576] hover:border-[#473bab] hover:text-[#473bab]"
+              ].join(" ")}>
+              {opt}
+            </button>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}
+      className="ml-[32px] mt-[4px] rounded-[14px] border border-[rgba(0,0,0,0.1)] bg-white overflow-hidden"
+      style={{ boxShadow: "0 2px 12px rgba(0,0,0,0.06)" }}>
+      <div className="px-[14px] pt-[10px] pb-[8px] border-b border-[rgba(0,0,0,0.06)] bg-[#f8f7ff] flex items-center gap-[6px]">
+        <div className="w-[18px] h-[18px] rounded-full flex items-center justify-center shrink-0" style={{ background: "linear-gradient(135deg, #473bab, #6356e1)" }}>
+          <svg width="9" height="9" viewBox="0 0 9 9" fill="none"><path d="M4.5 1v7M1 4.5h7" stroke="white" strokeWidth="1.8" strokeLinecap="round"/></svg>
+        </div>
+        <span style={{ ...f, fontSize: 11.5, fontWeight: 600, color: "#473bab", letterSpacing: "0.3px" }}>Proactive Campaign Build</span>
+      </div>
+      <div className="flex flex-col gap-[14px] px-[14px] py-[12px]">
+        <p style={{ ...f, fontSize: 12, color: "#686576", lineHeight: 1.5 }}>{introLine}</p>
+        <ChipRow label="Campaign goal" options={PROACTIVE_OPTIONS.goal} value={goal} onChange={setGoal} />
+        <ChipRow label="Timeline" options={PROACTIVE_OPTIONS.timeline} value={timeline} onChange={setTimeline} />
+        <ChipRow label="Offer focus" options={PROACTIVE_OPTIONS.offerFocus} value={offerFocus} onChange={setOfferFocus} />
+      </div>
+      <div className="px-[14px] pb-[12px] flex justify-end">
+        <button onClick={() => { if (canStart) onSubmit(goal!, timeline!, offerFocus!); }} disabled={!canStart}
+          className="px-[16px] py-[8px] rounded-full text-white text-[12px] font-medium cursor-pointer transition-opacity hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed"
+          style={{ background: "linear-gradient(135deg, #473bab 0%, #6356e1 100%)", ...f }}>
+          Start Proactive Build →
+        </button>
+      </div>
+    </motion.div>
+  );
+}
+
 // ─── Setup Project Card ────────────────────────────────────────────────────────
 interface SetupProjectCardProps {
   input: SetupInput;
   existingNames?: string[];
   onApply: (name: string, account: string, oem: string, startDate: string, endDate: string, owner: string, platforms: string[]) => void;
   onDismiss: () => void;
+  proactive?: boolean;
 }
-function SetupProjectCard({ input, existingNames = [], onApply, onDismiss }: SetupProjectCardProps) {
+function SetupProjectCard({ input, existingNames = [], onApply, onDismiss, proactive }: SetupProjectCardProps) {
   const dedupedName = deduplicateName(input.project_name, existingNames);
   const [name,      setName]      = useState(dedupedName);
   const [account,   setAccount]   = useState(input.account ?? "");
@@ -720,6 +839,19 @@ function SetupProjectCard({ input, existingNames = [], onApply, onDismiss }: Set
   const [startDateError,  setStartDateError]  = useState("");
   const [endDateError,    setEndDateError]    = useState("");
   const wasDeduplicated = dedupedName !== input.project_name;
+  const [manualMode, setManualMode] = useState(false);
+  const autoApplyRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Proactive auto-apply
+  useEffect(() => {
+    if (!proactive || manualMode || applied) return;
+    const owner = PROJECT_OWNERS.find(o => o.id === ownerId);
+    autoApplyRef.current = setTimeout(() => {
+      setApplied(true);
+      onApply(name, account, oem, startDate, endDate, owner?.name ?? "", platforms);
+    }, 2000);
+    return () => { if (autoApplyRef.current) clearTimeout(autoApplyRef.current); };
+  }, [proactive, manualMode, applied]); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (applied) {
     return (
@@ -947,6 +1079,9 @@ function SetupProjectCard({ input, existingNames = [], onApply, onDismiss }: Set
           </button>
         </div>
       </div>
+      {proactive && !manualMode && !applied && (
+        <ProactiveAutoApplyBar delay={2000} onCancel={() => { if (autoApplyRef.current) clearTimeout(autoApplyRef.current); setManualMode(true); }} />
+      )}
     </motion.div>
   );
 }
@@ -957,11 +1092,23 @@ interface OffersCardProps {
   context: ProjectContextPayload | null;
   onApply: (offerIds: string[]) => void;
   onDismiss: () => void;
+  proactive?: boolean;
 }
-function OffersProposalCard({ input, context, onApply, onDismiss }: OffersCardProps) {
+function OffersProposalCard({ input, context, onApply, onDismiss, proactive }: OffersCardProps) {
   const [offerIds, setOfferIds] = useState<string[]>(input.offer_ids);
   const [applied,  setApplied]  = useState(false);
   const offers = context?.availableOffers ?? [];
+  const [manualMode, setManualMode] = useState(false);
+  const autoApplyRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    if (!proactive || manualMode || applied) return;
+    autoApplyRef.current = setTimeout(() => {
+      setApplied(true);
+      onApply(offerIds);
+    }, 2000);
+    return () => { if (autoApplyRef.current) clearTimeout(autoApplyRef.current); };
+  }, [proactive, manualMode, applied]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Scroll the main panel to the offers section when this card appears
   useEffect(() => {
@@ -1061,6 +1208,9 @@ function OffersProposalCard({ input, context, onApply, onDismiss }: OffersCardPr
           </button>
         </div>
       </div>
+      {proactive && !manualMode && !applied && (
+        <ProactiveAutoApplyBar delay={2000} onCancel={() => { if (autoApplyRef.current) clearTimeout(autoApplyRef.current); setManualMode(true); }} />
+      )}
     </motion.div>
   );
 }
@@ -1146,12 +1296,24 @@ interface TemplatesCardProps {
   context: ProjectContextPayload | null;
   onApply: (templateIds: string[]) => void;
   onDismiss: () => void;
+  proactive?: boolean;
 }
-function TemplatesProposalCard({ input, context, onApply, onDismiss }: TemplatesCardProps) {
+function TemplatesProposalCard({ input, context, onApply, onDismiss, proactive }: TemplatesCardProps) {
   const [templateIds,   setTemplateIds]   = useState<string[]>(input.template_ids);
   const [applied,       setApplied]       = useState(false);
   const [previewTpl,    setPreviewTpl]    = useState<TemplateInfo | null>(null);
   const templates = context?.availableTemplates ?? [];
+  const [manualMode, setManualMode] = useState(false);
+  const autoApplyRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    if (!proactive || manualMode || applied) return;
+    autoApplyRef.current = setTimeout(() => {
+      setApplied(true);
+      onApply(templateIds);
+    }, 2000);
+    return () => { if (autoApplyRef.current) clearTimeout(autoApplyRef.current); };
+  }, [proactive, manualMode, applied]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Scroll the main panel to the templates section when this card appears
   useEffect(() => {
@@ -1246,6 +1408,9 @@ function TemplatesProposalCard({ input, context, onApply, onDismiss }: Templates
           </button>
         </div>
       </div>
+      {proactive && !manualMode && !applied && (
+        <ProactiveAutoApplyBar delay={2000} onCancel={() => { if (autoApplyRef.current) clearTimeout(autoApplyRef.current); setManualMode(true); }} />
+      )}
       </div>
     </motion.div>
     </>
@@ -1267,11 +1432,23 @@ interface BrandCardProps {
   projectName?: string;
   onApply: (oem: string) => void;
   onDismiss: () => void;
+  proactive?: boolean;
 }
-function BrandProposalCard({ input, projectName, onApply, onDismiss }: BrandCardProps) {
+function BrandProposalCard({ input, projectName, onApply, onDismiss, proactive }: BrandCardProps) {
   const [oem,     setOem]     = useState(() => normalizeOem(input.oem));
   const [applied, setApplied] = useState(false);
   const f = { fontFamily: "'Roboto', sans-serif" };
+  const [manualMode, setManualMode] = useState(false);
+  const autoApplyRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    if (!proactive || manualMode || applied) return;
+    autoApplyRef.current = setTimeout(() => {
+      setApplied(true);
+      onApply(oem);
+    }, 2000);
+    return () => { if (autoApplyRef.current) clearTimeout(autoApplyRef.current); };
+  }, [proactive, manualMode, applied]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Scroll the main panel to the theme section when this card appears
   useEffect(() => {
@@ -1331,6 +1508,9 @@ function BrandProposalCard({ input, projectName, onApply, onDismiss }: BrandCard
             </button>
           </div>
         </div>
+        {proactive && !manualMode && !applied && (
+          <ProactiveAutoApplyBar delay={2000} onCancel={() => { if (autoApplyRef.current) clearTimeout(autoApplyRef.current); setManualMode(true); }} />
+        )}
       </div>
     </motion.div>
   );
@@ -1358,11 +1538,23 @@ interface BackgroundsCardProps {
   input: BackgroundsInput;
   onApply: (backgroundIds: string[]) => void;
   onDismiss: () => void;
+  proactive?: boolean;
 }
-function BackgroundsProposalCard({ input, onApply, onDismiss }: BackgroundsCardProps) {
+function BackgroundsProposalCard({ input, onApply, onDismiss, proactive }: BackgroundsCardProps) {
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [applied, setApplied] = useState(false);
   const f = { fontFamily: "'Roboto', sans-serif" };
+  const [manualMode, setManualMode] = useState(false);
+  const autoApplyRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    if (!proactive || manualMode || applied) return;
+    autoApplyRef.current = setTimeout(() => {
+      setApplied(true);
+      onApply(selectedIds);
+    }, 2000);
+    return () => { if (autoApplyRef.current) clearTimeout(autoApplyRef.current); };
+  }, [proactive, manualMode, applied]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Scroll the main panel to the backgrounds section when this card appears
   useEffect(() => {
@@ -1444,6 +1636,9 @@ function BackgroundsProposalCard({ input, onApply, onDismiss }: BackgroundsCardP
             </button>
           </div>
         </div>
+        {proactive && !manualMode && !applied && (
+          <ProactiveAutoApplyBar delay={2000} onCancel={() => { if (autoApplyRef.current) clearTimeout(autoApplyRef.current); setManualMode(true); }} />
+        )}
       </div>
     </motion.div>
   );
@@ -2776,6 +2971,9 @@ export function ProjectAgentPane({ isOpen, onClose }: ProjectAgentPaneProps) {
   const dispatchAction = useCallback((a: AgentActionPayload) =>
     window.dispatchEvent(new CustomEvent(PROJECT_AGENT_ACTION_EVENT, { detail: a })), []);
 
+  const proactiveModeRef = useRef(false);
+  const [proactiveMode, setProactiveMode] = useState(false);
+
   // Refs that stay in sync with state — avoids stale closures in callbacks/timeouts
   const accRef      = useRef("");
   const ctxRef      = useRef<ProjectContextPayload | null>(null);
@@ -2873,6 +3071,11 @@ export function ProjectAgentPane({ isOpen, onClose }: ProjectAgentPaneProps) {
         id: `proposal-${Date.now()}`, role: "assistant", type: "proposal",
         input: toolInput as ProposalInput, applied: false,
       } as ProposalMsg]);
+    } else if (toolName === "propose_proactive_questions") {
+      setMessages(prev => [...prev, {
+        id: `proactive-${Date.now()}`, role: "assistant", type: "proactive_questions",
+        input: toolInput as ProactiveQuestionsInput, applied: false,
+      } as ProactiveQuestionsMsg]);
     } else if (toolName === "propose_parsed_offers") {
       // Normalize flat confidence_* fields back into a field_confidence Record
       const rawInput = toolInput as Record<string, unknown>;
@@ -3187,6 +3390,10 @@ export function ProjectAgentPane({ isOpen, onClose }: ProjectAgentPaneProps) {
       : nextStep;
 
     if (!nextStep || !effectiveNext) {
+      if (proactiveModeRef.current) {
+        proactiveModeRef.current = false;
+        setProactiveMode(false);
+      }
       // Flow is complete — proactively offer asset generation if offers + templates are present
       const ctx = ctxRef.current;
       const offerCount    = ctx?.currentOfferIds.length ?? 0;
@@ -3256,6 +3463,20 @@ export function ProjectAgentPane({ isOpen, onClose }: ProjectAgentPaneProps) {
       sendInternal(continuations[firstStep] ?? buildOffersContinuation("Project created", oem));
     }, 600);
   }, [dispatchAction, sendInternal, getFlowSteps, buildOffersContinuation, fireNextStep]);
+
+  // ── Proactive questions submit ───────────────────────────────────────────────
+  const handleProactiveQuestionsSubmit = useCallback((goal: string, timeline: string, offerFocus: string) => {
+    setMessages(prev => prev.map(m =>
+      m.type === "proactive_questions" && !(m as ProactiveQuestionsMsg).applied
+        ? { ...m, applied: true } as ProactiveQuestionsMsg : m
+    ));
+    proactiveModeRef.current = true;
+    setProactiveMode(true);
+    setTimeout(() => sendInternal(
+      `Proactive build. User priorities: Goal: ${goal}, Timeline: ${timeline}, Offer focus: ${offerFocus}. ` +
+      `Use these to guide ALL selections. Call setup_project now with flow_steps ["offers","templates","backgrounds","brand"]. NO text output.`
+    ), 200);
+  }, [sendInternal]);
 
   // ── Offers card ─────────────────────────────────────────────────────────────
   const handleOffersApply = useCallback((offerIds: string[]) => {
@@ -3386,6 +3607,8 @@ export function ProjectAgentPane({ isOpen, onClose }: ProjectAgentPaneProps) {
     setStreamingText("");
     currentThreadIdRef.current = null;
     setShowHistory(false);
+    proactiveModeRef.current = false;
+    setProactiveMode(false);
   }, []);
 
   const handleLoadThread = useCallback((thread: AgentThread) => {
@@ -3706,6 +3929,8 @@ export function ProjectAgentPane({ isOpen, onClose }: ProjectAgentPaneProps) {
                             dispatchAction({ action: "set_task_owners", owners });
                             setMessages(prev => prev.map(m => m.id === msg.id ? { ...m, applied: true } : m));
                           }}
+                          proactive={proactiveMode}
+                          onProactiveQuestionsApply={handleProactiveQuestionsSubmit}
                         />
                       ))}
 
@@ -3762,6 +3987,8 @@ function MessageBubble({
   onParsedOffersApply, onParsedOffersDismiss,
   onNotifyOwnersApply,
   onTaskOwnersApply,
+  proactive,
+  onProactiveQuestionsApply,
 }: {
   message: Message;
   context: ProjectContextPayload | null;
@@ -3787,9 +4014,21 @@ function MessageBubble({
   onParsedOffersDismiss: () => void;
   onNotifyOwnersApply: () => void;
   onTaskOwnersApply: (owners: Record<string, string>) => void;
+  proactive?: boolean;
+  onProactiveQuestionsApply?: (goal: string, timeline: string, offerFocus: string) => void;
 }) {
   if (message.type === "continuation") {
     return null;
+  }
+
+  if (message.type === "proactive_questions") {
+    return (
+      <ProactiveQuestionsCard
+        input={message.input}
+        applied={message.applied}
+        onSubmit={onProactiveQuestionsApply ?? (() => {})}
+      />
+    );
   }
 
   if (message.type === "user_file") {
@@ -3837,6 +4076,7 @@ function MessageBubble({
         existingNames={existingProjectNames}
         onApply={onSetupApply}
         onDismiss={onSetupDismiss}
+        proactive={proactive}
       />
     );
   }
@@ -3848,6 +4088,7 @@ function MessageBubble({
         context={context}
         onApply={onOffersApply}
         onDismiss={onOffersDismiss}
+        proactive={proactive}
       />
     );
   }
@@ -3859,6 +4100,7 @@ function MessageBubble({
         context={context}
         onApply={onTemplatesApply}
         onDismiss={onTemplatesDismiss}
+        proactive={proactive}
       />
     );
   }
@@ -3873,6 +4115,7 @@ function MessageBubble({
         input={message.input}
         onApply={onBackgroundsApply}
         onDismiss={onBackgroundsDismiss}
+        proactive={proactive}
       />
     );
   }
@@ -3939,6 +4182,7 @@ function MessageBubble({
         projectName={projectName}
         onApply={onBrandApply}
         onDismiss={onBrandDismiss}
+        proactive={proactive}
       />
     );
   }

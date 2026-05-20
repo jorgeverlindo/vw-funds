@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect, useCallback, useMemo } from "react";
+import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "motion/react";
 import {
   ChevronLeft, ChevronDown, Search, X, Check,
@@ -73,7 +74,8 @@ export type AgentActionPayload =
   | { action: "add_backgrounds";  backgroundIds: string[] }
   | { action: "send_email";       recipient: string; message: string }
   | { action: "add_custom_offers"; offers: CustomOffer[] }
-  | { action: "edit_offer"; offerId: string; patches: Partial<{ monthlyPayment: number; term: number; totalDueAtSigning: number; offerType: string; trim: string; year: string; make: string; model: string }> };
+  | { action: "edit_offer"; offerId: string; patches: Partial<{ monthlyPayment: number; term: number; totalDueAtSigning: number; offerType: string; trim: string; year: string; make: string; model: string }> }
+  | { action: "set_task_owners"; owners: Record<string, string> };
 
 // ─── Multimodal API types ─────────────────────────────────────────────────────
 type ApiContentBlock =
@@ -99,12 +101,16 @@ interface ContinuationMsg { id: string; role: "user";     type: "continuation"; 
 interface EmailMsg        { id: string; role: "assistant"; type: "email";       input: EmailInput;        applied: boolean }
 interface ShareMsg        { id: string; role: "assistant"; type: "share";       input: ShareInput;        applied: boolean }
 interface NotifyOwnersMsg { id: string; role: "assistant"; type: "notify_owners"; input: NotifyOwnersInput; applied: boolean; liveOwners?: Record<string, string>; }
+interface TaskOwnersInput {
+  owners?: Record<string, string>; // section → owner name suggestions from agent
+}
+interface TaskOwnersMsg { id: string; role: "assistant"; type: "task_owners"; input: TaskOwnersInput; applied: boolean; liveOwners?: Record<string, string>; }
 // File upload message (shown in chat as user bubble with file chip)
 interface UserFileMsg     { id: string; role: "user"; type: "user_file"; text: string; fileName: string; fileType: string; apiContent: ApiContentBlock[] }
 // Parsed offers from AI extraction of uploaded file
 interface ParsedOffersMsg { id: string; role: "assistant"; type: "parsed_offers"; input: ParsedOffersInput; applied: boolean }
 
-type Message = TextMessage | ToolChipMsg | ProposalMsg | SetupMsg | OffersMsg | TemplatesMsg | BrandMsg | BackgroundsMsg | PreviewMsg | ContinuationMsg | EmailMsg | ShareMsg | UserFileMsg | ParsedOffersMsg | NotifyOwnersMsg;
+type Message = TextMessage | ToolChipMsg | ProposalMsg | SetupMsg | OffersMsg | TemplatesMsg | BrandMsg | BackgroundsMsg | PreviewMsg | ContinuationMsg | EmailMsg | ShareMsg | UserFileMsg | ParsedOffersMsg | NotifyOwnersMsg | TaskOwnersMsg;
 
 interface ProposalInput {
   project_name?: string;
@@ -1540,6 +1546,173 @@ function ShareChooserCard({
   );
 }
 
+// ─── Task Owners Proposal Card ────────────────────────────────────────────────
+
+const TASK_SECTIONS = [
+  { id: "offers",      label: "Offers" },
+  { id: "templates",   label: "Templates" },
+  { id: "platforms",   label: "Platforms" },
+  { id: "backgrounds", label: "Backgrounds" },
+  { id: "brand",       label: "Theme & Logos" },
+  { id: "assets",      label: "Assets" },
+  { id: "adshells",    label: "Ad Shells" },
+  { id: "campaigns",   label: "Campaigns" },
+];
+
+function TaskOwnersProposalCard({
+  input,
+  liveOwners,
+  onApply,
+}: {
+  input: TaskOwnersInput;
+  liveOwners?: Record<string, string>;
+  onApply: (owners: Record<string, string>) => void;
+}) {
+  const f = { fontFamily: "'Roboto', sans-serif" };
+
+  // Merge agent suggestions with live owners from context
+  const [selections, setSelections] = useState<Record<string, string>>(() => {
+    const base: Record<string, string> = { ...liveOwners };
+    if (input.owners) {
+      Object.entries(input.owners).forEach(([section, name]) => {
+        const owner = PROJECT_OWNERS.find(o =>
+          o.name.toLowerCase().includes(name.toLowerCase())
+        );
+        if (owner) base[section] = owner.id;
+      });
+    }
+    return base;
+  });
+
+  const [applied, setApplied] = useState(false);
+  const [openSection, setOpenSection] = useState<string | null>(null);
+  const [dropCoords, setDropCoords] = useState<{ top: number; left: number; width: number } | null>(null);
+  const triggerRefs = useRef<Record<string, HTMLButtonElement | null>>({});
+
+  const openDropdown = (sectionId: string) => {
+    const btn = triggerRefs.current[sectionId];
+    if (!btn) return;
+    const r = btn.getBoundingClientRect();
+    setDropCoords({ top: r.bottom + 4, left: r.left, width: r.width });
+    setOpenSection(sectionId);
+  };
+
+  const handleConfirm = () => {
+    onApply(selections);
+    setApplied(true);
+  };
+
+  if (applied) {
+    const count = Object.keys(selections).length;
+    return (
+      <div className="ml-[32px] mt-[4px]">
+        <ConfirmedChip label={`Task owners set for ${count} section${count !== 1 ? "s" : ""}`} />
+      </div>
+    );
+  }
+
+  return (
+    <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}
+      className="ml-[32px] mt-[4px] rounded-[14px] border border-[rgba(0,0,0,0.10)] bg-white overflow-hidden"
+      style={{ boxShadow: "0 2px 12px rgba(0,0,0,0.06)" }}>
+
+      {/* Header */}
+      <div className="px-[14px] pt-[10px] pb-[8px] border-b border-[rgba(0,0,0,0.06)] bg-[#fafafa]">
+        <p style={{ ...f, fontSize: 11, fontWeight: 600, color: "#1f1d25" }}>Assign Task Owners</p>
+        <p style={{ ...f, fontSize: 10.5, color: "#9c99a9", marginTop: 2 }}>Choose a responsible owner for each section</p>
+      </div>
+
+      {/* Section rows */}
+      <div className="flex flex-col divide-y divide-[rgba(0,0,0,0.05)]">
+        {TASK_SECTIONS.map(({ id, label }) => {
+          const ownerId = selections[id];
+          const owner = PROJECT_OWNERS.find(o => o.id === ownerId);
+          return (
+            <div key={id} className="flex items-center gap-[10px] px-[14px] py-[8px]">
+              <span style={{ ...f, fontSize: 12, color: "#686576", flex: 1 }}>{label}</span>
+              <button
+                ref={el => { triggerRefs.current[id] = el; }}
+                onClick={() => openDropdown(id)}
+                className="flex items-center gap-[6px] px-[8px] py-[4px] rounded-[8px] border border-[rgba(0,0,0,0.10)] bg-[#F9FAFA] hover:border-[var(--brand-accent)] hover:bg-[#f5f4ff] transition-all cursor-pointer min-w-[130px] text-left"
+                style={f}
+              >
+                {owner ? (
+                  <>
+                    {owner.avatar
+                      ? <img src={owner.avatar} alt={owner.name} className="w-[16px] h-[16px] rounded-full object-cover shrink-0" />
+                      : <AvatarInitials initials={owner.initials} size={16} bgColor={owner.color} />
+                    }
+                    <span style={{ ...f, fontSize: 11, color: "#1f1d25", flex: 1 }}>{owner.name.split(" ")[0]}</span>
+                  </>
+                ) : (
+                  <span style={{ ...f, fontSize: 11, color: "#9c99a9", flex: 1 }}>Unassigned</span>
+                )}
+                <ChevronDown size={11} strokeWidth={1.5} style={{ color: "#9c99a9", flexShrink: 0 }} />
+              </button>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Footer */}
+      <div className="px-[14px] py-[10px] border-t border-[rgba(0,0,0,0.06)] flex justify-end">
+        <button
+          onClick={handleConfirm}
+          className="flex items-center gap-[6px] px-[14px] py-[7px] rounded-full text-white text-[12px] font-medium cursor-pointer transition-opacity hover:opacity-90"
+          style={{ background: "linear-gradient(135deg, #6356E1 0%, #8B5CF6 100%)", ...f }}
+        >
+          Apply Task Owners
+        </button>
+      </div>
+
+      {/* Portal dropdown */}
+      {createPortal(
+        <AnimatePresence>
+          {openSection && dropCoords && (
+            <>
+              <div className="fixed inset-0" style={{ zIndex: 9998 }} onClick={() => setOpenSection(null)} />
+              <motion.div
+                initial={{ opacity: 0, y: 4, scale: 0.97 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: 4, scale: 0.97 }}
+                transition={{ duration: 0.12 }}
+                style={{ position: "fixed", top: dropCoords.top, left: dropCoords.left, minWidth: dropCoords.width, zIndex: 9999 }}
+                className="bg-white rounded-xl shadow-xl border border-[rgba(0,0,0,0.10)] py-1"
+              >
+                <button
+                  onClick={() => { setSelections(p => { const n = { ...p }; delete n[openSection]; return n; }); setOpenSection(null); }}
+                  className="w-full flex items-center gap-[8px] px-[10px] py-[7px] text-[12px] text-[#9c99a9] hover:bg-[#F4F5F6] cursor-pointer"
+                  style={f}
+                >
+                  <span className="w-[16px] h-[16px] flex-shrink-0" />
+                  Unassigned
+                  {!selections[openSection] && <Check size={11} className="ml-auto text-[var(--brand-accent)]" />}
+                </button>
+                {PROJECT_OWNERS.map(o => (
+                  <button
+                    key={o.id}
+                    onClick={() => { setSelections(p => ({ ...p, [openSection]: o.id })); setOpenSection(null); }}
+                    className="w-full flex items-center gap-[8px] px-[10px] py-[7px] text-[12px] text-[#1f1d25] hover:bg-[#F4F5F6] cursor-pointer"
+                    style={f}
+                  >
+                    {o.avatar
+                      ? <img src={o.avatar} alt={o.name} className="w-[16px] h-[16px] rounded-full object-cover shrink-0" />
+                      : <AvatarInitials initials={o.initials} size={16} bgColor={o.color} />
+                    }
+                    <span style={{ flex: 1 }}>{o.name}</span>
+                    {selections[openSection] === o.id && <Check size={11} className="text-[var(--brand-accent)]" />}
+                  </button>
+                ))}
+              </motion.div>
+            </>
+          )}
+        </AnimatePresence>,
+        document.body
+      )}
+    </motion.div>
+  );
+}
+
 // ─── Notify Owners Card ───────────────────────────────────────────────────────
 
 function NotifyOwnersCard({
@@ -2668,6 +2841,12 @@ export function ProjectAgentPane({ isOpen, onClose }: ProjectAgentPaneProps) {
         id: `backgrounds-${Date.now()}`, role: "assistant", type: "backgrounds",
         input: toolInput as BackgroundsInput, applied: false,
       } as BackgroundsMsg]);
+    } else if (toolName === "propose_task_owners") {
+      setMessages(prev => [...prev, {
+        id: `task-owners-${Date.now()}`, role: "assistant", type: "task_owners",
+        input: toolInput as TaskOwnersInput, applied: false,
+        liveOwners: ctxRef.current?.taskOwners,
+      } as TaskOwnersMsg]);
     } else if (toolName === "propose_notify_owners") {
       setMessages(prev => [...prev, {
         id: `notify-owners-${Date.now()}`, role: "assistant", type: "notify_owners",
@@ -3082,9 +3261,15 @@ export function ProjectAgentPane({ isOpen, onClose }: ProjectAgentPaneProps) {
   const handleOffersApply = useCallback((offerIds: string[]) => {
     dispatchAction({ action: "add_offers", offerIds });
     const inSetupFlow = messagesRef.current.some(m => m.type === "setup");
-    if (!inSetupFlow) return; // standalone add — no continuation
+    if (!inSetupFlow) {
+      // Standalone: tell the agent offers were confirmed so it can continue
+      setTimeout(() => sendInternal(
+        "Offers added to project. Check the original user request and continue with any remaining steps (use COMPLETION FLOW rules — check CURRENT PROJECT STATE first)."
+      ), 400);
+      return;
+    }
     fireNextStep("offers");
-  }, [dispatchAction, fireNextStep]);
+  }, [dispatchAction, sendInternal, fireNextStep]);
 
   // ── Templates card ──────────────────────────────────────────────────────────
   const handleTemplatesApply = useCallback((templateIds: string[]) => {
@@ -3517,6 +3702,10 @@ export function ProjectAgentPane({ isOpen, onClose }: ProjectAgentPaneProps) {
                           onParsedOffersApply={(offers) => handleParsedOffersApply(msg.id, offers)}
                           onParsedOffersDismiss={() => handleParsedOffersDismiss(msg.id)}
                           onNotifyOwnersApply={() => setMessages(prev => prev.map(m => m.id === msg.id ? { ...m, applied: true } : m))}
+                          onTaskOwnersApply={(owners) => {
+                            dispatchAction({ action: "set_task_owners", owners });
+                            setMessages(prev => prev.map(m => m.id === msg.id ? { ...m, applied: true } : m));
+                          }}
                         />
                       ))}
 
@@ -3572,6 +3761,7 @@ function MessageBubble({
   onShareChooseEmail, onShareChoosePlatform,
   onParsedOffersApply, onParsedOffersDismiss,
   onNotifyOwnersApply,
+  onTaskOwnersApply,
 }: {
   message: Message;
   context: ProjectContextPayload | null;
@@ -3596,6 +3786,7 @@ function MessageBubble({
   onParsedOffersApply: (offers: CustomOffer[]) => void;
   onParsedOffersDismiss: () => void;
   onNotifyOwnersApply: () => void;
+  onTaskOwnersApply: (owners: Record<string, string>) => void;
 }) {
   if (message.type === "continuation") {
     return null;
@@ -3694,6 +3885,26 @@ function MessageBubble({
         onApply={onEmailApply}
         onDismiss={onEmailDismiss}
       />
+    );
+  }
+
+  if (message.type === "task_owners") {
+    return (
+      <div key={message.id}>
+        <TaskOwnersProposalCard
+          input={message.input}
+          liveOwners={message.liveOwners}
+          onApply={(owners) => {
+            // Convert id-keyed selections → name-keyed for the action
+            const ownerNames: Record<string, string> = {};
+            Object.entries(owners).forEach(([section, ownerId]) => {
+              const owner = PROJECT_OWNERS.find(o => o.id === ownerId);
+              if (owner) ownerNames[section] = owner.name;
+            });
+            onTaskOwnersApply(ownerNames);
+          }}
+        />
+      </div>
     );
   }
 

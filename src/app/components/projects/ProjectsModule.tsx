@@ -1301,6 +1301,15 @@ function ProjectDetailView({
           setRemovedOfferIds((prev) => new Set([...prev, offerId]));
           setAgentAddedOfferIds((prev) => [...new Set([...prev, newId])]);
         }
+      } else if (action === "set_task_owners") {
+        const ownerNames = (payload as any).owners as Record<string, string>;
+        // Convert name → id for taskOwners state
+        const newOwners: Record<string, string> = {};
+        Object.entries(ownerNames).forEach(([section, name]) => {
+          const owner = PROJECT_OWNERS.find(o => o.name === name);
+          if (owner) newOwners[section] = owner.id;
+        });
+        setTaskOwners(prev => ({ ...prev, ...newOwners }));
       }
     };
     window.addEventListener(PROJECT_AGENT_ACTION_EVENT, handler);

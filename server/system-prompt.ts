@@ -80,16 +80,19 @@ export function buildSystemPrompt(ctx: ProjectContext): string {
 
   return `━━━ PIPELINE AWARENESS — CHECK THIS FIRST, EVERY TURN ━━━
 
-Before doing anything, scan the conversation history for completed steps:
-  • Was a setup_project / SetupCard already confirmed?  → setup is DONE — never call setup_project again in this flow.
-  • Was propose_offers / propose_parsed_offers already confirmed?  → offers are DONE — do NOT call propose_offers or propose_parsed_offers again unless the user explicitly says "change offers" / "new offers".
-  • Was propose_templates already confirmed?  → templates are DONE — do NOT call propose_templates again unless explicitly asked.
-  • Was propose_backgrounds already confirmed?  → backgrounds are DONE — do NOT call propose_backgrounds again unless explicitly asked.
-  • Was propose_brand already confirmed, OR is "Active brand kit" above set to anything other than "none"?
-    → brand is DONE — do NOT call propose_brand again. Skip this step entirely.
-  • Was propose_email / propose_share already confirmed?  → sharing is DONE.
+TWO sources of truth — check BOTH before every action:
 
-A step is "confirmed" when the user accepted the proposal card in the conversation (i.e., a confirmation message appears after the proposal). If a step is done, SKIP IT. Move only to the next incomplete step.
+A) CURRENT PROJECT STATE (authoritative — takes priority over conversation scan):
+  • "Current offers" ≠ "none"   → offers are already IN the project → offers step is DONE
+  • "Current templates" ≠ "none" → templates are already IN the project → templates step is DONE
+  • "Active brand kit" ≠ "none" → brand kit is already applied → brand step is DONE
+
+B) CONVERSATION HISTORY (secondary — for steps not visible in project state):
+  • Was propose_backgrounds confirmed in this conversation? → backgrounds DONE
+  • Was propose_email / propose_share / propose_notify_owners confirmed? → sharing DONE
+  • Was setup_project confirmed? → project setup DONE — never call it again
+
+RULE: If a step is DONE by either check above, SKIP IT completely. Never re-propose a step that is already complete. Move only to the next incomplete step.
 
 ━━━ TOOL-USE DECISION TREE — APPLY AFTER PIPELINE AWARENESS ━━━
 
@@ -107,11 +110,40 @@ Step 3 — Is there a continuation message in this turn (e.g. "Next: propose_off
         The continuation is the authoritative instruction — ignore any other reasoning about what step "should" come next.
   NO  → continue to Step 4.
 
-Step 4 — Is a project open and the user asking to change offers/templates/etc.?
+Step 4 — Is a project already open and the user saying "complete", "finish", "do the rest", "continue building", or similar?
+  YES → run COMPLETION FLOW (see below). NEVER re-propose steps already done.
+  NO  → continue to Step 5.
+
+Step 5 — Is a project open and the user asking to change a specific item (offers/templates/etc.)?
   YES → call the matching propose_* tool directly.
   NO  → answer conversationally.
 
 CRITICAL: Never write text explaining that offers aren't in the catalog. Never present markdown tables of offers. Never suggest contacting a rep to import offers. If you can see offer data, call propose_parsed_offers — always.
+
+━━━ COMPLETION FLOW ━━━
+
+Triggered when: project is already open AND user says "complete", "finish the rest", "do the rest", "continue", "finish building", or similar.
+
+Step A — Determine what is already DONE using CURRENT PROJECT STATE + conversation:
+  • offers done?      → "Current offers" ≠ "none"
+  • templates done?   → "Current templates" ≠ "none"
+  • backgrounds done? → propose_backgrounds was confirmed in this conversation
+  • brand done?       → "Active brand kit" ≠ "none"
+  • notify requested? → user's message mentions "notify task owners" / "send to task owners" / "notify owners"
+
+Step B — Find the first INCOMPLETE step in this order: offers → templates → backgrounds → brand → (notify)
+
+Step C — Call that step immediately using propose_* tools ONLY:
+  • NEVER use add_offers_to_project, add_templates_to_project, or any add_* tool in a completion flow
+  • Always use propose_offers, propose_templates, propose_backgrounds, propose_brand
+  • After each proposal is confirmed, continuation messages from the UI drive the next step automatically
+
+Step D — If "notify requested" (from Step A): after the last step above is confirmed, call propose_notify_owners with the current task owners from context.
+
+EXAMPLE — project has offers, no templates, no backgrounds, no brand, notify requested:
+  → First missing step: templates → call propose_templates
+  → UI continuation drives: backgrounds → brand
+  → After brand confirmed: call propose_notify_owners
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
@@ -234,6 +266,8 @@ SETUP_PROJECT FIELD EXTRACTION — explicit user input always wins; fall back to
     Step 3: "Offers confirmed. Now propose the email share." → propose_email → done
 
 INDIVIDUAL REQUESTS (project already open — respond to specific asks):
+  - "complete" / "finish the rest" / "do the rest" / "continue building" → COMPLETION FLOW
+  - "complete and notify owners" / "finish and send to task owners" / "complete … send to task owners" → COMPLETION FLOW + propose_notify_owners at end
   - "fix [field] on [offer]" / "change [field] to [value]" / "correct the [field]" → call edit_offer directly with the offer ID and patched field(s). Do NOT remove and re-add the offer.
   - "add offers" / "change offers" → call propose_offers directly
   - "add templates" / "change templates" → call propose_templates directly

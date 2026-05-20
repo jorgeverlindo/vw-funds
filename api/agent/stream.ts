@@ -39,6 +39,8 @@ interface ProjectContext {
   availableOffers: OfferSummary[];
   availableTemplates: TemplateSummary[];
   availableBackgrounds?: Array<{ id: string; name: string }>;
+  activeBrandOem?: string;
+  taskOwners?: Record<string, string>;
 }
 
 // ─── System Prompt Builder (inlined from _lib/system-prompt) ─────────────────
@@ -83,9 +85,25 @@ function buildSystemPrompt(ctx: ProjectContext): string {
     ? ctx.currentTemplateIds.join(", ")
     : "none";
 
-  return `━━━ TOOL-USE DECISION TREE — APPLY BEFORE GENERATING ANY TEXT ━━━
+  return `━━━ PIPELINE AWARENESS — CHECK THIS FIRST, EVERY TURN ━━━
 
-Step 1 — Does the conversation contain an image, PDF, or document with vehicle offer data?
+TWO sources of truth — check BOTH before every action:
+
+A) CURRENT PROJECT STATE (authoritative — takes priority over conversation scan):
+  • "Current offers" ≠ "none"    → offers are already IN the project → offers step is DONE
+  • "Current templates" ≠ "none" → templates are already IN the project → templates step is DONE
+  • "Active brand kit" ≠ "none"  → brand kit is already applied → brand step is DONE
+
+B) CONVERSATION HISTORY (secondary — for steps not visible in project state):
+  • Was propose_backgrounds confirmed in this conversation? → backgrounds DONE
+  • Was propose_email / propose_share / propose_notify_owners confirmed? → sharing DONE
+  • Was setup_project confirmed? → setup DONE — never call it again
+
+RULE: If a step is DONE by either check above, SKIP IT. Never re-propose a completed step.
+
+━━━ TOOL-USE DECISION TREE — APPLY AFTER PIPELINE AWARENESS ━━━
+
+Step 1 — Does the conversation contain an image, PDF, or document with vehicle offer data, AND offers have NOT yet been extracted in this conversation?
   YES → call propose_parsed_offers immediately. Extract every offer row visible. NO text output at all.
         (propose_parsed_offers works for ANY brand — it does not need catalog entries.)
   NO  → continue to Step 2.
@@ -98,11 +116,35 @@ Step 3 — Is there a continuation message in this turn (e.g. "Next: propose_off
   YES → call the named tool immediately. NO text output at all.
   NO  → continue to Step 4.
 
-Step 4 — Is a project open and the user asking to change offers/templates/etc.?
+Step 4 — Is a project already open and the user saying "complete", "finish", "do the rest", "continue building", or similar?
+  YES → run COMPLETION FLOW (see below). NEVER re-propose steps already done per project state.
+  NO  → continue to Step 5.
+
+Step 5 — Is a project open and the user asking to change a specific item?
   YES → call the matching propose_* tool directly.
   NO  → answer conversationally.
 
 CRITICAL: Never write text explaining that offers aren't in the catalog. Never present markdown tables of offers. Never suggest contacting a rep to import offers. If you can see offer data, call propose_parsed_offers — always.
+
+━━━ COMPLETION FLOW ━━━
+
+Triggered when: project is already open AND user says "complete", "finish the rest", "do the rest", "continue", "finish building", or similar.
+
+Step A — Determine what is DONE using CURRENT PROJECT STATE + conversation:
+  • offers done?      → "Current offers" ≠ "none"
+  • templates done?   → "Current templates" ≠ "none"
+  • backgrounds done? → propose_backgrounds was confirmed in this conversation
+  • brand done?       → "Active brand kit" ≠ "none"
+  • notify requested? → user's message mentions "notify task owners" / "send to task owners" / "notify owners"
+
+Step B — Find the first INCOMPLETE step in order: offers → templates → backgrounds → brand → (notify)
+
+Step C — Call that step immediately using propose_* tools ONLY:
+  • NEVER use add_offers_to_project, add_templates_to_project, or any add_* tool in a completion flow
+  • Always use propose_offers, propose_templates, propose_backgrounds, propose_brand
+  • After each proposal is confirmed, continuation messages from the UI drive the next step automatically
+
+Step D — If "notify requested": after the last step is confirmed, call propose_notify_owners with task owners from context.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
@@ -137,6 +179,8 @@ ID: ${ctx.projectId}
 OEM / Brand: ${ctx.oem}
 Current offers: ${currentOffers}
 Current templates: ${currentTemplates}
+Active brand kit: ${ctx.activeBrandOem ?? "none"}
+Task owners: ${ctx.taskOwners && Object.keys(ctx.taskOwners).length > 0 ? Object.entries(ctx.taskOwners).map(([s, n]) => `${s}: ${n}`).join(", ") : "none assigned"}
 
 ━━━ OFFER CATALOG (used only by propose_offers — other brands go through propose_parsed_offers) ━━━
 ${offerList || "  (empty — use propose_parsed_offers for all offer extraction)"}
@@ -189,6 +233,8 @@ Never write any text before firing a continuation tool — not even "Here's my p
 VIOLATION: writing any text instead of calling the named tool is a critical error.
 
 INDIVIDUAL REQUESTS (project already open):
+  - "complete" / "finish the rest" / "do the rest" / "continue building" → COMPLETION FLOW
+  - "complete and notify owners" / "finish and send to task owners" / "complete … send to task owners" → COMPLETION FLOW + propose_notify_owners at end
   - "add offers" / "change offers"           → call propose_offers directly
   - "add templates" / "change templates"     → call propose_templates directly
   - "add backgrounds" / "change backgrounds" → call propose_backgrounds directly

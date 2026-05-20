@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { motion, AnimatePresence } from 'motion/react';
 import svgPaths from '@/imports/svg-kh2cdc4deu';
 import imgAvatar from 'figma:asset/f0494d5017440bdc302141d9ab01c7c81e4a339a.png';
 import imgEmichAvatar from '../../assets/Emich_Avatar.jpeg';
@@ -10,6 +11,47 @@ import { LanguageToggleButton } from './LanguageToggleButton';
 import { useTranslation } from '../contexts/LanguageContext';
 import { useWorkflow } from '../contexts/WorkflowContext';
 import type { WCMItem } from './WebMonitoringContent';
+
+// ─── Nav Tooltip ──────────────────────────────────────────────────────────────
+// Appears above the trigger, slides down gracefully on enter (350 ms).
+function NavTooltip({ label, shortcut, children }: {
+  label: string;
+  shortcut?: string;
+  children: React.ReactNode;
+}) {
+  const [visible, setVisible] = useState(false);
+  return (
+    <div className="relative flex items-center justify-center"
+      onMouseEnter={() => setVisible(true)}
+      onMouseLeave={() => setVisible(false)}
+    >
+      {children}
+      <AnimatePresence>
+        {visible && (
+          <motion.div
+            initial={{ opacity: 0, y: -6 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -6 }}
+            transition={{ duration: 0.35, ease: [0.25, 0.1, 0.25, 1] }}
+            className="absolute bottom-full mb-[8px] pointer-events-none z-[9999] px-[8px] py-[5px] bg-[#1f1d25] text-white rounded-[6px] whitespace-nowrap"
+            style={{ fontSize: 11, fontFamily: "'Roboto', sans-serif", letterSpacing: '0.17px', lineHeight: '1.43' }}
+          >
+            <div className="flex items-center gap-[6px]">
+              <span>{label}</span>
+              {shortcut && (
+                <span className="text-[10px] text-white/60 font-medium bg-white/10 px-[4px] py-[1px] rounded-[3px] tracking-[0.5px]">
+                  {shortcut}
+                </span>
+              )}
+            </div>
+            {/* Arrow pointing down */}
+            <div className="absolute left-1/2 -translate-x-1/2 top-full w-0 h-0 border-l-[4px] border-r-[4px] border-t-[4px] border-l-transparent border-r-transparent border-t-[#1f1d25]" />
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
 import type { CaseUpdateNotif } from '../contexts/ComplianceContext';
 
 interface TopNavBarProps {
@@ -156,64 +198,73 @@ export function TopNavBar({
       {/* Right: Icons + Avatar */}
       <div className="ml-auto flex items-center gap-2 relative">
         <div className="mr-1">
-          <LanguageToggleButton active={languageToggleActive} />
+          <NavTooltip label="Translate">
+            <LanguageToggleButton active={languageToggleActive} />
+          </NavTooltip>
         </div>
-        {/* AI Sparkle Icon - With Badge */}
-        <button
-          onClick={onOpenAgentPane}
-          className={cn(
-            "p-1.5 rounded-full hover:bg-black/5 transition-colors cursor-pointer relative group",
-            isAgentPaneOpen && "bg-[var(--brand-accent)]/10"
-          )}
-          aria-label="AI Agent"
-          aria-expanded={isAgentPaneOpen}
-        >
-          <div className="size-5">
-            <svg className="block size-full" fill="none" preserveAspectRatio="none" viewBox="0 0 24 24">
-              <path clipRule="evenodd" d={svgPaths.pa564600} fill="#111014" fillOpacity="0.56" fillRule="evenodd" />
-              <path d={svgPaths.p317531f0} fill="#111014" fillOpacity="0.56" />
-              <path d={svgPaths.pd4a3b80} fill="#111014" fillOpacity="0.56" />
-            </svg>
-          </div>
-          {/* Badge: Primary Color (#473bab) with number */}
-          <div className="absolute top-[2px] right-[2px] size-[18px] bg-[var(--brand-accent)] rounded-full border border-white flex items-center justify-center transform translate-x-[25%] -translate-y-[25%]">
-            <span className="text-white text-[10px] font-medium leading-none">1</span>
-          </div>
-        </button>
 
-        {/* Message/Chat Icon */}
-        <button className="p-1.5 rounded-full hover:bg-black/5 transition-colors cursor-pointer relative group">
-          <div className="size-5">
-            <svg className="block size-full" fill="none" viewBox="0 0 20 20">
-              <path d={svgPaths.p14bf2500} stroke="#111014" strokeLinecap="round" strokeLinejoin="round" strokeOpacity="0.56" strokeWidth="1.5" />
-            </svg>
-          </div>
-        </button>
-
-        {/* Bell/Notification Icon - With Badge */}
-        <div className="relative">
-          <button 
-            ref={bellRef}
-            onClick={() => setIsNotificationOpen(!isNotificationOpen)}
+        {/* AI Agent Icon */}
+        <NavTooltip label="AI Agent" shortcut="⇧A">
+          <button
+            onClick={onOpenAgentPane}
             className={cn(
               "p-1.5 rounded-full hover:bg-black/5 transition-colors cursor-pointer relative group",
-              isNotificationOpen && "bg-black/5"
+              isAgentPaneOpen && "bg-[var(--brand-accent)]/10"
             )}
+            aria-label="AI Agent"
+            aria-expanded={isAgentPaneOpen}
           >
             <div className="size-5">
-              <svg className="block size-full" fill="none" viewBox="0 0 20 20">
-                <path d={svgPaths.p2d90c980} stroke="#111014" strokeLinecap="round" strokeLinejoin="round" strokeOpacity="0.56" strokeWidth="1.5" />
+              <svg className="block size-full" fill="none" preserveAspectRatio="none" viewBox="0 0 24 24">
+                <path clipRule="evenodd" d={svgPaths.pa564600} fill="#111014" fillOpacity="0.56" fillRule="evenodd" />
+                <path d={svgPaths.p317531f0} fill="#111014" fillOpacity="0.56" />
+                <path d={svgPaths.pd4a3b80} fill="#111014" fillOpacity="0.56" />
               </svg>
             </div>
-            {/* Badge — driven by WorkflowContext unread count */}
-            {badgeCount > 0 && (
-              <div className="absolute top-[2px] right-[2px] size-[18px] bg-[var(--brand-accent)] rounded-full border border-white flex items-center justify-center transform translate-x-[25%] -translate-y-[25%]">
-                <span className="text-white text-[10px] font-medium leading-none">
-                  {badgeCount > 9 ? '9+' : badgeCount}
-                </span>
-              </div>
-            )}
+            {/* Badge */}
+            <div className="absolute top-[2px] right-[2px] size-[18px] bg-[var(--brand-accent)] rounded-full border border-white flex items-center justify-center transform translate-x-[25%] -translate-y-[25%]">
+              <span className="text-white text-[10px] font-medium leading-none">1</span>
+            </div>
           </button>
+        </NavTooltip>
+
+        {/* Comments Icon */}
+        <NavTooltip label="Comments">
+          <button className="p-1.5 rounded-full hover:bg-black/5 transition-colors cursor-pointer relative group">
+            <div className="size-5">
+              <svg className="block size-full" fill="none" viewBox="0 0 20 20">
+                <path d={svgPaths.p14bf2500} stroke="#111014" strokeLinecap="round" strokeLinejoin="round" strokeOpacity="0.56" strokeWidth="1.5" />
+              </svg>
+            </div>
+          </button>
+        </NavTooltip>
+
+        {/* Notifications Icon */}
+        <div className="relative">
+          <NavTooltip label="Notifications">
+            <button
+              ref={bellRef}
+              onClick={() => setIsNotificationOpen(!isNotificationOpen)}
+              className={cn(
+                "p-1.5 rounded-full hover:bg-black/5 transition-colors cursor-pointer relative group",
+                isNotificationOpen && "bg-black/5"
+              )}
+            >
+              <div className="size-5">
+                <svg className="block size-full" fill="none" viewBox="0 0 20 20">
+                  <path d={svgPaths.p2d90c980} stroke="#111014" strokeLinecap="round" strokeLinejoin="round" strokeOpacity="0.56" strokeWidth="1.5" />
+                </svg>
+              </div>
+              {/* Badge — driven by WorkflowContext unread count */}
+              {badgeCount > 0 && (
+                <div className="absolute top-[2px] right-[2px] size-[18px] bg-[var(--brand-accent)] rounded-full border border-white flex items-center justify-center transform translate-x-[25%] -translate-y-[25%]">
+                  <span className="text-white text-[10px] font-medium leading-none">
+                    {badgeCount > 9 ? '9+' : badgeCount}
+                  </span>
+                </div>
+              )}
+            </button>
+          </NavTooltip>
 
           {/* Overlay */}
           <div ref={notificationRef} className="absolute top-full right-0 z-[9998] pt-2">
@@ -258,15 +309,17 @@ export function TopNavBar({
           </div>
         </div>
 
-        {/* Settings/Gear Icon */}
-        <button className="p-1.5 rounded-full hover:bg-black/5 transition-colors cursor-pointer group">
-          <div className="size-5">
-            <svg className="block size-full" fill="none" viewBox="0 0 20 20">
-              <path d={svgPaths.p3f764900} stroke="#111014" strokeLinejoin="round" strokeOpacity="0.56" strokeWidth="1.5" />
-              <path d={svgPaths.p32a6a700} stroke="#111014" strokeLinejoin="round" strokeOpacity="0.56" strokeWidth="1.5" />
-            </svg>
-          </div>
-        </button>
+        {/* Settings Icon */}
+        <NavTooltip label="Settings">
+          <button className="p-1.5 rounded-full hover:bg-black/5 transition-colors cursor-pointer group">
+            <div className="size-5">
+              <svg className="block size-full" fill="none" viewBox="0 0 20 20">
+                <path d={svgPaths.p3f764900} stroke="#111014" strokeLinejoin="round" strokeOpacity="0.56" strokeWidth="1.5" />
+                <path d={svgPaths.p32a6a700} stroke="#111014" strokeLinejoin="round" strokeOpacity="0.56" strokeWidth="1.5" />
+              </svg>
+            </div>
+          </button>
+        </NavTooltip>
 
         {/* Avatar */}
         {userType === 'oem' ? (

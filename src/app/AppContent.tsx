@@ -166,11 +166,17 @@ export default function AppContent() {
     document.documentElement.setAttribute('data-mode', cssMode);
   }, [cssMode]);
 
-  // Keyboard shortcuts: e → OEM  |  a → Agency (multi-dealer)  |  d → Dealer singular
+  // Keyboard shortcuts: e → OEM  |  a → Agency  |  d → Dealer singular  |  ⇧A → toggle AI agent
   useEffect(() => {
     const handleKey = (e: KeyboardEvent) => {
       const tag = (e.target as HTMLElement)?.tagName?.toLowerCase();
       if (['input', 'textarea', 'select'].includes(tag)) return;
+      // ⇧A — toggle AI Agent pane (all user types)
+      if (e.shiftKey && e.key === 'A') {
+        e.preventDefault();
+        setIsAgentPaneOpen(open => !open);
+        return;
+      }
       if (e.metaKey || e.ctrlKey || e.altKey) return;
       if (e.key === 'e') {
         const nextTab = activeTab === 'guidelines' ? 'overview' : activeTab;
@@ -888,8 +894,8 @@ export default function AppContent() {
           />
         )}
 
-        {/* All other sections: generic AgentPane — dealer-only */}
-        {activeAppSection !== 'projects' && (userType === 'dealer' || userType === 'dealer-singular' || userType === 'dealer-emich') && (
+        {/* All other sections: generic AgentPane — all user types */}
+        {activeAppSection !== 'projects' && (
           <AgentPane
             isOpen={isAgentPaneOpen}
             onClose={() => setIsAgentPaneOpen(false)}

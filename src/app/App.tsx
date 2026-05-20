@@ -1,4 +1,5 @@
 import { RouterProvider } from 'react-router';
+import { Analytics } from '@vercel/analytics/react';
 import { router } from './routes';
 import { LanguageProvider } from './contexts/LanguageContext';
 import { ClientProvider } from './contexts/ClientContext';
@@ -16,6 +17,7 @@ export default function App() {
             <ComplianceProvider>
               <RouterProvider router={router} />
               <SnackbarHost />
+              <Analytics />
             </ComplianceProvider>
           </WorkflowProvider>
         </FilterProvider>

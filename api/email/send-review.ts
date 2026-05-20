@@ -88,8 +88,16 @@ function buildEmailHtml(body: SendReviewBody): string {
     <div>${templatePills}</div>`
       : "";
 
-  const customMessage = message
-    ? `<p style="margin:0 0 24px;font-size:15px;color:#1f1d25;line-height:1.6;white-space:pre-wrap;">${message}</p>`
+  // Replace bare project URL with a styled anchor using the project name as label
+  const projectUrl = `${appUrl}/OEM/Projects?project=${encodeURIComponent(project.projectId ?? "")}`;
+  const formattedMessage = message
+    ? message.replace(
+        /https:\/\/constellation-ux-app\.vercel\.app\/OEM\/Projects\?project=[^\s]*/g,
+        `<a href="${projectUrl}" style="color:#473bab;font-weight:600;text-decoration:none;">${project.projectName}</a>`
+      )
+    : "";
+  const customMessage = formattedMessage
+    ? `<p style="margin:0 0 24px;font-size:15px;color:#1f1d25;line-height:1.6;white-space:pre-wrap;">${formattedMessage}</p>`
     : "";
 
   return `<!DOCTYPE html>

@@ -47,3 +47,7 @@ export { CommentComposer } from "./CommentComposer";
 export { CommentMenu } from "./CommentMenu";
 export type { CommentMenuAction } from "./CommentMenu";
 export { ChatBubble } from "./ChatBubble";
+
+// ─── Etapa 2 — Side panel ─────────────────────────────────────────────────────
+
+export { CommentsSidePanel, ChatIcon } from "./CommentsSidePanel";

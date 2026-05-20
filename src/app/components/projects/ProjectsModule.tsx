@@ -48,6 +48,8 @@ import {
 import { ChannelChip } from "../ui/ChannelChip";
 import { emitSnackbar } from "../Snackbar";
 import { TaskOwner } from "@projects/ui/TaskOwner";
+import { CommentsProvider, useComments } from "@comments";
+import { CommentsSidePanel, ChatIcon } from "@comments";
 
 // ─── Left-pane toggle icon (from design asset) ────────────────────────────────
 function LeftPaneIcon({ className }: { className?: string }) {
@@ -1384,6 +1386,258 @@ function ProjectDetailView({
     ?? "—";
 
   return (
+    <CommentsProvider projectId={project.id} projectName={project.name}>
+    <ProjectDetailViewInner
+      project={project}
+      onBack={onBack}
+      onDelete={onDelete}
+      offers={offers}
+      templates={templates}
+      status={status}
+      offersCount={offersCount}
+      templateCount={templateCount}
+      sceneBackgrounds={sceneBackgrounds}
+      saved={saved}
+      removedOfferIds={removedOfferIds}
+      setRemovedOfferIds={setRemovedOfferIds}
+      removedTemplateIds={removedTemplateIds}
+      setRemovedTemplateIds={setRemovedTemplateIds}
+      removedBgIds={removedBgIds}
+      setRemovedBgIds={setRemovedBgIds}
+      confirmDelete={confirmDelete}
+      setConfirmDelete={setConfirmDelete}
+      agentAddedOfferIds={agentAddedOfferIds}
+      setAgentAddedOfferIds={setAgentAddedOfferIds}
+      agentEditedOfferIds={agentEditedOfferIds}
+      setAgentEditedOfferIds={setAgentEditedOfferIds}
+      agentAddedTemplateIds={agentAddedTemplateIds}
+      setAgentAddedTemplateIds={setAgentAddedTemplateIds}
+      customOfferLibrary={customOfferLibrary}
+      setCustomOfferLibrary={setCustomOfferLibrary}
+      agentAddedBgIds={agentAddedBgIds}
+      setAgentAddedBgIds={setAgentAddedBgIds}
+      agentActivatedOems={agentActivatedOems}
+      setAgentActivatedOems={setAgentActivatedOems}
+      combinedOfferLibrary={combinedOfferLibrary}
+      isAgentCreated={isAgentCreated}
+      activeBrandKits={activeBrandKits}
+      brandKit={brandKit}
+      expandedSections={expandedSections}
+      setExpandedSections={setExpandedSections}
+      selectedBgId={selectedBgId}
+      setSelectedBgId={setSelectedBgId}
+      showEditProject={showEditProject}
+      setShowEditProject={setShowEditProject}
+      taskOwners={taskOwners}
+      setTaskOwners={setTaskOwners}
+      showGenerateModal={showGenerateModal}
+      setShowGenerateModal={setShowGenerateModal}
+      generatedAssets={generatedAssets}
+      setGeneratedAssets={setGeneratedAssets}
+      logoUrl={logoUrl}
+    />
+    </CommentsProvider>
+  );
+}
+
+// ─── ProjectDetailViewInner (receives CommentsProvider from parent) ────────────
+// Extracted so we can call useComments() *inside* CommentsProvider.
+
+// (Props are passed 1:1 from ProjectDetailView — no logic change.)
+function ProjectDetailViewInner({
+  project,
+  onBack,
+  onDelete,
+  offers,
+  templates,
+  status,
+  offersCount,
+  templateCount,
+  sceneBackgrounds,
+  saved,
+  removedOfferIds,
+  setRemovedOfferIds,
+  removedTemplateIds,
+  setRemovedTemplateIds,
+  removedBgIds,
+  setRemovedBgIds,
+  confirmDelete,
+  setConfirmDelete,
+  agentAddedOfferIds,
+  setAgentAddedOfferIds,
+  agentEditedOfferIds,
+  setAgentEditedOfferIds,
+  agentAddedTemplateIds,
+  setAgentAddedTemplateIds,
+  customOfferLibrary,
+  setCustomOfferLibrary,
+  agentAddedBgIds,
+  setAgentAddedBgIds,
+  agentActivatedOems,
+  setAgentActivatedOems,
+  combinedOfferLibrary,
+  isAgentCreated,
+  activeBrandKits,
+  brandKit,
+  expandedSections,
+  setExpandedSections,
+  selectedBgId,
+  setSelectedBgId,
+  showEditProject,
+  setShowEditProject,
+  taskOwners,
+  setTaskOwners,
+  showGenerateModal,
+  setShowGenerateModal,
+  generatedAssets,
+  setGeneratedAssets,
+  logoUrl,
+}: {
+  project: LocalProject;
+  onBack: () => void;
+  onDelete: () => void;
+  offers: Offer[];
+  templates: Template[];
+  status: ProjectStatus;
+  offersCount: number | undefined;
+  templateCount: number | undefined;
+  sceneBackgrounds: typeof backgroundCollections;
+  saved: ReturnType<typeof loadProjectState>;
+  removedOfferIds: Set<string>;
+  setRemovedOfferIds: React.Dispatch<React.SetStateAction<Set<string>>>;
+  removedTemplateIds: Set<string>;
+  setRemovedTemplateIds: React.Dispatch<React.SetStateAction<Set<string>>>;
+  removedBgIds: Set<string>;
+  setRemovedBgIds: React.Dispatch<React.SetStateAction<Set<string>>>;
+  confirmDelete: { type: "offer" | "template"; id: string; label: string } | null;
+  setConfirmDelete: React.Dispatch<React.SetStateAction<{ type: "offer" | "template"; id: string; label: string } | null>>;
+  agentAddedOfferIds: string[];
+  setAgentAddedOfferIds: React.Dispatch<React.SetStateAction<string[]>>;
+  agentEditedOfferIds: Set<string>;
+  setAgentEditedOfferIds: React.Dispatch<React.SetStateAction<Set<string>>>;
+  agentAddedTemplateIds: string[];
+  setAgentAddedTemplateIds: React.Dispatch<React.SetStateAction<string[]>>;
+  customOfferLibrary: StoredOffer[];
+  setCustomOfferLibrary: React.Dispatch<React.SetStateAction<StoredOffer[]>>;
+  agentAddedBgIds: string[];
+  setAgentAddedBgIds: React.Dispatch<React.SetStateAction<string[]>>;
+  agentActivatedOems: string[];
+  setAgentActivatedOems: React.Dispatch<React.SetStateAction<string[]>>;
+  combinedOfferLibrary: Offer[];
+  isAgentCreated: boolean;
+  activeBrandKits: BrandKit[];
+  brandKit: BrandKit | undefined;
+  expandedSections: Partial<Record<SectionId, boolean>>;
+  setExpandedSections: React.Dispatch<React.SetStateAction<Partial<Record<SectionId, boolean>>>>;
+  selectedBgId: string | null;
+  setSelectedBgId: React.Dispatch<React.SetStateAction<string | null>>;
+  showEditProject: boolean;
+  setShowEditProject: React.Dispatch<React.SetStateAction<boolean>>;
+  taskOwners: Record<string, string>;
+  setTaskOwners: React.Dispatch<React.SetStateAction<Record<string, string>>>;
+  showGenerateModal: boolean;
+  setShowGenerateModal: React.Dispatch<React.SetStateAction<boolean>>;
+  generatedAssets: GeneratedAsset[];
+  setGeneratedAssets: React.Dispatch<React.SetStateAction<GeneratedAsset[]>>;
+  logoUrl: string;
+}) {
+  // Access comments context (we're inside CommentsProvider now)
+  const commentsCtx = useComments();
+
+  // Re-derive helpers from props (previously local vars in ProjectDetailView)
+  const setTaskOwner = (section: string, ownerId: string) =>
+    setTaskOwners((prev) => ({ ...prev, [section]: ownerId }));
+
+  const { setActiveBrandKit, activeBrandKitIds } = useProjectStore();
+
+  const accountName = project.dealerName;
+  const tags = (project as LocalProject).tags ?? [];
+  const createdDateStr = project.createdAt ?? project.dateRange.split(" - ")[0] ?? "—";
+  const initials = project.assignee.name
+    .split(" ")
+    .map((n: string) => n[0])
+    .join("")
+    .toUpperCase()
+    .slice(0, 2);
+
+  const allExpanded = SECTION_IDS.every((id) => expandedSections[id]);
+  const toggleSection = (id: SectionId, v: boolean) =>
+    setExpandedSections((prev) => ({ ...prev, [id]: v }));
+  const toggleExpandAll = () => {
+    if (allExpanded) {
+      setExpandedSections({});
+    } else {
+      setExpandedSections(Object.fromEntries(SECTION_IDS.map((id) => [id, true])));
+    }
+  };
+
+  const visibleOffers = useMemo(() => {
+    const combined = [
+      ...offers,
+      ...agentAddedOfferIds
+        .map((id) => combinedOfferLibrary.find((o) => o.id === id))
+        .filter((o): o is Offer => !!o),
+    ];
+    const seen = new Set<string>();
+    return combined.filter((o) => {
+      if (removedOfferIds.has(o.id) || seen.has(o.id)) return false;
+      seen.add(o.id);
+      return true;
+    });
+  }, [offers, agentAddedOfferIds, combinedOfferLibrary, removedOfferIds]);
+
+  const visibleTemplates = useMemo(() => {
+    const combined = [
+      ...templates,
+      ...agentAddedTemplateIds
+        .map((id) => templateLibrary.find((t) => t.id === id))
+        .filter((t): t is Template => !!t),
+    ];
+    const seen = new Set<string>();
+    return combined.filter((t) => {
+      if (removedTemplateIds.has(t.id) || seen.has(t.id)) return false;
+      seen.add(t.id);
+      return true;
+    });
+  }, [templates, agentAddedTemplateIds, removedTemplateIds]);
+
+  const visibleBackgrounds = useMemo(() => {
+    return agentAddedBgIds
+      .map((id) => backgroundCollections.find((b) => b.id === id))
+      .filter((b): b is NonNullable<typeof b> => !!b)
+      .filter((b) => !removedBgIds.has(b.id));
+  }, [agentAddedBgIds, removedBgIds]);
+
+  const visibleOffersCount    = visibleOffers.length    > 0 ? visibleOffers.length    : undefined;
+  const visibleTemplateCount  = visibleTemplates.length > 0 ? visibleTemplates.length : undefined;
+  const selectedBg = backgroundCollections.find(b => b.id === selectedBgId) ?? null;
+
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const handleConfirmDelete = () => {
+    if (!confirmDelete) return;
+    if (confirmDelete.type === "offer") {
+      setRemovedOfferIds((prev) => new Set([...prev, confirmDelete.id]));
+    } else {
+      setRemovedTemplateIds((prev) => new Set([...prev, confirmDelete.id]));
+    }
+    setConfirmDelete(null);
+    persistProjectState(project.id, {
+      removedOfferIds: [...removedOfferIds, confirmDelete.type === "offer" ? confirmDelete.id : ""].filter(Boolean),
+      removedTemplateIds: [...removedTemplateIds, confirmDelete.type === "template" ? confirmDelete.id : ""].filter(Boolean),
+      addedOfferIds: agentAddedOfferIds,
+      addedTemplateIds: agentAddedTemplateIds,
+      agentAddedBgIds,
+      activatedOems: agentActivatedOems,
+    });
+    emitSnackbar({ message: `${confirmDelete.type === "offer" ? "Offer" : "Template"} removed`, type: "info" });
+  };
+
+  const actnBtn = "flex items-center gap-1 text-[12px] text-[var(--brand-accent)] font-medium cursor-pointer hover:opacity-75 transition";
+
+  return (
+    <div className="flex flex-row h-full bg-white overflow-hidden">
+    {/* ── Main content column ───────────────────────────────────────── */}
+    <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
     <div className="flex flex-col h-full bg-white overflow-hidden">
 
       {/* ── Header ──────────────────────────────────────────────────── */}
@@ -1455,6 +1709,9 @@ function ProjectDetailView({
             </div>
             <span className="truncate max-w-[110px]">{project.assignee.name}</span>
           </div>
+
+          {/* Comments toggle — pushed to the right */}
+          <CommentsToggleButton />
         </div>
 
         {/* Metadata row */}
@@ -2085,6 +2342,41 @@ function ProjectDetailView({
         }}
       />
     </div>
+    </div>
+    <CommentsSidePanel />
+    </div>
+  );
+}
+
+// ─── CommentsToggleButton — must be inside CommentsProvider ──────────────────
+function CommentsToggleButton() {
+  const ctx = useComments();
+  if (!ctx) return null;
+  const count = ctx.comments.length;
+  const unread = ctx.unreadCount;
+  return (
+    <button
+      type="button"
+      onClick={ctx.togglePanel}
+      aria-label="Toggle comments panel"
+      className={[
+        "ml-auto flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[12px] font-medium transition-all shrink-0 cursor-pointer",
+        ctx.isPanelOpen
+          ? "bg-[rgba(71,59,171,0.12)] text-[#473bab]"
+          : "text-[#686576] hover:bg-[rgba(0,0,0,0.06)] hover:text-[#1f1d25]",
+      ].join(" ")}
+    >
+      <ChatIcon size={14} />
+      <span>Comments</span>
+      {count > 0 && (
+        <span className={[
+          "flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full text-[10px] font-semibold",
+          unread > 0 ? "bg-[#473bab] text-white" : "bg-[rgba(0,0,0,0.08)] text-[#686576]",
+        ].join(" ")}>
+          {count}
+        </span>
+      )}
+    </button>
   );
 }
 

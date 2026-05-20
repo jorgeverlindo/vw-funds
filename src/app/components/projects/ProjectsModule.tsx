@@ -439,13 +439,29 @@ function ProjectCard({
   isDragging: boolean;
 }) {
   const logoUrl = getProjectLogoUrl(project.id);
-  const offersCount    = (project.offerIds    ?? []).length;
-  const templatesCount = (project.templateIds ?? []).length;
-  const bgCount = (() => {
+
+  // Merge base project IDs with agent-added/removed IDs from localStorage
+  const { offersCount, templatesCount, bgCount } = (() => {
     try {
       const saved = JSON.parse(localStorage.getItem(`constellation_proj_state_${project.id}`) ?? 'null');
-      return saved?.bgId ? 1 : 0;
-    } catch { return 0; }
+      const addedOffers    = (saved?.addedOfferIds    as string[] | undefined) ?? [];
+      const addedTemplates = (saved?.addedTemplateIds as string[] | undefined) ?? [];
+      const removedOffers  = new Set<string>((saved?.removedOfferIds  as string[] | undefined) ?? []);
+      const removedTpls    = new Set<string>((saved?.removedTemplateIds as string[] | undefined) ?? []);
+      const agentBgs       = (saved?.agentAddedBgIds  as string[] | undefined) ?? [];
+
+      const allOffers = [...new Set([...(project.offerIds ?? []), ...addedOffers])].filter(id => !removedOffers.has(id));
+      const allTpls   = [...new Set([...(project.templateIds ?? []), ...addedTemplates])].filter(id => !removedTpls.has(id));
+      const bgs       = agentBgs.length > 0 ? agentBgs.length : (saved?.bgId ? 1 : 0);
+
+      return { offersCount: allOffers.length, templatesCount: allTpls.length, bgCount: bgs };
+    } catch {
+      return {
+        offersCount:    (project.offerIds    ?? []).length,
+        templatesCount: (project.templateIds ?? []).length,
+        bgCount: 0,
+      };
+    }
   })();
   const assetsCount = offersCount * templatesCount;
   const status = project.status as ProjectStatus;
@@ -457,7 +473,7 @@ function ProjectCard({
       onDragStart={(e) => { e.stopPropagation(); onDragStart(); }}
       onDragEnd={onDragEnd}
       onClick={onClick}
-      className={`w-full text-left bg-white border border-gray-100 rounded-xl overflow-hidden flex shadow-sm hover:shadow-md hover:border-gray-200 transition group cursor-pointer ${isDragging ? "opacity-40 scale-[0.98]" : ""}`}
+      className={`w-full text-left bg-white border border-[#e8e7ef] rounded-xl overflow-hidden flex shadow-sm hover:shadow-md hover:border-[#ccc9da] transition group cursor-pointer ${isDragging ? "opacity-40 scale-[0.98]" : ""}`}
     >
       {/* Left thumbnail */}
       <div

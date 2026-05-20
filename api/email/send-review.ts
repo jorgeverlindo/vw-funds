@@ -198,7 +198,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const html = buildEmailHtml(body);
 
     const { data, error } = await resend.emails.send({
-      from: "Constellation <noreply@constellation-ux.com>",
+      from: "Constellation <onboarding@resend.dev>",
       to: [body.recipient_email],
       subject: `Campaign Review: ${body.project.projectName}`,
       html,

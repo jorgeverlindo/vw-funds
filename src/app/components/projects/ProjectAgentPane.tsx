@@ -836,7 +836,18 @@ function SetupProjectCard({ input, existingNames = [], onApply, onDismiss, proac
   const [startDate, setStartDate] = useState(input.start_date);
   const [endDate,   setEndDate]   = useState(input.end_date);
   const [ownerId,   setOwnerId]   = useState(input.owner ? (PROJECT_OWNERS.find(o => o.name === input.owner)?.id ?? "jorge-verlindo") : "jorge-verlindo");
-  const [platforms, setPlatforms] = useState<string[]>(input.platforms ?? []);
+  // Normalize agent-supplied platform strings (labels or IDs) → PLATFORM_OPTIONS ids
+  const normalizePlatformIds = (raw: string[]): string[] =>
+    raw.flatMap(val => {
+      if (PLATFORM_OPTIONS.some(p => p.id === val)) return [val]; // already a valid ID
+      const lower = val.toLowerCase().replace(/[-\s]/g, "");
+      const match = PLATFORM_OPTIONS.find(p =>
+        p.id.replace(/-/g, "") === lower ||
+        p.label.toLowerCase().replace(/[-\s]/g, "") === lower
+      );
+      return match ? [match.id] : [];
+    });
+  const [platforms, setPlatforms] = useState<string[]>(normalizePlatformIds(input.platforms ?? []));
   const [applied,         setApplied]         = useState(false);
   const [nameError,       setNameError]       = useState("");
   const [startDateError,  setStartDateError]  = useState("");

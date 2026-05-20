@@ -39,7 +39,7 @@ export const agentTools: Anthropic.Tool[] = [
         platforms: {
           type: "array",
           items: { type: "string" },
-          description: "Ad platforms. Valid values: 'Google PMax', 'Google Display', 'Meta', 'Facebook', 'Website', 'TikTok', 'YouTube', 'Email'. Map user language: 'Google Performance Max' / 'Performance Max' / 'PMax' → 'Google PMax'; 'Meta' / 'Instagram' → 'Meta'; 'Facebook' → 'Facebook'; 'social' / 'social media' → ['Meta', 'Facebook'].",
+          description: "Ad platform IDs. Valid values: 'google-pmax', 'google-display', 'meta', 'facebook', 'website'. Map user language: 'Google Performance Max'/'PMax' → 'google-pmax'; 'Google Display' → 'google-display'; 'Meta'/'Instagram' → 'meta'; 'Facebook' → 'facebook'; 'social'/'social media' → ['meta','facebook']; 'Website'/'web' → 'website'.",
         },
       },
       required: ["project_name", "oem", "start_date", "end_date", "flow_scope"],

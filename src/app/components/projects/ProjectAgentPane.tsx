@@ -139,6 +139,9 @@ interface SetupInput {
   oem: string;
   start_date: string;
   end_date: string;
+  /** Enum set by the agent based on user intent — drives continuation messages */
+  flow_scope?: "full" | "offers_only" | "templates_only" | "offers_and_templates" | "templates_and_email" | "offers_and_email";
+  /** Legacy field — kept for backward compat with old sessions */
   flow_steps?: string[];
   owner?: string;
   platforms?: string[];
@@ -3500,10 +3503,25 @@ export function ProjectAgentPane({ isOpen, onClose, userType }: ProjectAgentPane
   // ── Flow steps helper — reads messagesRef (always fresh, no stale closure) ──
   const getFlowSteps = useCallback((): string[] => {
     const msgs = messagesRef.current;
-    const setupMsgs = msgs.filter((m): m is SetupMsg => m.type === "setup");
-    const agentSteps = setupMsgs.at(-1)?.input.flow_steps;
-    if (agentSteps && agentSteps.length > 0) return agentSteps;
-    // Fallback: infer from first user message
+    const setupMsg = msgs.filter((m): m is SetupMsg => m.type === "setup").at(-1);
+
+    // 1. flow_scope enum (set by agent in tools.ts — primary source of truth)
+    const SCOPE_STEPS: Record<NonNullable<SetupInput["flow_scope"]>, string[]> = {
+      full:                   ["offers", "templates", "backgrounds", "brand"],
+      offers_only:            ["offers"],
+      templates_only:         ["templates"],
+      offers_and_templates:   ["offers", "templates"],
+      templates_and_email:    ["templates", "email"],
+      offers_and_email:       ["offers", "email"],
+    };
+    const scope = setupMsg?.input.flow_scope;
+    if (scope && SCOPE_STEPS[scope]) return SCOPE_STEPS[scope];
+
+    // 2. Legacy flow_steps array (old sessions)
+    const legacySteps = setupMsg?.input.flow_steps;
+    if (legacySteps && legacySteps.length > 0) return legacySteps;
+
+    // 3. Fallback: infer from first user message
     const firstUser = msgs.find((m): m is TextMessage => m.type === "text" && m.role === "user");
     if (firstUser) {
       const t = firstUser.content.toLowerCase();

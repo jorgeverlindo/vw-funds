@@ -41,6 +41,7 @@ export default defineConfig({
       '@': path.resolve(__dirname, './src'),
       // Alias for the Projects module (constellation-app port)
       '@projects': path.resolve(__dirname, './src/app/components/projects'),
+      '@comments': path.resolve(__dirname, './src/app/components/comments'),
     },
   },
 })

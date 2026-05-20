@@ -1092,6 +1092,8 @@ function ProjectDetailView({
 
   // Agent-added IDs (arrive via window events from ProjectAgentPane, persisted per project)
   const [agentAddedOfferIds,    setAgentAddedOfferIds]    = useState<string[]>(saved?.addedOfferIds ?? []);
+  // Offer IDs that the user edited in the agent panel — rendered with variant="regular" (not recommendation)
+  const [agentEditedOfferIds,   setAgentEditedOfferIds]   = useState<Set<string>>(new Set());
   const [agentAddedTemplateIds, setAgentAddedTemplateIds] = useState<string[]>(saved?.addedTemplateIds ?? []);
   // Custom offer library — persisted to localStorage, merged with static offerLibrary
   const [customOfferLibrary, setCustomOfferLibrary] = useState<StoredOffer[]>(() => loadCustomOfferLibrary());
@@ -1241,7 +1243,10 @@ function ProjectDetailView({
     const handler = (e: Event) => {
       const { action, ...payload } = (e as CustomEvent<AgentActionPayload>).detail;
       if (action === "add_offers") {
-        const { offerIds } = payload as { offerIds: string[] };
+        const { offerIds, editedOfferIds = [] } = payload as { offerIds: string[]; editedOfferIds?: string[] };
+        if (editedOfferIds.length > 0) {
+          setAgentEditedOfferIds(prev => new Set([...prev, ...editedOfferIds]));
+        }
         // Expand first so the accordion opens empty, then items stagger in
         setExpandedSections((prev) => ({ ...prev, offers: true }));
         setTimeout(() => setAgentAddedOfferIds((prev) => [...new Set([...prev, ...offerIds])]), 220);
@@ -1505,6 +1510,7 @@ function ProjectDetailView({
               >
                 <OfferCard
                   offer={o as any}
+                  variant={agentEditedOfferIds.has(o.id) ? "regular" : undefined}
                   onDelete={() => setConfirmDelete({
                     type: "offer",
                     id: o.id,

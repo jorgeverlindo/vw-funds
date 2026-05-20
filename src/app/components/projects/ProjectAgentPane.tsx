@@ -67,7 +67,7 @@ export interface CustomOffer {
 }
 
 export type AgentActionPayload =
-  | { action: "add_offers";       offerIds: string[] }
+  | { action: "add_offers";       offerIds: string[]; editedOfferIds?: string[] }
   | { action: "remove_offers";    offerIds: string[] }
   | { action: "add_templates";    templateIds: string[] }
   | { action: "remove_templates"; templateIds: string[] }
@@ -1104,7 +1104,7 @@ function SetupProjectCard({ input, existingNames = [], onApply, onDismiss, proac
 interface OffersCardProps {
   input: OffersInput;
   context: ProjectContextPayload | null;
-  onApply: (offerIds: string[]) => void;
+  onApply: (offerIds: string[], editedOfferIds: string[]) => void;
   onDismiss: () => void;
   proactive?: boolean;
 }
@@ -1168,7 +1168,7 @@ function OffersProposalCard({ input, context, onApply, onDismiss, proactive }: O
     if (!proactive || manualMode || applied) return;
     autoApplyRef.current = setTimeout(() => {
       setApplied(true);
-      onApply(offerIds);
+      onApply(offerIds, [...appliedCustomizations]);
     }, 2000);
     return () => { if (autoApplyRef.current) clearTimeout(autoApplyRef.current); };
   }, [proactive, manualMode, applied]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -1296,7 +1296,7 @@ function OffersProposalCard({ input, context, onApply, onDismiss, proactive }: O
             .map(o => ({ value: o.id, label: `${o.year} ${o.make} ${o.model} ${o.trim} — ${o.offerType} $${o.monthlyPayment}/mo` }))}
         />
         <div className="flex items-center gap-[8px]">
-          <button onClick={() => { onApply(offerIds); setApplied(true); }}
+          <button onClick={() => { onApply(offerIds, [...appliedCustomizations]); setApplied(true); }}
             disabled={offerIds.length === 0}
             className="flex-1 py-[8px] rounded-full text-[13px] font-medium tracking-[0.46px] text-white transition-all cursor-pointer disabled:opacity-40"
             style={{ background: "linear-gradient(99deg, #473bab 0%, #6356e1 100%)", ...f }}>
@@ -3636,8 +3636,8 @@ export function ProjectAgentPane({ isOpen, onClose, userType }: ProjectAgentPane
   }, [sendInternal]);
 
   // ── Offers card ─────────────────────────────────────────────────────────────
-  const handleOffersApply = useCallback((offerIds: string[]) => {
-    dispatchAction({ action: "add_offers", offerIds });
+  const handleOffersApply = useCallback((offerIds: string[], editedOfferIds: string[] = []) => {
+    dispatchAction({ action: "add_offers", offerIds, editedOfferIds });
     const inSetupFlow = messagesRef.current.some(m => m.type === "setup");
     if (!inSetupFlow) {
       // Standalone: tell the agent offers were confirmed so it can continue

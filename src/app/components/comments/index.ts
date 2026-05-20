@@ -37,3 +37,13 @@ export {
   sanitizeHtml,
   extractMentionIds,
 } from "./utils";
+
+// ─── Etapa 1 — UI components ──────────────────────────────────────────────────
+
+export { RichTextRenderer } from "./RichTextRenderer";
+export { FormattingToolbar } from "./FormattingToolbar";
+export { MentionOverlay } from "./MentionOverlay";
+export { CommentComposer } from "./CommentComposer";
+export { CommentMenu } from "./CommentMenu";
+export type { CommentMenuAction } from "./CommentMenu";
+export { ChatBubble } from "./ChatBubble";

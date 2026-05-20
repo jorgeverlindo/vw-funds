@@ -1102,9 +1102,54 @@ function OffersProposalCard({ input, context, onApply, onDismiss, proactive }: O
   const [customizations, setCustomizations] = useState<Record<string, {
     monthlyPayment: number; term: number; totalDueAtSigning: number;
   }>>({});
+  // Tracks which offers had "Apply" clicked — those switch to regular (non-recommendation) card
+  const [appliedCustomizations, setAppliedCustomizations] = useState<Set<string>>(new Set());
   const offers = context?.availableOffers ?? [];
   const [manualMode, setManualMode] = useState(false);
   const autoApplyRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Initialize customization values from catalog when customize mode opens
+  useEffect(() => {
+    if (!customizeMode) return;
+    setCustomizations(prev => {
+      const next = { ...prev };
+      for (const id of offerIds) {
+        if (!next[id]) {
+          const o = offers.find(x => x.id === id);
+          const full = offerLibrary.find(x => x.id === id);
+          next[id] = {
+            monthlyPayment: o?.monthlyPayment ?? 0,
+            term:           o?.term ?? 36,
+            totalDueAtSigning: (full as any)?.totalDueAtSigning ?? 0,
+          };
+        }
+      }
+      return next;
+    });
+  }, [customizeMode]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Handle field change with auto-recalculation of totalDueAtSigning
+  const handleCustomChange = useCallback((id: string, key: string, value: number) => {
+    setCustomizations(prev => {
+      const o   = offers.find(x => x.id === id);
+      const full = offerLibrary.find(x => x.id === id);
+      const orig = {
+        monthlyPayment:    o?.monthlyPayment    ?? 0,
+        term:              o?.term              ?? 36,
+        totalDueAtSigning: (full as any)?.totalDueAtSigning ?? 0,
+      };
+      const existing = prev[id] ?? orig;
+      const updated  = { ...existing, [key]: value };
+      // Auto-recalculate totalDueAtSigning proportionally when monthly or term changes
+      if (key === 'monthlyPayment' || key === 'term') {
+        const origRatio = orig.monthlyPayment * orig.term > 0
+          ? orig.totalDueAtSigning / (orig.monthlyPayment * orig.term)
+          : 0.22;
+        updated.totalDueAtSigning = Math.round(updated.monthlyPayment * updated.term * origRatio);
+      }
+      return { ...prev, [id]: updated };
+    });
+  }, [offers]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (!proactive || manualMode || applied) return;
@@ -1159,6 +1204,7 @@ function OffersProposalCard({ input, context, onApply, onDismiss, proactive }: O
           if (!o) return null;
           // Look up the full catalog entry to get the car image
           const fullOffer = offerLibrary.find(x => x.id === o.id);
+          const custom = customizations[id];
           const cardData: OfferCardData = {
             id: o.id,
             year: o.year,
@@ -1173,17 +1219,18 @@ function OffersProposalCard({ input, context, onApply, onDismiss, proactive }: O
             aging: o.aging,
             sales: (fullOffer as any)?.sales ?? 0,
             inventory: (fullOffer as any)?.inventory ?? o.stock,
-            monthlyPayment: o.monthlyPayment,
-            term: o.term,
-            totalDueAtSigning: (fullOffer as any)?.totalDueAtSigning ?? 0,
+            monthlyPayment: custom?.monthlyPayment ?? o.monthlyPayment,
+            term: custom?.term ?? o.term,
+            totalDueAtSigning: custom?.totalDueAtSigning ?? (fullOffer as any)?.totalDueAtSigning ?? 0,
           };
+          const isApplied = appliedCustomizations.has(id);
           return (
             <motion.div key={id}
               variants={{ hidden: { opacity: 0, y: 8 }, show: { opacity: 1, y: 0, transition: { duration: 0.22, ease: "easeOut" } } }}
             >
               <OfferCard
                 offer={cardData}
-                variant="recommendation"
+                variant={isApplied ? "regular" : "recommendation"}
                 onDelete={() => setOfferIds(p => p.filter(x => x !== id))}
               />
               <AnimatePresence>
@@ -1192,27 +1239,31 @@ function OffersProposalCard({ input, context, onApply, onDismiss, proactive }: O
                     initial={{ opacity: 0, height: 0 }}
                     animate={{ opacity: 1, height: "auto" }}
                     exit={{ opacity: 0, height: 0 }}
-                    className="overflow-hidden mt-[4px] px-[12px] py-[10px] rounded-[10px] bg-[rgba(71,59,171,0.04)] border border-[rgba(71,59,171,0.12)] flex flex-wrap gap-x-[16px] gap-y-[8px]"
+                    className="overflow-hidden mt-[4px] px-[12px] py-[10px] rounded-[10px] bg-[rgba(71,59,171,0.04)] border border-[rgba(71,59,171,0.12)] flex flex-wrap gap-x-[16px] gap-y-[8px] items-end"
                   >
                     {[
-                      { key: "monthlyPayment", label: "Monthly Payment ($)", defaultVal: (offers.find(x => x.id === id)?.monthlyPayment ?? 0) },
-                      { key: "term",           label: "Term (mo)",           defaultVal: (offers.find(x => x.id === id)?.term ?? 36)          },
-                      { key: "totalDueAtSigning", label: "Due at Signing ($)", defaultVal: (customizations[id]?.totalDueAtSigning ?? 0)        },
-                    ].map(({ key, label, defaultVal }) => (
+                      { key: "monthlyPayment",    label: "Monthly Payment ($)", val: custom?.monthlyPayment    ?? o.monthlyPayment },
+                      { key: "term",              label: "Term (mo)",           val: custom?.term              ?? o.term           },
+                      { key: "totalDueAtSigning", label: "Due at Signing ($)",  val: custom?.totalDueAtSigning ?? ((fullOffer as any)?.totalDueAtSigning ?? 0) },
+                    ].map(({ key, label, val }) => (
                       <label key={key} style={{ ...f, fontSize: 11 }} className="flex flex-col gap-[3px] text-[#686576]">
                         {label}
                         <input
                           type="number"
-                          defaultValue={customizations[id]?.[key as keyof typeof customizations[string]] ?? defaultVal}
-                          onChange={e => setCustomizations(prev => ({
-                            ...prev,
-                            [id]: { ...prev[id], [key]: Number(e.target.value) },
-                          }))}
+                          value={val}
+                          onChange={e => handleCustomChange(id, key, Number(e.target.value))}
                           className="w-[90px] px-[8px] py-[4px] rounded-[6px] border border-[rgba(0,0,0,0.12)] text-[12px] text-[#1f1d25] bg-white outline-none focus:border-[#473bab] focus:ring-1 focus:ring-[rgba(71,59,171,0.15)]"
                           style={f}
                         />
                       </label>
                     ))}
+                    <button
+                      onClick={() => setAppliedCustomizations(prev => new Set([...prev, id]))}
+                      className="px-[12px] py-[4px] rounded-full text-[12px] font-medium text-white cursor-pointer transition-all"
+                      style={{ background: "linear-gradient(99deg, #473bab 0%, #6356e1 100%)", ...f }}
+                    >
+                      Apply
+                    </button>
                   </motion.div>
                 )}
               </AnimatePresence>

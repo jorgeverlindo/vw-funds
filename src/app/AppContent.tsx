@@ -65,6 +65,9 @@ const TAB_SLUGS: Record<string, string> = {
   'planner':         'Planner',
   'guidelines':      'Guidelines',
   'web-monitoring':  'Web-Monitoring',
+  // App sections — treated as top-level tab slugs for URL routing
+  'projects':        'Projects',
+  'portal':          'Portal',
 };
 
 const SLUG_TO_TAB: Record<string, string> = Object.fromEntries(
@@ -108,9 +111,11 @@ export default function AppContent() {
     : _initPath.includes('/dealership-emich/') ? 'dealer-emich' // [FV]
     : _initPath.includes('/dealership/') ? 'dealer' : 'oem';
   const _initTab = SLUG_TO_TAB[routeParams.tab ?? ''] ?? 'overview';
+  // Derive initial section: 'projects' | 'portal' → that section; anything else → 'campaigns'
+  const _initSection = (_initTab === 'projects' || _initTab === 'portal') ? _initTab : 'campaigns';
 
-  const [activeAppSection, setActiveAppSection] = useState('campaigns'); // 'campaigns' | 'portal'
-  const [activeTab, setActiveTab] = useState(_initTab);
+  const [activeAppSection, setActiveAppSection] = useState(_initSection); // 'campaigns' | 'portal' | 'projects'
+  const [activeTab, setActiveTab] = useState(_initSection === 'campaigns' ? _initTab : 'overview');
   const [userType, setUserType] = useState<UserType>(_initRole);
   const [dateRange, setDateRange] = useState<DateRange | undefined>(defaultDateRange);
   const [clientSwitcherOpen, setClientSwitcherOpen] = useState(false);
@@ -430,9 +435,15 @@ export default function AppContent() {
     navigate(buildUrl(userType, client.clientId, tabId), { replace: true });
   };
 
-  // Handle Navigation from Sidebar
+  // Handle Navigation from Sidebar — also updates the URL
   const handleNavigate = (route: string) => {
     setActiveAppSection(route);
+    if (route === 'projects' || route === 'portal') {
+      navigate(buildUrl(userType, client.clientId, route), { replace: true });
+    } else {
+      // 'campaigns' → restore the current active tab URL
+      navigate(buildUrl(userType, client.clientId, activeTab), { replace: true });
+    }
   };
 
   // Handle Portal Pre-Approval Action (Go to Pre-Approvals tab in Campaigns)
@@ -464,7 +475,13 @@ export default function AppContent() {
     const brandParam = routeParams.brand?.toLowerCase();
     const brandId = brandParam === 'audi' ? 'audi' : 'vw';
     setUserType(role);
-    setActiveTab(tabId);
+    // Detect app section from slug ('projects' | 'portal' → section; anything else → campaigns tab)
+    if (tabId === 'projects' || tabId === 'portal') {
+      setActiveAppSection(tabId);
+    } else {
+      setActiveAppSection('campaigns');
+      setActiveTab(tabId);
+    }
     if (brandId !== client.clientId) switchClient(brandId);
     // Re-sync the lock state when navigating back/forward
     if (role === 'dealer-singular') lockDealership(WORKFLOW_DEALER.code);
@@ -590,6 +607,7 @@ export default function AppContent() {
         onOpenProjectFromNotif={(projectId) => {
           setActiveAppSection('projects');
           setNotifOpenProjectId(projectId);
+          navigate(buildUrl(userType, client.clientId, 'projects'), { replace: true });
         }}
       />
 

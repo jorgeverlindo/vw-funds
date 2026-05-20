@@ -409,7 +409,7 @@ function TagChip({ label }: { label: string }) {
 
 function StatBadge({ icon, count }: { icon: React.ReactNode; count: number }) {
   return (
-    <span className="flex items-center gap-1 text-[11px] text-gray-400">
+    <span className="flex items-center gap-1 text-[11px] text-muted-foreground">
       {icon}
       {count}
     </span>
@@ -551,10 +551,10 @@ function ProjectCard({
 
         {/* Stats */}
         <div className="flex items-center gap-3 mt-0.5">
-          <StatBadge icon={<FileText size={10} />}  count={offersCount} />
-          <StatBadge icon={<Palette size={10} />}   count={templatesCount} />
-          <StatBadge icon={<ImageIcon size={10} />} count={bgCount} />
-          <StatBadge icon={<Layers size={10} />}    count={assetsCount} />
+          <StatBadge icon={<FileText size={16} />}  count={offersCount} />
+          <StatBadge icon={<Palette size={16} />}   count={templatesCount} />
+          <StatBadge icon={<ImageIcon size={16} />} count={bgCount} />
+          <StatBadge icon={<Layers size={16} />}    count={assetsCount} />
         </div>
       </div>
     </div>

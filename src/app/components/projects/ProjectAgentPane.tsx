@@ -23,11 +23,13 @@ import { OfferCard } from "./offers/OfferCard";
 import type { Offer as OfferCardData } from "./offers/OfferCard";
 import { offerLibrary } from "./lib/mock-data";
 import { useWorkflow } from "../../contexts/WorkflowContext";
+import { TemplateZoneEditor } from "@projects/templates/TemplateZoneEditor";
 
 // ─── Shared event constants ────────────────────────────────────────────────────
 export const PROJECT_CONTEXT_EVENT         = "project-context-update";
 export const PROJECT_AGENT_ACTION_EVENT    = "project-agent-action";
 export const AGENT_SCROLL_TO_SECTION_EVENT = "agent-scroll-to-section";
+export const AGENT_GENERATE_ASSETS_EVENT   = "agent-generate-assets";
 
 export interface ProjectContextPayload {
   projectId: string;
@@ -89,7 +91,7 @@ type ApiMessage = { role: "user" | "assistant"; content: string | ApiContentBloc
 // ─── Message model ─────────────────────────────────────────────────────────────
 type Role = "user" | "assistant";
 
-interface TextMessage    { id: string; role: Role;        type: "text";      content: string }
+interface TextMessage    { id: string; role: Role;        type: "text";      content: string; isGenerateAssetsPrompt?: boolean }
 interface ToolChipMsg    { id: string; role: "assistant"; type: "tool";      name: string; input: Record<string, unknown> }
 interface ProposalMsg    { id: string; role: "assistant"; type: "proposal";  input: ProposalInput; applied: boolean }
 interface SetupMsg       { id: string; role: "assistant"; type: "setup";     input: SetupInput;    applied: boolean }
@@ -1397,7 +1399,7 @@ interface TemplatesCardProps {
 function TemplatesProposalCard({ input, context, onApply, onDismiss, proactive }: TemplatesCardProps) {
   const [templateIds,   setTemplateIds]   = useState<string[]>(input.template_ids);
   const [applied,       setApplied]       = useState(false);
-  const [previewTpl,    setPreviewTpl]    = useState<TemplateInfo | null>(null);
+  const [zoneTpl,       setZoneTpl]       = useState<TemplateInfo | null>(null);
   const templates = context?.availableTemplates ?? [];
   const [manualMode, setManualMode] = useState(false);
   const autoApplyRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -1429,7 +1431,10 @@ function TemplatesProposalCard({ input, context, onApply, onDismiss, proactive }
 
   return (
     <>
-    {previewTpl && <TemplatePreviewModal template={previewTpl} onClose={() => setPreviewTpl(null)} />}
+    {zoneTpl && createPortal(
+      <TemplateZoneEditor templateId={zoneTpl.id} templateName={zoneTpl.name} onClose={() => setZoneTpl(null)} />,
+      document.body,
+    )}
     <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}
       className="ml-[32px] mt-[4px] flex flex-col gap-[8px]">
       {/* Rationale — free text, no outer box */}
@@ -1468,9 +1473,9 @@ function TemplatesProposalCard({ input, context, onApply, onDismiss, proactive }
                   </div>
                   <div className="flex items-center gap-[4px] opacity-0 group-hover:opacity-100 transition-all shrink-0">
                     {t && (
-                      <button onClick={() => setPreviewTpl(t)}
+                      <button onClick={() => setZoneTpl(t)}
                         className="text-[#9c99a9] hover:text-[#473bab] transition-colors cursor-pointer"
-                        title="Preview template">
+                        title="Edit Zone">
                         <Eye size={12} strokeWidth={1.7} />
                       </button>
                     )}
@@ -1650,21 +1655,10 @@ interface BackgroundsCardProps {
   onDismiss: () => void;
   proactive?: boolean;
 }
-function BackgroundsProposalCard({ input, onApply, onDismiss, proactive }: BackgroundsCardProps) {
+function BackgroundsProposalCard({ input, onApply, onDismiss }: BackgroundsCardProps) {
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [applied, setApplied] = useState(false);
   const f = { fontFamily: "'Roboto', sans-serif" };
-  const [manualMode, setManualMode] = useState(false);
-  const autoApplyRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  useEffect(() => {
-    if (!proactive || manualMode || applied) return;
-    autoApplyRef.current = setTimeout(() => {
-      setApplied(true);
-      onApply(selectedIds);
-    }, 2000);
-    return () => { if (autoApplyRef.current) clearTimeout(autoApplyRef.current); };
-  }, [proactive, manualMode, applied]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Scroll the main panel to the backgrounds section when this card appears
   useEffect(() => {
@@ -1746,9 +1740,6 @@ function BackgroundsProposalCard({ input, onApply, onDismiss, proactive }: Backg
             </button>
           </div>
         </div>
-        {proactive && !manualMode && !applied && (
-          <ProactiveAutoApplyBar delay={2000} onCancel={() => { if (autoApplyRef.current) clearTimeout(autoApplyRef.current); setManualMode(true); }} />
-        )}
       </div>
     </motion.div>
   );
@@ -3324,6 +3315,16 @@ export function ProjectAgentPane({ isOpen, onClose, userType }: ProjectAgentPane
   const send = useCallback(async (text: string, attachments: File[]) => {
     if (!text.trim() && !attachments.length || streaming) return;
 
+    // Intercept "generate assets" command — trigger the modal directly
+    if (!attachments.length && /generate\s+assets?/i.test(text.trim())) {
+      window.dispatchEvent(new CustomEvent(AGENT_GENERATE_ASSETS_EVENT));
+      setMessages(prev => [...prev,
+        { id: `u-${Date.now()}`, role: "user",      type: "text", content: text } as TextMessage,
+        { id: `a-${Date.now()}`, role: "assistant",  type: "text", content: "Opening **Generate Assets**…" } as TextMessage,
+      ]);
+      return;
+    }
+
     const ctx: ProjectContextPayload = filteredContext ?? projectContext ?? {
       projectId: "", projectName: "(no project open)", oem: "",
       currentOfferIds: [], currentTemplateIds: [], availableOffers: [], availableTemplates: [],
@@ -3538,7 +3539,8 @@ export function ProjectAgentPane({ isOpen, onClose, userType }: ProjectAgentPane
             id: `a-${Date.now()}`,
             role: "assistant",
             type: "text",
-            content: `You now have everything ready to generate your assets — ${offerCount} offer${offerCount > 1 ? "s" : ""} × ${templateCount} template${templateCount > 1 ? "s" : ""} = **${total} asset${total > 1 ? "s" : ""}**. Click **Generate Assets** in the Preview section whenever you're ready.`,
+            content: `You now have everything ready to generate your assets — ${offerCount} offer${offerCount > 1 ? "s" : ""} × ${templateCount} template${templateCount > 1 ? "s" : ""} = **${total} asset${total > 1 ? "s" : ""}**.`,
+            isGenerateAssetsPrompt: true,
           } as TextMessage]);
         }, 600);
       }
@@ -4350,11 +4352,11 @@ function MessageBubble({
     );
   }
 
-  return <AssistantBubble text={(message as TextMessage).content} />;
+  return <AssistantBubble text={(message as TextMessage).content} isGeneratePrompt={(message as TextMessage).isGenerateAssetsPrompt} />;
 }
 
 // ─── Assistant bubble with avatar + action bar ─────────────────────────────────
-function AssistantBubble({ text, streaming = false }: { text: string; streaming?: boolean }) {
+function AssistantBubble({ text, streaming = false, isGeneratePrompt = false }: { text: string; streaming?: boolean; isGeneratePrompt?: boolean }) {
   // Detect if text has markdown (tables, headings, bold) — render rich if so
   const hasMarkdown = /^\s*\|/m.test(text) || /^#{1,3} /m.test(text) || /\*\*[^*]+\*\*/.test(text);
 
@@ -4378,6 +4380,17 @@ function AssistantBubble({ text, streaming = false }: { text: string; streaming?
           }
         </div>
       </div>
+      {isGeneratePrompt && !streaming && (
+        <div className="ml-[30px] mt-[10px]">
+          <button
+            onClick={() => window.dispatchEvent(new CustomEvent(AGENT_GENERATE_ASSETS_EVENT))}
+            className="px-[18px] py-[9px] rounded-full text-[13px] font-medium tracking-[0.46px] text-white cursor-pointer transition-all"
+            style={{ background: "linear-gradient(99deg, #473bab 0%, #6356e1 100%)", fontFamily: "'Roboto', sans-serif" }}
+          >
+            Generate Assets
+          </button>
+        </div>
+      )}
       {!streaming && (
         <div className="opacity-0 group-hover:opacity-100 transition-opacity">
           <ResponseActions text={text} />

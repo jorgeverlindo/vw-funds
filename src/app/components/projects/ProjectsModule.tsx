@@ -35,6 +35,7 @@ import {
   PROJECT_CONTEXT_EVENT,
   PROJECT_AGENT_ACTION_EVENT,
   AGENT_SCROLL_TO_SECTION_EVENT,
+  AGENT_GENERATE_ASSETS_EVENT,
   type ProjectContextPayload,
   type AgentActionPayload,
 } from "@projects/ProjectAgentPane";
@@ -1161,6 +1162,13 @@ function ProjectDetailView({
     };
     window.addEventListener(AGENT_SCROLL_TO_SECTION_EVENT, handler);
     return () => window.removeEventListener(AGENT_SCROLL_TO_SECTION_EVENT, handler);
+  }, []);
+
+  // When the agent fires AGENT_GENERATE_ASSETS_EVENT, open the generate modal
+  useEffect(() => {
+    const handler = () => setShowGenerateModal(true);
+    window.addEventListener(AGENT_GENERATE_ASSETS_EVENT, handler);
+    return () => window.removeEventListener(AGENT_GENERATE_ASSETS_EVENT, handler);
   }, []);
 
   // ── Autosave project state to localStorage ───────────────────────────────────

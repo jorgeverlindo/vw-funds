@@ -50,6 +50,7 @@ import { emitSnackbar } from "../Snackbar";
 import { TaskOwner } from "@projects/ui/TaskOwner";
 import { CommentsProvider, useComments } from "@comments";
 import { CommentsSidePanel, ChatIcon } from "@comments";
+import { NotificationsTray, BellIcon } from "@comments";
 
 // ─── Left-pane toggle icon (from design asset) ────────────────────────────────
 function LeftPaneIcon({ className }: { className?: string }) {
@@ -1710,7 +1711,8 @@ function ProjectDetailViewInner({
             <span className="truncate max-w-[110px]">{project.assignee.name}</span>
           </div>
 
-          {/* Comments toggle — pushed to the right */}
+          {/* Notifications bell + Comments toggle — pushed to the right */}
+          <NotificationBellButton />
           <CommentsToggleButton />
         </div>
 
@@ -2344,6 +2346,7 @@ function ProjectDetailViewInner({
     </div>
     </div>
     <CommentsSidePanel />
+    <NotificationsTray />
     </div>
   );
 }
@@ -2374,6 +2377,33 @@ function CommentsToggleButton() {
           unread > 0 ? "bg-[#473bab] text-white" : "bg-[rgba(0,0,0,0.08)] text-[#686576]",
         ].join(" ")}>
           {count}
+        </span>
+      )}
+    </button>
+  );
+}
+
+// ─── NotificationBellButton — must be inside CommentsProvider ────────────────
+function NotificationBellButton() {
+  const ctx = useComments();
+  if (!ctx) return null;
+  const unread = ctx.unreadCount;
+  return (
+    <button
+      type="button"
+      onClick={ctx.toggleNotif}
+      aria-label="Toggle notifications"
+      className={[
+        "relative flex items-center justify-center w-7 h-7 rounded-full text-[12px] font-medium transition-all shrink-0 cursor-pointer",
+        ctx.isNotifOpen
+          ? "bg-[rgba(71,59,171,0.12)] text-[#473bab]"
+          : "text-[#686576] hover:bg-[rgba(0,0,0,0.06)] hover:text-[#1f1d25]",
+      ].join(" ")}
+    >
+      <BellIcon size={14} />
+      {unread > 0 && (
+        <span className="absolute -top-0.5 -right-0.5 flex items-center justify-center min-w-[14px] h-[14px] px-[3px] rounded-full text-[9px] font-bold bg-[#473bab] text-white leading-none pointer-events-none">
+          {unread > 9 ? "9+" : unread}
         </span>
       )}
     </button>

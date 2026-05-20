@@ -51,3 +51,7 @@ export { ChatBubble } from "./ChatBubble";
 // ─── Etapa 2 — Side panel ─────────────────────────────────────────────────────
 
 export { CommentsSidePanel, ChatIcon } from "./CommentsSidePanel";
+
+// ─── Etapa 4 — Notifications tray ────────────────────────────────────────────
+
+export { NotificationsTray, BellIcon } from "./NotificationsTray";

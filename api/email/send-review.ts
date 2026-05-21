@@ -155,7 +155,7 @@ function buildEmailHtml(body: SendReviewBody): string {
       )
     : "";
   const customMessage = formattedMessage
-    ? `<p style="margin:0 0 24px;font-size:15px;color:#1f1d25;line-height:1.6;white-space:pre-wrap;font-family:Helvetica,Arial,sans-serif;">${formattedMessage}</p>`
+    ? `<p style="margin:0 0 24px;font-size:15px;color:#1f1d25;line-height:1.6;font-family:Helvetica,Arial,sans-serif;">${formattedMessage.trim()}</p>`
     : "";
 
   return `<!DOCTYPE html>
@@ -207,10 +207,10 @@ function buildEmailHtml(body: SendReviewBody): string {
 
               <!-- CTA -->
               <div style="margin-top:32px;text-align:center;">
-                <a href="${projectUrl}"
+                <a href="${APP_URL}/campaign-review.html"
                    style="display:inline-block;background:#473bab;color:#ffffff;text-decoration:none;
                           font-size:14px;font-weight:600;padding:13px 30px;border-radius:10px;letter-spacing:.02em;">
-                  Review Project
+                  Review Campaign
                 </a>
               </div>
 

@@ -106,6 +106,7 @@ interface AppSidebarProps {
   onToggleUserType?: () => void;
   onOpenClientSwitcher?: () => void;
   clientSwitcherOpen?: boolean;
+  onOpenLibrary?: () => void;
 }
 
 export function AppSidebar({
@@ -115,6 +116,7 @@ export function AppSidebar({
   onToggleUserType: _onToggleUserType,
   onOpenClientSwitcher,
   clientSwitcherOpen = false,
+  onOpenLibrary,
 }: AppSidebarProps) {
   const { t } = useTranslation();
   const { client } = useClient();
@@ -292,12 +294,22 @@ export function AppSidebar({
         </div>
       </nav>
 
-      {/* Help button */}
+      {/* Component Library button (? icon) */}
       <div className="content-stretch flex flex-col gap-4 items-center justify-center relative shrink-0 w-full z-[1] pb-6">
-        <svg className="size-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5"
-             style={{ color: '#ACABFF' }}>
-          <path d={svgPaths.p25dcf140} strokeLinecap="round" strokeLinejoin="round" />
-        </svg>
+        <button
+          onClick={onOpenLibrary}
+          title="Component Library"
+          className="group relative flex items-center justify-center w-9 h-9 rounded-xl transition-colors hover:bg-[color-mix(in_srgb,var(--rail-active)_12%,transparent)] cursor-pointer"
+          style={{ color: '#ACABFF' }}
+        >
+          <svg className="size-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5">
+            <path d={svgPaths.p25dcf140} strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+          {/* Tooltip */}
+          <span className="pointer-events-none absolute left-[calc(100%+8px)] top-1/2 -translate-y-1/2 whitespace-nowrap bg-[#1f1d25] text-white text-[11px] px-2 py-1 rounded-md opacity-0 group-hover:opacity-100 transition-opacity z-50">
+            Component Library
+          </span>
+        </button>
       </div>
     </div>
   );

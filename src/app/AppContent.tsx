@@ -24,6 +24,7 @@ import { WebMonitoringContent, WCM_DATA } from './components/WebMonitoringConten
 import { WebMonitoringPanel } from './components/WebMonitoringPanel';
 import { WebMonitoringModal } from './components/WebMonitoringModal';
 import { WebMonitoringConfigModal } from './components/WebMonitoringConfigModal'; // [FV]
+import { ComponentLibraryDialog } from './components/component-library/ComponentLibraryDialog';
 import { useTranslation } from './contexts/LanguageContext';
 import { ClientSwitcher } from './components/ClientSwitcher';
 import { emitSnackbar } from './components/Snackbar';
@@ -122,6 +123,7 @@ export default function AppContent() {
   const [userType, setUserType] = useState<UserType>(_initRole);
   const [dateRange, setDateRange] = useState<DateRange | undefined>(defaultDateRange);
   const [clientSwitcherOpen, setClientSwitcherOpen] = useState(false);
+  const [libraryOpen, setLibraryOpen] = useState(false);
 
   // [FV] compliance context — all infraction/solution/notification state
   const {
@@ -644,6 +646,11 @@ export default function AppContent() {
         onToggleUserType={toggleUserType}
         onOpenClientSwitcher={() => setClientSwitcherOpen(o => !o)}
         clientSwitcherOpen={clientSwitcherOpen}
+        onOpenLibrary={() => setLibraryOpen(true)}
+      />
+      <ComponentLibraryDialog
+        open={libraryOpen}
+        onClose={() => setLibraryOpen(false)}
       />
       <ClientSwitcher
         isOpen={clientSwitcherOpen}

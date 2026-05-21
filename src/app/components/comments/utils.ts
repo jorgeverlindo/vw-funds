@@ -13,11 +13,24 @@ const ALLOWED_ATTR = ["href", "target", "rel", "class", "data-mention-id"];
  * Strips all potentially dangerous tags/attributes while keeping formatting.
  */
 export function sanitizeHtml(html: string): string {
-  return DOMPurify.sanitize(html, {
-    ALLOWED_TAGS,
-    ALLOWED_ATTR,
-    FORCE_BODY: false,
-  });
+  try {
+    return DOMPurify.sanitize(html, {
+      ALLOWED_TAGS,
+      ALLOWED_ATTR,
+      FORCE_BODY: false,
+    });
+  } catch {
+    // DOMPurify unavailable (edge case) — strip all tags as fallback
+    return html.replace(/<[^>]*>/g, "");
+  }
+}
+
+export function htmlToPlainTextSafe(html: string): string {
+  try {
+    return htmlToPlainText(html);
+  } catch {
+    return html.replace(/<[^>]*>/g, "").slice(0, 80);
+  }
 }
 
 /**

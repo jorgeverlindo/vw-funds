@@ -216,11 +216,12 @@ export function NotificationsTray() {
       {isNotifOpen && (
         <motion.aside
           key="notifs-tray"
-          initial={{ width: 0, opacity: 0 }}
-          animate={{ width: 300, opacity: 1 }}
-          exit={{ width: 0, opacity: 0 }}
-          transition={{ duration: 0.22, ease: [0.4, 0, 0.2, 1] }}
-          className="flex flex-col h-full overflow-hidden border-l border-[#e8e7ef] bg-white shrink-0"
+          initial={{ x: "100%", opacity: 0 }}
+          animate={{ x: 0, opacity: 1 }}
+          exit={{ x: "100%", opacity: 0 }}
+          transition={{ duration: 0.25, ease: [0.25, 0.1, 0.25, 1] }}
+          style={{ willChange: "transform" }}
+          className="flex flex-col flex-none h-full w-[400px] overflow-hidden bg-white rounded-2xl shadow-sm border border-[rgba(0,0,0,0.04)]"
           aria-label="Notifications tray"
         >
           {/* ── Header ──────────────────────────────────────────────────── */}

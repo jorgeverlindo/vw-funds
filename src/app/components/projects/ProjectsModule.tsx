@@ -2,7 +2,8 @@
  * ProjectsModule — Full Projects experience ported from constellation-app.
  */
 
-import React, { useState, useMemo, useEffect, useRef } from "react";
+import React, { useState, useMemo, useEffect, useLayoutEffect, useRef, useCallback } from "react";
+import { createPortal } from "react-dom";
 import {
   ChevronDown, ChevronRight, Check, Plus,
   Search, MoreVertical, History,
@@ -48,9 +49,7 @@ import {
 import { ChannelChip } from "../ui/ChannelChip";
 import { emitSnackbar } from "../Snackbar";
 import { TaskOwner } from "@projects/ui/TaskOwner";
-import { CommentsProvider, useComments } from "@comments";
-import { CommentsSidePanel, ChatIcon } from "@comments";
-import { NotificationsTray, BellIcon } from "@comments";
+import { useComments, ChatIcon } from "@comments";
 
 // ─── Left-pane toggle icon (from design asset) ────────────────────────────────
 function LeftPaneIcon({ className }: { className?: string }) {
@@ -122,6 +121,8 @@ function loadProjectState(projectId: string) {
       agentAddedBgIds?: string[];
       activatedOem?: string | null;
       activatedOems?: string[];
+      taskOwners?: Record<string, string>;
+      generatedAssetIds?: Array<{ offerId: string; templateId: string; bgId: string | null }>;
     };
   } catch { return null; }
 }
@@ -151,7 +152,7 @@ type ProjectPage = "offers" | "templates" | "logos-backgrounds" | "preview";
 
 // ─── Main module export ────────────────────────────────────────────────────────
 
-export function ProjectsModule({ openProjectId }: { openProjectId?: string | null }) {
+export function ProjectsModule({ openProjectId, onProjectChange }: { openProjectId?: string | null; onProjectChange?: (id: string | null, name: string) => void }) {
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(openProjectId ?? null);
 
   // When a notification requests a specific project to be opened, honour it.
@@ -170,6 +171,7 @@ export function ProjectsModule({ openProjectId }: { openProjectId?: string | nul
           <ProjectsModuleInner
             selectedProjectId={selectedProjectId}
             onSelectProject={setSelectedProjectId}
+            onProjectChange={onProjectChange}
           />
         </SidebarProvider>
       </RightPanelProvider>
@@ -182,9 +184,11 @@ export function ProjectsModule({ openProjectId }: { openProjectId?: string | nul
 function ProjectsModuleInner({
   selectedProjectId,
   onSelectProject,
+  onProjectChange,
 }: {
   selectedProjectId: string | null;
   onSelectProject: (id: string | null) => void;
+  onProjectChange?: (id: string | null, name: string) => void;
 }) {
   const [currentPage, setCurrentPage] = useState<ProjectPage>("offers");
 
@@ -197,7 +201,12 @@ function ProjectsModuleInner({
     } catch { return []; }
   });
   // Status overrides for drag-drop on mock-data projects
-  const [statusOverrides, setStatusOverrides] = useState<Record<string, ProjectStatus>>({});
+  const [statusOverrides, setStatusOverrides] = useState<Record<string, ProjectStatus>>(() => {
+    try {
+      const raw = localStorage.getItem("constellation_status_overrides");
+      return raw ? JSON.parse(raw) : {};
+    } catch { return {}; }
+  });
   // Deleted project IDs
   const [deletedIds, setDeletedIds] = useState<Set<string>>(new Set());
 
@@ -211,6 +220,17 @@ function ProjectsModuleInner({
         })),
     [localProjects, statusOverrides, deletedIds],
   );
+
+  // Notify parent about which project is open (so CommentsProvider context can update)
+  useEffect(() => {
+    if (!onProjectChange) return;
+    if (selectedProjectId) {
+      const proj = allProjects.find(p => p.id === selectedProjectId);
+      onProjectChange(selectedProjectId, proj?.name ?? proj?.dealerName ?? "Project");
+    } else {
+      onProjectChange(null, "");
+    }
+  }, [selectedProjectId, allProjects, onProjectChange]);
 
   const moveProject = (projectId: string, newStatus: ProjectStatus) => {
     if (localProjects.find((p) => p.id === projectId)) {
@@ -235,6 +255,21 @@ function ProjectsModuleInner({
   useEffect(() => {
     localStorage.setItem("constellation_local_projects", JSON.stringify(localProjects));
   }, [localProjects]);
+
+  // ── Persist statusOverrides to localStorage ──────────────────────────────────
+  useEffect(() => {
+    localStorage.setItem("constellation_status_overrides", JSON.stringify(statusOverrides));
+  }, [statusOverrides]);
+
+  // ── Listen for project status change events (e.g. from generate assets) ──────
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const { projectId, status } = (e as CustomEvent<{ projectId: string; status: ProjectStatus }>).detail;
+      moveProject(projectId, status);
+    };
+    window.addEventListener("project-status-change", handler);
+    return () => window.removeEventListener("project-status-change", handler);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── Listen for agent set_brand action ───────────────────────────────────────
   useEffect(() => {
@@ -564,6 +599,29 @@ function ProjectCard({
   );
 }
 
+// ─── Projects comments button ─────────────────────────────────────────────────
+
+function ProjectsCommentsButton() {
+  const ctx = useComments();
+  if (!ctx) return null;
+  return (
+    <button
+      type="button"
+      onClick={ctx.togglePanel}
+      title="Comments (C)"
+      aria-label="Toggle comments panel"
+      className={[
+        "p-1.5 rounded-full transition-colors shrink-0 cursor-pointer",
+        ctx.isPanelOpen
+          ? "bg-[rgba(71,59,171,0.12)] text-[#473bab]"
+          : "text-[#686576] hover:bg-black/5 hover:text-[#1f1d25]",
+      ].join(" ")}
+    >
+      <ChatIcon size={20} />
+    </button>
+  );
+}
+
 // ─── Projects list / kanban view ──────────────────────────────────────────────
 
 function ProjectsListView({
@@ -660,7 +718,10 @@ function ProjectsListView({
 
       {/* Title + tabs */}
       <div className="px-6 pt-4 pb-0 shrink-0">
-        <h1 className="text-base font-semibold text-gray-900 mb-3">Projects</h1>
+        <div className="flex items-center justify-between mb-3">
+          <h1 className="text-base font-semibold text-gray-900">Projects</h1>
+          <ProjectsCommentsButton />
+        </div>
         <div className="flex items-center gap-6 border-b border-gray-100">
           {(["all", "mine"] as const).map((tab) => (
             <button
@@ -1153,7 +1214,7 @@ function ProjectDetailView({
   const [showEditProject, setShowEditProject] = useState(false);
 
   // Task owners per section
-  const [taskOwners, setTaskOwners] = useState<Record<string, string>>({});
+  const [taskOwners, setTaskOwners] = useState<Record<string, string>>(saved?.taskOwners ?? {});
   const setTaskOwner = (section: string, ownerId: string) =>
     setTaskOwners((prev) => ({ ...prev, [section]: ownerId }));
 
@@ -1203,9 +1264,10 @@ function ProjectDetailView({
       agentAddedBgIds,
       activatedOems: agentActivatedOems,
       activatedOem: agentActivatedOems[0] ?? null,
+      taskOwners,
     };
     localStorage.setItem(`constellation_proj_state_${project.id}`, JSON.stringify(state));
-  }, [agentAddedOfferIds, agentAddedTemplateIds, removedOfferIds, removedTemplateIds, selectedBgId, agentAddedBgIds, agentActivatedOems, project.id]);
+  }, [agentAddedOfferIds, agentAddedTemplateIds, removedOfferIds, removedTemplateIds, selectedBgId, agentAddedBgIds, agentActivatedOems, project.id, taskOwners]);
 
   const visibleOffers = [
     ...offers,
@@ -1387,7 +1449,6 @@ function ProjectDetailView({
     ?? "—";
 
   return (
-    <CommentsProvider projectId={project.id} projectName={project.name}>
     <ProjectDetailViewInner
       project={project}
       onBack={onBack}
@@ -1437,7 +1498,6 @@ function ProjectDetailView({
       setGeneratedAssets={setGeneratedAssets}
       logoUrl={logoUrl}
     />
-    </CommentsProvider>
   );
 }
 
@@ -1644,12 +1704,13 @@ function ProjectDetailViewInner({
       {/* ── Header ──────────────────────────────────────────────────── */}
       <div className="px-5 pt-3.5 pb-0 shrink-0">
 
-        {/* Breadcrumb */}
-        <div className="mb-2.5">
+        {/* Breadcrumb + Comments toggle */}
+        <div className="mb-2.5 flex items-center justify-between">
           <BreadcrumbBar
             items={[{ label: "Projects", onClick: onBack }]}
             activeLabel={project.name}
           />
+          <CommentsToggleButton />
         </div>
 
         {/* Title row */}
@@ -1711,9 +1772,6 @@ function ProjectDetailViewInner({
             <span className="truncate max-w-[110px]">{project.assignee.name}</span>
           </div>
 
-          {/* Notifications bell + Comments toggle — pushed to the right */}
-          <NotificationBellButton />
-          <CommentsToggleButton />
         </div>
 
         {/* Metadata row */}
@@ -2258,6 +2316,9 @@ function ProjectDetailViewInner({
           setExpandedSections(prev => ({ ...prev, assets: true }));
           setShowGenerateModal(false);
           emitSnackbar(`${genTotal} asset${genTotal > 1 ? "s" : ""} created`);
+          window.dispatchEvent(new CustomEvent("project-status-change", {
+            detail: { projectId: project.id, status: "Assets Created" },
+          }));
         };
 
         return (
@@ -2345,68 +2406,91 @@ function ProjectDetailViewInner({
       />
     </div>
     </div>
-    <CommentsSidePanel />
-    <NotificationsTray />
     </div>
+  );
+}
+
+// ─── Portal tooltip — escapes overflow:hidden parents ────────────────────────
+function PaneTooltip({ label, shortcut, anchorRef, visible }: {
+  label: string;
+  shortcut?: string;
+  anchorRef: React.RefObject<HTMLElement | null>;
+  visible: boolean;
+}) {
+  const tooltipRef = useRef<HTMLDivElement>(null);
+  const [pos, setPos] = useState({ top: -999, left: -999, arrowLeft: '50%' });
+
+  useLayoutEffect(() => {
+    if (!visible || !anchorRef.current || !tooltipRef.current) return;
+    const r   = anchorRef.current.getBoundingClientRect();
+    const cx  = r.left + r.width / 2;
+    const top = r.bottom + 8;
+    const tw  = tooltipRef.current.offsetWidth;
+    const M   = 8; // viewport margin
+    const raw = cx - tw / 2;
+    const clamped = Math.max(M, Math.min(raw, window.innerWidth - tw - M));
+    setPos({ top, left: clamped, arrowLeft: `${cx - clamped}px` });
+  }, [visible, anchorRef]);
+
+  return createPortal(
+    <AnimatePresence>
+      {visible && (
+        <motion.div
+          ref={tooltipRef}
+          initial={{ opacity: 0, y: -4 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -4 }}
+          transition={{ duration: 0.35, ease: [0.25, 0.1, 0.25, 1] }}
+          style={{
+            position: 'fixed', top: pos.top, left: pos.left,
+            fontSize: 11, fontFamily: "'Roboto', sans-serif",
+            letterSpacing: '0.17px', lineHeight: '1.43', zIndex: 9999, pointerEvents: 'none',
+          }}
+          className="px-[8px] py-[5px] bg-[#1f1d25] text-white rounded-[6px] whitespace-nowrap"
+        >
+          <div
+            className="absolute bottom-full w-0 h-0 border-l-[4px] border-r-[4px] border-b-[4px] border-l-transparent border-r-transparent border-b-[#1f1d25]"
+            style={{ left: pos.arrowLeft, transform: 'translateX(-50%)' }}
+          />
+          <div className="flex items-center gap-[6px]">
+            <span>{label}</span>
+            {shortcut && (
+              <span className="text-[10px] text-white/60 font-medium bg-white/10 px-[4px] py-[1px] rounded-[3px] tracking-[0.5px]">{shortcut}</span>
+            )}
+          </div>
+        </motion.div>
+      )}
+    </AnimatePresence>,
+    document.body,
   );
 }
 
 // ─── CommentsToggleButton — must be inside CommentsProvider ──────────────────
 function CommentsToggleButton() {
   const ctx = useComments();
+  const [tip, setTip] = useState(false);
+  const ref = useRef<HTMLButtonElement>(null);
   if (!ctx) return null;
-  const count = ctx.comments.length;
-  const unread = ctx.unreadCount;
   return (
-    <button
-      type="button"
-      onClick={ctx.togglePanel}
-      aria-label="Toggle comments panel"
-      className={[
-        "ml-auto flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[12px] font-medium transition-all shrink-0 cursor-pointer",
-        ctx.isPanelOpen
-          ? "bg-[rgba(71,59,171,0.12)] text-[#473bab]"
-          : "text-[#686576] hover:bg-[rgba(0,0,0,0.06)] hover:text-[#1f1d25]",
-      ].join(" ")}
-    >
-      <ChatIcon size={14} />
-      <span>Comments</span>
-      {count > 0 && (
-        <span className={[
-          "flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full text-[10px] font-semibold",
-          unread > 0 ? "bg-[#473bab] text-white" : "bg-[rgba(0,0,0,0.08)] text-[#686576]",
-        ].join(" ")}>
-          {count}
-        </span>
-      )}
-    </button>
-  );
-}
-
-// ─── NotificationBellButton — must be inside CommentsProvider ────────────────
-function NotificationBellButton() {
-  const ctx = useComments();
-  if (!ctx) return null;
-  const unread = ctx.unreadCount;
-  return (
-    <button
-      type="button"
-      onClick={ctx.toggleNotif}
-      aria-label="Toggle notifications"
-      className={[
-        "relative flex items-center justify-center w-7 h-7 rounded-full text-[12px] font-medium transition-all shrink-0 cursor-pointer",
-        ctx.isNotifOpen
-          ? "bg-[rgba(71,59,171,0.12)] text-[#473bab]"
-          : "text-[#686576] hover:bg-[rgba(0,0,0,0.06)] hover:text-[#1f1d25]",
-      ].join(" ")}
-    >
-      <BellIcon size={14} />
-      {unread > 0 && (
-        <span className="absolute -top-0.5 -right-0.5 flex items-center justify-center min-w-[14px] h-[14px] px-[3px] rounded-full text-[9px] font-bold bg-[#473bab] text-white leading-none pointer-events-none">
-          {unread > 9 ? "9+" : unread}
-        </span>
-      )}
-    </button>
+    <>
+      <button
+        ref={ref}
+        type="button"
+        onClick={ctx.togglePanel}
+        aria-label="Toggle comments panel"
+        onMouseEnter={() => setTip(true)}
+        onMouseLeave={() => setTip(false)}
+        className={[
+          "p-1.5 rounded-full transition-colors shrink-0 cursor-pointer",
+          ctx.isPanelOpen
+            ? "bg-[rgba(71,59,171,0.12)] text-[#473bab]"
+            : "text-[#686576] hover:bg-black/5 hover:text-[#1f1d25]",
+        ].join(" ")}
+      >
+        <ChatIcon size={20} />
+      </button>
+      <PaneTooltip label="Comments" shortcut="C" anchorRef={ref} visible={tip} />
+    </>
   );
 }
 

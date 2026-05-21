@@ -61,7 +61,9 @@ export const PROJECT_OWNERS = [
   { id: "sarah-collins",   name: "Sarah Collins",   email: "sarah.collins@hondaofanywhere.com",      initials: "SC", color: "#0891b2", avatar: null },
   { id: "james-whitaker",  name: "James Whitaker",  email: "james.whitaker@hondaofanywhere.com",     initials: "JW", color: "#65a30d", avatar: null },
   { id: "ashley-morgan",   name: "Ashley Morgan",   email: "ashley.morgan@hondaofanywhere.com",      initials: "AM", color: "#ea580c", avatar: null },
-  { id: "jenni-eckhart",   name: "Jenni Eckhart",   email: "jenni.eckhart@helloconstellation.com",    initials: "JE", color: "#0e7490", avatar: null },
+  { id: "jenny-eckhart",   name: "Jenny Eckhart",   email: "jenny.eckhart@helloconstellation.com",    initials: "JE", color: "#0e7490", avatar: null },
+  { id: "mallory-manning", name: "Mallory Manning", email: "mallory.manning@helloconstellation.com", initials: "MM", color: "#b45309", avatar: null },
+  { id: "katelyn-gray",    name: "Katelyn Gray",    email: "katelyn.gray@helloconstellation.com",    initials: "KG", color: "#0369a1", avatar: null },
 ] as const;
 
 export type ProjectOwner = typeof PROJECT_OWNERS[number];

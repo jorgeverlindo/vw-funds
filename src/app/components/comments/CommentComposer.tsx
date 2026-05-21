@@ -18,46 +18,63 @@ import React, {
 } from "react";
 
 import { COMMENT_USERS } from "./constants";
-import type { CommentUser } from "./types";
+import type { Attachment, CommentUser } from "./types";
 import { sanitizeHtml } from "./utils";
 import { FormattingToolbar } from "./FormattingToolbar";
 import { MentionOverlay } from "./MentionOverlay";
 
 // ── helpers ───────────────────────────────────────────────────────────────────
 
-/** Insert a node at the current caret position inside a contentEditable. */
-function insertNodeAtCaret(node: Node): void {
-  const sel = window.getSelection();
-  if (!sel || sel.rangeCount === 0) return;
-  const range = sel.getRangeAt(0);
-  range.deleteContents();
-  range.insertNode(node);
-  // Move caret after the inserted node
-  range.setStartAfter(node);
-  range.setEndAfter(node);
-  sel.removeAllRanges();
-  sel.addRange(range);
+/** Convert a File to a base64 data URL. */
+function fileToDataUrl(f: File): Promise<string> {
+  return new Promise(resolve => {
+    const r = new FileReader();
+    r.onload = e => resolve(e.target!.result as string);
+    r.readAsDataURL(f);
+  });
 }
 
-/** Build a mention chip element */
-function buildMentionChip(user: CommentUser): DocumentFragment {
-  const frag = document.createDocumentFragment();
+/**
+ * Insert a mention chip + trailing space at the caret, then move the cursor
+ * right after the space so the user can type immediately without overwriting the chip.
+ */
+function insertMentionAtCaret(user: CommentUser): void {
+  const sel = window.getSelection();
+  if (!sel || sel.rangeCount === 0) return;
+
+  // Build the non-editable chip
   const chip = document.createElement("span");
   chip.setAttribute("data-mention-id", user.id);
   chip.setAttribute("contenteditable", "false");
-  chip.className = "mention-chip"; // styled via RichTextRenderer's Tailwind modifiers
+  chip.className = "mention-chip";
   chip.textContent = `@${user.name}`;
-  frag.appendChild(chip);
-  // Trailing space so the cursor lands outside the chip
-  frag.appendChild(document.createTextNode(" "));
-  return frag;
+
+  // Trailing plain-text space
+  const space = document.createTextNode(" ");
+
+  // 1. Insert chip at caret
+  const range = sel.getRangeAt(0);
+  range.insertNode(chip);
+
+  // 2. Insert space immediately after the chip
+  const afterChip = document.createRange();
+  afterChip.setStartAfter(chip);
+  afterChip.collapse(true);
+  afterChip.insertNode(space);
+
+  // 3. Place cursor after the space — ready for continued typing, chip not selected
+  const finalRange = document.createRange();
+  finalRange.setStartAfter(space);
+  finalRange.collapse(true);
+  sel.removeAllRanges();
+  sel.addRange(finalRange);
 }
 
 // ── component ────────────────────────────────────────────────────────────────
 
 interface CommentComposerProps {
-  /** Called with sanitized HTML when the user submits */
-  onSubmit: (html: string) => void;
+  /** Called with sanitized HTML (and optional attachments) when the user submits */
+  onSubmit: (html: string, attachments?: Attachment[]) => void;
   /** If set, shows a "Replying to …" banner */
   replyToName?: string;
   onCancelReply?: () => void;
@@ -76,7 +93,9 @@ export function CommentComposer({
   className = "",
 }: CommentComposerProps) {
   const editorRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [isEmpty, setIsEmpty] = useState(true);
+  const [attachments, setAttachments] = useState<{ id: string; name: string; file: File; previewUrl: string | null }[]>([]);
 
   // Mention state
   const [mentionQuery, setMentionQuery] = useState<string | null>(null); // null = closed
@@ -121,16 +140,57 @@ export function CommentComposer({
     setMentionQuery(afterAt);
   }, []);
 
+  // ── mention trigger via @ button ──────────────────────────────────────────
+  const handleMentionTrigger = useCallback(() => {
+    const el = editorRef.current;
+    if (!el) return;
+    el.focus();
+    // Insert @ at caret
+    document.execCommand('insertText', false, '@');
+    detectMention();
+  }, [detectMention]);
+
+  // ── attachment handlers ───────────────────────────────────────────────────
+  const handleAttach = useCallback(() => {
+    fileInputRef.current?.click();
+  }, []);
+
+  const handleFileChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files ?? []);
+    if (files.length) {
+      const newItems = files.map(file => ({
+        id: `att-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+        name: file.name,
+        file,
+        previewUrl: file.type.startsWith("image/") ? URL.createObjectURL(file) : null,
+      }));
+      setAttachments(prev => [...prev, ...newItems]);
+    }
+    e.target.value = '';
+  }, []);
+
   // ── keydown: Ctrl/Cmd+Enter → submit; Escape → dismiss mention ──────────
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLDivElement>) => {
       if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
         e.preventDefault();
-        handleSubmit();
+        void handleSubmit();
         return;
       }
       if (e.key === "Escape" && mentionQuery !== null) {
         setMentionQuery(null);
+      }
+      // Cmd+Shift+7 → ordered list
+      if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key === '7') {
+        e.preventDefault();
+        document.execCommand('insertOrderedList', false);
+        return;
+      }
+      // Cmd+Shift+8 → unordered list
+      if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key === '8') {
+        e.preventDefault();
+        document.execCommand('insertUnorderedList', false);
+        return;
       }
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -142,7 +202,8 @@ export function CommentComposer({
     const el = editorRef.current;
     if (!el) return;
     const text = el.innerText.trim();
-    setIsEmpty(text === "" || el.innerHTML === "<br>");
+    // "<br>" and "\n" are both "empty" states browsers insert into contentEditable
+    setIsEmpty(text === "" || text === "\n" || el.innerHTML === "<br>");
     detectMention();
   }, [detectMention]);
 
@@ -162,7 +223,7 @@ export function CommentComposer({
         range.deleteContents();
       }
 
-      insertNodeAtCaret(buildMentionChip(user));
+      insertMentionAtCaret(user);
       setMentionQuery(null);
 
       // Re-evaluate empty state
@@ -173,7 +234,7 @@ export function CommentComposer({
   );
 
   // ── submit ────────────────────────────────────────────────────────────────
-  const handleSubmit = useCallback(() => {
+  const handleSubmit = useCallback(async () => {
     const el = editorRef.current;
     if (!el) return;
     const raw = el.innerHTML;
@@ -181,13 +242,28 @@ export function CommentComposer({
     const text = el.innerText.trim();
     if (!text) return;
 
-    onSubmit(clean);
+    // Build persisted Attachment[]
+    const attachmentData: Attachment[] = await Promise.all(
+      attachments.map(async (a) => {
+        if (a.file.type.startsWith("image/")) {
+          const dataUrl = await fileToDataUrl(a.file);
+          return { id: a.id, name: a.name, thumbnailUrl: dataUrl };
+        }
+        return { id: a.id, name: a.name };
+      })
+    );
+
+    onSubmit(clean, attachmentData.length > 0 ? attachmentData : undefined);
+
+    // Revoke object URLs before clearing
+    attachments.forEach(a => { if (a.previewUrl) URL.revokeObjectURL(a.previewUrl); });
 
     // Reset editor
     el.innerHTML = "";
     setIsEmpty(true);
     setMentionQuery(null);
-  }, [onSubmit]);
+    setAttachments([]);
+  }, [onSubmit, attachments]);
 
   return (
     <div className={`flex flex-col ${className}`}>
@@ -228,16 +304,70 @@ export function CommentComposer({
             "empty:before:content-[attr(aria-label)] empty:before:text-[#9c99a9] empty:before:pointer-events-none",
             // Mention chips rendered inside
             "[&_[data-mention-id]]:text-[#473bab] [&_[data-mention-id]]:font-medium",
+            // List styles (overrides Tailwind preflight reset)
+            "[&_ol]:list-decimal [&_ol]:pl-5 [&_ul]:list-disc [&_ul]:pl-5 [&_li]:ml-1",
           ].join(" ")}
+        />
+
+        {/* Attachment preview */}
+        {attachments.length > 0 && (
+          <div className="flex flex-wrap gap-1.5 px-3 pb-1">
+            {attachments.map((att, i) => (
+              att.previewUrl ? (
+                <div key={att.id} className="relative group/att">
+                  <img
+                    src={att.previewUrl}
+                    alt={att.name}
+                    className="w-10 h-10 rounded-lg object-cover border border-[rgba(0,0,0,0.1)]"
+                    title={att.name}
+                  />
+                  <button
+                    type="button"
+                    onMouseDown={(e) => {
+                      e.preventDefault();
+                      URL.revokeObjectURL(att.previewUrl!);
+                      setAttachments(prev => prev.filter((_, j) => j !== i));
+                    }}
+                    className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-[rgba(0,0,0,0.5)] text-white text-[10px] flex items-center justify-center opacity-0 group-hover/att:opacity-100 transition-opacity"
+                  >
+                    ×
+                  </button>
+                </div>
+              ) : (
+                <div key={att.id} className="flex items-center gap-1 px-2 py-1 rounded-md bg-[rgba(0,0,0,0.05)] text-[11px] text-[#686576]">
+                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/>
+                  </svg>
+                  <span className="max-w-[120px] truncate">{att.name}</span>
+                  <button
+                    type="button"
+                    onMouseDown={(e) => { e.preventDefault(); setAttachments(prev => prev.filter((_, j) => j !== i)); }}
+                    className="text-[#9c99a9] hover:text-[#686576]"
+                  >
+                    ×
+                  </button>
+                </div>
+              )
+            ))}
+          </div>
+        )}
+
+        {/* Hidden file input */}
+        <input
+          ref={fileInputRef}
+          type="file"
+          multiple
+          className="hidden"
+          onChange={handleFileChange}
         />
 
         {/* Toolbar + send row */}
         <div className="flex items-center justify-between px-2 pb-2 pt-0.5">
-          <FormattingToolbar onFormat={handleFormat} />
+          <FormattingToolbar onFormat={handleFormat} onMentionTrigger={handleMentionTrigger} onAttach={handleAttach} />
 
           <button
             type="button"
-            onClick={handleSubmit}
+            onClick={() => void handleSubmit()}
             disabled={isEmpty}
             aria-label="Send comment"
             className={[

@@ -1,4 +1,6 @@
-import { useState, useMemo, useEffect, useCallback } from 'react';
+import { useState, useMemo, useEffect, useLayoutEffect, useCallback, useRef } from 'react';
+import { createPortal } from 'react-dom';
+import { motion, AnimatePresence } from 'motion/react';
 import { useParams, useLocation, useNavigate } from 'react-router';
 import { AppSidebar } from './components/AppSidebar';
 import { TopNavBar } from './components/TopNavBar';
@@ -35,6 +37,8 @@ import { useCompliance, getDealerIdentity } from './contexts/ComplianceContext';
 import type { Claim } from './components/ClaimsPanel';
 import type { PreApproval } from './components/FundsPreApprovalsContent';
 import imgMalloryManning from 'figma:asset/f0494d5017440bdc302141d9ab01c7c81e4a339a.png';
+import { CommentsProvider, CommentsSidePanel, useComments, ChatIcon } from './components/comments';
+import type { NotifItem } from './components/comments/types';
 
 const DEALER_TABS = [
   { id: 'overview', label: 'Overview' },
@@ -93,6 +97,89 @@ const defaultDateRange: DateRange = {
 };
 
 export type UserType = 'dealer' | 'dealer-singular' | 'dealer-emich' | 'oem';
+
+/** Portal-based tooltip that escapes overflow:hidden parents. */
+function PortalTooltip({ label, shortcut, anchorRef, visible }: {
+  label: string;
+  shortcut?: string;
+  anchorRef: React.RefObject<HTMLElement | null>;
+  visible: boolean;
+}) {
+  const tooltipRef = useRef<HTMLDivElement>(null);
+  const [pos, setPos] = useState({ top: -999, left: -999, arrowLeft: '50%' });
+
+  useLayoutEffect(() => {
+    if (!visible || !anchorRef.current || !tooltipRef.current) return;
+    const r   = anchorRef.current.getBoundingClientRect();
+    const cx  = r.left + r.width / 2;
+    const top = r.bottom + 8;
+    const tw  = tooltipRef.current.offsetWidth;
+    const M   = 8; // viewport margin
+    const raw = cx - tw / 2;
+    const clamped = Math.max(M, Math.min(raw, window.innerWidth - tw - M));
+    setPos({ top, left: clamped, arrowLeft: `${cx - clamped}px` });
+  }, [visible, anchorRef]);
+
+  return createPortal(
+    <AnimatePresence>
+      {visible && (
+        <motion.div
+          ref={tooltipRef}
+          initial={{ opacity: 0, y: -4 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -4 }}
+          transition={{ duration: 0.35, ease: [0.25, 0.1, 0.25, 1] }}
+          style={{
+            position: 'fixed', top: pos.top, left: pos.left,
+            fontSize: 11, fontFamily: "'Roboto', sans-serif",
+            letterSpacing: '0.17px', lineHeight: '1.43', zIndex: 9999, pointerEvents: 'none',
+          }}
+          className="px-[8px] py-[5px] bg-[#1f1d25] text-white rounded-[6px] whitespace-nowrap"
+        >
+          <div
+            className="absolute bottom-full w-0 h-0 border-l-[4px] border-r-[4px] border-b-[4px] border-l-transparent border-r-transparent border-b-[#1f1d25]"
+            style={{ left: pos.arrowLeft, transform: 'translateX(-50%)' }}
+          />
+          <div className="flex items-center gap-[6px]">
+            <span>{label}</span>
+            {shortcut && (
+              <span className="text-[10px] text-white/60 font-medium bg-white/10 px-[4px] py-[1px] rounded-[3px] tracking-[0.5px]">{shortcut}</span>
+            )}
+          </div>
+        </motion.div>
+      )}
+    </AnimatePresence>,
+    document.body,
+  );
+}
+
+function AppCommentsButton() {
+  const ctx = useComments();
+  const [tip, setTip] = useState(false);
+  const ref = useRef<HTMLButtonElement>(null);
+  if (!ctx) return null;
+  return (
+    <>
+      <button
+        ref={ref}
+        type="button"
+        onClick={ctx.togglePanel}
+        aria-label="Toggle comments panel"
+        onMouseEnter={() => setTip(true)}
+        onMouseLeave={() => setTip(false)}
+        className={[
+          "p-1.5 rounded-full transition-colors shrink-0 cursor-pointer",
+          ctx.isPanelOpen
+            ? "bg-[rgba(71,59,171,0.12)] text-[#473bab]"
+            : "text-[#686576] hover:bg-black/5 hover:text-[#1f1d25]",
+        ].join(" ")}
+      >
+        <ChatIcon size={20} />
+      </button>
+      <PortalTooltip label="Comments" shortcut="C" anchorRef={ref} visible={tip} />
+    </>
+  );
+}
 
 export default function AppContent() {
   const { t } = useTranslation();
@@ -171,10 +258,14 @@ export default function AppContent() {
     const handleKey = (e: KeyboardEvent) => {
       const tag = (e.target as HTMLElement)?.tagName?.toLowerCase();
       if (['input', 'textarea', 'select'].includes(tag)) return;
+      if ((e.target as HTMLElement)?.isContentEditable) return;
       // ⇧A — toggle AI Agent pane (all user types)
       if (e.shiftKey && e.key === 'A') {
         e.preventDefault();
-        setIsAgentPaneOpen(open => !open);
+        setIsAgentPaneOpen(open => {
+          if (!open) window.dispatchEvent(new CustomEvent("agent-opened"));
+          return !open;
+        });
         return;
       }
       if (e.metaKey || e.ctrlKey || e.altKey) return;
@@ -205,11 +296,21 @@ export default function AppContent() {
         navigate(buildUrl('dealer-emich', client.clientId, activeTab), { replace: true });
         emitSnackbar('Emich Volkswagen (s)');
       }
+      if (e.key === 'c') {
+        window.dispatchEvent(new CustomEvent("toggle-comments-panel"));
+      }
     };
     window.addEventListener('keydown', handleKey);
     return () => window.removeEventListener('keydown', handleKey);
   }, [activeTab, client.clientId, navigate, lockDealership, unlockDealership]);
-  
+
+  // Close agent when comments panel opens
+  useEffect(() => {
+    const handler = () => setIsAgentPaneOpen(false);
+    window.addEventListener("comments-opened", handler);
+    return () => window.removeEventListener("comments-opened", handler);
+  }, []);
+
   // Pre-Approvals Specific State
   const [preApprovalSearchQuery, setPreApprovalSearchQuery] = useState('');
   const [selectedPreApprovalId, setSelectedPreApprovalId] = useState<string | null>(null);
@@ -508,6 +609,84 @@ export default function AppContent() {
   const [isWebMonitoringConfigOpen, setIsWebMonitoringConfigOpen] = useState(false); // [FV]
   const [isCreatingInfraction, setIsCreatingInfraction] = useState(false); // [FV]
 
+  // ── Comments context state ────────────────────────────────────────────────
+  const [commentsContextId, setCommentsContextId]     = useState<string>("campaigns-main");
+  const [commentsContextName, setCommentsContextName] = useState<string>("");
+
+  // ── Comment notification bridge (window event from CommentsProvider) ──────
+  const [commentNotifs, setCommentNotifs] = useState<NotifItem[]>([]);
+  const [commentUnreadCount, setCommentUnreadCount] = useState(0);
+  const [pendingCommentNav, setPendingCommentNav] = useState<{ contextId: string; commentId?: string } | null>(null);
+  const commentsContextIdRef = useRef(commentsContextId);
+  commentsContextIdRef.current = commentsContextId;
+
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const detail = (e as CustomEvent).detail as { notifs: NotifItem[]; unreadCount: number };
+      setCommentNotifs(detail.notifs);
+      setCommentUnreadCount(detail.unreadCount);
+    };
+    window.addEventListener('comment-notifs-changed', handler);
+    return () => window.removeEventListener('comment-notifs-changed', handler);
+  }, []);
+
+  // Sync comments context to current section/tab
+  useEffect(() => {
+    setCommentsContextId(`${activeAppSection}-${activeTab || "main"}`);
+    setCommentsContextName("");
+  }, [activeAppSection, activeTab]);
+
+  const handleProjectChange = useCallback((id: string | null, name: string) => {
+    if (id) {
+      setCommentsContextId(id);
+      setCommentsContextName(name);
+    } else {
+      setCommentsContextId(`projects-main`);
+      setCommentsContextName("");
+    }
+  }, []);
+
+  const handleCommentNotifNavigate = useCallback((notif: import('./components/comments/types').NotifItem) => {
+    const targetCtxId = notif.projectId;
+    // Already on the right context → fire immediately
+    if (targetCtxId === commentsContextIdRef.current) {
+      window.dispatchEvent(new CustomEvent('comment-open-to', {
+        detail: { contextId: targetCtxId, commentId: notif.targetCommentId }
+      }));
+      return;
+    }
+    // Store pending nav, then navigate
+    setPendingCommentNav({ contextId: targetCtxId, commentId: notif.targetCommentId });
+    if (targetCtxId.startsWith('campaigns-')) {
+      const tabPart = targetCtxId.replace('campaigns-', '');
+      const tab = tabPart === 'main' ? 'overview' : tabPart;
+      setActiveAppSection('campaigns');
+      setActiveTab(tab);
+      navigate(buildUrl(userType, client.clientId, tab), { replace: true });
+    } else if (targetCtxId === 'projects-main') {
+      setActiveAppSection('projects');
+      navigate(buildUrl(userType, client.clientId, 'projects'), { replace: true });
+    } else {
+      // Specific project ID
+      setActiveAppSection('projects');
+      setNotifOpenProjectId(targetCtxId);
+      navigate(buildUrl(userType, client.clientId, 'projects'), { replace: true });
+    }
+  }, [userType, client.clientId, navigate]);
+
+  // Fire comment-open-to event once the context matches the pending navigation
+  useEffect(() => {
+    if (!pendingCommentNav) return;
+    if (commentsContextId !== pendingCommentNav.contextId) return;
+    const t = setTimeout(() => {
+      window.dispatchEvent(new CustomEvent('comment-open-to', {
+        detail: { contextId: pendingCommentNav.contextId, commentId: pendingCommentNav.commentId }
+      }));
+      setPendingCommentNav(null);
+    }, 300);
+    return () => clearTimeout(t);
+  }, [commentsContextId, pendingCommentNav]);
+
   const selectedWCMItem = useMemo(() => {
     if (!selectedWebMonitoringId) return null;
     // [FV] also search user-added infractions
@@ -544,7 +723,10 @@ export default function AppContent() {
         userType={userType}
         onOpenOEMDrawer={() => setIsOEMDrawerOpen(true)}
         languageToggleActive={showLanguageToggle}
-        onOpenAgentPane={() => setIsAgentPaneOpen(open => !open)}
+        onOpenAgentPane={() => setIsAgentPaneOpen(open => {
+          if (!open) window.dispatchEvent(new CustomEvent("agent-opened"));
+          return !open;
+        })}
         isAgentPaneOpen={isAgentPaneOpen}
         // [FV] início — dealer-side infraction notifications driven by OEM-added rows
         dealerInfractionNotifs={userType !== 'oem' ? dealerInfractionNotifs(currentDealerIdentity.dealership) : undefined}
@@ -615,9 +797,21 @@ export default function AppContent() {
           setNotifOpenProjectId(projectId);
           navigate(buildUrl(userType, client.clientId, 'projects'), { replace: true });
         }}
+        commentNotifs={commentNotifs}
+        commentUnreadCount={commentUnreadCount}
+        onMarkCommentNotifRead={(id) => {
+          window.dispatchEvent(new CustomEvent('comment-mark-read', { detail: { id } }));
+        }}
+        onCommentNotifNavigate={handleCommentNotifNavigate}
       />
 
       {/* Main Layout Container - Fixed offsets for sidebar/navbar */}
+      <CommentsProvider contextId={commentsContextId} contextName={commentsContextName} currentUserId={({
+        'dealer':          'mallory-manning',
+        'dealer-emich':    'katelyn-gray',
+        'oem':             'jenny-eckhart',
+        'dealer-singular': 'zak-flaten',
+      } as Record<string, string>)[userType] ?? 'jorge-verlindo'}>
       <main className="ml-[72px] mt-[32px] h-[calc(100vh-48px)] flex p-6 gap-6 overflow-hidden mr-[0px] mb-[0px]">
         
         {/* Main Content Pane */}
@@ -629,7 +823,7 @@ export default function AppContent() {
               {/* Header Section inside Card */}
               <div className="flex-none px-6 pt-4 pb-0">
                 {/* Breadcrumbs — driven by active tab, all tabs covered */}
-                <div className="mb-2">
+                <div className="mb-2 flex items-center justify-between">
                   <BreadcrumbBar
                     items={[
                       { label: 'Campaigns' },
@@ -637,6 +831,7 @@ export default function AppContent() {
                     ]}
                     activeLabel={translatedTabs.find(t => t.id === activeTab)?.label ?? activeTab}
                   />
+                  <AppCommentsButton />
                 </div>
 
                 {/* Page Title — always "Funds" per design */}
@@ -769,7 +964,7 @@ export default function AppContent() {
           {/* PROJECTS SECTION */}
           {activeAppSection === 'projects' && (
              <div className="h-full overflow-hidden">
-               <ProjectsModule openProjectId={notifOpenProjectId} />
+               <ProjectsModule openProjectId={notifOpenProjectId} onProjectChange={handleProjectChange} />
              </div>
           )}
 
@@ -902,7 +1097,12 @@ export default function AppContent() {
             accountName={userType === 'dealer' ? 'Honda of Anywhere' : undefined}
           />
         )}
+
+        {/* Comments panel — same slot as agent pane */}
+        <CommentsSidePanel />
+
       </main>
+      </CommentsProvider>
 
       <DrawerOEM
         open={isOEMDrawerOpen}

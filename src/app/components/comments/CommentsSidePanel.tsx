@@ -11,12 +11,13 @@
 //   │ Composer             │ ← new top-level comment
 //   └──────────────────────┘
 
-import React, { useRef } from "react";
+import React, { useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "motion/react";
 
 import { useCommentsRequired, getUserById } from "./CommentsContext";
 import { ChatBubble } from "./ChatBubble";
 import { CommentComposer } from "./CommentComposer";
+import type { Attachment } from "./types";
 
 // ── Close icon ────────────────────────────────────────────────────────────────
 
@@ -59,6 +60,7 @@ function EmptyState() {
 export function CommentsSidePanel() {
   const ctx = useCommentsRequired();
   const scrollRef = useRef<HTMLDivElement>(null);
+  const commentRefs = useRef<Map<string, HTMLDivElement>>(new Map());
 
   const {
     comments,
@@ -74,7 +76,14 @@ export function CommentsSidePanel() {
     deleteReply,
     pendingEntity,
     clearPendingEntity,
+    highlightedCommentId,
   } = ctx;
+
+  useEffect(() => {
+    if (!highlightedCommentId) return;
+    const el = commentRefs.current.get(highlightedCommentId);
+    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }, [highlightedCommentId]);
 
   // Entity type → readable label
   const ENTITY_TYPE_LABEL: Record<string, string> = {
@@ -84,11 +93,13 @@ export function CommentsSidePanel() {
     preview: "Preview",
   };
 
-  const handleNewComment = (html: string) => {
+  const totalCount = comments.reduce((sum, c) => sum + 1 + c.replies.length, 0);
+
+  const handleNewComment = (html: string, attachments?: Attachment[]) => {
     addComment({
       message: html,
       replies: [],
-      attachments: [],
+      attachments: attachments ?? [],
       ...(pendingEntity ? { entityMention: pendingEntity } : {}),
     });
     clearPendingEntity();
@@ -103,11 +114,12 @@ export function CommentsSidePanel() {
       {isPanelOpen && (
         <motion.aside
           key="comments-panel"
-          initial={{ width: 0, opacity: 0 }}
-          animate={{ width: 320, opacity: 1 }}
-          exit={{ width: 0, opacity: 0 }}
-          transition={{ duration: 0.22, ease: [0.4, 0, 0.2, 1] }}
-          className="flex flex-col h-full overflow-hidden border-l border-[#e8e7ef] bg-white shrink-0"
+          initial={{ x: "100%", opacity: 0 }}
+          animate={{ x: 0, opacity: 1 }}
+          exit={{ x: "100%", opacity: 0 }}
+          transition={{ duration: 0.25, ease: [0.25, 0.1, 0.25, 1] }}
+          style={{ willChange: "transform" }}
+          className="flex flex-col flex-none h-full w-[400px] overflow-hidden bg-white rounded-2xl shadow-sm border border-[rgba(0,0,0,0.04)]"
           aria-label="Comments panel"
         >
           {/* ── Header ────────────────────────────────────────────────────── */}
@@ -119,9 +131,9 @@ export function CommentsSidePanel() {
               <h2 className="text-[15px] font-semibold text-[#1f1d25] leading-tight">
                 Comments
               </h2>
-              {comments.length > 0 && (
+              {totalCount > 0 && (
                 <span className="text-[12px] text-[#9c99a9]">
-                  ({comments.length})
+                  ({totalCount})
                 </span>
               )}
             </div>
@@ -144,24 +156,32 @@ export function CommentsSidePanel() {
               <EmptyState />
             ) : (
               comments.map((comment) => (
-                <ChatBubble
+                <div
                   key={comment.id}
-                  comment={comment}
-                  getUserById={getUserById}
-                  currentUserId={currentUser.id}
-                  onEdit={(id, html) => editComment(id, html)}
-                  onDelete={(id) => deleteComment(id)}
-                  onPin={(id, pinned) => pinComment(id, pinned)}
-                  onAddReply={(commentId, html) =>
-                    addReply(commentId, { message: html, replies: [], attachments: [] })
-                  }
-                  onEditReply={(commentId, replyId, html) =>
-                    editReply(commentId, replyId, html)
-                  }
-                  onDeleteReply={(commentId, replyId) =>
-                    deleteReply(commentId, replyId)
-                  }
-                />
+                  ref={(el) => {
+                    if (el) commentRefs.current.set(comment.id, el);
+                    else commentRefs.current.delete(comment.id);
+                  }}
+                >
+                  <ChatBubble
+                    comment={comment}
+                    getUserById={getUserById}
+                    currentUserId={currentUser.id}
+                    onEdit={(id, html) => editComment(id, html)}
+                    onDelete={(id) => deleteComment(id)}
+                    onPin={(id, pinned) => pinComment(id, pinned)}
+                    onAddReply={(commentId, html, attachments) =>
+                      addReply(commentId, { message: html, replies: [], attachments: attachments ?? [] })
+                    }
+                    onEditReply={(commentId, replyId, html) =>
+                      editReply(commentId, replyId, html)
+                    }
+                    onDeleteReply={(commentId, replyId) =>
+                      deleteReply(commentId, replyId)
+                    }
+                    isRover={comment.id === highlightedCommentId}
+                  />
+                </div>
               ))
             )}
           </div>

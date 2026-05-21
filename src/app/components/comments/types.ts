@@ -132,4 +132,10 @@ export interface CommentsContextValue {
   openPanelForEntity:  (entity: EntityRef) => void;
   /** Clear the pending entity (user dismissed the banner). */
   clearPendingEntity:  () => void;
+
+  // ── Deep-link highlight ───────────────────────────────────────────────────
+  /** Comment currently highlighted from a deep-link navigation. Cleared after ~5s. */
+  highlightedCommentId: string | null;
+  /** Set the highlighted comment (pass null to clear). */
+  highlightComment:     (id: string | null) => void;
 }

@@ -3,6 +3,9 @@ import { cn } from '@/lib/utils';
 import { useWorkflow } from '../../contexts/WorkflowContext';
 import type { WCMItem } from '../WebMonitoringContent';
 import type { CaseUpdateNotif } from '../../contexts/ComplianceContext';
+import type { NotifItem as CommentNotifItem } from '../comments/types';
+import { getUserById } from '../comments/constants';
+import { formatTimestamp } from '../comments/utils';
 
 interface NotificationOverlayProps {
   isOpen: boolean;
@@ -24,6 +27,10 @@ interface NotificationOverlayProps {
   caseUpdateNotifs?: CaseUpdateNotif[];
   seenCaseUpdateIds?: Set<string>;
   onOpenCaseUpdate?: (id: string) => void;
+  // Comment notifications (bridged from CommentsContext)
+  commentNotifs?: CommentNotifItem[];
+  onMarkCommentNotifRead?: (id: string) => void;
+  onCommentNotifNavigate?: (notif: CommentNotifItem) => void;
 }
 
 export function NotificationOverlay({
@@ -42,6 +49,9 @@ export function NotificationOverlay({
   caseUpdateNotifs,
   seenCaseUpdateIds,
   onOpenCaseUpdate,
+  commentNotifs,
+  onMarkCommentNotifRead,
+  onCommentNotifNavigate,
 }: NotificationOverlayProps) {
   const { workflow, markNotificationRead } = useWorkflow();
 
@@ -184,6 +194,55 @@ export function NotificationOverlay({
             }
             time={new Date(notif.timestampISO).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
             isRead={isRead}
+          />
+        </div>
+      ),
+    });
+  });
+
+  // Comment notifications
+  (commentNotifs ?? []).forEach((notif) => {
+    const actor = getUserById(notif.actorId);
+    const actionLabel: Record<string, string> = {
+      mentioned_you:  'mentioned you',
+      replied_to_you: 'replied to your comment',
+      commented:      'left a comment',
+      pinned:         'pinned a comment',
+      assigned_you:   'assigned you to a task',
+    };
+    const label = actionLabel[notif.action] ?? notif.action;
+    merged.push({
+      key: `comment-${notif.id}`,
+      sortMs: notif.timestamp,
+      node: (
+        <div
+          onClick={() => {
+            onMarkCommentNotifRead?.(notif.id);
+            onCommentNotifNavigate?.(notif);
+            onClose();
+          }}
+          className={notif.isRead ? 'opacity-70' : ''}
+        >
+          <NotificationItem
+            id={notif.id}
+            type="comment"
+            message={
+              <div className="flex flex-col items-start gap-0.5">
+                <span className="font-medium text-[#1f1d25]">{actor?.name ?? 'Someone'}</span>
+                <span className="text-[#686576] text-[12px]">
+                  {label}{notif.projectName ? ` in ${notif.projectName}` : ''}
+                </span>
+                {notif.preview && (
+                  <span className="text-[#9c99a9] text-[11px] line-clamp-1 mt-0.5">{notif.preview}</span>
+                )}
+              </div>
+            }
+            time={formatTimestamp(notif.timestamp)}
+            isRead={notif.isRead}
+            user={actor ? {
+              name: actor.name,
+              initials: actor.initials,
+            } : undefined}
           />
         </div>
       ),

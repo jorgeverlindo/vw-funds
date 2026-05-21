@@ -53,6 +53,7 @@ function NavTooltip({ label, shortcut, children }: {
   );
 }
 import type { CaseUpdateNotif } from '../contexts/ComplianceContext';
+import type { NotifItem as CommentNotifItem } from './comments/types';
 
 interface TopNavBarProps {
   userType?: 'dealer' | 'dealer-singular' | 'dealer-emich' | 'oem';
@@ -90,6 +91,11 @@ interface TopNavBarProps {
   oemReportedUnread?: number;
   onOpenReportedFromNotif?: (id: string) => void;
   // [FV] fim
+  // Comment notifications (from CommentsContext, bridged via window event)
+  commentNotifs?: CommentNotifItem[];
+  commentUnreadCount?: number;
+  onMarkCommentNotifRead?: (id: string) => void;
+  onCommentNotifNavigate?: (notif: CommentNotifItem) => void;
 }
 
 export function TopNavBar({
@@ -122,13 +128,17 @@ export function TopNavBar({
   oemSeenReportedIds, // [FV]
   oemReportedUnread = 0, // [FV]
   onOpenReportedFromNotif, // [FV]
+  commentNotifs = [],
+  commentUnreadCount = 0,
+  onMarkCommentNotifRead,
+  onCommentNotifNavigate,
 }: TopNavBarProps) {
   const { t } = useTranslation();
   const { oemUnreadCount, dealerUnreadCount } = useWorkflow();
-  // [FV] badges sum workflow unread + compliance flow notifs (per role)
+  // [FV] badges sum workflow unread + compliance flow notifs (per role) + comment notifs
   const badgeCount = userType === 'oem'
-    ? oemUnreadCount + oemSolutionUnread + oemReportedUnread
-    : dealerUnreadCount + dealerInfractionUnread + dealerSubmittedUnread + dealerCaseUpdateUnread;
+    ? oemUnreadCount + oemSolutionUnread + oemReportedUnread + commentUnreadCount
+    : dealerUnreadCount + dealerInfractionUnread + dealerSubmittedUnread + dealerCaseUpdateUnread + commentUnreadCount;
   const [isNotificationOpen, setIsNotificationOpen] = useState(false);
   const notificationRef = useRef<HTMLDivElement>(null);
   const bellRef = useRef<HTMLButtonElement>(null);
@@ -221,16 +231,14 @@ export function TopNavBar({
                 <path d={svgPaths.pd4a3b80} fill="#111014" fillOpacity="0.56" />
               </svg>
             </div>
-            {/* Badge */}
-            <div className="absolute top-[2px] right-[2px] size-[18px] bg-[var(--brand-accent)] rounded-full border border-white flex items-center justify-center transform translate-x-[25%] -translate-y-[25%]">
-              <span className="text-white text-[10px] font-medium leading-none">1</span>
-            </div>
           </button>
         </NavTooltip>
 
         {/* Comments Icon */}
         <NavTooltip label="Comments">
-          <button className="p-1.5 rounded-full hover:bg-black/5 transition-colors cursor-pointer relative group">
+          <button
+            className="p-1.5 rounded-full hover:bg-black/5 transition-colors cursor-pointer relative group"
+          >
             <div className="size-5">
               <svg className="block size-full" fill="none" viewBox="0 0 20 20">
                 <path d={svgPaths.p14bf2500} stroke="#111014" strokeLinecap="round" strokeLinejoin="round" strokeOpacity="0.56" strokeWidth="1.5" />
@@ -285,6 +293,9 @@ export function TopNavBar({
                   seenReportedIds={oemSeenReportedIds}
                   onOpenReported={onOpenReportedFromNotif}
                   // [FV] fim
+                  commentNotifs={commentNotifs}
+                  onMarkCommentNotifRead={onMarkCommentNotifRead}
+                  onCommentNotifNavigate={onCommentNotifNavigate}
                 />
              ) : (
                 <NotificationOverlay
@@ -304,6 +315,9 @@ export function TopNavBar({
                   seenCaseUpdateIds={seenCaseUpdateIds}
                   onOpenCaseUpdate={onOpenCaseUpdateFromNotif}
                   // [FV] fim
+                  commentNotifs={commentNotifs}
+                  onMarkCommentNotifRead={onMarkCommentNotifRead}
+                  onCommentNotifNavigate={onCommentNotifNavigate}
                 />
              )}
           </div>

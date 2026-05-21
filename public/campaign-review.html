@@ -44,7 +44,7 @@
     align-items: center;
   }
   .site-header img {
-    height: 22px;
+    height: 26px;
     object-fit: contain;
     display: block;
   }
@@ -57,8 +57,6 @@
     box-shadow: var(--card-shadow);
     padding: 20px;
     display: flex;
-    gap: 14px;
-    align-items: flex-start;
   }
   .opening-mark {
     flex-shrink: 0;
@@ -99,7 +97,7 @@
 
   /* ── Section wrapper ──────────────────────────────────────── */
   .wrap {
-    max-width: 480px;
+    max-width: 640px;
     margin: 0 auto;
     padding: 0 16px;
   }
@@ -183,6 +181,19 @@
     border: 1px solid rgba(71,59,171,0.18); color: var(--brand);
   }
   .platform-chip svg { display: block; }
+
+  /* ── Platform selector (interactive checkboxes) ──────────────── */
+  .platform-selector { display: flex; flex-wrap: wrap; gap: 5px; }
+  .platform-option {
+    display: flex; align-items: center; gap: 4px;
+    padding: 4px 9px; border-radius: 20px; font-size: 11px; font-weight: 500;
+    color: var(--text-2); border: 1px solid rgba(0,0,0,0.12);
+    background: #fafafb; cursor: pointer; user-select: none;
+    transition: background 0.12s, border-color 0.12s, color 0.12s;
+  }
+  .platform-option input[type=checkbox] { display: none; }
+  .platform-option.checked { background: rgba(71,59,171,0.07); border-color: rgba(71,59,171,0.18); color: var(--brand); }
+  .platform-option svg { display: block; }
 
   /* ── Divider ─────────────────────────────────────────────────── */
   .divider { height: 1px; background: rgba(0,0,0,0.07); margin: 12px 0; }
@@ -285,7 +296,7 @@
   .tpl-card + .tpl-card { margin-top: 6px; }
   .tpl-preview {
     flex-shrink: 0; border-radius: 6px;
-    background: #f0eff5; display: flex;
+    background: #e8e7f5; display: flex;
     align-items: center; justify-content: center;
     overflow: hidden;
   }
@@ -338,18 +349,18 @@
 
   /* ── Feedback box ─────────────────────────────────────────────── */
   .feedback-box {
-    margin-top: 12px;
-    background: var(--brand-tint);
-    border: 1px solid var(--brand-border);
-    border-radius: 10px;
-    padding: 10px 12px;
+    margin-top: 14px;
   }
   .feedback-label {
     font-size: 10px; font-weight: 600; color: var(--brand);
     letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 6px;
   }
-  .feedback-box textarea {
-    background: rgba(255,255,255,0.7);
+  .feedback-label-plain {
+    display: block;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text-primary);
+    margin-bottom: 6px;
   }
 
   /* ── CTA Section ──────────────────────────────────────────────── */
@@ -400,6 +411,71 @@
     text-align: center; margin-top: 32px;
     font-size: 10.5px; color: var(--text-3); line-height: 1.6;
   }
+
+  /* ── Template preview cards ──────────────────────────────────── */
+  .tpl-row {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 10px;
+    border-radius: 10px;
+    border: 1px solid rgba(0,0,0,0.08);
+    background: #fff;
+  }
+  .tpl-row + .tpl-row { margin-top: 6px; }
+
+  .tpl-thumb {
+    flex-shrink: 0;
+    border-radius: 6px;
+    background: #e8e7f5;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    position: relative;
+  }
+
+  .tpl-thumb-inner {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    justify-content: flex-start;
+    padding: 4px 5px;
+    box-sizing: border-box;
+  }
+  .tpl-thumb-headline {
+    height: 4px; border-radius: 2px;
+    background: rgba(71,59,171,0.35);
+    margin-bottom: 3px;
+  }
+  .tpl-thumb-body {
+    height: 3px; border-radius: 2px;
+    background: rgba(71,59,171,0.15);
+    margin-bottom: 2px;
+  }
+  .tpl-thumb-img-placeholder {
+    flex: 1;
+    border-radius: 3px;
+    background: rgba(71,59,171,0.12);
+    min-height: 6px;
+  }
+  .tpl-thumb-cta {
+    height: 5px; border-radius: 2px;
+    background: rgba(71,59,171,0.4);
+    margin-top: 3px;
+    width: 40%;
+  }
+
+  .tpl-info { flex: 1; min-width: 0; }
+  .tpl-name { font-size: 12px; font-weight: 500; color: #1f1d25; line-height: 1.4; }
+  .tpl-sub  { font-size: 11px; color: #686576; margin-top: 2px; }
+  .tpl-dim  {
+    display: inline-block; font-size: 9.5px; font-weight: 500;
+    color: #9c99a9; background: #f0eff5; border-radius: 4px;
+    padding: 1px 5px; margin-top: 4px;
+  }
 </style>
 </head>
 <body>
@@ -414,13 +490,6 @@
   <!-- ── Opening message card ─────────────────────────────────────────── -->
   <div style="padding: 16px 0 4px;">
     <div class="opening-card">
-      <div class="opening-mark">
-        <svg width="28" height="28" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path fill="#473bab" d="M11.2242 18.045C11.2242 9.57107 17.6103 2.63141 25.6988 2.04131C25.332 2.0118 24.9594 2 24.5867 2C15.9765 2 9 9.1816 9 18.045C9 26.9084 15.9765 34.09 24.5867 34.09C24.9594 34.09 25.332 34.0782 25.6988 34.0487C17.6103 33.4586 11.2242 26.5189 11.2242 18.045Z"/>
-          <path fill="#473bab" d="M15.1223 18.045C15.1223 11.6895 19.909 6.48481 25.9797 6.04223C25.7046 6.02453 25.4237 6.01273 25.1428 6.01273C18.688 6.01273 13.4542 11.4004 13.4542 18.045C13.4542 24.6896 18.688 30.0773 25.1428 30.0773C25.4237 30.0773 25.7046 30.0655 25.9797 30.0478C19.9147 29.6052 15.1223 24.4004 15.1223 18.045Z"/>
-          <path fill="#473bab" d="M26.2606 10.0432C26.0772 10.0314 25.8938 10.0255 25.7046 10.0255C21.3995 10.0255 17.9083 13.6192 17.9083 18.0509C17.9083 22.4826 21.3995 26.0764 25.7046 26.0764C25.8938 26.0764 26.0772 26.0704 26.2606 26.0527C22.2135 25.7577 19.0262 22.2879 19.0262 18.0509C19.0262 13.8139 22.2192 10.3441 26.2606 10.0491V10.0432Z"/>
-        </svg>
-      </div>
       <div class="opening-body">
         <div class="opening-title">Constellation prepared your campaign for review</div>
         <p class="opening-sub">Here's what was built for <strong>Honda of Anywhere Summer Campaign 2026</strong>. Review each section, leave feedback if you'd like changes, and confirm at the bottom to generate assets.</p>
@@ -441,7 +510,6 @@
   <div class="section-header">
     <div class="section-num">1</div>
     <div class="section-title">Project Setup</div>
-    <div class="section-subtitle">Edit any field before confirming</div>
   </div>
 
   <div class="card">
@@ -494,23 +562,26 @@
         <!-- Platforms -->
         <div>
           <span class="label">Platforms</span>
-          <div class="platform-chips" style="margin-top:6px;">
+          <div class="platform-selector" style="margin-top:6px;">
             <!-- Meta -->
-            <div class="platform-chip">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="#473bab">
+            <label class="platform-option checked">
+              <input type="checkbox" checked>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
                 <path d="M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2zm4.5 6.5c.83 0 1.5.67 1.5 1.5s-.67 1.5-1.5 1.5S15 10.83 15 10s.67-1.5 1.5-1.5zM8 8.5c.83 0 1.5.67 1.5 1.5S8.83 11.5 8 11.5 6.5 10.83 6.5 10 7.17 8.5 8 8.5zM12 17c-2.33 0-4.31-1.46-5.11-3.5h10.22c-.8 2.04-2.78 3.5-5.11 3.5z"/>
               </svg>
               Meta
-            </div>
+            </label>
             <!-- Facebook -->
-            <div class="platform-chip">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="#473bab">
+            <label class="platform-option checked">
+              <input type="checkbox" checked>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
                 <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
               </svg>
               Facebook
-            </div>
+            </label>
             <!-- Google PMax -->
-            <div class="platform-chip">
+            <label class="platform-option checked">
+              <input type="checkbox" checked>
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none">
                 <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
                 <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
@@ -518,14 +589,26 @@
                 <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
               </svg>
               Google PMax
-            </div>
+            </label>
+            <!-- Google Display (unchecked) -->
+            <label class="platform-option">
+              <input type="checkbox">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none">
+                <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+                <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+                <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
+                <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+              </svg>
+              Google Display
+            </label>
             <!-- Website -->
-            <div class="platform-chip">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#473bab" stroke-width="2">
+            <label class="platform-option checked">
+              <input type="checkbox" checked>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
               </svg>
               Website
-            </div>
+            </label>
           </div>
         </div>
 
@@ -734,7 +817,7 @@
 
       <!-- Offer feedback -->
       <div class="feedback-box">
-        <div class="feedback-label">Feedback on Offers</div>
+        <span class="feedback-label-plain">Feedback on Offers</span>
         <textarea class="field" placeholder="e.g. Remove the CR-V LX, add the Pilot instead…"></textarea>
       </div>
     </div>
@@ -757,50 +840,74 @@
       </p>
 
       <!-- Template 1 — Website Banner 2000x500 -->
-      <div class="tpl-card">
-        <div class="tpl-preview" style="width: 64px; height: 16px;">
-          <span>2000×500</span>
+      <div class="tpl-row">
+        <div class="tpl-thumb" style="width:72px;height:18px;">
+          <div class="tpl-thumb-inner" style="flex-direction:row;align-items:center;gap:4px;padding:3px 5px;">
+            <div style="flex:1;height:100%;background:rgba(71,59,171,0.12);border-radius:2px;"></div>
+            <div style="flex:2;display:flex;flex-direction:column;gap:2px;justify-content:center;">
+              <div style="height:3px;background:rgba(71,59,171,0.35);border-radius:1px;"></div>
+              <div style="height:2px;background:rgba(71,59,171,0.15);border-radius:1px;"></div>
+            </div>
+            <div style="width:12px;height:8px;background:rgba(71,59,171,0.4);border-radius:2px;flex-shrink:0;"></div>
+          </div>
         </div>
-        <div class="tpl-card-info">
-          <div class="tpl-card-name">Honda_Lease_Website_2000x500</div>
-          <div class="tpl-card-sub">Website Banner · Honda</div>
-          <span class="tpl-card-dim">2000 × 500</span>
+        <div class="tpl-info">
+          <div class="tpl-name">Honda_Lease_Website_2000x500</div>
+          <div class="tpl-sub">Website Banner · Honda</div>
+          <span class="tpl-dim">2000 × 500</span>
         </div>
       </div>
 
       <!-- Template 2 — Display Leaderboard 970x250 -->
-      <div class="tpl-card">
-        <div class="tpl-preview" style="width: 64px; height: 16px;">
-          <span>970×250</span>
+      <div class="tpl-row">
+        <div class="tpl-thumb" style="width:72px;height:18px;">
+          <div class="tpl-thumb-inner" style="flex-direction:row;align-items:center;gap:4px;padding:3px 5px;">
+            <div style="flex:1;height:100%;background:rgba(71,59,171,0.12);border-radius:2px;"></div>
+            <div style="flex:2;display:flex;flex-direction:column;gap:2px;justify-content:center;">
+              <div style="height:3px;background:rgba(71,59,171,0.35);border-radius:1px;"></div>
+              <div style="height:2px;background:rgba(71,59,171,0.15);border-radius:1px;"></div>
+            </div>
+            <div style="width:12px;height:8px;background:rgba(71,59,171,0.4);border-radius:2px;flex-shrink:0;"></div>
+          </div>
         </div>
-        <div class="tpl-card-info">
-          <div class="tpl-card-name">Honda_Lease_Display_970x250</div>
-          <div class="tpl-card-sub">Display Leaderboard · Honda</div>
-          <span class="tpl-card-dim">970 × 250</span>
+        <div class="tpl-info">
+          <div class="tpl-name">Honda_Lease_Display_970x250</div>
+          <div class="tpl-sub">Display Leaderboard · Honda</div>
+          <span class="tpl-dim">970 × 250</span>
         </div>
       </div>
 
       <!-- Template 3 — Display Medium Rectangle 300x250 -->
-      <div class="tpl-card">
-        <div class="tpl-preview" style="width: 36px; height: 30px;">
-          <span>300×250</span>
+      <div class="tpl-row">
+        <div class="tpl-thumb" style="width:40px;height:33px;">
+          <div class="tpl-thumb-inner">
+            <div class="tpl-thumb-headline"></div>
+            <div class="tpl-thumb-body"></div>
+            <div class="tpl-thumb-img-placeholder"></div>
+            <div class="tpl-thumb-cta"></div>
+          </div>
         </div>
-        <div class="tpl-card-info">
-          <div class="tpl-card-name">Honda_Lease_Display_300x250</div>
-          <div class="tpl-card-sub">Display Medium Rectangle · Honda</div>
-          <span class="tpl-card-dim">300 × 250</span>
+        <div class="tpl-info">
+          <div class="tpl-name">Honda_Lease_Display_300x250</div>
+          <div class="tpl-sub">Display Medium Rectangle · Honda</div>
+          <span class="tpl-dim">300 × 250</span>
         </div>
       </div>
 
       <!-- Template 4 — Social Square 1080x1080 -->
-      <div class="tpl-card">
-        <div class="tpl-preview" style="width: 32px; height: 32px;">
-          <span>1080×1080</span>
+      <div class="tpl-row">
+        <div class="tpl-thumb" style="width:36px;height:36px;">
+          <div class="tpl-thumb-inner">
+            <div class="tpl-thumb-headline"></div>
+            <div class="tpl-thumb-body"></div>
+            <div class="tpl-thumb-img-placeholder"></div>
+            <div class="tpl-thumb-cta"></div>
+          </div>
         </div>
-        <div class="tpl-card-info">
-          <div class="tpl-card-name">Honda_Lease_Social_1080x1080</div>
-          <div class="tpl-card-sub">Social Square · Honda</div>
-          <span class="tpl-card-dim">1080 × 1080</span>
+        <div class="tpl-info">
+          <div class="tpl-name">Honda_Lease_Social_1080x1080</div>
+          <div class="tpl-sub">Social Square · Honda</div>
+          <span class="tpl-dim">1080 × 1080</span>
         </div>
       </div>
 
@@ -814,7 +921,7 @@
 
       <!-- Template feedback -->
       <div class="feedback-box">
-        <div class="feedback-label">Feedback on Templates</div>
+        <span class="feedback-label-plain">Feedback on Templates</span>
         <textarea class="field" placeholder="e.g. Also add the tall banner 600x1067 for stories…"></textarea>
       </div>
     </div>
@@ -893,8 +1000,8 @@
       </div>
 
       <!-- Background feedback -->
-      <div class="feedback-box" style="margin-top:12px;">
-        <div class="feedback-label">Feedback on Backgrounds</div>
+      <div class="feedback-box">
+        <span class="feedback-label-plain">Feedback on Backgrounds</span>
         <textarea class="field" placeholder="e.g. Use Gold Flare only, or add a new lifestyle scene…"></textarea>
       </div>
     </div>
@@ -944,6 +1051,14 @@
   function toggleBg(el) {
     el.classList.toggle('selected');
   }
+
+  document.querySelectorAll('.platform-option').forEach(function(opt) {
+    opt.addEventListener('click', function() {
+      var cb = opt.querySelector('input[type=checkbox]');
+      cb.checked = !cb.checked;
+      opt.classList.toggle('checked', cb.checked);
+    });
+  });
 </script>
 </body>
 </html>

@@ -12,8 +12,9 @@
 // Props follow CommentData + context callbacks to keep this component pure.
 
 import React, { useCallback, useState } from "react";
+import { motion } from "motion/react";
 
-import type { CommentData, CommentUser, Reply } from "./types";
+import type { Attachment, CommentData, CommentUser, Reply } from "./types";
 import { formatTimestamp } from "./utils";
 import { RichTextRenderer } from "./RichTextRenderer";
 import { CommentComposer } from "./CommentComposer";
@@ -111,7 +112,29 @@ function ReplyRow({ reply, author, currentUserId, onEdit, onDelete }: ReplyRowPr
             className="mt-1"
           />
         ) : (
-          <RichTextRenderer html={reply.message} className="mt-0.5 text-[12px]" />
+          <>
+            <RichTextRenderer html={reply.message} className="mt-0.5 text-[12px]" />
+            {reply.attachments && reply.attachments.length > 0 && (
+              <div className="flex flex-wrap gap-1.5 mt-2">
+                {reply.attachments.map(att => (
+                  att.thumbnailUrl ? (
+                    <img
+                      key={att.id}
+                      src={att.thumbnailUrl}
+                      alt={att.name}
+                      className="w-12 h-12 rounded-lg object-cover border border-[rgba(0,0,0,0.08)]"
+                      title={att.name}
+                    />
+                  ) : (
+                    <div key={att.id} className="flex items-center gap-1 px-2 py-1 rounded-md bg-[rgba(0,0,0,0.05)] text-[11px] text-[#686576]">
+                      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
+                      <span className="max-w-[100px] truncate">{att.name}</span>
+                    </div>
+                  )
+                ))}
+              </div>
+            )}
+          </>
         )}
       </div>
 
@@ -177,9 +200,10 @@ interface ChatBubbleProps {
   onEdit: (commentId: string, html: string) => void;
   onDelete: (commentId: string) => void;
   onPin: (commentId: string, pinned: boolean) => void;
-  onAddReply: (commentId: string, html: string) => void;
+  onAddReply: (commentId: string, html: string, attachments?: Attachment[]) => void;
   onEditReply: (commentId: string, replyId: string, html: string) => void;
   onDeleteReply: (commentId: string, replyId: string) => void;
+  isRover?: boolean;
 }
 
 export function ChatBubble({
@@ -192,6 +216,7 @@ export function ChatBubble({
   onAddReply,
   onEditReply,
   onDeleteReply,
+  isRover,
 }: ChatBubbleProps) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [editing, setEditing] = useState(false);
@@ -221,8 +246,8 @@ export function ChatBubble({
   );
 
   const handleReplySubmit = useCallback(
-    (html: string) => {
-      onAddReply(comment.id, html);
+    (html: string, attachments?: Attachment[]) => {
+      onAddReply(comment.id, html, attachments);
       setReplying(false);
       setShowReplies(true);
     },
@@ -232,12 +257,18 @@ export function ChatBubble({
   const replyCount = comment.replies.length;
 
   return (
-    <div
+    <motion.div
       className={[
         "group bg-white rounded-2xl border border-[#e8e7ef] shadow-[0px_2px_2px_0px_rgba(0,0,0,0.08)]",
         "flex flex-col gap-2 p-3",
         comment.isPinned ? "ring-1 ring-[rgba(71,59,171,0.3)]" : "",
+        isRover ? "ring-2 ring-[#473bab] border-[#473bab] bg-[rgba(71,59,171,0.04)]" : "",
       ].join(" ")}
+      {...(isRover ? {
+        initial: { boxShadow: "0 0 0 6px rgba(71,59,171,0.25)" },
+        animate: { boxShadow: "0 0 0 0px rgba(71,59,171,0)" },
+        transition: { duration: 4, ease: "easeOut" },
+      } : {})}
     >
       {/* ── Header ────────────────────────────────────────────────────────── */}
       <div className="flex items-start gap-2">
@@ -306,7 +337,29 @@ export function ChatBubble({
           autoFocus
         />
       ) : (
-        <RichTextRenderer html={comment.message} />
+        <>
+          <RichTextRenderer html={comment.message} />
+          {comment.attachments.length > 0 && (
+            <div className="flex flex-wrap gap-1.5 mt-2">
+              {comment.attachments.map(att => (
+                att.thumbnailUrl ? (
+                  <img
+                    key={att.id}
+                    src={att.thumbnailUrl}
+                    alt={att.name}
+                    className="w-12 h-12 rounded-lg object-cover border border-[rgba(0,0,0,0.08)]"
+                    title={att.name}
+                  />
+                ) : (
+                  <div key={att.id} className="flex items-center gap-1 px-2 py-1 rounded-md bg-[rgba(0,0,0,0.05)] text-[11px] text-[#686576]">
+                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
+                    <span className="max-w-[100px] truncate">{att.name}</span>
+                  </div>
+                )
+              ))}
+            </div>
+          )}
+        </>
       )}
 
       {/* ── Footer: reply count + reply button ────────────────────────────── */}
@@ -362,6 +415,6 @@ export function ChatBubble({
           />
         </div>
       )}
-    </div>
+    </motion.div>
   );
 }

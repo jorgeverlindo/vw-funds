@@ -3720,6 +3720,7 @@ export function ProjectAgentPane({ isOpen, onClose, userType }: ProjectAgentPane
           offers:      projectOffers.map(o => ({
             id: o.id, year: o.year, make: o.make, model: o.model, trim: o.trim,
             offerType: o.offerType, monthlyPayment: o.monthlyPayment, term: o.term,
+            image: (o as { image?: string }).image ?? "",
           })),
           templates: projectTemplates.map(t => ({
             id: t.id, name: t.name, format: t.format,

@@ -55,3 +55,7 @@ export { CommentsSidePanel, ChatIcon } from "./CommentsSidePanel";
 // ─── Etapa 4 — Notifications tray ────────────────────────────────────────────
 
 export { NotificationsTray, BellIcon } from "./NotificationsTray";
+
+// ─── Shared UI ────────────────────────────────────────────────────────────────
+
+export { CommentsButton } from "./CommentsButton";

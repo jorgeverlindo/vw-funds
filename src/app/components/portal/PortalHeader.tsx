@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ActionButton } from '../ActionButton';
+import { CommentsButton } from '@comments';
 
 interface PortalHeaderProps {
   selectionCount: number;
@@ -113,9 +114,10 @@ export function PortalHeader({
         </div>
       </div>
 
-      {/* Right Side: View Toggle */}
-      <div className="flex items-center gap-4 shrink-0 ml-4">
-        <button 
+      {/* Right Side: Comments + View Toggle */}
+      <div className="flex items-center gap-2 shrink-0 ml-4">
+        <CommentsButton />
+        <button
           className="p-2 hover:bg-gray-100 rounded-full transition-colors text-[#111014]/56 hover:text-[#1f1d25] cursor-pointer"
           onClick={() => onViewModeChange(viewMode === 'grid' ? 'list' : 'grid')}
         >

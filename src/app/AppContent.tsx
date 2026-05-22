@@ -522,6 +522,23 @@ export default function AppContent() {
   // Project to open from a notification tap
   const [notifOpenProjectId, setNotifOpenProjectId] = useState<string | null>(null);
 
+  // Deep-link: ?project=<id> in the URL opens that project directly.
+  // Works for both mock projects and agent-created projects stored in localStorage.
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const projectId = params.get('project');
+    if (projectId) {
+      setActiveAppSection('projects');
+      setNotifOpenProjectId(projectId);
+      // Clean the query string from the URL without triggering a re-render loop
+      navigate(
+        buildUrl(userType, client.clientId, 'projects'),
+        { replace: true }
+      );
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // intentionally runs once on mount only
+
   const [selectedWebMonitoringId, setSelectedWebMonitoringId] = useState<string | null>(null);
   const [isWebMonitoringModalOpen, setIsWebMonitoringModalOpen] = useState(false);
   const [isWebMonitoringConfigOpen, setIsWebMonitoringConfigOpen] = useState(false); // [FV]

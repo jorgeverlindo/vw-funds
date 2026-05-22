@@ -1042,6 +1042,7 @@ export default function AppContent() {
             isOpen={isAgentPaneOpen}
             onClose={() => setIsAgentPaneOpen(false)}
             userType={userType}
+            activeUserName={currentDealerIdentity.userName}
           />
         )}
 

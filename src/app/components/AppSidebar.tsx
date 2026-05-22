@@ -90,7 +90,7 @@ function NavItem({ icon, label, isActive = false, onClick, iconColor = '#ACABFF'
             <div className={`absolute flex flex-col font-['Roboto'] ${
               isActive ? 'font-medium' : 'font-normal'
             } justify-center leading-[0] left-1/2 text-[#f9fafa] text-[11px] text-center top-[7px] tracking-[0.4px] translate-x-[-50%] translate-y-[-50%]`}>
-              <p className="leading-[1.66]">{label}</p>
+              <p className="leading-[1.66] whitespace-nowrap">{label}</p>
             </div>
           </div>
         </div>

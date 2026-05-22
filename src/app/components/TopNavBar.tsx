@@ -10,6 +10,7 @@ import { cn } from '@/lib/utils';
 import { LanguageToggleButton } from './LanguageToggleButton';
 import { useTranslation } from '../contexts/LanguageContext';
 import { useWorkflow } from '../contexts/WorkflowContext';
+import { getDealerIdentity } from '../contexts/ComplianceContext';
 import type { WCMItem } from './WebMonitoringContent';
 
 // ─── Nav Tooltip ──────────────────────────────────────────────────────────────
@@ -135,6 +136,7 @@ export function TopNavBar({
 }: TopNavBarProps) {
   const { t } = useTranslation();
   const { oemUnreadCount, dealerUnreadCount } = useWorkflow();
+  const currentUserName = getDealerIdentity(userType).userName;
   // [FV] badges sum workflow unread + compliance flow notifs (per role) + comment notifs
   const badgeCount = userType === 'oem'
     ? oemUnreadCount + oemSolutionUnread + oemReportedUnread + commentUnreadCount
@@ -304,6 +306,7 @@ export function TopNavBar({
                   onOpenPreApproval={onOpenPreApprovalFromNotif}
                   onOpenClaim={onOpenClaimFromNotif}
                   onOpenProject={onOpenProjectFromNotif}
+                  currentUserName={currentUserName}
                   // [FV] início
                   infractionNotifs={dealerInfractionNotifs}
                   seenInfractionIds={dealerSeenInfractionIds}

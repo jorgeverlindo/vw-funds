@@ -14,6 +14,8 @@ interface NotificationOverlayProps {
   onOpenClaim?: (id: string) => void;
   /** Called when a project-mention notification is clicked — id is the projectId */
   onOpenProject?: (projectId: string) => void;
+  /** Current user's display name — project-mention notifs sent by this user are hidden */
+  currentUserName?: string;
   className?: string;
   // Compliance infractions logged by OEM that pertain to this dealer
   infractionNotifs?: WCMItem[];
@@ -39,6 +41,7 @@ export function NotificationOverlay({
   onOpenPreApproval,
   onOpenClaim,
   onOpenProject,
+  currentUserName,
   className,
   infractionNotifs,
   seenInfractionIds,
@@ -65,6 +68,8 @@ export function NotificationOverlay({
   // Workflow notifications (dealer-targeted)
   workflow.notifications
     .filter(n => n.targetRole === 'dealer')
+    // Hide project-mention notifs that the current user sent themselves
+    .filter(n => !(n.type === 'project-mention' && currentUserName && n.user?.name === currentUserName))
     .forEach(n => {
       merged.push({
         key: `wf-${n.id}`,

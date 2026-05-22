@@ -113,7 +113,7 @@ Step 2 — Is there a continuation message in this turn (e.g. "Next: propose_off
         The continuation is the authoritative instruction — ignore everything else in the history.
   NO  → continue to Step 3.
 
-Step 3 — Does the CURRENT user message (not history) contain the word "proactively", AND propose_proactive_questions has NOT already been called in this conversation?
+Step 3 — Does the CURRENT user message (not history) contain the word "proactively" or "proactive", AND propose_proactive_questions has NOT already been called in this conversation?
   YES → call propose_proactive_questions immediately with a concise intro_line. NO other tool. Wait for the user's priorities.
   NO  → continue to Step 4.
 
@@ -285,7 +285,7 @@ SETUP_PROJECT FIELD EXTRACTION — explicit user input always wins; fall back to
     Step 3: "Offers confirmed. Now propose the email share." → propose_email → done
 
 INDIVIDUAL REQUESTS (project already open — respond to specific asks):
-  - message contains "proactively" AND propose_proactive_questions not yet called → call propose_proactive_questions immediately
+  - message contains "proactively" or "proactive" AND propose_proactive_questions not yet called → call propose_proactive_questions immediately
   - "complete" / "finish the rest" / "do the rest" / "continue building" → COMPLETION FLOW
   - "complete and notify owners" / "finish and send to task owners" / "complete … send to task owners" → COMPLETION FLOW + propose_notify_owners at end
   - "fix [field] on [offer]" / "change [field] to [value]" / "correct the [field]" → call edit_offer directly with the offer ID and patched field(s). Do NOT remove and re-add the offer.
@@ -296,6 +296,7 @@ INDIVIDUAL REQUESTS (project already open — respond to specific asks):
   - "full refresh" → call propose_project (offers + templates together)
   - "send by email" / "share by email" / "email this" → call propose_email directly
   - "send to [name]" / "share with [name]" (no mechanism) → call propose_share directly
+  - If task owners are already set in the project context (taskOwners is non-empty), NEVER call propose_task_owners again — go straight to propose_share or propose_notify_owners as requested
   - "set task owners" / "define owners" / "quero definir os owners de tarefa" → call propose_task_owners with suggested owners if named, otherwise no suggestions
   - "set [section] owner to [name]" → call propose_task_owners directly with { owners: { section: name } } map
   - "notify task owners" / "send to task owners" / "notifique os responsáveis" → call propose_notify_owners with owners from the project context taskOwners field

@@ -92,7 +92,7 @@ function customOfferToStored(co: import("@projects/ProjectAgentPane").CustomOffe
     make: co.make,
     model: co.model,
     trim: co.trim,
-    image: "",                                          // no car photo — OfferCard shows placeholder
+    image: co.image ?? "",                             // resolved by resolveCarImage at extraction time
     stock: 1,
     offerType: co.offerType,
     tags: ["Custom"],
@@ -210,16 +210,14 @@ function ProjectsModuleInner({
   // Deleted project IDs
   const [deletedIds, setDeletedIds] = useState<Set<string>>(new Set());
 
-  const allProjects = useMemo(
-    () =>
-      ([...projects, ...localProjects] as LocalProject[])
-        .filter((p) => !deletedIds.has(p.id))
-        .map((p) => ({
-          ...p,
-          status: (statusOverrides[p.id] ?? p.status) as ProjectStatus,
-        })),
-    [localProjects, statusOverrides, deletedIds],
-  );
+  const allProjects = useMemo(() => {
+    // localProjects take priority over static projects with the same id
+    const localIds = new Set(localProjects.map(p => p.id));
+    return [
+      ...(projects as LocalProject[]).filter(p => !localIds.has(p.id) && !deletedIds.has(p.id)),
+      ...localProjects.filter(p => !deletedIds.has(p.id)),
+    ].map(p => ({ ...p, status: (statusOverrides[p.id] ?? p.status) as ProjectStatus }));
+  }, [localProjects, statusOverrides, deletedIds]);
 
   // Notify parent about which project is open (so CommentsProvider context can update)
   useEffect(() => {
@@ -249,6 +247,19 @@ function ProjectsModuleInner({
       setDeletedIds((prev) => new Set([...prev, projectId]));
     }
     if (selectedProjectId === projectId) onSelectProject(null);
+  };
+
+  const updateProject = (id: string, patches: Partial<LocalProject>) => {
+    if (localProjects.find(p => p.id === id)) {
+      // Already a local project — update in-place
+      setLocalProjects(prev => prev.map(p => p.id === id ? { ...p, ...patches } : p));
+    } else {
+      // Static mock project — promote to local with patches applied
+      const base = allProjects.find(p => p.id === id);
+      if (!base) return;
+      setLocalProjects(prev => [...prev, { ...base, ...patches }]);
+      // allProjects dedup logic will now use the local copy over the static one
+    }
   };
 
   // ── Persist localProjects to localStorage ───────────────────────────────────
@@ -378,6 +389,7 @@ function ProjectsModuleInner({
       project={selectedProject}
       onBack={() => onSelectProject(null)}
       onDelete={() => { deleteProject(selectedProject.id); onSelectProject(null); }}
+      onUpdateProject={updateProject}
     />
   );
 }
@@ -584,7 +596,7 @@ function ProjectCard({
 
         {/* Code / dateRange */}
         <p className="text-[11px] text-gray-400 leading-tight line-clamp-2">
-          {"code" in project ? (project as { code: string }).code : project.name.startsWith("WF") ? project.name : project.dateRange ?? ""}
+          {"code" in project ? (project as { code: string }).code : (project.name ?? "").startsWith("WF") ? project.name : (project.dateRange ?? "")}
         </p>
 
         {/* Stats */}
@@ -752,7 +764,7 @@ function ProjectsListView({
       {/* Kanban board */}
       <div className="flex-1 overflow-auto px-6 pb-6 pt-2">
         <div
-          className="flex gap-3"
+          className="flex gap-3 items-start"
           style={{ minWidth: "max-content" }}
           onDragOver={(e) => e.preventDefault()}
         >
@@ -1096,10 +1108,12 @@ function ProjectDetailView({
   project,
   onBack,
   onDelete,
+  onUpdateProject,
 }: {
   project: LocalProject;
   onBack: () => void;
   onDelete: () => void;
+  onUpdateProject?: (id: string, patches: Partial<LocalProject>) => void;
 }) {
   const logoUrl = getProjectLogoUrl(project.id);
   // Derive directly from project's own IDs — avoids the projects[0] fallback in getProjectById
@@ -1418,7 +1432,7 @@ function ProjectDetailView({
     setConfirmDelete(null);
   };
 
-  const initials = project.assignee.name
+  const initials = (project.assignee?.name ?? "")
     .split(" ")
     .map((n) => n[0] ?? "")
     .join("")
@@ -1441,9 +1455,9 @@ function ProjectDetailView({
   const accountName = project.dealerName;
 
   // Parse created date from dateRange (first part before " - ")
-  const createdDateStr = project.createdAt
-    ?? project.dateRange.split(" - ")[0]
-    ?? "—";
+  const createdDateStr = (project.createdAt
+    ?? (project.dateRange ?? "").split(" - ")[0])
+    || "—";
 
   return (
     <ProjectDetailViewInner
@@ -1494,6 +1508,7 @@ function ProjectDetailView({
       generatedAssets={generatedAssets}
       setGeneratedAssets={setGeneratedAssets}
       logoUrl={logoUrl}
+      onUpdateProject={onUpdateProject}
     />
   );
 }
@@ -1506,6 +1521,7 @@ function ProjectDetailViewInner({
   project,
   onBack,
   onDelete,
+  onUpdateProject,
   offers,
   templates,
   status,
@@ -1554,6 +1570,7 @@ function ProjectDetailViewInner({
   project: LocalProject;
   onBack: () => void;
   onDelete: () => void;
+  onUpdateProject?: (id: string, patches: Partial<LocalProject>) => void;
   offers: Offer[];
   templates: Template[];
   status: ProjectStatus;
@@ -1610,10 +1627,10 @@ function ProjectDetailViewInner({
 
   const accountName = project.dealerName;
   const tags = (project as LocalProject).tags ?? [];
-  const createdDateStr = project.createdAt ?? project.dateRange.split(" - ")[0] ?? "—";
-  const initials = project.assignee.name
+  const createdDateStr = (project.createdAt ?? (project.dateRange ?? "").split(" - ")[0]) || "—";
+  const initials = (project.assignee?.name ?? "")
     .split(" ")
-    .map((n: string) => n[0])
+    .map((n: string) => n[0] ?? "")
     .join("")
     .toUpperCase()
     .slice(0, 2);
@@ -1766,7 +1783,7 @@ function ProjectDetailViewInner({
             <div className="w-6 h-6 rounded-full bg-[var(--brand-accent)] text-white text-[9px] font-semibold flex items-center justify-center shrink-0">
               {initials}
             </div>
-            <span className="truncate max-w-[110px]">{project.assignee.name}</span>
+            <span className="truncate max-w-[110px]">{project.assignee?.name ?? ""}</span>
           </div>
 
         </div>
@@ -1790,7 +1807,7 @@ function ProjectDetailViewInner({
           </span>
           <span className="text-[11px]">
             <span className="font-medium text-[#1f1d25]">Creator:</span>{" "}
-            <span className="text-[#686576]">{project.assignee.name}</span>
+            <span className="text-[#686576]">{project.assignee?.name ?? ""}</span>
           </span>
 
           {/* Expand all — pushed right */}
@@ -1901,7 +1918,7 @@ function ProjectDetailViewInner({
         <div data-agent-section="platforms">
         <ProjectAccordionSection
           title="Platforms"
-          count={(project.platforms?.length ?? 0) > 0 ? project.platforms!.length : undefined}
+          count={(project.platforms?.length ?? 0) > 0 ? (project.platforms?.length ?? 0) : undefined}
           statusSlot={(project.platforms?.length ?? 0) > 0 ? <ProjectStatusChip status="Done" /> : undefined}
           ownerSlot={<TaskOwner ownerId={taskOwners["platforms"]} onChange={(id) => setTaskOwner("platforms", id)} />}
           expanded={expandedSections["platforms"]}
@@ -1920,7 +1937,7 @@ function ProjectDetailViewInner({
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.2 }}
             >
-              {project.platforms!.map((p) => {
+              {(project.platforms ?? []).map((p) => {
                 // p may be an ID ("google-pmax") or a label ("Google PMax") depending on source
                 const opt = PLATFORM_OPTIONS.find(o => o.id === p || o.label === p);
                 const label = opt?.label ?? p;
@@ -2383,7 +2400,7 @@ function ProjectDetailViewInner({
         initialData={{
           name: project.name,
           account: project.dealerName,
-          ownerId: PROJECT_OWNERS.find(o => o.name === project.assignee.name)?.id ?? "jorge-verlindo",
+          ownerId: PROJECT_OWNERS.find(o => o.name === project.assignee?.name)?.id ?? "jorge-verlindo",
           startDate: project.dateRange ? (() => { try { return new Date(project.dateRange.split(" - ")[0]); } catch { return undefined; } })() : undefined,
           endDate: project.dateRange ? (() => { try { return new Date(project.dateRange.split(" - ")[1]); } catch { return undefined; } })() : undefined,
           platforms: (project as any).platforms ?? [],
@@ -2393,10 +2410,15 @@ function ProjectDetailViewInner({
         existingNames={[]}
         onSave={(data) => {
           const fmt = (d: Date) => d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
-          // fire an update event so the store can react
-          window.dispatchEvent(new CustomEvent("project:edit", {
-            detail: { id: project.id, name: data.name, account: data.account, platforms: data.platforms, tags: data.tags, dateRange: `${fmt(data.startDate)} - ${fmt(data.endDate)}` }
-          }));
+          const ownerObj = PROJECT_OWNERS.find(o => o.id === data.ownerId);
+          onUpdateProject?.(project.id, {
+            name:       data.name,
+            dealerName: data.account,
+            dateRange:  `${fmt(data.startDate)} - ${fmt(data.endDate)}`,
+            platforms:  data.platforms,
+            tags:       data.tags,
+            assignee:   { name: ownerObj?.name ?? project.assignee?.name ?? "", avatar: project.assignee?.avatar ?? "" },
+          });
           setShowEditProject(false);
           emitSnackbar({ message: "Project updated", type: "success" });
         }}

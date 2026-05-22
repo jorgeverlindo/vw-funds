@@ -2,7 +2,7 @@
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
   "framework": "vite",
-  "alias": ["vw-funds-2.vercel.app"],
+
   "rewrites": [
     { "source": "/((?!api/)(?!.*\\.).*)", "destination": "/index.html" }
   ]

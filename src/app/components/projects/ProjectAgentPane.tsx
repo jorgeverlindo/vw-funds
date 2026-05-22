@@ -64,6 +64,42 @@ export interface CustomOffer {
   dueAtSigning: string;
   apr?: string;
   notes?: string;
+  image?: string;
+}
+
+// ─── Car image resolver ───────────────────────────────────────────────────────
+// Data-driven: add one entry here whenever a new image is added to /public/cars/
+// All keywords in an entry must match (AND). More keywords = higher priority win.
+const CAR_IMAGE_CATALOG: Array<{ keywords: string[]; path: string }> = [
+  // BMW
+  { keywords: ["m5", "touring"],       path: "/cars/M5 Touring.png" },
+  { keywords: ["x5", "m60i"],          path: "/cars/X5 M60i.png" },
+  { keywords: ["x5", "competition"],   path: "/cars/X5 - Competition.png" },
+  { keywords: ["x2"],                  path: "/cars/X2.png" },
+  { keywords: ["x5"],                  path: "/cars/X5 M60i.png" },
+  { keywords: ["x6"],                  path: "/cars/X6.png" },
+  // Honda
+  { keywords: ["cr-v"],                path: "/cars/CR-V.png" },
+  { keywords: ["civic"],               path: "/cars/Civic.png" },
+  { keywords: ["hr-v"],                path: "/cars/HR-V.png" },
+  { keywords: ["odyssey"],             path: "/cars/Odyssey.png" },
+  // Mercedes-Benz
+  { keywords: ["glc"],                 path: "/cars/Mercedes GLC.png" },
+  { keywords: ["gls"],                 path: "/cars/Mercedes GLS.png" },
+  { keywords: ["mercedes"],            path: "/cars/Mercedes C.png" },
+];
+
+export function resolveCarImage(make: string, model: string, trim: string): string {
+  const haystack = `${make} ${model} ${trim}`.toLowerCase();
+  let bestPath = "";
+  let bestScore = 0;
+  for (const entry of CAR_IMAGE_CATALOG) {
+    if (entry.keywords.every(kw => haystack.includes(kw))) {
+      const score = entry.keywords.length;
+      if (score > bestScore) { bestScore = score; bestPath = entry.path; }
+    }
+  }
+  return bestPath;
 }
 
 export type AgentActionPayload =
@@ -1110,8 +1146,9 @@ interface OffersCardProps {
   onApply: (offerIds: string[], editedOfferIds: string[]) => void;
   onDismiss: () => void;
   proactive?: boolean;
+  dispatchAction?: (a: AgentActionPayload) => void;
 }
-function OffersProposalCard({ input, context, onApply, onDismiss, proactive }: OffersCardProps) {
+function OffersProposalCard({ input, context, onApply, onDismiss, proactive, dispatchAction }: OffersCardProps) {
   const [offerIds, setOfferIds] = useState<string[]>(input.offer_ids);
   const [applied,  setApplied]  = useState(false);
   const [customizeMode, setCustomizeMode] = useState(false);
@@ -2818,11 +2855,34 @@ function ParsedOffersCard({
   const [checkedIds, setCheckedIds] = useState<Set<string>>(
     () => new Set(input.offers.map(o => o.id))
   );
+  const [customizeMode, setCustomizeMode] = useState(false);
+  const [customizations, setCustomizations] = useState<Record<string, {
+    monthlyPayment: string; term: string; dueAtSigning: string;
+  }>>({});
   const selectAllRef = useRef<HTMLInputElement>(null);
+  const f = { fontFamily: "'Roboto', sans-serif" };
 
   const checkedCount = checkedIds.size;
   const allChecked  = checkedCount === input.offers.length;
   const someChecked = checkedCount > 0 && checkedCount < input.offers.length;
+
+  // Seed customizations from parsed values when customize mode opens
+  useEffect(() => {
+    if (!customizeMode) return;
+    setCustomizations(prev => {
+      const next = { ...prev };
+      for (const row of input.offers) {
+        if (!next[row.id]) {
+          next[row.id] = {
+            monthlyPayment: row.monthly_payment ?? "0",
+            term:           row.term ?? "36",
+            dueAtSigning:   row.due_at_signing ?? "0",
+          };
+        }
+      }
+      return next;
+    });
+  }, [customizeMode]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (selectAllRef.current) selectAllRef.current.indeterminate = someChecked;
@@ -2841,39 +2901,46 @@ function ParsedOffersCard({
   };
 
   /** Map a ParsedOfferRow to the OfferCard Offer shape (regular variant — pvi=0) */
-  const toCardData = (row: ParsedOfferRow): OfferCardData => ({
+  const toCardData = (row: ParsedOfferRow): OfferCardData => {
+    const c = customizations[row.id];
+    return {
     id: row.id,
     year:  row.year,
     make:  row.make,
     model: row.model,
     trim:  row.trim ?? "",
-    image: "",                             // silhouette placeholder
+    image: resolveCarImage(row.make, row.model, row.trim ?? ""),
     stock: 0,
     offerType: row.offer_type,
     tags:  row.apr ? [`${row.apr}% APR`] : [],
     pvi:   0,                              // forces "regular" variant
     aging: 0, sales: 0, inventory: 0,
-    monthlyPayment:   parseFloat(row.monthly_payment)    || 0,
-    term:             parseInt(row.term)                 || 0,
-    totalDueAtSigning: parseFloat(row.due_at_signing ?? "0") || 0,
-  });
+    monthlyPayment:   parseFloat(c?.monthlyPayment ?? row.monthly_payment)    || 0,
+    term:             parseInt(c?.term ?? row.term)                           || 0,
+    totalDueAtSigning: parseFloat(c?.dueAtSigning ?? row.due_at_signing ?? "0") || 0,
+  };
+  };
 
   const handleApply = () => {
     const selected: CustomOffer[] = input.offers
       .filter(r => checkedIds.has(r.id))
-      .map(r => ({
-        id:             `custom-${r.id}-${Date.now()}`,
-        year:           r.year,
-        make:           r.make,
-        model:          r.model,
-        trim:           r.trim ?? "",
-        offerType:      r.offer_type,
-        monthlyPayment: r.monthly_payment,
-        term:           r.term,
-        dueAtSigning:   r.due_at_signing ?? "0",
-        apr:            r.apr,
-        notes:          r.notes,
-      }));
+      .map(r => {
+        const c = customizations[r.id];
+        return {
+          id:             `custom-${r.id}-${Date.now()}`,
+          year:           r.year,
+          make:           r.make,
+          model:          r.model,
+          trim:           r.trim ?? "",
+          offerType:      r.offer_type,
+          monthlyPayment: c?.monthlyPayment ?? r.monthly_payment,
+          term:           c?.term           ?? r.term,
+          dueAtSigning:   c?.dueAtSigning   ?? r.due_at_signing ?? "0",
+          apr:            r.apr,
+          notes:          r.notes,
+          image:          resolveCarImage(r.make, r.model, r.trim ?? ""),
+        };
+      });
     onApply(selected);
   };
 
@@ -2944,22 +3011,58 @@ function ParsedOffersCard({
       {/* Offer cards */}
       <div className="flex flex-col gap-[8px] p-[10px]">
         {input.offers.map(row => (
-          <OfferCard
-            key={row.id}
-            offer={toCardData(row)}
-            selected={checkedIds.has(row.id)}
-            onSelect={(_, checked) => toggleRow(row.id, checked)}
-          />
+          <div key={row.id}>
+            <OfferCard
+              offer={toCardData(row)}
+              selected={checkedIds.has(row.id)}
+              onSelect={(_, checked) => toggleRow(row.id, checked)}
+            />
+            <AnimatePresence>
+              {customizeMode && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: "auto" }}
+                  exit={{ opacity: 0, height: 0 }}
+                  className="overflow-hidden mt-[4px] px-[12px] py-[10px] rounded-[10px] bg-[rgba(71,59,171,0.04)] border border-[rgba(71,59,171,0.12)] flex flex-wrap gap-x-[16px] gap-y-[8px] items-end"
+                >
+                  {[
+                    { key: "monthlyPayment", label: "Monthly Payment ($)", val: customizations[row.id]?.monthlyPayment ?? row.monthly_payment },
+                    { key: "term",           label: "Term (mo)",           val: customizations[row.id]?.term           ?? row.term           },
+                    { key: "dueAtSigning",   label: "Due at Signing ($)",  val: customizations[row.id]?.dueAtSigning   ?? row.due_at_signing ?? "0" },
+                  ].map(({ key, label, val }) => (
+                    <label key={key} style={{ ...f, fontSize: 11 }} className="flex flex-col gap-[3px] text-[#686576]">
+                      {label}
+                      <input
+                        type="number"
+                        value={val}
+                        onChange={e => setCustomizations(prev => ({
+                          ...prev,
+                          [row.id]: {
+                            monthlyPayment: prev[row.id]?.monthlyPayment ?? row.monthly_payment,
+                            term:           prev[row.id]?.term           ?? row.term,
+                            dueAtSigning:   prev[row.id]?.dueAtSigning   ?? row.due_at_signing ?? "0",
+                            [key]: e.target.value,
+                          },
+                        }))}
+                        className="w-[90px] px-[8px] py-[4px] rounded-[6px] border border-[rgba(0,0,0,0.12)] text-[12px] text-[#1f1d25] bg-white outline-none focus:border-[#473bab] focus:ring-1 focus:ring-[rgba(71,59,171,0.15)]"
+                        style={f}
+                      />
+                    </label>
+                  ))}
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
         ))}
       </div>
 
       {/* Sticky footer */}
-      <div className="sticky bottom-0 z-10 px-[12px] py-[10px] bg-white border-t border-[rgba(0,0,0,0.08)] shadow-[0_-1px_4px_rgba(0,0,0,0.06)]">
+      <div className="sticky bottom-0 z-10 px-[12px] py-[10px] bg-white border-t border-[rgba(0,0,0,0.08)] shadow-[0_-1px_4px_rgba(0,0,0,0.06)] flex items-center gap-[8px]">
         <button
           onClick={handleApply}
           disabled={checkedCount === 0}
           className={cn(
-            "w-full py-[8px] px-[14px] rounded-full text-[13px] tracking-[0.46px] transition-all duration-200",
+            "flex-1 py-[8px] px-[14px] rounded-full text-[13px] tracking-[0.46px] transition-all duration-200",
             checkedCount > 0
               ? "bg-[#473bab] hover:bg-[#392e8a] text-white cursor-pointer shadow-sm"
               : "bg-[#473bab] opacity-40 text-white cursor-not-allowed"
@@ -2969,6 +3072,18 @@ function ParsedOffersCard({
           {checkedCount === 0
             ? "Select offers to add"
             : `Add ${checkedCount} offer${checkedCount === 1 ? "" : "s"} to project`}
+        </button>
+        <button
+          onClick={() => setCustomizeMode(m => !m)}
+          className={cn(
+            "px-[14px] py-[8px] rounded-full text-[13px] font-medium border transition-colors cursor-pointer shrink-0",
+            customizeMode
+              ? "bg-[rgba(71,59,171,0.08)] border-[rgba(71,59,171,0.3)] text-[#473bab]"
+              : "border-[rgba(0,0,0,0.12)] text-[#686576] hover:bg-black/5"
+          )}
+          style={{ fontFamily: "'Roboto', sans-serif" }}
+        >
+          {customizeMode ? "Done" : "Customize"}
         </button>
       </div>
     </motion.div>
@@ -3028,9 +3143,9 @@ function CategoryChip({ label, onClick }: { label: string; onClick?: () => void 
 // Honda accounts available to the Agency user
 const HONDA_ACCOUNTS = ["Honda of Anywhere", "Honda City"];
 
-interface ProjectAgentPaneProps { isOpen: boolean; onClose: () => void; userType?: UserType; }
+interface ProjectAgentPaneProps { isOpen: boolean; onClose: () => void; userType?: UserType; activeUserName?: string; }
 
-export function ProjectAgentPane({ isOpen, onClose, userType }: ProjectAgentPaneProps) {
+export function ProjectAgentPane({ isOpen, onClose, userType, activeUserName }: ProjectAgentPaneProps) {
   const [messages,      setMessages]      = useState<Message[]>([]);
   const [streamingText, setStreamingText] = useState("");
   const [projectContext, setProjectContext] = useState<ProjectContextPayload | null>(null);
@@ -3773,7 +3888,7 @@ export function ProjectAgentPane({ isOpen, onClose, userType }: ProjectAgentPane
     pushProjectMention(
       ctx?.projectId ?? "unknown",
       ctx?.projectName ?? "this project",
-      "Jorge Verlindo",
+      activeUserName ?? "Someone",
     );
     setMessages(prev => [...prev, {
       id: `a-${Date.now()}`, role: "assistant", type: "text",
@@ -4177,6 +4292,7 @@ export function ProjectAgentPane({ isOpen, onClose, userType }: ProjectAgentPane
                           }}
                           proactive={proactiveMode}
                           onProactiveQuestionsApply={handleProactiveQuestionsSubmit}
+                          dispatchAction={dispatchAction}
                         />
                       ))}
 
@@ -4235,6 +4351,7 @@ function MessageBubble({
   onTaskOwnersApply,
   proactive,
   onProactiveQuestionsApply,
+  dispatchAction,
 }: {
   message: Message;
   context: ProjectContextPayload | null;
@@ -4262,6 +4379,7 @@ function MessageBubble({
   onTaskOwnersApply: (owners: Record<string, string>) => void;
   proactive?: boolean;
   onProactiveQuestionsApply?: (goal: string, timeline: string, offerFocus: string) => void;
+  dispatchAction?: (a: AgentActionPayload) => void;
 }) {
   if (message.type === "continuation") {
     return null;
@@ -4339,6 +4457,7 @@ function MessageBubble({
         onApply={onOffersApply}
         onDismiss={onOffersDismiss}
         proactive={proactive}
+        dispatchAction={dispatchAction}
       />
     );
   }

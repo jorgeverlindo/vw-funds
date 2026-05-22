@@ -1200,6 +1200,23 @@ function ProjectDetailView({
   const [showGenerateModal, setShowGenerateModal] = useState(false);
   const [generatedAssets, setGeneratedAssets] = useState<GeneratedAsset[]>([]);
 
+  // Restore generated assets from localStorage on mount (after combinedOfferLibrary is ready)
+  useEffect(() => {
+    const savedIds = saved?.generatedAssetIds;
+    if (!savedIds || savedIds.length === 0) return;
+    const restored: GeneratedAsset[] = savedIds.flatMap(({ offerId, templateId, bgId }) => {
+      const offer = combinedOfferLibrary.find(o => o.id === offerId);
+      const template = templateLibrary.find(t => t.id === templateId);
+      if (!offer || !template) return [];
+      return [{ key: `${bgId ?? "none"}-${templateId}-${offerId}`, offer, template, bgId }];
+    });
+    if (restored.length > 0) {
+      setGeneratedAssets(restored);
+      setExpandedSections(prev => ({ ...prev, assets: true }));
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // intentionally runs once on mount
+
   // ── Auto-expand Preview when both offers AND templates are present ───────────
   useEffect(() => {
     if (offers.length > 0 && templates.length > 0) {
@@ -1243,9 +1260,10 @@ function ProjectDetailView({
       activatedOems: agentActivatedOems,
       activatedOem: agentActivatedOems[0] ?? null,
       taskOwners,
+      generatedAssetIds: generatedAssets.map(a => ({ offerId: a.offer.id, templateId: a.template.id, bgId: a.bgId })),
     };
     localStorage.setItem(`constellation_proj_state_${project.id}`, JSON.stringify(state));
-  }, [agentAddedOfferIds, agentAddedTemplateIds, removedOfferIds, removedTemplateIds, selectedBgId, agentAddedBgIds, agentActivatedOems, project.id, taskOwners]);
+  }, [agentAddedOfferIds, agentAddedTemplateIds, removedOfferIds, removedTemplateIds, selectedBgId, agentAddedBgIds, agentActivatedOems, project.id, taskOwners, generatedAssets]);
 
   const visibleOffers = [
     ...offers,
@@ -1286,6 +1304,7 @@ function ProjectDetailView({
         id: o.id, year: o.year, make: o.make, model: o.model, trim: o.trim,
         offerType: o.offerType, monthlyPayment: o.monthlyPayment,
         term: o.term, pvi: (o as any).pvi ?? 0, aging: (o as any).aging ?? 0, stock: (o as any).stock ?? 1,
+        image: (o as any).image ?? "",
       })),
       availableTemplates: templateLibrary.map((t) => ({
         id: t.id, name: t.name, format: t.format,
@@ -1698,8 +1717,8 @@ function ProjectDetailViewInner({
             <LeftPaneIcon />
           </button>
 
-          {/* Title — max-w so items stay left-aligned, truncates on overflow */}
-          <h1 className="text-[18px] font-bold text-[#1f1d25] leading-tight min-w-0 truncate max-w-[220px] shrink">
+          {/* Title */}
+          <h1 className="text-[18px] font-bold text-[#1f1d25] leading-tight min-w-0">
             {project.name && !project.name.startsWith("WF") && !project.name.match(/^[A-Z]{2}\d/)
               ? project.name
               : project.dealerName}

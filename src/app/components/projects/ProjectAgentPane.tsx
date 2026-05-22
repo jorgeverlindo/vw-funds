@@ -1274,7 +1274,13 @@ function OffersProposalCard({ input, context, onApply, onDismiss, proactive }: O
                       </label>
                     ))}
                     <button
-                      onClick={() => setAppliedCustomizations(prev => new Set([...prev, id]))}
+                      onClick={() => {
+                        setAppliedCustomizations(prev => new Set([...prev, id]));
+                        const c = customizations[id];
+                        if (c) {
+                          dispatchAction({ action: "edit_offer", offerId: id, patches: c });
+                        }
+                      }}
                       className="px-[12px] py-[4px] rounded-full text-[12px] font-medium text-white cursor-pointer transition-all"
                       style={{ background: "linear-gradient(99deg, #473bab 0%, #6356e1 100%)", ...f }}
                     >

@@ -117,8 +117,8 @@ export function TopNavBar({
     seenCaseUpdateIds,
     dealerInfractionNotifs: getDealerInfractionNotifs,
     dealerInfractionUnread: getDealerInfractionUnread,
-    dealerSubmittedNotifs,
-    dealerSubmittedUnread,
+    dealerSubmittedNotifs: getDealerSubmittedNotifs,
+    dealerSubmittedUnread: getDealerSubmittedUnread,
     dealerCaseUpdateNotifs: getDealerCaseUpdateNotifs,
     dealerCaseUpdateUnread: getDealerCaseUpdateUnread,
   } = useCompliance();
@@ -126,6 +126,8 @@ export function TopNavBar({
   const isDealer = userType !== 'oem';
   const dealerInfractionNotifs   = isDealer ? getDealerInfractionNotifs(dealerIdentity.dealership)   : undefined;
   const dealerInfractionUnread   = isDealer ? getDealerInfractionUnread(dealerIdentity.dealership)   : 0;
+  const dealerSubmittedNotifs    = isDealer ? getDealerSubmittedNotifs(currentUserName)               : undefined;
+  const dealerSubmittedUnread    = isDealer ? getDealerSubmittedUnread(currentUserName)               : 0;
   const dealerCaseUpdateNotifs   = isDealer ? getDealerCaseUpdateNotifs(dealerIdentity.dealership)   : undefined;
   const dealerCaseUpdateUnread   = isDealer ? getDealerCaseUpdateUnread(dealerIdentity.dealership)   : 0;
 

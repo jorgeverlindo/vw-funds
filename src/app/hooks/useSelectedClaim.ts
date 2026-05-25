@@ -20,7 +20,7 @@ export function useSelectedClaim(selectedId: string | null): Claim | null | unde
     if (!selectedId) return null;
 
     // ── Active workflow claim ─────────────────────────────────────────────────
-    if (selectedId === claim.id) {
+    if (claim && selectedId === claim.id) {
       const wfCL = claim;
       return {
         id: wfCL.id,

@@ -20,7 +20,7 @@ export function useSelectedPreApproval(selectedId: string | null): PreApproval |
     if (!selectedId) return null;
 
     // ── Active workflow PA ────────────────────────────────────────────────────
-    if (selectedId === preApproval.id) {
+    if (preApproval && selectedId === preApproval.id) {
       const wfPA = preApproval;
       return {
         id: wfPA.id,

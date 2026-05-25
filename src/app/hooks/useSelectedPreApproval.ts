@@ -14,13 +14,14 @@ import { MOCK_DATA as PRE_APPROVALS_MOCK_DATA } from '../components/FundsPreAppr
 import type { PreApproval } from '../components/FundsPreApprovalsContent';
 
 export function useSelectedPreApproval(selectedId: string | null): PreApproval | null | undefined {
-  const { preApproval, archivedCycles, portalSubmissions } = useWorkflow();
+  const { workflow } = useWorkflow();
+  const { preApproval, archivedCycles, portalSubmissions } = workflow;
 
   return useMemo((): PreApproval | null | undefined => {
     if (!selectedId) return null;
 
     // ── Active workflow PA ────────────────────────────────────────────────────
-    if (preApproval && selectedId === preApproval.id) {
+    if (selectedId === preApproval.id) {
       const wfPA = preApproval;
       return {
         id: wfPA.id,
@@ -113,5 +114,5 @@ export function useSelectedPreApproval(selectedId: string | null): PreApproval |
 
     // ── Static mock data ──────────────────────────────────────────────────────
     return PRE_APPROVALS_MOCK_DATA.find(i => i.id === selectedId);
-  }, [selectedId, preApproval, archivedCycles, portalSubmissions]);
+  }, [selectedId, workflow]);
 }

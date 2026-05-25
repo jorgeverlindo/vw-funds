@@ -14,13 +14,14 @@ import type { Claim } from '../components/ClaimsPanel';
 import imgMalloryManning from 'figma:asset/f0494d5017440bdc302141d9ab01c7c81e4a339a.png';
 
 export function useSelectedClaim(selectedId: string | null): Claim | null | undefined {
-  const { claim, archivedCycles } = useWorkflow();
+  const { workflow } = useWorkflow();
+  const { claim, archivedCycles } = workflow;
 
   return useMemo((): Claim | null | undefined => {
     if (!selectedId) return null;
 
     // ── Active workflow claim ─────────────────────────────────────────────────
-    if (claim && selectedId === claim.id) {
+    if (selectedId === claim.id) {
       const wfCL = claim;
       return {
         id: wfCL.id,
@@ -66,5 +67,5 @@ export function useSelectedClaim(selectedId: string | null): Claim | null | unde
 
     // ── Static mock data ──────────────────────────────────────────────────────
     return CLAIMS_MOCK_DATA.find(i => i.id === selectedId);
-  }, [selectedId, claim, archivedCycles]);
+  }, [selectedId, workflow]);
 }

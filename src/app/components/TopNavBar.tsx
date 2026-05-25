@@ -10,7 +10,7 @@ import { cn } from '@/lib/utils';
 import { LanguageToggleButton } from './LanguageToggleButton';
 import { useTranslation } from '../contexts/LanguageContext';
 import { useWorkflow } from '../contexts/WorkflowContext';
-import { getDealerIdentity } from '../contexts/ComplianceContext';
+import { useCompliance, getDealerIdentity } from '../contexts/ComplianceContext';
 import type { WCMItem } from './WebMonitoringContent';
 
 // ─── Nav Tooltip ──────────────────────────────────────────────────────────────
@@ -66,33 +66,13 @@ interface TopNavBarProps {
   onOpenPreApprovalFromNotif?: (id: string) => void;
   onOpenClaimFromNotif?: (id: string) => void;
   onOpenProjectFromNotif?: (projectId: string) => void;
-  // [FV] início — dealer-side compliance notifications driven by OEM-added infractions
-  dealerInfractionNotifs?: WCMItem[];
-  dealerSeenInfractionIds?: Set<string>;
-  dealerInfractionUnread?: number;
+  // Compliance navigation callbacks — data is read directly from ComplianceContext
   onOpenInfractionFromNotif?: (id: string) => void;
-  // dealer submitted-infraction confirmations
-  dealerSubmittedNotifs?: WCMItem[];
-  dealerSeenSubmittedIds?: Set<string>;
-  dealerSubmittedUnread?: number;
-  onOpenSubmittedFromNotif?: (id: string) => void;
-  // Dealer case update notifications (OEM changed compliance item status)
-  dealerCaseUpdateNotifs?: CaseUpdateNotif[];
-  seenCaseUpdateIds?: Set<string>;
-  dealerCaseUpdateUnread?: number;
+  onOpenSubmittedFromNotif?: (id: string) => void;  // future / not yet wired
   onOpenCaseUpdateFromNotif?: (id: string) => void;
-  // OEM-side: solution submissions by dealers
-  oemSolutionNotifs?: { id: string; solution: { submittedBy: string; submittedAtISO: string; comment: string } }[];
-  oemSeenSolutionIds?: Set<string>;
-  oemSolutionUnread?: number;
   onOpenSolutionFromNotif?: (id: string) => void;
-  // OEM-side: dealer-reported infractions
-  oemReportedNotifs?: WCMItem[];
-  oemSeenReportedIds?: Set<string>;
-  oemReportedUnread?: number;
   onOpenReportedFromNotif?: (id: string) => void;
-  // [FV] fim
-  // Comment notifications (from CommentsContext, bridged via window event)
+  // Comment notifications (bridged via window event in AppContent)
   commentNotifs?: CommentNotifItem[];
   commentUnreadCount?: number;
   onMarkCommentNotifRead?: (id: string) => void;
@@ -109,26 +89,11 @@ export function TopNavBar({
   onOpenPreApprovalFromNotif,
   onOpenClaimFromNotif,
   onOpenProjectFromNotif,
-  dealerInfractionNotifs, // [FV]
-  dealerSeenInfractionIds, // [FV]
-  dealerInfractionUnread = 0, // [FV]
-  onOpenInfractionFromNotif, // [FV]
-  dealerSubmittedNotifs, // [FV]
-  dealerSeenSubmittedIds, // [FV]
-  dealerSubmittedUnread = 0, // [FV]
-  onOpenSubmittedFromNotif, // [FV]
-  dealerCaseUpdateNotifs,
-  seenCaseUpdateIds,
-  dealerCaseUpdateUnread = 0,
+  onOpenInfractionFromNotif,
+  onOpenSubmittedFromNotif,
   onOpenCaseUpdateFromNotif,
-  oemSolutionNotifs, // [FV]
-  oemSeenSolutionIds, // [FV]
-  oemSolutionUnread = 0, // [FV]
-  onOpenSolutionFromNotif, // [FV]
-  oemReportedNotifs, // [FV]
-  oemSeenReportedIds, // [FV]
-  oemReportedUnread = 0, // [FV]
-  onOpenReportedFromNotif, // [FV]
+  onOpenSolutionFromNotif,
+  onOpenReportedFromNotif,
   commentNotifs = [],
   commentUnreadCount = 0,
   onMarkCommentNotifRead,
@@ -136,8 +101,35 @@ export function TopNavBar({
 }: TopNavBarProps) {
   const { t } = useTranslation();
   const { oemUnreadCount, dealerUnreadCount } = useWorkflow();
-  const currentUserName = getDealerIdentity(userType).userName;
-  // [FV] badges sum workflow unread + compliance flow notifs (per role) + comment notifs
+  const dealerIdentity = getDealerIdentity(userType);
+  const currentUserName = dealerIdentity.userName;
+
+  // Read notification data directly from context — no prop drilling needed
+  const {
+    seenInfractionIds,
+    seenSubmittedIds,
+    oemSeenSolutionIds,
+    oemSolutionNotifs,
+    oemSolutionUnread,
+    oemReportedNotifs,
+    oemSeenReportedIds,
+    oemReportedUnread,
+    seenCaseUpdateIds,
+    dealerInfractionNotifs: getDealerInfractionNotifs,
+    dealerInfractionUnread: getDealerInfractionUnread,
+    dealerSubmittedNotifs,
+    dealerSubmittedUnread,
+    dealerCaseUpdateNotifs: getDealerCaseUpdateNotifs,
+    dealerCaseUpdateUnread: getDealerCaseUpdateUnread,
+  } = useCompliance();
+
+  const isDealer = userType !== 'oem';
+  const dealerInfractionNotifs   = isDealer ? getDealerInfractionNotifs(dealerIdentity.dealership)   : undefined;
+  const dealerInfractionUnread   = isDealer ? getDealerInfractionUnread(dealerIdentity.dealership)   : 0;
+  const dealerCaseUpdateNotifs   = isDealer ? getDealerCaseUpdateNotifs(dealerIdentity.dealership)   : undefined;
+  const dealerCaseUpdateUnread   = isDealer ? getDealerCaseUpdateUnread(dealerIdentity.dealership)   : 0;
+
+  // Badge total: workflow unread + compliance notifs + comment notifs
   const badgeCount = userType === 'oem'
     ? oemUnreadCount + oemSolutionUnread + oemReportedUnread + commentUnreadCount
     : dealerUnreadCount + dealerInfractionUnread + dealerSubmittedUnread + dealerCaseUpdateUnread + commentUnreadCount;
@@ -286,15 +278,12 @@ export function TopNavBar({
                   onOpenWebMonitoring={onOpenWebMonitoring || (() => {})}
                   onOpenPreApproval={onOpenPreApprovalFromNotif}
                   onOpenClaim={onOpenClaimFromNotif}
-                  // [FV] início — dealer-submitted solutions appear at the top
                   solutionNotifs={oemSolutionNotifs}
                   seenSolutionIds={oemSeenSolutionIds}
                   onOpenSolution={onOpenSolutionFromNotif}
-                  // dealer-reported infractions appear at the top too
                   reportedNotifs={oemReportedNotifs}
                   seenReportedIds={oemSeenReportedIds}
                   onOpenReported={onOpenReportedFromNotif}
-                  // [FV] fim
                   commentNotifs={commentNotifs}
                   onMarkCommentNotifRead={onMarkCommentNotifRead}
                   onCommentNotifNavigate={onCommentNotifNavigate}
@@ -307,17 +296,15 @@ export function TopNavBar({
                   onOpenClaim={onOpenClaimFromNotif}
                   onOpenProject={onOpenProjectFromNotif}
                   currentUserName={currentUserName}
-                  // [FV] início
                   infractionNotifs={dealerInfractionNotifs}
-                  seenInfractionIds={dealerSeenInfractionIds}
+                  seenInfractionIds={seenInfractionIds}
                   onOpenInfraction={onOpenInfractionFromNotif}
                   submittedNotifs={dealerSubmittedNotifs}
-                  seenSubmittedIds={dealerSeenSubmittedIds}
+                  seenSubmittedIds={seenSubmittedIds}
                   onOpenSubmitted={onOpenSubmittedFromNotif}
                   caseUpdateNotifs={dealerCaseUpdateNotifs}
                   seenCaseUpdateIds={seenCaseUpdateIds}
                   onOpenCaseUpdate={onOpenCaseUpdateFromNotif}
-                  // [FV] fim
                   commentNotifs={commentNotifs}
                   onMarkCommentNotifRead={onMarkCommentNotifRead}
                   onCommentNotifNavigate={onCommentNotifNavigate}

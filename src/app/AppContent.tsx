@@ -5,8 +5,8 @@ import { TopNavBar } from './components/TopNavBar';
 import { TabNavigation } from './components/TabNavigation';
 import { FundsOverviewContent } from './components/FundsOverviewContent';
 import { FundsOverviewOEMContent } from './components/FundsOverviewOEMContent';
-import { FundsPreApprovalsContent, MOCK_DATA as PRE_APPROVALS_MOCK_DATA } from './components/FundsPreApprovalsContent';
-import { FundsClaimsContent, CLAIMS_MOCK_DATA } from './components/FundsClaimsContent';
+import { FundsPreApprovalsContent } from './components/FundsPreApprovalsContent';
+import { FundsClaimsContent } from './components/FundsClaimsContent';
 import { CasesTab } from './components/CasesTab';
 import { PlannerContent, INITIAL_CAMPAIGNS as PLANNER_INITIAL_CAMPAIGNS, Campaign as PlannerCampaign, GANTT_COLORS } from './components/planner/PlannerContent';
 import { PlannerPanel } from './components/planner/PlannerPanel';
@@ -32,10 +32,12 @@ import { useClient } from './contexts/ClientContext';
 import { useFilters } from './contexts/FilterContext';
 import { BreadcrumbBar } from './components/BreadcrumbBar';
 import { useWorkflow, WORKFLOW_DEALER, WORKFLOW_CAMPAIGN } from './contexts/WorkflowContext';
+import { buildUrl, TAB_SLUGS, SLUG_TO_TAB } from './utils/routing';
+import { useSelectedPreApproval } from './hooks/useSelectedPreApproval';
+import { useSelectedClaim } from './hooks/useSelectedClaim';
 import { useCompliance, getDealerIdentity } from './contexts/ComplianceContext'; // [FV]
 import type { Claim } from './components/ClaimsPanel';
 import type { PreApproval } from './components/FundsPreApprovalsContent';
-import imgMalloryManning from 'figma:asset/f0494d5017440bdc302141d9ab01c7c81e4a339a.png';
 import { CommentsProvider, CommentsSidePanel, CommentsButton } from './components/comments';
 import type { NotifItem } from './components/comments/types';
 
@@ -60,34 +62,6 @@ const OEM_TABS = [
 
 // ── URL routing helpers ───────────────────────────────────────────────────────
 
-const TAB_SLUGS: Record<string, string> = {
-  'overview':        'Overview',
-  'pre-approvals':   'Pre-Approvals',
-  'claims':          'Claims',
-  'cases':           'Cases',
-  'planner':         'Planner',
-  'guidelines':      'Guidelines',
-  'web-monitoring':  'Web-Monitoring',
-  // App sections — treated as top-level tab slugs for URL routing
-  'projects':        'Projects',
-  'portal':          'Portal',
-};
-
-const SLUG_TO_TAB: Record<string, string> = Object.fromEntries(
-  Object.entries(TAB_SLUGS).map(([k, v]) => [v, k]),
-);
-
-function buildUrl(role: UserType, clientId: string, tabId: string): string {
-  const slug = TAB_SLUGS[tabId] ?? tabId;
-  if (role === 'oem') {
-    return clientId === 'vw' ? `/OEM/${slug}` : `/Audi/OEM/${slug}`;
-  }
-  const brand = clientId === 'audi' ? 'Audi' : 'Volkswagen';
-  if (role === 'dealer-singular') return `/${brand}/dealership-singular/${slug}`;
-  if (role === 'dealer-emich')    return `/${brand}/dealership-emich/${slug}`; // [FV]
-  return `/${brand}/dealership/${slug}`;
-}
-
 // ─────────────────────────────────────────────────────────────────────────────
 
 const defaultDateRange: DateRange = {
@@ -95,7 +69,7 @@ const defaultDateRange: DateRange = {
   to: new Date(2026, 11, 31),
 };
 
-export type UserType = 'dealer' | 'dealer-singular' | 'dealer-emich' | 'oem';
+export type { UserType } from './utils/routing';
 
 
 export default function AppContent() {
@@ -232,160 +206,11 @@ export default function AppContent() {
   // Pre-Approvals Specific State
   const [preApprovalSearchQuery, setPreApprovalSearchQuery] = useState('');
   const [selectedPreApprovalId, setSelectedPreApprovalId] = useState<string | null>(null);
-
-  const selectedPreApproval = useMemo((): PreApproval | null | undefined => {
-    if (!selectedPreApprovalId) return null;
-
-    // ── Active workflow PA (ID changes each cycle after archiveAndReset) ──────
-    if (selectedPreApprovalId === workflow.preApproval.id) {
-      const wfPA = workflow.preApproval;
-      return {
-        id: wfPA.id,
-        title: wfPA.title,
-        date: new Date(),
-        dealershipCode: WORKFLOW_DEALER.code,
-        dealershipName: WORKFLOW_DEALER.name,
-        dealershipCity: WORKFLOW_DEALER.city,
-        status: (() => {
-          switch (wfPA.status) {
-            case 'Approved':           return 'Approved';
-            case 'Revision Requested': return 'Revision Requested';
-            case 'In Review':
-            case 'Resubmitted':        return 'In Review';
-            default:                   return 'Pending';
-          }
-        })() as PreApproval['status'],
-        timeInPreApproval: 1,
-        submittedBy: { name: WORKFLOW_DEALER.contact, avatarUrl: '' },
-        mediaType: WORKFLOW_CAMPAIGN.mediaType,
-        details: wfPA.details || 'Digital Ad Campaign',
-        lastUpdated: new Date(),
-        submittedAt: wfPA.submittedAt ? new Date(wfPA.submittedAt) : new Date('2026-04-20'),
-        initiativeType: WORKFLOW_CAMPAIGN.initiativeType,
-        claimsCount: wfPA.claimsCount,
-        contactEmail: wfPA.contactEmail || WORKFLOW_DEALER.email,
-        description: wfPA.details || WORKFLOW_CAMPAIGN.description,
-        documents: wfPA.documents,
-      };
-    }
-
-    // ── Archived workflow cycles (shown in the list after archiveAndReset) ────
-    const archived = workflow.archivedCycles.find(c => c.preApproval.id === selectedPreApprovalId);
-    if (archived) {
-      const pa = archived.preApproval;
-      return {
-        id: pa.id,
-        title: pa.title,
-        date: new Date(archived.archivedAt),
-        dealershipCode: WORKFLOW_DEALER.code,
-        dealershipName: WORKFLOW_DEALER.name,
-        dealershipCity: WORKFLOW_DEALER.city,
-        status: (() => {
-          switch (pa.status) {
-            case 'Approved':           return 'Approved';
-            case 'Revision Requested': return 'Revision Requested';
-            case 'In Review':
-            case 'Resubmitted':        return 'In Review';
-            default:                   return 'Pending';
-          }
-        })() as PreApproval['status'],
-        timeInPreApproval: 0,
-        submittedBy: { name: WORKFLOW_DEALER.contact, avatarUrl: '' },
-        mediaType: WORKFLOW_CAMPAIGN.mediaType,
-        details: pa.details || 'Digital Ad Campaign',
-        lastUpdated: new Date(archived.archivedAt),
-        submittedAt: pa.submittedAt ? new Date(pa.submittedAt) : new Date(archived.archivedAt),
-        initiativeType: WORKFLOW_CAMPAIGN.initiativeType,
-        claimsCount: pa.claimsCount,
-        contactEmail: pa.contactEmail || WORKFLOW_DEALER.email,
-        description: pa.details || WORKFLOW_CAMPAIGN.description,
-        documents: pa.documents,
-      };
-    }
-
-    // ── Portal submissions ────────────────────────────────────────────────────
-    const portalSub = workflow.portalSubmissions.find(s => s.id === selectedPreApprovalId);
-    if (portalSub) {
-      return {
-        id: portalSub.id,
-        title: portalSub.title || undefined,
-        date: new Date(portalSub.submittedAt),
-        dealershipCode: WORKFLOW_DEALER.code,
-        dealershipName: WORKFLOW_DEALER.name,
-        dealershipCity: WORKFLOW_DEALER.city,
-        status: (portalSub.status ?? 'Pending') as PreApproval['status'],
-        timeInPreApproval: 0,
-        submittedBy: { name: WORKFLOW_DEALER.contact, avatarUrl: '' },
-        mediaType: portalSub.mediaType || WORKFLOW_CAMPAIGN.mediaType,
-        details: portalSub.title || 'Portal Pre-Approval',
-        lastUpdated: new Date(portalSub.submittedAt),
-        submittedAt: new Date(portalSub.submittedAt),
-        initiativeType: portalSub.initiativeType || WORKFLOW_CAMPAIGN.initiativeType,
-        claimsCount: 0,
-        contactEmail: WORKFLOW_DEALER.email,
-        description: portalSub.title || 'Submitted via portal',
-        documents: [],
-      };
-    }
-
-    // ── Static mock data ─────────────────────────────────────────────────────
-    return PRE_APPROVALS_MOCK_DATA.find(i => i.id === selectedPreApprovalId);
-  }, [selectedPreApprovalId, workflow.preApproval, workflow.archivedCycles, workflow.portalSubmissions]);
+  const selectedPreApproval = useSelectedPreApproval(selectedPreApprovalId);
 
   // Claims Specific State
   const [selectedClaimId, setSelectedClaimId] = useState<string | null>(null);
-
-  const selectedClaim = useMemo((): Claim | null | undefined => {
-    if (!selectedClaimId) return null;
-
-    // ── Active workflow claim (ID changes each cycle after archiveAndReset) ──
-    if (selectedClaimId === workflow.claim.id) {
-      const wfCL = workflow.claim;
-      return {
-        id: wfCL.id,
-        uid: wfCL.id,
-        date: wfCL.submittedAt ? new Date(wfCL.submittedAt) : new Date(),
-        amount: WORKFLOW_CAMPAIGN.totalAmount,
-        status: (wfCL.status ?? 'Draft') as Claim['status'],
-        timeInClaim: 0,
-        timeInPayment: 0,
-        dealershipCode: WORKFLOW_DEALER.code,
-        dealershipName: WORKFLOW_DEALER.name,
-        dealershipCity: WORKFLOW_DEALER.city,
-        fund: 'VW Coop Fund 2026',
-        submittedBy: { name: WORKFLOW_DEALER.contact, avatarUrl: imgMalloryManning },
-        type: WORKFLOW_CAMPAIGN.initiativeType,
-        lastUpdated: new Date().toLocaleDateString(),
-        details: WORKFLOW_CAMPAIGN.description,
-      };
-    }
-
-    // ── Archived workflow claims ──────────────────────────────────────────────
-    const archivedCl = workflow.archivedCycles.find(c => c.claim.id === selectedClaimId);
-    if (archivedCl) {
-      const cl = archivedCl.claim;
-      return {
-        id: cl.id,
-        uid: cl.id,
-        date: cl.submittedAt ? new Date(cl.submittedAt) : new Date(archivedCl.archivedAt),
-        amount: WORKFLOW_CAMPAIGN.totalAmount,
-        status: (cl.status ?? 'Paid') as Claim['status'],
-        timeInClaim: 0,
-        timeInPayment: 0,
-        dealershipCode: WORKFLOW_DEALER.code,
-        dealershipName: WORKFLOW_DEALER.name,
-        dealershipCity: WORKFLOW_DEALER.city,
-        fund: 'VW Coop Fund 2026',
-        submittedBy: { name: WORKFLOW_DEALER.contact, avatarUrl: imgMalloryManning },
-        type: WORKFLOW_CAMPAIGN.initiativeType,
-        lastUpdated: new Date(archivedCl.archivedAt).toLocaleDateString(),
-        details: WORKFLOW_CAMPAIGN.description,
-      };
-    }
-
-    // ── Static mock data ─────────────────────────────────────────────────────
-    return CLAIMS_MOCK_DATA.find(i => i.id === selectedClaimId);
-  }, [selectedClaimId, workflow.claim, workflow.archivedCycles]);
+  const selectedClaim = useSelectedClaim(selectedClaimId);
 
   // Create Claim handler — called by PreApprovalPanel dealer CTA
   // Uses the current claim ID so it works after archiveAndReset cycles
@@ -684,10 +509,6 @@ export default function AppContent() {
           return !open;
         })}
         isAgentPaneOpen={isAgentPaneOpen}
-        // [FV] início — dealer-side infraction notifications driven by OEM-added rows
-        dealerInfractionNotifs={userType !== 'oem' ? dealerInfractionNotifs(currentDealerIdentity.dealership) : undefined}
-        dealerSeenInfractionIds={userType !== 'oem' ? seenInfractionIds : undefined}
-        dealerInfractionUnread={userType !== 'oem' ? dealerInfractionUnread(currentDealerIdentity.dealership) : 0}
         onOpenInfractionFromNotif={(id) => {
           markSeenInfraction(id);
           setActiveTab('web-monitoring');
@@ -695,14 +516,6 @@ export default function AppContent() {
           setIsCreatingInfraction(false);
           navigate(buildUrl(userType, client.clientId, 'web-monitoring'), { replace: true });
         }}
-        // Portal submission notifications — feature not yet wired; props kept for future use
-        dealerSubmittedNotifs={undefined}
-        dealerSeenSubmittedIds={undefined}
-        dealerSubmittedUnread={0}
-        onOpenSubmittedFromNotif={undefined}
-        dealerCaseUpdateNotifs={userType !== 'oem' ? dealerCaseUpdateNotifs(currentDealerIdentity.dealership) : undefined}
-        seenCaseUpdateIds={userType !== 'oem' ? seenCaseUpdateIds : undefined}
-        dealerCaseUpdateUnread={userType !== 'oem' ? dealerCaseUpdateUnread(currentDealerIdentity.dealership) : 0}
         onOpenCaseUpdateFromNotif={(id) => {
           markSeenCaseUpdate(id);
           setActiveTab('web-monitoring');
@@ -711,10 +524,6 @@ export default function AppContent() {
           setIsCreatingInfraction(false);
           navigate(buildUrl(userType, client.clientId, 'web-monitoring'), { replace: true });
         }}
-        // OEM-side: solutions submitted by dealers
-        oemSolutionNotifs={userType === 'oem' ? oemSolutionNotifs : undefined}
-        oemSeenSolutionIds={userType === 'oem' ? oemSeenSolutionIds : undefined}
-        oemSolutionUnread={userType === 'oem' ? oemSolutionUnread : 0}
         onOpenSolutionFromNotif={(id) => {
           markOemSeenSolution(id);
           setActiveTab('web-monitoring');
@@ -722,10 +531,6 @@ export default function AppContent() {
           setIsCreatingInfraction(false);
           navigate(buildUrl(userType, client.clientId, 'web-monitoring'), { replace: true });
         }}
-        // OEM-side: dealer-reported infractions
-        oemReportedNotifs={userType === 'oem' ? oemReportedNotifs : undefined}
-        oemSeenReportedIds={userType === 'oem' ? oemSeenReportedIds : undefined}
-        oemReportedUnread={userType === 'oem' ? oemReportedUnread : 0}
         onOpenReportedFromNotif={(id) => {
           markOemSeenReported(id);
           setActiveTab('web-monitoring');
@@ -733,7 +538,6 @@ export default function AppContent() {
           setIsCreatingInfraction(false);
           navigate(buildUrl(userType, client.clientId, 'web-monitoring'), { replace: true });
         }}
-        // [FV] fim
         onOpenWebMonitoring={(id) => {
           setActiveTab('web-monitoring');
           setSelectedWebMonitoringId(id);

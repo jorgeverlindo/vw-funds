@@ -405,8 +405,8 @@ const STATUS_CONFIG: Record<ProjectStatus, {
   "Assets Created":    { chipBg: "bg-[#EDE7F6]",               chipText: "text-[#4527A0]",  icon: <Layers size={11} className="text-[#4527A0]" />,           label: "Assets Created" },
   "Changes Made":      { chipBg: "bg-[rgba(225,118,19,0.08)]",  chipText: "text-[#613f02]",  icon: <AlertTriangle size={11} className="text-[#613f02]" />,    label: "Changes Made" },
   "Done":              { chipBg: "bg-[#E8F5E9]",               chipText: "text-[#1b5e20]",  icon: <Check size={11} className="text-[#1b5e20]" />,            label: "Done" },
-  "Expired":           { chipBg: "bg-[#F3F4F6]",               chipText: "text-[#686576]",  icon: <XCircle size={11} className="text-[#686576]" />,          label: "Expired" },
-  "Archived":          { chipBg: "bg-[#F3F4F6]",               chipText: "text-[#686576]",  icon: <Archive size={11} className="text-[#686576]" />,          label: "Archived" },
+  "Expired":           { chipBg: "bg-[#F3F4F6]",               chipText: "text-[var(--ink-secondary)]",  icon: <XCircle size={11} className="text-[var(--ink-secondary)]" />,          label: "Expired" },
+  "Archived":          { chipBg: "bg-[#F3F4F6]",               chipText: "text-[var(--ink-secondary)]",  icon: <Archive size={11} className="text-[var(--ink-secondary)]" />,          label: "Archived" },
 };
 
 const PROJECT_STATUSES = Object.keys(STATUS_CONFIG) as ProjectStatus[];
@@ -447,7 +447,7 @@ export function ProjectStatusChip({ status }: { status: ProjectStatus }) {
 
 function TagChip({ label }: { label: string }) {
   return (
-    <span className="inline-flex items-center gap-1 bg-[#F3F4F6] text-[#686576] text-[11px] font-['Roboto'] tracking-[0.4px] px-2 py-0.5 rounded-[8px] select-none whitespace-nowrap leading-tight">
+    <span className="inline-flex items-center gap-1 bg-[#F3F4F6] text-[var(--ink-secondary)] text-[11px] font-['Roboto'] tracking-[0.4px] px-2 py-0.5 rounded-[8px] select-none whitespace-nowrap leading-tight">
       {label}
     </span>
   );
@@ -563,17 +563,17 @@ function ProjectCard({
               onClick={(e) => e.stopPropagation()}
             >
               <DropdownMenuItem
-                className="flex items-center gap-2 px-3 py-2 rounded-lg text-[13px] text-[#1f1d25] cursor-pointer outline-none focus:bg-gray-50 data-[highlighted]:bg-gray-50"
+                className="flex items-center gap-2 px-3 py-2 rounded-lg text-[13px] text-[var(--ink)] cursor-pointer outline-none focus:bg-gray-50 data-[highlighted]:bg-gray-50"
                 onClick={(e) => { e.stopPropagation(); onClick(); }}
               >
                 <Pencil size={13} className="text-gray-400" />
                 Edit Project
               </DropdownMenuItem>
               <DropdownMenuItem
-                className="flex items-center gap-2 px-3 py-2 rounded-lg text-[13px] text-[#D2323F] cursor-pointer outline-none focus:bg-red-50 data-[highlighted]:bg-red-50"
+                className="flex items-center gap-2 px-3 py-2 rounded-lg text-[13px] text-[var(--danger)] cursor-pointer outline-none focus:bg-red-50 data-[highlighted]:bg-red-50"
                 onClick={(e) => { e.stopPropagation(); onDelete(); }}
               >
-                <Trash2 size={13} className="text-[#D2323F]" />
+                <Trash2 size={13} className="text-[var(--danger)]" />
                 Delete Project
               </DropdownMenuItem>
             </DropdownMenuContent>
@@ -930,12 +930,12 @@ function JellyBeanCard({
   const primaryLogoH = Math.round(h * 0.174);   // ~28px at h=160  (+20%)
   const eventLogoH   = Math.round(h * 0.126);   // ~20px at h=160  (+20%)
 
-  const dealerColor = hasBg ? "rgba(255,255,255,0.92)" : "#1f1d25";
-  const makeColor   = hasBg ? "rgba(255,255,255,0.55)" : "#9c99a9";
-  const labelColor  = hasBg ? "rgba(255,255,255,0.70)" : "#686576";
-  const priceColor  = hasBg ? "white"                  : "#1f1d25";
-  const moColor     = hasBg ? "rgba(255,255,255,0.60)" : "#686576";
-  const termColor   = hasBg ? "rgba(255,255,255,0.45)" : "#9c99a9";
+  const dealerColor = hasBg ? "rgba(255,255,255,0.92)" : "var(--ink)";
+  const makeColor   = hasBg ? "rgba(255,255,255,0.55)" : "var(--ink-tertiary)";
+  const labelColor  = hasBg ? "rgba(255,255,255,0.70)" : "var(--ink-secondary)";
+  const priceColor  = hasBg ? "white"                  : "var(--ink)";
+  const moColor     = hasBg ? "rgba(255,255,255,0.60)" : "var(--ink-secondary)";
+  const termColor   = hasBg ? "rgba(255,255,255,0.45)" : "var(--ink-tertiary)";
 
   return (
     <div
@@ -987,8 +987,8 @@ function JellyBeanCard({
           {/* Draft chip */}
           <div className="absolute flex items-center gap-[3px] rounded-full"
             style={{ top: Math.round(h * 0.13), right: barPadH, background: "rgba(255,255,255,0.88)", padding: "2px 6px" }}>
-            <div className="rounded-full" style={{ width: 5, height: 5, background: "#9c99a9" }} />
-            <span style={{ fontSize: chipFontSize, fontWeight: 600, color: "#686576" }}>Draft</span>
+            <div className="rounded-full" style={{ width: 5, height: 5, background: "var(--ink-tertiary)" }} />
+            <span style={{ fontSize: chipFontSize, fontWeight: 600, color: "var(--ink-secondary)" }}>Draft</span>
           </div>
 
           {/* Bottom left: price + optional event logo bottom-right */}
@@ -1053,8 +1053,8 @@ function JellyBeanCard({
           {/* Draft chip */}
           <div className="absolute flex items-center gap-[3px] rounded-full"
             style={{ top: Math.round(h * 0.12), right: Math.round(w * 0.04), background: "rgba(255,255,255,0.88)", padding: "2px 6px" }}>
-            <div className="rounded-full" style={{ width: 5, height: 5, background: "#9c99a9" }} />
-            <span style={{ fontSize: chipFontSize, fontWeight: 600, color: "#686576" }}>Draft</span>
+            <div className="rounded-full" style={{ width: 5, height: 5, background: "var(--ink-tertiary)" }} />
+            <span style={{ fontSize: chipFontSize, fontWeight: 600, color: "var(--ink-secondary)" }}>Draft</span>
           </div>
 
           {/* Template badge */}
@@ -1731,7 +1731,7 @@ function ProjectDetailViewInner({
           </button>
 
           {/* Title */}
-          <h1 className="text-[18px] font-bold text-[#1f1d25] leading-tight min-w-0">
+          <h1 className="text-[18px] font-bold text-[var(--ink)] leading-tight min-w-0">
             {project.name && !project.name.startsWith("WF") && !project.name.match(/^[A-Z]{2}\d/)
               ? project.name
               : project.dealerName}
@@ -1750,24 +1750,24 @@ function ProjectDetailViewInner({
               sideOffset={4}
             >
               <DropdownMenuItem
-                className="flex items-center gap-2 px-3 py-2 rounded-lg text-[13px] text-[#1f1d25] cursor-pointer outline-none focus:bg-gray-50 data-[highlighted]:bg-gray-50"
+                className="flex items-center gap-2 px-3 py-2 rounded-lg text-[13px] text-[var(--ink)] cursor-pointer outline-none focus:bg-gray-50 data-[highlighted]:bg-gray-50"
                 onClick={() => setShowEditProject(true)}
               >
                 <Pencil size={13} className="text-gray-400" />
                 Edit Project
               </DropdownMenuItem>
               <DropdownMenuItem
-                className="flex items-center gap-2 px-3 py-2 rounded-lg text-[13px] text-[#D2323F] cursor-pointer outline-none focus:bg-red-50 data-[highlighted]:bg-red-50"
+                className="flex items-center gap-2 px-3 py-2 rounded-lg text-[13px] text-[var(--danger)] cursor-pointer outline-none focus:bg-red-50 data-[highlighted]:bg-red-50"
                 onClick={onDelete}
               >
-                <Trash2 size={13} className="text-[#D2323F]" />
+                <Trash2 size={13} className="text-[var(--danger)]" />
                 Delete Project
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
 
           {/* Account logo + name — 16px from kebab (gap-4) */}
-          <div className="flex items-center gap-1.5 text-[12px] text-[#686576] shrink-0">
+          <div className="flex items-center gap-1.5 text-[12px] text-[var(--ink-secondary)] shrink-0">
             <div className="w-6 h-6 rounded-md bg-gray-50 border border-gray-100 overflow-hidden shrink-0 flex items-center justify-center">
               <img src={logoUrl} alt={accountName} className="w-full h-full object-contain p-0.5" />
             </div>
@@ -1775,7 +1775,7 @@ function ProjectDetailViewInner({
           </div>
 
           {/* Creator avatar + name — 16px from account (gap-4) */}
-          <div className="flex items-center gap-1.5 text-[12px] text-[#686576] shrink-0">
+          <div className="flex items-center gap-1.5 text-[12px] text-[var(--ink-secondary)] shrink-0">
             <div className="w-6 h-6 rounded-full bg-[var(--brand-accent)] text-white text-[9px] font-semibold flex items-center justify-center shrink-0">
               {initials}
             </div>
@@ -1787,23 +1787,23 @@ function ProjectDetailViewInner({
         {/* Metadata row */}
         <div className="flex flex-wrap items-center gap-x-2 gap-y-1 pb-3 border-b border-[#EAEAEC]">
           <ProjectStatusChip status={status} />
-          <span className="text-[12px] text-[#686576]">{project.dateRange}</span>
+          <span className="text-[12px] text-[var(--ink-secondary)]">{project.dateRange}</span>
           {/* Account chip */}
           <TagChip label={accountName} />
           {/* Tag chips */}
           {tags.map((t) => <TagChip key={t} label={t} />)}
 
           <span className="text-[11px]">
-            <span className="font-medium text-[#1f1d25]">Last Updated:</span>{" "}
-            <span className="text-[#686576]">just now</span>
+            <span className="font-medium text-[var(--ink)]">Last Updated:</span>{" "}
+            <span className="text-[var(--ink-secondary)]">just now</span>
           </span>
           <span className="text-[11px]">
-            <span className="font-medium text-[#1f1d25]">Created:</span>{" "}
-            <span className="text-[#686576]">{createdDateStr}</span>
+            <span className="font-medium text-[var(--ink)]">Created:</span>{" "}
+            <span className="text-[var(--ink-secondary)]">{createdDateStr}</span>
           </span>
           <span className="text-[11px]">
-            <span className="font-medium text-[#1f1d25]">Creator:</span>{" "}
-            <span className="text-[#686576]">{project.assignee?.name ?? ""}</span>
+            <span className="font-medium text-[var(--ink)]">Creator:</span>{" "}
+            <span className="text-[var(--ink-secondary)]">{project.assignee?.name ?? ""}</span>
           </span>
 
           {/* Expand all — pushed right */}
@@ -1982,7 +1982,7 @@ function ProjectDetailViewInner({
                       <button
                         className="w-[18px] h-[18px] rounded-full bg-white/90 shadow flex items-center justify-center cursor-pointer"
                         onClick={(e) => e.stopPropagation()}>
-                        <MoreVertical size={10} strokeWidth={2.5} className="text-[#686576]" />
+                        <MoreVertical size={10} strokeWidth={2.5} className="text-[var(--ink-secondary)]" />
                       </button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
@@ -2007,7 +2007,7 @@ function ProjectDetailViewInner({
                   <div
                     className="relative w-[80px] h-[60px] rounded-lg overflow-hidden transition-all"
                     style={{
-                      outline: selectedBgId === bg.id ? "2.5px solid #473bab" : "2px solid transparent",
+                      outline: selectedBgId === bg.id ? "2.5px solid var(--brand-accent)" : "2px solid transparent",
                       outlineOffset: 1,
                       boxShadow: selectedBgId === bg.id ? "0 0 0 4px rgba(71,59,171,0.15)" : "none",
                     }}
@@ -2021,7 +2021,7 @@ function ProjectDetailViewInner({
                     )}
                   </div>
                 </button>
-                <span className="text-[10px] text-[#686576] text-center leading-tight font-medium">
+                <span className="text-[10px] text-[var(--ink-secondary)] text-center leading-tight font-medium">
                   {bg.name}
                 </span>
               </motion.div>
@@ -2060,9 +2060,9 @@ function ProjectDetailViewInner({
                       );
                       if (!isActive) setActiveBrandKit(project.id, k.oem, k.id);
                     }}
-                    className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-[12px] font-medium border transition-all cursor-pointer ${isActive ? "bg-[rgba(99,86,225,0.08)] border-[rgba(99,86,225,0.3)] text-[#473bab]" : "bg-white border-[rgba(0,0,0,0.12)] text-[#686576] hover:border-[rgba(99,86,225,0.3)]"}`}
+                    className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-[12px] font-medium border transition-all cursor-pointer ${isActive ? "bg-[rgba(99,86,225,0.08)] border-[rgba(99,86,225,0.3)] text-[var(--brand-accent)]" : "bg-white border-[rgba(0,0,0,0.12)] text-[var(--ink-secondary)] hover:border-[rgba(99,86,225,0.3)]"}`}
                   >
-                    <span className={`w-[14px] h-[14px] rounded-[3px] border flex items-center justify-center shrink-0 transition-colors ${isActive ? "bg-[#6356e1] border-[#6356e1]" : "border-[rgba(0,0,0,0.3)]"}`}>
+                    <span className={`w-[14px] h-[14px] rounded-[3px] border flex items-center justify-center shrink-0 transition-colors ${isActive ? "bg-[var(--brand-mid)] border-[var(--brand-mid)]" : "border-[rgba(0,0,0,0.3)]"}`}>
                       {isActive && (
                         <svg width="9" height="9" viewBox="0 0 9 9" fill="none">
                           <path d="M1.5 4.5L3.5 6.5L7.5 2.5" stroke="white" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/>
@@ -2078,12 +2078,12 @@ function ProjectDetailViewInner({
             {activeBrandKits.map(kit => (
               <div key={kit.id} className="flex flex-col gap-3">
                 <div className="flex items-center gap-4">
-                  <span className="text-[13px] font-semibold text-[#1f1d25]">{kit.name}</span>
+                  <span className="text-[13px] font-semibold text-[var(--ink)]">{kit.name}</span>
                   <div className="flex items-center gap-2">
                     {kit.colors.map((color, i) => (
                       <div key={i} className="flex items-center gap-1.5">
                         <div className="w-5 h-5 rounded-full border border-black/10 shrink-0" style={{ backgroundColor: color }} />
-                        <span className="text-[11px] text-[#686576] font-mono">{color}</span>
+                        <span className="text-[11px] text-[var(--ink-secondary)] font-mono">{color}</span>
                       </div>
                     ))}
                   </div>
@@ -2103,8 +2103,8 @@ function ProjectDetailViewInner({
                       <div className="w-[88px] h-[66px] rounded-lg bg-[#F4F5F6] border border-black/[0.07] flex items-center justify-center p-2">
                         <img src={logo.image} alt={logo.label} className="max-w-full max-h-full object-contain" />
                       </div>
-                      <span className="text-[10px] text-[#686576] text-center leading-tight line-clamp-2">{logo.label}</span>
-                      <span className="text-[9px] text-[#9C99A9] text-center">{logo.sublabel}</span>
+                      <span className="text-[10px] text-[var(--ink-secondary)] text-center leading-tight line-clamp-2">{logo.label}</span>
+                      <span className="text-[9px] text-[var(--ink-tertiary)] text-center">{logo.sublabel}</span>
                     </motion.div>
                   ))}
                 </motion.div>
@@ -2122,7 +2122,7 @@ function ProjectDetailViewInner({
             visibleOffers.length > 0 && visibleTemplates.length > 0
               ? <button
                   className="flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-medium text-white cursor-pointer"
-                  style={{ background: "linear-gradient(99deg, #473bab 0%, #6356e1 100%)" }}
+                  style={{ background: "linear-gradient(99deg, var(--brand-accent) 0%, var(--brand-mid) 100%)" }}
                   onClick={() => setShowGenerateModal(true)}
                 >
                   <Wand2 size={11} strokeWidth={2} />
@@ -2272,26 +2272,26 @@ function ProjectDetailViewInner({
             >
               {/* Icon */}
               <div className="w-10 h-10 rounded-full bg-red-50 flex items-center justify-center mb-4">
-                <Trash2 size={18} className="text-[#D2323F]" />
+                <Trash2 size={18} className="text-[var(--danger)]" />
               </div>
-              <h3 className="text-[16px] font-semibold text-[#1f1d25] mb-1.5">
+              <h3 className="text-[16px] font-semibold text-[var(--ink)] mb-1.5">
                 Remove {confirmDelete.type === "offer" ? "Offer" : "Template"}
               </h3>
-              <p className="text-[13px] text-[#686576] leading-relaxed mb-6">
+              <p className="text-[13px] text-[var(--ink-secondary)] leading-relaxed mb-6">
                 Remove{" "}
-                <span className="font-medium text-[#1f1d25]">{confirmDelete.label}</span>{" "}
+                <span className="font-medium text-[var(--ink)]">{confirmDelete.label}</span>{" "}
                 from this project? This won't delete the {confirmDelete.type} permanently.
               </p>
               <div className="flex gap-2 justify-end">
                 <button
                   onClick={() => setConfirmDelete(null)}
-                  className="px-4 py-2 rounded-full text-[13px] font-medium text-[#686576] border border-[#CAC9CF] hover:bg-gray-50 transition cursor-pointer"
+                  className="px-4 py-2 rounded-full text-[13px] font-medium text-[var(--ink-secondary)] border border-[#CAC9CF] hover:bg-gray-50 transition cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={handleConfirmDelete}
-                  className="px-4 py-2 rounded-full text-[13px] font-semibold text-white bg-[#D2323F] hover:bg-[#B01E2B] transition cursor-pointer"
+                  className="px-4 py-2 rounded-full text-[13px] font-semibold text-white bg-[var(--danger)] hover:bg-[#B01E2B] transition cursor-pointer"
                 >
                   Remove
                 </button>
@@ -2351,30 +2351,30 @@ function ProjectDetailViewInner({
                 >
                   <div className="w-10 h-10 rounded-full flex items-center justify-center mb-4"
                     style={{ background: "linear-gradient(135deg, #EDE9FF 0%, #D8D2FF 100%)" }}>
-                    <Wand2 size={18} className="text-[#473bab]" />
+                    <Wand2 size={18} className="text-[var(--brand-accent)]" />
                   </div>
-                  <h3 className="text-[16px] font-semibold text-[#1f1d25] mb-1.5">
+                  <h3 className="text-[16px] font-semibold text-[var(--ink)] mb-1.5">
                     Generate Assets
                   </h3>
-                  <p className="text-[13px] text-[#686576] leading-relaxed mb-2">
+                  <p className="text-[13px] text-[var(--ink-secondary)] leading-relaxed mb-2">
                     You're about to generate{" "}
-                    <span className="font-semibold text-[#1f1d25]">{genTotal} asset{genTotal > 1 ? "s" : ""}</span>
+                    <span className="font-semibold text-[var(--ink)]">{genTotal} asset{genTotal > 1 ? "s" : ""}</span>
                     {" "}({genBreakdown}).
                   </p>
-                  <p className="text-[13px] text-[#686576] leading-relaxed mb-6">
-                    Total: <span className="font-semibold text-[#1f1d25]">{genTotal}</span>
+                  <p className="text-[13px] text-[var(--ink-secondary)] leading-relaxed mb-6">
+                    Total: <span className="font-semibold text-[var(--ink)]">{genTotal}</span>
                   </p>
                   <div className="flex gap-2 justify-end">
                     <button
                       onClick={() => setShowGenerateModal(false)}
-                      className="px-4 py-2 rounded-full text-[13px] font-medium text-[#686576] border border-[#CAC9CF] hover:bg-gray-50 transition cursor-pointer"
+                      className="px-4 py-2 rounded-full text-[13px] font-medium text-[var(--ink-secondary)] border border-[#CAC9CF] hover:bg-gray-50 transition cursor-pointer"
                     >
                       Cancel
                     </button>
                     <button
                       onClick={handleGenerate}
                       className="px-4 py-2 rounded-full text-[13px] font-semibold text-white transition cursor-pointer"
-                      style={{ background: "linear-gradient(99deg, #473bab 0%, #6356e1 100%)" }}
+                      style={{ background: "linear-gradient(99deg, var(--brand-accent) 0%, var(--brand-mid) 100%)" }}
                     >
                       Generate {genTotal} Asset{genTotal > 1 ? "s" : ""}
                     </button>
@@ -2434,7 +2434,7 @@ const menuContentCls =
   "z-[200] bg-white rounded-xl shadow-xl border border-[rgba(0,0,0,0.12)] p-1 min-w-[var(--radix-dropdown-menu-trigger-width)] animate-in fade-in-0 zoom-in-95";
 
 const menuItemCls =
-  "flex items-center gap-2 px-3 py-2 rounded-lg text-[13px] text-[#1f1d25] cursor-pointer hover:bg-gray-50 outline-none focus:bg-gray-50 data-[highlighted]:bg-gray-50";
+  "flex items-center gap-2 px-3 py-2 rounded-lg text-[13px] text-[var(--ink)] cursor-pointer hover:bg-gray-50 outline-none focus:bg-gray-50 data-[highlighted]:bg-gray-50";
 
 // ── Tag chip input ────────────────────────────────────────────────────────────
 
@@ -2460,13 +2460,13 @@ function TagChipInput({
       {tags.map((tag, i) => (
         <span
           key={tag}
-          className="inline-flex items-center gap-1 bg-[#F3F4F6] text-[#686576] text-[11px] font-['Roboto'] tracking-[0.4px] px-2 py-0.5 rounded-[8px] select-none"
+          className="inline-flex items-center gap-1 bg-[#F3F4F6] text-[var(--ink-secondary)] text-[11px] font-['Roboto'] tracking-[0.4px] px-2 py-0.5 rounded-[8px] select-none"
         >
           {tag}
           <button
             type="button"
             onClick={(e) => { e.stopPropagation(); removeTag(i); }}
-            className="text-[#9C99A9] hover:text-[#686576] leading-none -mr-0.5 transition-colors cursor-pointer"
+            className="text-[var(--ink-tertiary)] hover:text-[var(--ink-secondary)] leading-none -mr-0.5 transition-colors cursor-pointer"
           >
             ×
           </button>
@@ -2486,7 +2486,7 @@ function TagChipInput({
           if (e.key === "Enter") { e.preventDefault(); addTag(inputVal); }
           if (e.key === "Backspace" && !inputVal && tags.length) removeTag(tags.length - 1);
         }}
-        className="flex-1 min-w-[60px] bg-transparent text-[13px] text-[#1f1d25] placeholder:text-[#686576]/60 outline-none leading-tight"
+        className="flex-1 min-w-[60px] bg-transparent text-[13px] text-[var(--ink)] placeholder:text-[var(--ink-secondary)]/60 outline-none leading-tight"
       />
     </div>
   );
@@ -2555,19 +2555,19 @@ function NewProjectForm({
               placeholder="Project Name"
               value={name}
               onChange={(e) => { setName(e.target.value); if (errors.name) setErrors(p => ({ ...p, name: undefined })); }}
-              className={`h-10 w-full rounded-[4px] border px-3 text-[13px] text-[#1f1d25] placeholder:text-[#686576]/60 bg-[#F9FAFA] outline-none transition-all
+              className={`h-10 w-full rounded-[4px] border px-3 text-[13px] text-[var(--ink)] placeholder:text-[var(--ink-secondary)]/60 bg-[#F9FAFA] outline-none transition-all
                 ${errors.name
-                  ? "border-[#D2323F] ring-1 ring-[#D2323F]"
+                  ? "border-[var(--danger)] ring-1 ring-[var(--danger)]"
                   : "border-[#CAC9CF] hover:border-[#B0B0B5] focus:border-[var(--brand-accent)] focus:ring-1 focus:ring-[var(--brand-accent)]"}`}
             />
-            {errors.name && <p className="text-[11px] text-[#D2323F] leading-tight">{errors.name}</p>}
+            {errors.name && <p className="text-[11px] text-[var(--danger)] leading-tight">{errors.name}</p>}
           </div>
 
           <div className="flex-[2] min-w-0">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <button className={fieldTriggerCls}>
-                  <span className={account ? "text-[#1f1d25]" : "text-[#686576]/60"}>{account || "Account"}</span>
+                  <span className={account ? "text-[var(--ink)]" : "text-[var(--ink-secondary)]/60"}>{account || "Account"}</span>
                   <ChevronDown size={13} className="ml-auto text-[#111014]/40 shrink-0" />
                 </button>
               </DropdownMenuTrigger>
@@ -2586,7 +2586,7 @@ function NewProjectForm({
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <button className={fieldTriggerCls}>
-                  <span className={brand ? "text-[#1f1d25]" : "text-[#686576]/60"}>{brand || "Brand"}</span>
+                  <span className={brand ? "text-[var(--ink)]" : "text-[var(--ink-secondary)]/60"}>{brand || "Brand"}</span>
                   <ChevronDown size={13} className="ml-auto text-[#111014]/40 shrink-0" />
                 </button>
               </DropdownMenuTrigger>
@@ -2603,11 +2603,11 @@ function NewProjectForm({
 
           <div className="flex-[2] min-w-0" aria-hidden="true" tabIndex={-1}>
             <div className="relative h-10 flex items-center border border-[#CAC9CF] rounded-[4px] bg-[#F9FAFA] px-3 gap-2">
-              <span className="absolute -top-[9px] left-2 px-1 bg-white text-[10px] text-[#686576] leading-none select-none">Owner</span>
+              <span className="absolute -top-[9px] left-2 px-1 bg-white text-[10px] text-[var(--ink-secondary)] leading-none select-none">Owner</span>
               <div className="w-[18px] h-[18px] rounded-full bg-[#CAC9CF] flex items-center justify-center shrink-0">
                 <span className="text-[8px] text-white font-bold leading-none">{CURRENT_USER.initials}</span>
               </div>
-              <span className="text-[13px] text-[#1f1d25] truncate flex-1">{CURRENT_USER.email}</span>
+              <span className="text-[13px] text-[var(--ink)] truncate flex-1">{CURRENT_USER.email}</span>
               <ChevronDown size={13} className="text-[#111014]/40 shrink-0" />
             </div>
           </div>
@@ -2649,7 +2649,7 @@ function NewProjectForm({
               direction="down"
               error={!!errors.startDate}
             />
-            {errors.startDate && <p className="text-[11px] text-[#D2323F] leading-tight">{errors.startDate}</p>}
+            {errors.startDate && <p className="text-[11px] text-[var(--danger)] leading-tight">{errors.startDate}</p>}
           </div>
 
           <div className="flex flex-col gap-1 flex-1 min-w-[140px]">
@@ -2660,7 +2660,7 @@ function NewProjectForm({
               direction="down"
               error={!!errors.endDate}
             />
-            {errors.endDate && <p className="text-[11px] text-[#D2323F] leading-tight">{errors.endDate}</p>}
+            {errors.endDate && <p className="text-[11px] text-[var(--danger)] leading-tight">{errors.endDate}</p>}
           </div>
 
           <div className="flex-1 min-w-0">
@@ -2669,19 +2669,19 @@ function NewProjectForm({
         </div>
 
         {/* Row 3: Metadata */}
-        <p className="text-[11px] text-[#9C99A9] leading-relaxed">
-          <span className="font-medium text-[#686576]">Last Updated:</span> just now
+        <p className="text-[11px] text-[var(--ink-tertiary)] leading-relaxed">
+          <span className="font-medium text-[var(--ink-secondary)]">Last Updated:</span> just now
           <span className="mx-3 text-[#E0E0E0]">|</span>
-          <span className="font-medium text-[#686576]">Created:</span> just now
+          <span className="font-medium text-[var(--ink-secondary)]">Created:</span> just now
           <span className="mx-3 text-[#E0E0E0]">|</span>
-          <span className="font-medium text-[#686576]">Creator:</span> {CURRENT_USER.name}
+          <span className="font-medium text-[var(--ink-secondary)]">Creator:</span> {CURRENT_USER.name}
         </p>
 
         {/* Row 4: Actions */}
         <div className="flex items-center gap-2 pt-1">
           <button
             onClick={onClose}
-            className="px-4 py-2 rounded-full text-sm font-medium text-[#686576] border border-[#CAC9CF] hover:bg-gray-50 transition-colors cursor-pointer"
+            className="px-4 py-2 rounded-full text-sm font-medium text-[var(--ink-secondary)] border border-[#CAC9CF] hover:bg-gray-50 transition-colors cursor-pointer"
           >
             Cancel
           </button>

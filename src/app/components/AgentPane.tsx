@@ -32,14 +32,14 @@ function Tooltip({ label, children, side = 'top' }: {
             animate={{ opacity: 1, ...(side === 'top' ? { y: 0 } : { x: 0 }) }}
             exit={{ opacity: 0, ...(side === 'top' ? { y: 4 } : { x: -4 }) }}
             transition={{ duration: 0.14, ease: [0.25, 0.1, 0.25, 1] }}
-            className={cn('absolute pointer-events-none z-50 px-[8px] py-[4px] bg-[#1f1d25] text-white rounded-[6px]',
+            className={cn('absolute pointer-events-none z-50 px-[8px] py-[4px] bg-[var(--ink)] text-white rounded-[6px]',
               side === 'top' && 'bottom-full mb-[6px] whitespace-nowrap',
               side === 'right' && 'left-full ml-[6px]',
             )}
             style={{ fontSize: 11, letterSpacing: '0.17px', lineHeight: '1.43', maxWidth: 220, whiteSpace: side === 'right' ? 'normal' : 'nowrap' }}
           >
             {label}
-            {side === 'top' && <div className="absolute left-1/2 -translate-x-1/2 top-full w-0 h-0 border-l-[4px] border-r-[4px] border-t-[4px] border-l-transparent border-r-transparent border-t-[#1f1d25]" />}
+            {side === 'top' && <div className="absolute left-1/2 -translate-x-1/2 top-full w-0 h-0 border-l-[4px] border-r-[4px] border-t-[4px] border-l-transparent border-r-transparent border-t-[var(--ink)]" />}
           </motion.div>
         )}
       </AnimatePresence>
@@ -54,11 +54,11 @@ function ConstellationArcMark({ arcs, size = 20 }: { arcs: ArcState; size?: numb
   return (
     <svg width={size * 0.56} height={size} viewBox="0 0 18 33" fill="none" aria-hidden="true" className="shrink-0">
       <path d="M2.22422 16.0471C2.22422 7.57204 8.61025 0.631495 16.6988 0.0413128C16.332 0.0118036 15.9594 0 15.5867 0C6.97648 0 0 7.18252 0 16.0471C0 24.9116 6.97648 32.0941 15.5867 32.0941C15.9594 32.0941 16.332 32.0823 16.6988 32.0528C8.61025 31.4626 2.22422 24.5221 2.22422 16.0471Z"
-        fill="#473bab" style={{ opacity: arcs.outer ? 0.92 : 0.22, transition: 'opacity 120ms ease' }} />
+        fill="var(--brand-accent)" style={{ opacity: arcs.outer ? 0.92 : 0.22, transition: 'opacity 120ms ease' }} />
       <path d="M6.12227 16.047C6.12227 9.69073 10.9089 4.48533 16.9796 4.04269C16.7045 4.02498 16.4236 4.01318 16.1427 4.01318C9.6879 4.01318 4.4541 9.40154 4.4541 16.047C4.4541 22.6924 9.6879 28.0808 16.1427 28.0808C16.4236 28.0808 16.7045 28.069 16.9796 28.0513C10.9146 27.6086 6.12227 22.4032 6.12227 16.047Z"
-        fill="#6356e1" style={{ opacity: arcs.middle ? 0.82 : 0.18, transition: 'opacity 120ms ease' }} />
+        fill="var(--brand-mid)" style={{ opacity: arcs.middle ? 0.82 : 0.18, transition: 'opacity 120ms ease' }} />
       <path d="M17.2605 8.04407C17.0771 8.03227 16.8937 8.02637 16.7045 8.02637C12.3994 8.02637 8.9082 11.6206 8.9082 16.0529C8.9082 20.4851 12.3994 24.0793 16.7045 24.0793C16.8937 24.0793 17.0771 24.0734 17.2605 24.0557C13.2134 23.7606 10.0261 20.2904 10.0261 16.0529C10.0261 11.8154 13.2191 8.34507 17.2605 8.04998V8.04407Z"
-        fill="#8c86fc" style={{ opacity: arcs.inner ? 0.72 : 0.12, transition: 'opacity 120ms ease' }} />
+        fill="var(--brand-light)" style={{ opacity: arcs.inner ? 0.72 : 0.12, transition: 'opacity 120ms ease' }} />
     </svg>
   );
 }
@@ -149,13 +149,13 @@ function LoadingState({ onComplete }: { onComplete: () => void }) {
         <ConstellationArcMark arcs={arcs} size={20} />
         <AnimatePresence mode="wait">
           <motion.span key={step.label} initial={{ opacity: 0, y: 3 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -3 }} transition={{ duration: 0.18 }}
-            className="text-[12px] text-[#686576] tracking-[0.4px] leading-[1.66]">
+            className="text-[12px] text-[var(--ink-secondary)] tracking-[0.4px] leading-[1.66]">
             {step.label}…
           </motion.span>
         </AnimatePresence>
         <button onClick={() => setAccordionOpen(o => !o)} className="shrink-0 hover:bg-black/5 rounded p-[2px] transition-colors cursor-pointer">
           <motion.div animate={{ rotate: accordionOpen ? 180 : 0 }} transition={{ duration: 0.18 }}>
-            <svg className="w-[9px] h-[5px]" fill="none" viewBox="0 0 9.5 5.3"><path d={svgPaths.p14229000} stroke="#686576" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" /></svg>
+            <svg className="w-[9px] h-[5px]" fill="none" viewBox="0 0 9.5 5.3"><path d={svgPaths.p14229000} stroke="var(--ink-secondary)" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" /></svg>
           </motion.div>
         </button>
       </div>
@@ -169,16 +169,16 @@ function LoadingState({ onComplete }: { onComplete: () => void }) {
                   <motion.div key={t} initial={{ opacity: 0, x: -4 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.16, delay: i * 0.06 }} className="flex items-center gap-[8px]">
                     <div className={cn('w-[14px] h-[14px] rounded-full flex items-center justify-center shrink-0 transition-all duration-300',
                       state === 'idle'   && 'border border-[rgba(0,0,0,0.2)]',
-                      state === 'active' && 'border border-[#473bab] bg-[rgba(71,59,171,0.08)]',
-                      state === 'done'   && 'bg-[#473bab]',
+                      state === 'active' && 'border border-[var(--brand-accent)] bg-[rgba(71,59,171,0.08)]',
+                      state === 'done'   && 'bg-[var(--brand-accent)]',
                     )}>
-                      {state === 'active' && <motion.div className="w-[5px] h-[5px] rounded-full bg-[#473bab]" animate={{ scale: [1, 1.3, 1] }} transition={{ duration: 0.8, repeat: Infinity }} />}
+                      {state === 'active' && <motion.div className="w-[5px] h-[5px] rounded-full bg-[var(--brand-accent)]" animate={{ scale: [1, 1.3, 1] }} transition={{ duration: 0.8, repeat: Infinity }} />}
                       {state === 'done'   && <Check className="w-2.5 h-2.5 text-white" strokeWidth={3} />}
                     </div>
                     <span className={cn('text-[11px] tracking-[0.4px] leading-[1.5]',
-                      state === 'idle'   && 'text-[#9c99a9]',
-                      state === 'active' && 'text-[#473bab]',
-                      state === 'done'   && 'text-[#686576] line-through',
+                      state === 'idle'   && 'text-[var(--ink-tertiary)]',
+                      state === 'active' && 'text-[var(--brand-accent)]',
+                      state === 'done'   && 'text-[var(--ink-secondary)] line-through',
                     )}>{t}</span>
                   </motion.div>
                 );
@@ -265,7 +265,7 @@ function VoiceStatus({ isActive }: { isActive: boolean }) {
     <AnimatePresence>
       {isActive && (
         <motion.p key="voice-status" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }}
-          className="text-center select-none" style={{ fontWeight: 500, fontSize: 10, color: '#473bab', letterSpacing: '0.03em', lineHeight: 1.5 }}>
+          className="text-center select-none" style={{ fontWeight: 500, fontSize: 10, color: 'var(--brand-accent)', letterSpacing: '0.03em', lineHeight: 1.5 }}>
           Listening…
         </motion.p>
       )}
@@ -478,14 +478,14 @@ export function AgentInput({ onSubmit, compact = false, accountName }: AgentInpu
                           onClick={() => removeAttachment(idx)}
                           className="absolute -top-1.5 -right-1.5 w-[18px] h-[18px] bg-white border border-[rgba(0,0,0,0.12)] rounded-full flex items-center justify-center shadow-sm hover:bg-[rgba(0,0,0,0.04)] transition-colors cursor-pointer"
                           tabIndex={-1}
-                        ><X className="w-2.5 h-2.5 text-[#686576]" /></button>
+                        ><X className="w-2.5 h-2.5 text-[var(--ink-secondary)]" /></button>
                       </div>
                     ) : (
                       /* PDF / Excel pill chip */
-                      <div key={idx} className="flex items-center gap-1.5 pl-2 pr-1.5 py-1 bg-[rgba(71,59,171,0.06)] border border-[rgba(71,59,171,0.18)] rounded-[8px] text-[12px] text-[#473bab]">
-                        <svg className="w-3.5 h-3.5 shrink-0 opacity-70" fill="none" viewBox="0 0 12 17"><path d={svgPaths.pb4add00} stroke="#473bab" strokeLinecap="round" strokeOpacity="0.9" strokeWidth="1.5" /></svg>
+                      <div key={idx} className="flex items-center gap-1.5 pl-2 pr-1.5 py-1 bg-[rgba(71,59,171,0.06)] border border-[rgba(71,59,171,0.18)] rounded-[8px] text-[12px] text-[var(--brand-accent)]">
+                        <svg className="w-3.5 h-3.5 shrink-0 opacity-70" fill="none" viewBox="0 0 12 17"><path d={svgPaths.pb4add00} stroke="var(--brand-accent)" strokeLinecap="round" strokeOpacity="0.9" strokeWidth="1.5" /></svg>
                         <span className="truncate max-w-[160px] font-medium">{att.file.name}</span>
-                        <button onClick={() => removeAttachment(idx)} className="ml-0.5 text-[#473bab]/60 hover:text-[#473bab] transition-colors p-0.5 rounded shrink-0" tabIndex={-1}><X className="w-3 h-3" /></button>
+                        <button onClick={() => removeAttachment(idx)} className="ml-0.5 text-[var(--brand-accent)]/60 hover:text-[var(--brand-accent)] transition-colors p-0.5 rounded shrink-0" tabIndex={-1}><X className="w-3 h-3" /></button>
                       </div>
                     )
                 ))}
@@ -508,7 +508,7 @@ export function AgentInput({ onSubmit, compact = false, accountName }: AgentInpu
             onKeyDown={handleKeyDown}
             ref={textareaRef}
             placeholder={isListening ? '' : 'Ask anything'}
-            className="flex-1 resize-none bg-transparent border-none outline-none text-[14px] text-[#1f1d25] placeholder-[#9c99a9] tracking-[0.15px] leading-[1.5] min-h-[22px] custom-scrollbar"
+            className="flex-1 resize-none bg-transparent border-none outline-none text-[14px] text-[var(--ink)] placeholder-[var(--ink-tertiary)] tracking-[0.15px] leading-[1.5] min-h-[22px] custom-scrollbar"
             onPaste={handlePaste} />
         </div>
         <VoiceWaveRegion isActive={isListening} amplitudeData={amplitudeData} />
@@ -530,20 +530,20 @@ export function AgentInput({ onSubmit, compact = false, accountName }: AgentInpu
           </div>
           <div className="flex items-center gap-[10px]">
             <div className="relative flex items-center justify-center">
-              {isListening && <motion.div className="absolute inset-0 rounded-full" style={{ border: '1px solid #473bab' }} animate={{ scale: [1, 1.75], opacity: [0.5, 0] }} transition={{ duration: 1.6, ease: 'easeOut', repeat: Infinity }} />}
+              {isListening && <motion.div className="absolute inset-0 rounded-full" style={{ border: '1px solid var(--brand-accent)' }} animate={{ scale: [1, 1.75], opacity: [0.5, 0] }} transition={{ duration: 1.6, ease: 'easeOut', repeat: Infinity }} />}
               <Tooltip label={isListening ? 'Stop (ESC)' : 'Voice input'}>
                 <button onClick={handleMicToggle} aria-label={isListening ? 'Stop voice input' : 'Voice input'}
-                  className={cn('relative rounded-full p-[5px] transition-all duration-200 cursor-pointer', isListening ? 'border border-[#473bab] bg-[rgba(71,59,171,0.07)]' : 'border border-[rgba(17,16,20,0.56)] hover:bg-black/5')}>
+                  className={cn('relative rounded-full p-[5px] transition-all duration-200 cursor-pointer', isListening ? 'border border-[var(--brand-accent)] bg-[rgba(71,59,171,0.07)]' : 'border border-[rgba(17,16,20,0.56)] hover:bg-black/5')}>
                   <div className="size-[20px] flex items-center justify-center">
                     <svg className="w-[13px] h-[17px]" fill="none" viewBox="0 0 12.9603 16.9167">
-                      <path d={svgPaths.p1d377a00} stroke={isListening ? '#473bab' : '#111014'} strokeLinecap="round" strokeLinejoin="round" strokeOpacity={isListening ? 1 : 0.56} strokeWidth="1.5" />
+                      <path d={svgPaths.p1d377a00} stroke={isListening ? 'var(--brand-accent)' : '#111014'} strokeLinecap="round" strokeLinejoin="round" strokeOpacity={isListening ? 1 : 0.56} strokeWidth="1.5" />
                     </svg>
                   </div>
                 </button>
               </Tooltip>
             </div>
             <button onClick={handleSubmit} aria-label="Send" disabled={!isReadyToSend}
-              className={cn('rounded-full p-[5px] transition-all duration-200 cursor-pointer', isReadyToSend ? 'bg-[#473bab] hover:bg-[#392e8a] shadow-sm' : 'bg-[#473bab] opacity-50 cursor-not-allowed')}>
+              className={cn('rounded-full p-[5px] transition-all duration-200 cursor-pointer', isReadyToSend ? 'bg-[var(--brand-accent)] hover:bg-[#392e8a] shadow-sm' : 'bg-[var(--brand-accent)] opacity-50 cursor-not-allowed')}>
               <div className="size-[20px] flex items-center justify-center"><svg className="w-[12px] h-[15px]" fill="none" viewBox="0 0 11.9167 15.25"><path d={svgPaths.p2332e980} stroke="white" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" /></svg></div>
             </button>
           </div>
@@ -558,7 +558,7 @@ export function AgentInput({ onSubmit, compact = false, accountName }: AgentInpu
 function CategoryChip({ label }: { label: string }) {
   return (
     <button className="relative rounded-full border border-[rgba(99,86,225,0.5)] px-[10px] py-[4px] hover:bg-[rgba(71,59,171,0.06)] transition-colors cursor-pointer">
-      <span className="text-[13px] text-[#473bab] tracking-[0.46px] whitespace-nowrap capitalize" style={{ fontWeight: 500, lineHeight: '22px' }}>{label}</span>
+      <span className="text-[13px] text-[var(--brand-accent)] tracking-[0.46px] whitespace-nowrap capitalize" style={{ fontWeight: 500, lineHeight: '22px' }}>{label}</span>
     </button>
   );
 }
@@ -569,9 +569,9 @@ interface WarningBoxProps { variant: 'green' | 'purple' | 'info' | 'neutral'; ti
 function WarningBox({ variant, title, body }: WarningBoxProps) {
   const TOKEN = {
     green:   { bg: 'bg-[#e8f5e9]', borderLeft: 'border-l-[3px] border-[#2e7d32]', dot: 'bg-[#2e7d32]',  titleColor: 'text-[#1e4620]', bodyColor: 'text-[#1e4620]' },
-    purple:  { bg: 'bg-[#ede8ff]', borderLeft: 'border-l-[3px] border-[#473bab]',  dot: 'bg-[#473bab]',  titleColor: 'text-[#473bab]', bodyColor: 'text-[#473bab]' },
+    purple:  { bg: 'bg-[#ede8ff]', borderLeft: 'border-l-[3px] border-[var(--brand-accent)]',  dot: 'bg-[var(--brand-accent)]',  titleColor: 'text-[var(--brand-accent)]', bodyColor: 'text-[var(--brand-accent)]' },
     info:    { bg: 'bg-[#e3f2fd]', borderLeft: 'border-l-[3px] border-[#0277bd]',  dot: 'bg-[#0277bd]',  titleColor: 'text-[#01579b]', bodyColor: 'text-[#01579b]' },
-    neutral: { bg: 'bg-[#f4f5f6]', borderLeft: 'border-l-[3px] border-[#9c99a9]',  dot: 'bg-[#9c99a9]',  titleColor: 'text-[#1f1d25]', bodyColor: 'text-[#686576]' },
+    neutral: { bg: 'bg-[#f4f5f6]', borderLeft: 'border-l-[3px] border-[var(--ink-tertiary)]',  dot: 'bg-[var(--ink-tertiary)]',  titleColor: 'text-[var(--ink)]', bodyColor: 'text-[var(--ink-secondary)]' },
   }[variant];
   return (
     <div className={cn('rounded-[8px] flex gap-0 overflow-hidden', TOKEN.bg, TOKEN.borderLeft)}>
@@ -588,9 +588,9 @@ function WarningBox({ variant, title, body }: WarningBoxProps) {
 function SourceChip({ label }: { label: string }) {
   const isVin = label.toLowerCase().startsWith('vin');
   return (
-    <span className="inline-flex items-center gap-[3px] px-[5px] py-[1px] rounded-[5px] text-[10px] tracking-[0.3px] whitespace-nowrap shrink-0 bg-[#f0f2f4] text-[#686576]">
+    <span className="inline-flex items-center gap-[3px] px-[5px] py-[1px] rounded-[5px] text-[10px] tracking-[0.3px] whitespace-nowrap shrink-0 bg-[#f0f2f4] text-[var(--ink-secondary)]">
       {label}
-      {isVin && <svg className="w-[5px] h-[5px] shrink-0 opacity-60" fill="none" viewBox="0 0 3 5"><path d="M0.5 4.5L2.32322 2.67678C2.42085 2.57915 2.42085 2.42085 2.32322 2.32322L0.5 0.5" stroke="#686576" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.1" /></svg>}
+      {isVin && <svg className="w-[5px] h-[5px] shrink-0 opacity-60" fill="none" viewBox="0 0 3 5"><path d="M0.5 4.5L2.32322 2.67678C2.42085 2.57915 2.42085 2.42085 2.32322 2.32322L0.5 0.5" stroke="var(--ink-secondary)" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.1" /></svg>}
     </span>
   );
 }
@@ -606,7 +606,7 @@ function RatingBadge({ rating }: { rating: 'Excellent' | 'Good' | 'OK' }) {
 function PriorityBadge({ level }: { level: 'High' | 'Medium' | 'Low' }) {
   return (
     <span className={cn('text-[11px] tracking-[0.4px] leading-[1.5] px-[6px] py-[2px] rounded-[4px] whitespace-nowrap',
-      level === 'High' && 'bg-[#fde8e8] text-[#c62828]', level === 'Medium' && 'bg-[#fff8e1] text-[#f57f17]', level === 'Low' && 'bg-[#f0f2f4] text-[#686576]',
+      level === 'High' && 'bg-[#fde8e8] text-[#c62828]', level === 'Medium' && 'bg-[#fff8e1] text-[#f57f17]', level === 'Low' && 'bg-[#f0f2f4] text-[var(--ink-secondary)]',
     )} style={{ fontWeight: 500 }}>{level}</span>
   );
 }
@@ -656,31 +656,31 @@ function RecommendationsCard({ priority, title, budget, stock, transit, descript
             className="absolute inset-0 w-full h-full object-cover"
           />
           {/* Priority badge overlay */}
-          <div className="absolute top-[4px] left-[4px] w-[17px] h-[17px] rounded-full bg-[#473bab] shadow-sm flex items-center justify-center shrink-0">
+          <div className="absolute top-[4px] left-[4px] w-[17px] h-[17px] rounded-full bg-[var(--brand-accent)] shadow-sm flex items-center justify-center shrink-0">
             <span style={{ fontWeight: 700, fontSize: 9, lineHeight: 1, color: 'white' }}>{priority}</span>
           </div>
         </div>
         <div className="flex flex-col gap-[5px] min-w-0 flex-1 pt-[1px]">
-          <p className="text-[12px] text-[#1f1d25] tracking-[0.17px] leading-[1.43]" style={{ fontWeight: 500 }}>{title}</p>
+          <p className="text-[12px] text-[var(--ink)] tracking-[0.17px] leading-[1.43]" style={{ fontWeight: 500 }}>{title}</p>
           <div className="flex items-center gap-[6px] flex-wrap">
             <span className="inline-flex items-center px-[7px] py-[2px] bg-[#e8f5e9] rounded-[6px] text-[11px] text-[#1b5e20] tracking-[0.4px] leading-[1.5] shrink-0" style={{ fontWeight: 500 }}>{budget}</span>
-            <span className="text-[11px] text-[#686576] tracking-[0.4px] leading-[1.5] whitespace-nowrap">{stock}</span>
-            {transit && <><span className="text-[#ccc] select-none">·</span><span className="text-[11px] text-[#686576] tracking-[0.4px] leading-[1.5] whitespace-nowrap">{transit}</span></>}
+            <span className="text-[11px] text-[var(--ink-secondary)] tracking-[0.4px] leading-[1.5] whitespace-nowrap">{stock}</span>
+            {transit && <><span className="text-[#ccc] select-none">·</span><span className="text-[11px] text-[var(--ink-secondary)] tracking-[0.4px] leading-[1.5] whitespace-nowrap">{transit}</span></>}
           </div>
         </div>
       </div>
 
       {/* Rationale */}
       <div className="border-t border-[rgba(0,0,0,0.07)] px-[10px] py-[8px] bg-[#fafafa]">
-        <p className="text-[11px] text-[#1f1d25] leading-[1.6] tracking-[0.16px]">{description}</p>
+        <p className="text-[11px] text-[var(--ink)] leading-[1.6] tracking-[0.16px]">{description}</p>
       </div>
 
       {/* Recommended Offers */}
       <div className="border-t border-[rgba(0,0,0,0.07)]">
         <button onClick={() => setOffersOpen(o => !o)} className="w-full flex items-center justify-between px-[10px] pt-[7px] pb-[5px] hover:bg-[rgba(0,0,0,0.02)] transition-colors cursor-pointer">
-          <p className="text-[10px] text-[#686576] tracking-[0.5px] uppercase" style={{ fontWeight: 600 }}>Recommended Offers</p>
+          <p className="text-[10px] text-[var(--ink-secondary)] tracking-[0.5px] uppercase" style={{ fontWeight: 600 }}>Recommended Offers</p>
           <motion.div animate={{ rotate: offersOpen ? 0 : -90 }} transition={{ duration: 0.18 }}>
-            <svg className="w-[8px] h-[5px]" fill="none" viewBox="0 0 9.5 5.3"><path d={svgPaths.p14229000} stroke="#686576" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" /></svg>
+            <svg className="w-[8px] h-[5px]" fill="none" viewBox="0 0 9.5 5.3"><path d={svgPaths.p14229000} stroke="var(--ink-secondary)" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" /></svg>
           </motion.div>
         </button>
         <AnimatePresence initial={false}>
@@ -691,14 +691,14 @@ function RecommendationsCard({ priority, title, budget, stock, transit, descript
                   <colgroup><col style={{ width: '50px' }} /><col style={{ width: '110px' }} /><col /><col style={{ width: '64px' }} /></colgroup>
                   <thead>
                     <tr>{['Type', 'Terms', 'Source', 'Rating'].map(h => (
-                      <th key={h} className="pb-[4px] text-left whitespace-nowrap" style={{ fontWeight: 400, fontSize: 10, color: '#9c99a9', letterSpacing: '0.3px' }}>{h}</th>
+                      <th key={h} className="pb-[4px] text-left whitespace-nowrap" style={{ fontWeight: 400, fontSize: 10, color: 'var(--ink-tertiary)', letterSpacing: '0.3px' }}>{h}</th>
                     ))}</tr>
                   </thead>
                   <tbody>
                     {offers.map((o, i) => (
                       <tr key={i} className={cn('border-t border-[rgba(0,0,0,0.05)]', i === 0 && 'border-t-0')}>
-                        <td className="py-[4px] pr-[6px] align-middle"><span className="text-[11px] text-[#686576] tracking-[0.17px] whitespace-nowrap">{o.type}</span></td>
-                        <td className="py-[4px] pr-[6px] align-middle"><span className="text-[11px] text-[#1f1d25] tracking-[0.17px] whitespace-nowrap" style={{ fontWeight: 500 }}>{o.detail}</span></td>
+                        <td className="py-[4px] pr-[6px] align-middle"><span className="text-[11px] text-[var(--ink-secondary)] tracking-[0.17px] whitespace-nowrap">{o.type}</span></td>
+                        <td className="py-[4px] pr-[6px] align-middle"><span className="text-[11px] text-[var(--ink)] tracking-[0.17px] whitespace-nowrap" style={{ fontWeight: 500 }}>{o.detail}</span></td>
                         <td className="py-[4px] pr-[6px] align-middle"><SourceChip label={o.source} /></td>
                         <td className="py-[4px] text-right align-middle"><RatingBadge rating={o.rating} /></td>
                       </tr>
@@ -721,7 +721,7 @@ function RecommendationsCard({ priority, title, budget, stock, transit, descript
           {included ? (
             // Checked state: filled purple checkbox using pcdaa200 path
             <svg width="15" height="15" viewBox="0 0 15 15" fill="none">
-              <path d={svgE.pcdaa200} fill="#473bab" />
+              <path d={svgE.pcdaa200} fill="var(--brand-accent)" />
             </svg>
           ) : (
             // Unchecked state: plain border box
@@ -729,7 +729,7 @@ function RecommendationsCard({ priority, title, budget, stock, transit, descript
           )}
         </button>
         <span
-          className={cn('text-[11px] tracking-[0.4px] leading-[1.5] select-none cursor-pointer', included ? 'text-[#473bab]' : 'text-[#9c99a9]')}
+          className={cn('text-[11px] tracking-[0.4px] leading-[1.5] select-none cursor-pointer', included ? 'text-[var(--brand-accent)]' : 'text-[var(--ink-tertiary)]')}
           style={{ fontWeight: included ? 500 : 400 }}
           onClick={onToggleIncluded}
         >
@@ -753,9 +753,9 @@ const FOOTER_ACTIONS = [
 function ConstellationSignatureMark({ size = 16 }: { size?: number }) {
   return (
     <svg width={size * 0.56} height={size} viewBox="0 0 18 33" fill="none" aria-label="Constellation" className="shrink-0">
-      <path d="M2.22422 16.0471C2.22422 7.57204 8.61025 0.631495 16.6988 0.0413128C16.332 0.0118036 15.9594 0 15.5867 0C6.97648 0 0 7.18252 0 16.0471C0 24.9116 6.97648 32.0941 15.5867 32.0941C15.9594 32.0941 16.332 32.0823 16.6988 32.0528C8.61025 31.4626 2.22422 24.5221 2.22422 16.0471Z" fill="#473bab" fillOpacity="0.85" />
-      <path d="M6.12227 16.047C6.12227 9.69073 10.9089 4.48533 16.9796 4.04269C16.7045 4.02498 16.4236 4.01318 16.1427 4.01318C9.6879 4.01318 4.4541 9.40154 4.4541 16.047C4.4541 22.6924 9.6879 28.0808 16.1427 28.0808C16.4236 28.0808 16.7045 28.069 16.9796 28.0513C10.9146 27.6086 6.12227 22.4032 6.12227 16.047Z" fill="#6356e1" fillOpacity="0.62" />
-      <path d="M17.2605 8.04407C17.0771 8.03227 16.8937 8.02637 16.7045 8.02637C12.3994 8.02637 8.9082 11.6206 8.9082 16.0529C8.9082 20.4851 12.3994 24.0793 16.7045 24.0793C16.8937 24.0793 17.0771 24.0734 17.2605 24.0557C13.2134 23.7606 10.0261 20.2904 10.0261 16.0529C10.0261 11.8154 13.2191 8.34507 17.2605 8.04998V8.04407Z" fill="#8c86fc" fillOpacity="0.42" />
+      <path d="M2.22422 16.0471C2.22422 7.57204 8.61025 0.631495 16.6988 0.0413128C16.332 0.0118036 15.9594 0 15.5867 0C6.97648 0 0 7.18252 0 16.0471C0 24.9116 6.97648 32.0941 15.5867 32.0941C15.9594 32.0941 16.332 32.0823 16.6988 32.0528C8.61025 31.4626 2.22422 24.5221 2.22422 16.0471Z" fill="var(--brand-accent)" fillOpacity="0.85" />
+      <path d="M6.12227 16.047C6.12227 9.69073 10.9089 4.48533 16.9796 4.04269C16.7045 4.02498 16.4236 4.01318 16.1427 4.01318C9.6879 4.01318 4.4541 9.40154 4.4541 16.047C4.4541 22.6924 9.6879 28.0808 16.1427 28.0808C16.4236 28.0808 16.7045 28.069 16.9796 28.0513C10.9146 27.6086 6.12227 22.4032 6.12227 16.047Z" fill="var(--brand-mid)" fillOpacity="0.62" />
+      <path d="M17.2605 8.04407C17.0771 8.03227 16.8937 8.02637 16.7045 8.02637C12.3994 8.02637 8.9082 11.6206 8.9082 16.0529C8.9082 20.4851 12.3994 24.0793 16.7045 24.0793C16.8937 24.0793 17.0771 24.0734 17.2605 24.0557C13.2134 23.7606 10.0261 20.2904 10.0261 16.0529C10.0261 11.8154 13.2191 8.34507 17.2605 8.04998V8.04407Z" fill="var(--brand-light)" fillOpacity="0.42" />
     </svg>
   );
 }
@@ -897,12 +897,12 @@ function ResponseState({ prompt, attachment }: { prompt: string; attachment: Fil
       <div className="flex flex-col items-end gap-[6px]">
         <div className="ml-[40px] bg-[#fafaff] rounded-bl-[12px] rounded-tl-[12px] rounded-tr-[12px] px-[12px] py-[10px] relative">
           <div aria-hidden="true" className="absolute inset-0 rounded-bl-[12px] rounded-tl-[12px] rounded-tr-[12px] border border-[rgba(99,86,225,0.5)] pointer-events-none" />
-          <p className="text-[12px] text-[#1f1d25] leading-[1.43] tracking-[0.17px]">
+          <p className="text-[12px] text-[var(--ink)] leading-[1.43] tracking-[0.17px]">
             {prompt || 'Raise what I have in accrued funds and plan strategies based on my inventory for April. Order them by priority and justify each one, with the corresponding budget allocation.'}
           </p>
           {attachment && (
-            <div className="mt-[6px] flex items-center gap-1.5 px-2 py-1 bg-[rgba(71,59,171,0.06)] border border-[rgba(71,59,171,0.18)] rounded-[8px] text-[11px] text-[#473bab] w-fit">
-              <svg className="w-3 h-3 shrink-0" fill="none" viewBox="0 0 12 17"><path d={svgPaths.pb4add00} stroke="#473bab" strokeLinecap="round" strokeOpacity="0.9" strokeWidth="1.5" /></svg>
+            <div className="mt-[6px] flex items-center gap-1.5 px-2 py-1 bg-[rgba(71,59,171,0.06)] border border-[rgba(71,59,171,0.18)] rounded-[8px] text-[11px] text-[var(--brand-accent)] w-fit">
+              <svg className="w-3 h-3 shrink-0" fill="none" viewBox="0 0 12 17"><path d={svgPaths.pb4add00} stroke="var(--brand-accent)" strokeLinecap="round" strokeOpacity="0.9" strokeWidth="1.5" /></svg>
               <span className="truncate max-w-[140px]">{attachment.name}</span>
             </div>
           )}
@@ -911,10 +911,10 @@ function ResponseState({ prompt, attachment }: { prompt: string; attachment: Fil
 
       {/* Thinking summary */}
       <div className="flex items-center gap-[6px]">
-        <span className="text-[11px] text-[#686576] tracking-[0.4px] leading-[1.66]">Thought for 41s</span>
+        <span className="text-[11px] text-[var(--ink-secondary)] tracking-[0.4px] leading-[1.66]">Thought for 41s</span>
         <button onClick={() => setThinkingOpen(o => !o)} className="hover:bg-black/5 rounded p-0.5 transition-colors cursor-pointer">
           <motion.div animate={{ rotate: thinkingOpen ? 180 : 0 }} transition={{ duration: 0.18 }}>
-            <svg className="w-[9px] h-[5px]" fill="none" viewBox="0 0 9.5 5.3"><path d={svgPaths.p14229000} stroke="#686576" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" /></svg>
+            <svg className="w-[9px] h-[5px]" fill="none" viewBox="0 0 9.5 5.3"><path d={svgPaths.p14229000} stroke="var(--ink-secondary)" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" /></svg>
           </motion.div>
         </button>
       </div>
@@ -924,8 +924,8 @@ function ResponseState({ prompt, attachment }: { prompt: string; attachment: Fil
             <div className="ml-[4px] flex flex-col gap-[5px] pb-[4px]">
               {THINKING_STEPS.map(s => (
                 <div key={s.label} className="flex items-center gap-[8px]">
-                  <div className="w-[14px] h-[14px] rounded-full bg-[#473bab] flex items-center justify-center shrink-0"><Check className="w-2.5 h-2.5 text-white" strokeWidth={3} /></div>
-                  <span className="text-[11px] text-[#686576] tracking-[0.4px] line-through">{s.label}</span>
+                  <div className="w-[14px] h-[14px] rounded-full bg-[var(--brand-accent)] flex items-center justify-center shrink-0"><Check className="w-2.5 h-2.5 text-white" strokeWidth={3} /></div>
+                  <span className="text-[11px] text-[var(--ink-secondary)] tracking-[0.4px] line-through">{s.label}</span>
                 </div>
               ))}
             </div>
@@ -936,46 +936,46 @@ function ResponseState({ prompt, attachment }: { prompt: string; attachment: Fil
       {/* Agent identity row */}
       <div className="flex items-center gap-[6px]">
         <img src={imgAgentAvatar} alt="AI Agent" className="w-[24px] h-[24px] rounded-full object-cover shrink-0" />
-        <span className="text-[12px] text-[#1f1d25] tracking-[0.17px]" style={{ fontWeight: 500 }}>AI Agent Auto</span>
+        <span className="text-[12px] text-[var(--ink)] tracking-[0.17px]" style={{ fontWeight: 500 }}>AI Agent Auto</span>
         <div className="flex-1 h-[1px] bg-[rgba(0,0,0,0.12)]" />
       </div>
 
       {/* Budget Summary */}
       <div className="flex flex-col gap-[10px]">
         <div className="flex items-center gap-[8px]">
-          <p className="text-[20px] text-[#1f1d25] tracking-[0.15px] leading-[1.6] shrink-0" style={{ fontWeight: 500 }}>Budget Summary</p>
+          <p className="text-[20px] text-[var(--ink)] tracking-[0.15px] leading-[1.6] shrink-0" style={{ fontWeight: 500 }}>Budget Summary</p>
           <div className="flex-1 h-[1px] bg-[rgba(0,0,0,0.12)]" />
         </div>
-        <p className="text-[11px] text-[#686576] tracking-[0.4px] -mt-[6px]">Company Plan · April 2025</p>
+        <p className="text-[11px] text-[var(--ink-secondary)] tracking-[0.4px] -mt-[6px]">Company Plan · April 2025</p>
         <div className="flex gap-[8px]">
           <div className="flex-1 bg-[#edf7ed] rounded-[12px] border border-[rgba(0,0,0,0.12)] px-[12px] pt-[12px] pb-[8px] flex flex-col gap-[2px]">
             <span className="text-[11px] text-[#1b5e20] tracking-[0.4px] leading-[1.66]">Approved</span>
             <span className="text-[16px] text-[#1b5e20] tracking-[0.15px]">$140K</span>
           </div>
           <div className="flex-1 bg-[#f4f5f6] rounded-[12px] border border-[rgba(0,0,0,0.12)] px-[12px] pt-[12px] pb-[8px] flex flex-col gap-[2px]">
-            <span className="text-[11px] text-[#1f1d25] tracking-[0.4px] leading-[1.66]">Recommended</span>
-            <span className="text-[16px] text-[#686576] tracking-[0.15px]">$132K</span>
+            <span className="text-[11px] text-[var(--ink)] tracking-[0.4px] leading-[1.66]">Recommended</span>
+            <span className="text-[16px] text-[var(--ink-secondary)] tracking-[0.15px]">$132K</span>
           </div>
           <div className="flex-1 bg-[#f4f5f6] rounded-[12px] border border-[rgba(0,0,0,0.12)] px-[12px] pt-[12px] pb-[8px] flex flex-col gap-[2px]">
-            <span className="text-[11px] text-[#1f1d25] tracking-[0.4px] leading-[1.66]">Unallocated</span>
-            <span className="text-[16px] text-[#686576] tracking-[0.15px]">$8K</span>
+            <span className="text-[11px] text-[var(--ink)] tracking-[0.4px] leading-[1.66]">Unallocated</span>
+            <span className="text-[16px] text-[var(--ink-secondary)] tracking-[0.15px]">$8K</span>
           </div>
         </div>
         {/* TASK 1 — "Nauman" replaced with "Mallory" */}
-        <p className="text-[12px] text-[#1f1d25] leading-[1.43] tracking-[0.17px]">
+        <p className="text-[12px] text-[var(--ink)] leading-[1.43] tracking-[0.17px]">
           Hi Mallory — <strong>$140,000 in approved/accrued funds</strong> available for April. Based on inventory depth, offer quality, and March signals, I've prioritized four campaigns. Total recommended: $132,000, keeping $8,000 in reserve.
         </p>
       </div>
 
       {/* Inventory Mapping */}
       <div className="flex flex-col gap-[8px]">
-        <p className="text-[14px] text-[#1f1d25] tracking-[0.15px]" style={{ fontWeight: 500 }}>1. Inventory Mapping</p>
+        <p className="text-[14px] text-[var(--ink)] tracking-[0.15px]" style={{ fontWeight: 500 }}>1. Inventory Mapping</p>
         <div className="overflow-x-auto rounded-[8px] border border-[rgba(0,0,0,0.1)]">
           <table className="w-full min-w-[340px] border-collapse text-[11px]">
             <thead>
               <tr className="bg-[#f4f5f6] border-b border-[rgba(0,0,0,0.1)]">
                 {['Model', 'Inventory', 'State', 'Priority'].map(h => (
-                  <th key={h} className="px-[10px] py-[6px] text-left text-[#686576] tracking-[0.4px] font-normal whitespace-nowrap">{h}</th>
+                  <th key={h} className="px-[10px] py-[6px] text-left text-[var(--ink-secondary)] tracking-[0.4px] font-normal whitespace-nowrap">{h}</th>
                 ))}
               </tr>
             </thead>
@@ -987,9 +987,9 @@ function ResponseState({ prompt, attachment }: { prompt: string; attachment: Fil
                 { model: 'Jetta',  inventory: '14 in stock · Volume model, lowest CPL',       state: 'Efficiency play', priority: 'Medium' as const },
               ].map((row, i) => (
                 <tr key={row.model} className={i % 2 === 0 ? 'bg-white' : 'bg-[#fafafa]'}>
-                  <td className="px-[10px] py-[6px] text-[#1f1d25] font-medium whitespace-nowrap">{row.model}</td>
-                  <td className="px-[10px] py-[6px] text-[#1f1d25] max-w-[110px] truncate">{row.inventory}</td>
-                  <td className="px-[10px] py-[6px] text-[#1f1d25] whitespace-nowrap">{row.state}</td>
+                  <td className="px-[10px] py-[6px] text-[var(--ink)] font-medium whitespace-nowrap">{row.model}</td>
+                  <td className="px-[10px] py-[6px] text-[var(--ink)] max-w-[110px] truncate">{row.inventory}</td>
+                  <td className="px-[10px] py-[6px] text-[var(--ink)] whitespace-nowrap">{row.state}</td>
                   <td className="px-[10px] py-[6px]"><PriorityBadge level={row.priority} /></td>
                 </tr>
               ))}
@@ -1000,7 +1000,7 @@ function ResponseState({ prompt, attachment }: { prompt: string; attachment: Fil
 
       {/* Main Insights */}
       <div className="flex flex-col gap-[8px]">
-        <p className="text-[14px] text-[#1f1d25] tracking-[0.15px]" style={{ fontWeight: 500 }}>2. Main Insights</p>
+        <p className="text-[14px] text-[var(--ink)] tracking-[0.15px]" style={{ fontWeight: 500 }}>2. Main Insights</p>
         <WarningBox variant="green"  title="ID.4"        body="EV lease campaigns drove 3.1× more VDP views vs March avg. Tax credit messaging converted at 2.4× the national rate — prioritize while window is open." />
         <WarningBox variant="purple" title="Atlas"       body="Finance + cash bonus format outperformed lease-only by 40% on lead volume. APR + customer bonus is the recommended combination." />
         <WarningBox variant="info"   title="Paid Social" body="Broad-audience social underperformed across all models (avg TI 1.6). All April campaigns should use in-AOR remarketing + conquest only." />
@@ -1008,7 +1008,7 @@ function ResponseState({ prompt, attachment }: { prompt: string; attachment: Fil
 
       {/* TASK 2 — Recommended Campaigns: 4 unique cards with correct data from Annex 4 */}
       <div className="flex flex-col gap-[10px]">
-        <p className="text-[14px] text-[#1f1d25] tracking-[0.15px]" style={{ fontWeight: 500 }}>3. Recommended Campaigns</p>
+        <p className="text-[14px] text-[var(--ink)] tracking-[0.15px]" style={{ fontWeight: 500 }}>3. Recommended Campaigns</p>
         {CAMPAIGNS.map(c => (
           <RecommendationsCard
             key={c.id}
@@ -1028,10 +1028,10 @@ function ResponseState({ prompt, attachment }: { prompt: string; attachment: Fil
 
       {/* Bottom CTA */}
       <div className="flex flex-col gap-[10px] pb-[4px]">
-        <p className="text-[12px] text-[#686576] leading-[1.43] tracking-[0.17px]">
+        <p className="text-[12px] text-[var(--ink-secondary)] leading-[1.43] tracking-[0.17px]">
           All offers subject to OEM availability and regional compliance. Budgets are based on March performance signals.
         </p>
-        <p className="text-[12px] text-[#1f1d25] leading-[1.43] tracking-[0.17px]">
+        <p className="text-[12px] text-[var(--ink)] leading-[1.43] tracking-[0.17px]">
           Can I proceed and create these campaigns in your Planner?
         </p>
         {/* TASK 3 — dynamic count, disabled when 0 */}
@@ -1040,8 +1040,8 @@ function ResponseState({ prompt, attachment }: { prompt: string; attachment: Fil
           className={cn(
             'w-full py-[11px] px-[16px] rounded-full text-[14px] tracking-[0.46px] transition-all duration-200',
             checkedCount > 0
-              ? 'bg-[#473bab] hover:bg-[#392e8a] active:bg-[#2d2478] text-white cursor-pointer shadow-sm'
-              : 'bg-[#473bab] opacity-40 text-white cursor-not-allowed',
+              ? 'bg-[var(--brand-accent)] hover:bg-[#392e8a] active:bg-[#2d2478] text-white cursor-pointer shadow-sm'
+              : 'bg-[var(--brand-accent)] opacity-40 text-white cursor-not-allowed',
           )}
           style={{ fontWeight: 500 }}
         >
@@ -1061,7 +1061,7 @@ function AgentTopBar({ onClose }: { onClose: () => void }) {
       <button aria-label="Back" className="p-[5px] rounded-full hover:bg-black/5 transition-colors cursor-pointer shrink-0">
         <div className="size-[20px] flex items-center justify-center"><svg className="w-[13px] h-[13px]" fill="none" viewBox="0 0 12.9854 12.6458"><path d={svgPaths.p111f7e00} fill="#111014" fillOpacity="0.56" /></svg></div>
       </button>
-      <span className="ml-0.5 text-[16px] text-[#1f1d25] tracking-[0.15px] whitespace-nowrap shrink-0" style={{ fontWeight: 500, lineHeight: '1.5' }}>AI Agent Auto</span>
+      <span className="ml-0.5 text-[16px] text-[var(--ink)] tracking-[0.15px] whitespace-nowrap shrink-0" style={{ fontWeight: 500, lineHeight: '1.5' }}>AI Agent Auto</span>
       <button aria-label="Select agent" className="p-[5px] rounded-full hover:bg-black/5 transition-colors cursor-pointer shrink-0 ml-[2px]">
         <div className="size-[20px] flex items-center justify-center"><svg className="w-[8px] h-[5px]" fill="none" viewBox="0 0 8.16667 4.66074"><path d={svgPaths.p13692480} stroke="#111014" strokeLinecap="round" strokeLinejoin="round" strokeOpacity="0.56" strokeWidth="1.5" /></svg></div>
       </button>
@@ -1122,18 +1122,18 @@ export function AgentPane({ isOpen, onClose, accountName }: AgentPaneProps) {
                         style={{ fontWeight: 700, backgroundImage: 'linear-gradient(99.7748deg, rgb(71,59,171) 37.41%, rgb(172,171,255) 55.078%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>
                         Welcome, Mallory
                       </p>
-                      <p className="text-[14px] text-[#1f1d25] tracking-[0.15px] leading-[1.5] opacity-90 mb-[10px]">
+                      <p className="text-[14px] text-[var(--ink)] tracking-[0.15px] leading-[1.5] opacity-90 mb-[10px]">
                         {`Hi, I'm your Auto Intelligence Agent currently focused on your store, how can I help you today?`}
                       </p>
                       <div className="flex items-center gap-[10px]">
-                        <p className="text-[14px] text-[#1f1d25] tracking-[0.15px] leading-[1.5] opacity-90 whitespace-nowrap shrink-0">My current focus is</p>
+                        <p className="text-[14px] text-[var(--ink)] tracking-[0.15px] leading-[1.5] opacity-90 whitespace-nowrap shrink-0">My current focus is</p>
                         <button className="flex items-center cursor-pointer">
                           <span className="text-[14px] tracking-[0.15px] leading-[1.5] opacity-90 whitespace-nowrap"
-                            style={{ fontWeight: 700, backgroundImage: 'linear-gradient(90deg, #473bab, #acabff)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>
+                            style={{ fontWeight: 700, backgroundImage: 'linear-gradient(90deg, var(--brand-accent), var(--brand-dark-mode))', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>
                             {accountName ?? "Jack Daniels Volkswagen"}
                           </span>
                           <div className="size-[24px] flex items-center justify-center ml-[-2px]">
-                            <svg className="w-[9px] h-[5px]" fill="none" viewBox="0 0 9.5 5.29289"><path d={svgPaths.p14229000} stroke="#473BAB" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" /></svg>
+                            <svg className="w-[9px] h-[5px]" fill="none" viewBox="0 0 9.5 5.29289"><path d={svgPaths.p14229000} stroke="var(--brand-accent)" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" /></svg>
                           </div>
                         </button>
                       </div>
@@ -1154,7 +1154,7 @@ export function AgentPane({ isOpen, onClose, accountName }: AgentPaneProps) {
                     <div className="flex justify-end mb-[16px]">
                       <div className="ml-[40px] bg-[#fafaff] rounded-bl-[12px] rounded-tl-[12px] rounded-tr-[12px] px-[12px] py-[10px] relative">
                         <div aria-hidden="true" className="absolute inset-0 rounded-bl-[12px] rounded-tl-[12px] rounded-tr-[12px] border border-[rgba(99,86,225,0.5)] pointer-events-none" />
-                        <p className="text-[12px] text-[#1f1d25] leading-[1.43] tracking-[0.17px]">
+                        <p className="text-[12px] text-[var(--ink)] leading-[1.43] tracking-[0.17px]">
                           {submittedPrompt || 'Raise what I have in accrued funds…'}
                         </p>
                       </div>

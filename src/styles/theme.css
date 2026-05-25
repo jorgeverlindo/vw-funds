@@ -4,11 +4,23 @@
 :root {
   --brand-accent: #473BAB;
   --brand-accent-hover: #3D3295;
+  --brand-mid: #6356e1;
+  --brand-light: #8c86fc;
+  --brand-dark-mode: #ACABFF;
   --rail-bg: #1E1A42;
   --rail-active: #2F2775;
   --rail-icon: #ACABFF;
   --rail-icon-inactive: #ACABFF;
   --rail-icon-active: #ACABFF;
+
+  /* ── App ink palette (text / icon hierarchy) ────────────────────────── */
+  --ink:           #1f1d25;   /* primary text, icons, headings               */
+  --ink-secondary: #686576;   /* secondary text, labels, placeholders        */
+  --ink-tertiary:  #9c99a9;   /* tertiary text, disabled states              */
+
+  /* ── Semantic status colors ─────────────────────────────────────────── */
+  --danger:         #D2323F;   /* error, denied, destructive                  */
+  --warning-orange: #E17613;   /* warning, revision requested, orange states  */
 }
 
 /* ─────────────────────────────────────────────────────────────────────────── */
@@ -92,6 +104,23 @@
 }
 
 @theme inline {
+  /* Brand */
+  --color-brand:           var(--brand-accent);
+  --color-brand-hover:     var(--brand-accent-hover);
+  --color-brand-mid:       var(--brand-mid);
+  --color-brand-light:     var(--brand-light);
+  --color-brand-dark-mode: var(--brand-dark-mode);
+
+  /* Ink hierarchy */
+  --color-ink:           var(--ink);
+  --color-ink-secondary: var(--ink-secondary);
+  --color-ink-tertiary:  var(--ink-tertiary);
+
+  /* Status */
+  --color-danger:  var(--danger);
+  --color-warning: var(--warning-orange);
+
+  /* Tailwind base */
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);

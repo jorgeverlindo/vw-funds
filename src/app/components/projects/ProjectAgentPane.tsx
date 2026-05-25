@@ -25,6 +25,20 @@ import type { Offer as OfferCardData } from "./offers/OfferCard";
 import { offerLibrary } from "./lib/mock-data";
 import { useWorkflow } from "../../contexts/WorkflowContext";
 import { TemplateZoneEditor } from "@projects/templates/TemplateZoneEditor";
+import { inlineMarkdown, MarkdownContent } from "./agent/markdown";
+import { ResponseActions } from "./agent/ResponseActions";
+import { ConstellationArcMark, useConstellationAnim } from "./agent/ConstellationArcMark";
+import { ProactiveAutoApplyBar, ProactiveQuestionsCard } from "./agent/ProactiveWidgets";
+import { AgentSelect, AgentAddSelect, ConfirmedChip, WhyThese } from "./agent/AgentSelects";
+import { SetupProjectCard } from "./agent/SetupProjectCard";
+import { OffersProposalCard } from "./agent/OffersProposalCard";
+import { TemplatePreviewModal } from "./agent/TemplatePreviewModal";
+import {
+  loadAgentThreads, saveAgentThreads, getThreadTitle, groupThreadsByDate,
+  fileToBase64, parseExcelToText, deduplicateName,
+} from "./agent/utils";
+import type { AgentThread } from "./agent/utils";
+import { useAgentStream } from "./agent/useAgentStream";
 
 // ─── Shared event constants ────────────────────────────────────────────────────
 export const PROJECT_CONTEXT_EVENT         = "project-context-update";
@@ -262,349 +276,20 @@ function IconClose() {
 }
 
 // ─── Thread persistence ────────────────────────────────────────────────────────
-interface AgentThread {
-  id: string;
-  title: string;
-  messages: Message[];
-  createdAt: number;
-  updatedAt: number;
-}
+// AgentThread type, loadAgentThreads, saveAgentThreads, getThreadTitle, groupThreadsByDate
+// → extracted to ./agent/utils.ts
 
-function loadAgentThreads(): AgentThread[] {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEYS.AGENT_THREADS);
-    return raw ? (JSON.parse(raw) as AgentThread[]) : [];
-  } catch { return []; }
-}
+// ─── Constellation arc animation → extracted to ./agent/ConstellationArcMark.tsx
 
-function saveAgentThreads(threads: AgentThread[]) {
-  try { localStorage.setItem(STORAGE_KEYS.AGENT_THREADS, JSON.stringify(threads)); } catch {}
-}
+// ─── File helpers → extracted to ./agent/utils.ts
 
-function getThreadTitle(msgs: Message[]): string {
-  const first = msgs.find((m): m is TextMessage => m.type === "text" && m.role === "user");
-  if (!first) return "New conversation";
-  const t = first.content.trim();
-  return t.length > 46 ? t.slice(0, 46) + "…" : t;
-}
+// ─── SSE streaming hook → extracted to ./agent/useAgentStream.ts
 
-function groupThreadsByDate(threads: AgentThread[]): { label: string; items: AgentThread[] }[] {
-  const today     = new Date(); today.setHours(0, 0, 0, 0);
-  const yesterday = new Date(today); yesterday.setDate(yesterday.getDate() - 1);
-  const weekAgo   = new Date(today); weekAgo.setDate(weekAgo.getDate() - 7);
-  const groups: Record<string, AgentThread[]> = { Today: [], Yesterday: [], "This week": [], Older: [] };
-  for (const t of threads) {
-    const d = new Date(t.updatedAt);
-    if      (d >= today)     groups.Today.push(t);
-    else if (d >= yesterday) groups.Yesterday.push(t);
-    else if (d >= weekAgo)   groups["This week"].push(t);
-    else                     groups.Older.push(t);
-  }
-  return Object.entries(groups)
-    .filter(([, items]) => items.length > 0)
-    .map(([label, items]) => ({ label, items: items.sort((a, b) => b.updatedAt - a.updatedAt) }));
-}
+// ─── Markdown renderer → extracted to ./agent/markdown.tsx
 
-// ─── Constellation arc animation (matches AgentPane exactly) ──────────────────
-interface ArcState { outer: boolean; middle: boolean; inner: boolean }
+// ─── Response action bar → extracted to ./agent/ResponseActions.tsx
 
-function ConstellationArcMark({ arcs, size = 20 }: { arcs: ArcState; size?: number }) {
-  return (
-    <svg width={size * 0.56} height={size} viewBox="0 0 18 33" fill="none" aria-hidden="true" className="shrink-0">
-      <path d="M2.22422 16.0471C2.22422 7.57204 8.61025 0.631495 16.6988 0.0413128C16.332 0.0118036 15.9594 0 15.5867 0C6.97648 0 0 7.18252 0 16.0471C0 24.9116 6.97648 32.0941 15.5867 32.0941C15.9594 32.0941 16.332 32.0823 16.6988 32.0528C8.61025 31.4626 2.22422 24.5221 2.22422 16.0471Z"
-        fill="#473bab" style={{ opacity: arcs.outer ? 0.92 : 0.22, transition: "opacity 120ms ease" }} />
-      <path d="M6.12227 16.047C6.12227 9.69073 10.9089 4.48533 16.9796 4.04269C16.7045 4.02498 16.4236 4.01318 16.1427 4.01318C9.6879 4.01318 4.4541 9.40154 4.4541 16.047C4.4541 22.6924 9.6879 28.0808 16.1427 28.0808C16.4236 28.0808 16.7045 28.069 16.9796 28.0513C10.9146 27.6086 6.12227 22.4032 6.12227 16.047Z"
-        fill="#6356e1" style={{ opacity: arcs.middle ? 0.82 : 0.18, transition: "opacity 120ms ease" }} />
-      <path d="M17.2605 8.04407C17.0771 8.03227 16.8937 8.02637 16.7045 8.02637C12.3994 8.02637 8.9082 11.6206 8.9082 16.0529C8.9082 20.4851 12.3994 24.0793 16.7045 24.0793C16.8937 24.0793 17.0771 24.0734 17.2605 24.0557C13.2134 23.7606 10.0261 20.2904 10.0261 16.0529C10.0261 11.8154 13.2191 8.34507 17.2605 8.04998V8.04407Z"
-        fill="#8c86fc" style={{ opacity: arcs.inner ? 0.72 : 0.12, transition: "opacity 120ms ease" }} />
-    </svg>
-  );
-}
-
-function useConstellationAnim(running: boolean) {
-  const [arcs, setArcs] = useState<ArcState>({ outer: false, middle: false, inner: false });
-  const timerRefs = useRef<ReturnType<typeof setTimeout>[]>([]);
-  const clearAll = () => { timerRefs.current.forEach(clearTimeout); timerRefs.current = []; };
-  const all = (lit: boolean) => setArcs({ outer: lit, middle: lit, inner: lit });
-  const setO = (lit: boolean) => setArcs(s => ({ ...s, outer: lit }));
-  const setM = (lit: boolean) => setArcs(s => ({ ...s, middle: lit }));
-  const setI = (lit: boolean) => setArcs(s => ({ ...s, inner: lit }));
-  useEffect(() => {
-    if (!running) { clearAll(); all(false); return; }
-    let cancelled = false;
-    function loop() {
-      if (cancelled) return;
-      const timers: ReturnType<typeof setTimeout>[] = [];
-      let t = 80;
-      const q = (delay: number, fn: () => void) => { t += delay; const id = setTimeout(() => { if (!cancelled) fn(); }, t); timers.push(id); };
-      all(false);
-      q(80,  () => setO(true));  q(240, () => setM(true));  q(240, () => setI(true));
-      q(600, () => {});          q(180, () => all(false));   q(380, () => {});
-      q(140, () => all(true));   q(280, () => all(false));   q(200, () => all(true));
-      q(280, () => all(false));  q(320, () => {});
-      q(80,  () => { all(false); setO(true); });
-      q(220, () => { setO(false); setM(true); });
-      q(220, () => { setM(false); setI(true); });
-      q(220, () => { setI(false); });
-      q(140, () => all(true)); q(420, () => all(false)); q(380, () => loop());
-      timerRefs.current = timers;
-    }
-    loop();
-    return () => { cancelled = true; clearAll(); setArcs({ outer: false, middle: false, inner: false }); };
-  }, [running]); // eslint-disable-line react-hooks/exhaustive-deps
-  return arcs;
-}
-
-// ─── File helpers ─────────────────────────────────────────────────────────────
-
-/** Read a File as a base64 string (no data-URL prefix) */
-async function fileToBase64(file: File): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => {
-      const result = reader.result as string;
-      resolve(result.split(",")[1] ?? "");
-    };
-    reader.onerror = reject;
-    reader.readAsDataURL(file);
-  });
-}
-
-/** Parse an Excel file to a readable text representation using xlsx */
-async function parseExcelToText(file: File): Promise<string> {
-  try {
-    const xlsx = await import("xlsx");
-    const buf = await file.arrayBuffer();
-    const wb = xlsx.read(buf, { type: "array" });
-    const lines: string[] = [`[Excel file: ${file.name}]`];
-    for (const sheetName of wb.SheetNames) {
-      const ws = wb.Sheets[sheetName];
-      const csv = xlsx.utils.sheet_to_csv(ws);
-      if (csv.trim()) lines.push(`\nSheet: ${sheetName}\n${csv}`);
-    }
-    return lines.join("\n");
-  } catch {
-    return `[Excel file: ${file.name} — could not parse]`;
-  }
-}
-
-// ─── SSE streaming hook ────────────────────────────────────────────────────────
-function useAgentStream() {
-  const [streaming, setStreaming] = useState(false);
-  const abortRef = useRef<AbortController | null>(null);
-  const streamMessage = useCallback(
-    async (
-      messages: ApiMessage[],
-      ctx: ProjectContextPayload,
-      onDelta:  (d: string) => void,
-      onTool:   (name: string, input: Record<string, unknown>) => void,
-      onDone:   () => void,
-      onError:  (msg: string) => void,
-      forceTool?: string,
-    ) => {
-      abortRef.current?.abort();
-      abortRef.current = new AbortController();
-      setStreaming(true);
-      try {
-        const res = await fetch("/api/agent/stream", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          signal: abortRef.current.signal,
-          body: JSON.stringify({ messages, projectContext: ctx, ...(forceTool ? { forceTool } : {}) }),
-        });
-        if (!res.ok || !res.body) { onError(`Server error ${res.status}`); return; }
-        const reader = res.body.getReader();
-        const dec = new TextDecoder();
-        let buf = "";
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
-          buf += dec.decode(value, { stream: true });
-          const lines = buf.split("\n"); buf = lines.pop() ?? "";
-          for (const line of lines) {
-            if (!line.startsWith("data: ")) continue;
-            const raw = line.slice(6).trim(); if (!raw) continue;
-            let ev: Record<string, unknown>;
-            try { ev = JSON.parse(raw); } catch { continue; }
-            if (ev.type === "text_delta")   onDelta(ev.delta as string);
-            else if (ev.type === "tool_result") onTool(ev.name as string, ev.input as Record<string, unknown>);
-            else if (ev.type === "done")    onDone();
-            else if (ev.type === "error")   onError(ev.message as string);
-          }
-        }
-      } catch (err) {
-        if ((err as Error).name !== "AbortError") onError(String(err));
-      } finally { setStreaming(false); }
-    }, []);
-  const stop = useCallback(() => { abortRef.current?.abort(); setStreaming(false); }, []);
-  return { streaming, setStreaming, streamMessage, stop };
-}
-
-// ─── Markdown renderer ────────────────────────────────────────────────────────
-function inlineMarkdown(text: string): React.ReactNode[] {
-  // Split on **bold** and render accordingly
-  const parts = text.split(/(\*\*[^*]+\*\*)/g);
-  return parts.map((p, i) =>
-    p.startsWith("**") && p.endsWith("**")
-      ? <strong key={i} style={{ fontWeight: 600, color: "#1f1d25" }}>{p.slice(2, -2)}</strong>
-      : p
-  );
-}
-
-function MarkdownContent({ text }: { text: string }) {
-  const lines = text.split("\n");
-  const nodes: React.ReactNode[] = [];
-  let i = 0;
-
-  while (i < lines.length) {
-    const line = lines[i];
-
-    // Detect table block — starts with |
-    if (line.trim().startsWith("|")) {
-      const tableLines: string[] = [];
-      while (i < lines.length && lines[i].trim().startsWith("|")) {
-        tableLines.push(lines[i]);
-        i++;
-      }
-      // Parse rows, skipping separator rows (---|---)
-      const rows = tableLines
-        .filter(l => !/^\s*\|[\s\-|]+\|\s*$/.test(l))
-        .map(l =>
-          l.trim().replace(/^\|/, "").replace(/\|$/, "").split("|").map(c => c.trim())
-        );
-      if (rows.length > 0) {
-        const [header, ...body] = rows;
-        nodes.push(
-          <div key={`tbl-${i}`} className="overflow-x-auto my-[8px]">
-            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 11.5 }}>
-              <thead>
-                <tr style={{ background: "rgba(71,59,171,0.06)", borderBottom: "1.5px solid rgba(71,59,171,0.18)" }}>
-                  {header.map((cell, ci) => (
-                    <th key={ci} style={{ padding: "5px 10px", textAlign: "left", fontWeight: 600, color: "#473bab", whiteSpace: "nowrap", letterSpacing: "0.3px" }}>
-                      {inlineMarkdown(cell)}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {body.map((row, ri) => (
-                  <tr key={ri} style={{ borderBottom: "1px solid rgba(0,0,0,0.06)", background: ri % 2 === 1 ? "rgba(0,0,0,0.015)" : "transparent" }}>
-                    {row.map((cell, ci) => (
-                      <td key={ci} style={{ padding: "5px 10px", color: "#1f1d25", whiteSpace: "nowrap" }}>
-                        {inlineMarkdown(cell)}
-                      </td>
-                    ))}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        );
-      }
-      continue;
-    }
-
-    // ### heading
-    if (line.startsWith("### ")) {
-      nodes.push(
-        <p key={i} style={{ fontWeight: 700, fontSize: 13, color: "#1f1d25", marginBottom: 2, marginTop: 6 }}>
-          {inlineMarkdown(line.slice(4))}
-        </p>
-      );
-      i++; continue;
-    }
-
-    // ## heading
-    if (line.startsWith("## ")) {
-      nodes.push(
-        <p key={i} style={{ fontWeight: 700, fontSize: 13.5, color: "#1f1d25", marginBottom: 3, marginTop: 8 }}>
-          {inlineMarkdown(line.slice(3))}
-        </p>
-      );
-      i++; continue;
-    }
-
-    // Empty line → small gap
-    if (line.trim() === "") {
-      nodes.push(<div key={i} style={{ height: 6 }} />);
-      i++; continue;
-    }
-
-    // Regular line
-    nodes.push(
-      <p key={i} style={{ fontSize: 13, color: "#1f1d25", lineHeight: 1.6, letterSpacing: "0.17px" }}>
-        {inlineMarkdown(line)}
-      </p>
-    );
-    i++;
-  }
-
-  return <div className="flex flex-col gap-[1px]">{nodes}</div>;
-}
-
-// ─── Response action bar ───────────────────────────────────────────────────────
-function ResponseActions({ text }: { text: string }) {
-  const [liked,    setLiked]    = useState<boolean | null>(null);
-  const [copied,   setCopied]   = useState(false);
-
-  const handleCopy = () => {
-    navigator.clipboard.writeText(text).catch(() => {});
-    setCopied(true); setTimeout(() => setCopied(false), 1800);
-  };
-  const handleDownload = () => {
-    const blob = new Blob([text], { type: "text/plain" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a"); a.href = url; a.download = "constellation-response.txt";
-    a.click(); URL.revokeObjectURL(url);
-  };
-  const handleShare = () => {
-    if (navigator.share) navigator.share({ text }).catch(() => {});
-    else handleCopy();
-  };
-
-  const btn = "flex items-center justify-center w-[26px] h-[26px] rounded-full hover:bg-black/6 transition-colors cursor-pointer text-[#9c99a9] hover:text-[#686576]";
-
-  return (
-    <div className="flex items-center gap-[1px] mt-[6px] ml-[32px]">
-      <button onClick={handleCopy} className={btn} title="Copy">
-        {copied
-          ? <Check size={12} className="text-[#2e9c5e]" strokeWidth={2.5} />
-          : <Copy size={12} strokeWidth={1.7} />}
-      </button>
-      <button onClick={() => setLiked(liked === true ? null : true)} className={cn(btn, liked === true && "text-[#473bab]")} title="Like">
-        <ThumbsUp size={12} strokeWidth={1.7} />
-      </button>
-      <button onClick={() => setLiked(liked === false ? null : false)} className={cn(btn, liked === false && "text-[#dc2626]")} title="Dislike">
-        <ThumbsDown size={12} strokeWidth={1.7} />
-      </button>
-      <button className={btn} title="Edit">
-        <Pencil size={12} strokeWidth={1.7} />
-      </button>
-      <button onClick={handleDownload} className={btn} title="Download">
-        <Download size={12} strokeWidth={1.7} />
-      </button>
-      <button onClick={handleShare} className={btn} title="Share">
-        <Share2 size={12} strokeWidth={1.7} />
-      </button>
-    </div>
-  );
-}
-
-// ─── Confirmed chip ────────────────────────────────────────────────────────────
-function ConfirmedChip({ label }: { label: string }) {
-  return (
-    <div className="inline-flex items-center gap-[6px] px-[10px] py-[5px] rounded-full"
-      style={{ background: "rgba(35,150,90,0.08)", border: "1px solid rgba(35,150,90,0.18)", color: "#1e7a48" }}>
-      <div className="w-[16px] h-[16px] rounded-full flex items-center justify-center shrink-0"
-        style={{ background: "#2e9c5e" }}>
-        <Check size={9} color="white" strokeWidth={3} />
-      </div>
-      <span style={{ fontSize: 12, fontWeight: 500, letterSpacing: "0.17px" }}>
-        {label}
-      </span>
-    </div>
-  );
-}
+// ─── Confirmed chip → extracted to ./agent/AgentSelects.tsx
 
 // ─── Shared constants (mirrors ProjectsModule) ────────────────────────────────
 const AVAILABLE_ACCOUNTS = ["Honda of Anywhere", "BMW Seattle", "Spiriva Pharma", "Multiple Brands Inc.", "Honda City"];
@@ -626,812 +311,15 @@ const MOCK_CONTACTS = [
   { name: "Jenni Eckhart",   email: "jenni.eckhart@helloconstellation.com", group: "internal" as const },
 ];
 
-// ─── Shared custom select (replaces native <select>) ─────────────────────────
+// ─── AgentSelect, AgentAddSelect, WhyThese → extracted to ./agent/AgentSelects.tsx
 
-/** Standard select — shows current value, opens custom dropdown menu. */
-function AgentSelect({
-  value, onChange, options, placeholder, f,
-}: {
-  value: string;
-  onChange: (v: string) => void;
-  options: { value: string; label: string }[];
-  placeholder?: string;
-  f: React.CSSProperties;
-}) {
-  const label = options.find(o => o.value === value)?.label ?? placeholder ?? "Select";
-  const menuCls = "z-[500] bg-white rounded-xl shadow-xl border border-[rgba(0,0,0,0.1)] p-1 animate-in fade-in-0 zoom-in-95 min-w-[var(--radix-dropdown-menu-trigger-width)]";
-  const itemCls = "flex items-center gap-2 px-[10px] py-[6px] rounded-lg text-[12px] text-[#1f1d25] cursor-pointer outline-none select-none data-[highlighted]:bg-[#f5f4f8]";
-  return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <button
-          className="w-full flex items-center px-[10px] py-[7px] rounded-[8px] text-[12px] border border-[rgba(0,0,0,0.12)] bg-[#fafafb] outline-none transition-all hover:border-[#b0b0b5] focus:border-[#473bab] focus:ring-1 focus:ring-[rgba(71,59,171,0.15)] cursor-pointer text-left"
-        >
-          <span className="flex-1 truncate" style={{ color: value ? "#1f1d25" : "#9c99a9" }}>{label}</span>
-          <ChevronDown size={10} className="shrink-0 text-[#9c99a9] ml-1" />
-        </button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent className={menuCls} sideOffset={4} align="start">
-        {options.map(o => (
-          <DropdownMenuItem key={o.value} className={itemCls} onClick={() => onChange(o.value)}>
-            <span className="flex-1">{o.label}</span>
-            {o.value === value && <Check size={11} strokeWidth={2.5} className="text-[#473bab] shrink-0" />}
-          </DropdownMenuItem>
-        ))}
-      </DropdownMenuContent>
-    </DropdownMenu>
-  );
-}
+// ─── Name deduplication helper → extracted to ./agent/utils.ts
 
-/** "Add another" variant — dashed border, purple text, Plus icon trigger. */
-function AgentAddSelect({
-  onAdd, options, placeholder, f,
-}: {
-  onAdd: (v: string) => void;
-  options: { value: string; label: string }[];
-  placeholder?: string;
-  f: React.CSSProperties;
-}) {
-  if (options.length === 0) return null;
-  const menuCls = "z-[500] bg-white rounded-xl shadow-xl border border-[rgba(0,0,0,0.1)] p-1 animate-in fade-in-0 zoom-in-95 min-w-[var(--radix-dropdown-menu-trigger-width)] max-h-[240px] overflow-y-auto";
-  const itemCls = "flex items-center gap-2 px-[10px] py-[6px] rounded-lg text-[11.5px] text-[#1f1d25] cursor-pointer outline-none select-none data-[highlighted]:bg-[#f5f4f8]";
-  return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <button
-          className="w-full flex items-center gap-[6px] px-[10px] py-[6px] mt-[2px] rounded-[8px] text-[11px] text-[#473bab] border border-dashed border-[rgba(71,59,171,0.35)] bg-transparent cursor-pointer hover:bg-[rgba(71,59,171,0.04)] transition-colors"
-        >
-          <Plus size={10} className="shrink-0" />
-          <span className="flex-1 text-left">{placeholder ?? "+ Add another…"}</span>
-          <ChevronDown size={9} className="shrink-0 opacity-60" />
-        </button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent className={menuCls} sideOffset={4} align="start">
-        {options.map(o => (
-          <DropdownMenuItem key={o.value} className={itemCls} onClick={() => onAdd(o.value)}>
-            {o.label}
-          </DropdownMenuItem>
-        ))}
-      </DropdownMenuContent>
-    </DropdownMenu>
-  );
-}
+// ─── Proactive widgets → extracted to ./agent/ProactiveWidgets.tsx
 
-// ─── "Why these?" expandable rationale box — accordion animation ──────────────
-function WhyThese({ content }: { content: React.ReactNode }) {
-  const [open, setOpen] = useState(false);
-
-  return (
-    <div className="mt-[6px]">
-      <button
-        onClick={() => setOpen(o => !o)}
-        className="flex items-center gap-[4px] text-[11px] text-[#473bab] cursor-pointer transition-colors hover:opacity-75"
-      >
-        <motion.span
-          animate={{ rotate: open ? 90 : 0 }}
-          transition={{ duration: 0.22, ease: [0.25, 0.1, 0.25, 1] }}
-          style={{ display: "inline-block", lineHeight: 1, fontSize: 13 }}
-        >
-          ›
-        </motion.span>
-        Why these?
-      </button>
-      <AnimatePresence initial={false}>
-        {open && (
-          <motion.div
-            key="why-content"
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: "auto", opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.28, ease: [0.25, 0.1, 0.25, 1] }}
-            style={{ overflow: "hidden" }}
-          >
-            <div className="mt-[6px] px-[10px] py-[9px] rounded-[10px] border border-[rgba(71,59,171,0.14)]"
-              style={{ background: "rgba(71,59,171,0.04)" }}>
-              {content}
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </div>
-  );
-}
-
-// ─── Name deduplication helper ─────────────────────────────────────────────────
-function deduplicateName(desired: string, existing: string[]): string {
-  const norm = (s: string) => s.trim().toLowerCase();
-  const set = new Set(existing.map(norm));
-  if (!set.has(norm(desired))) return desired;
-  let i = 1;
-  while (set.has(norm(`${desired} ${i}`))) i++;
-  return `${desired} ${i}`;
-}
-
-// ─── Proactive Auto-Apply Progress Bar ───────────────────────────────────────
-function ProactiveAutoApplyBar({ delay, onCancel }: { delay: number; onCancel: () => void }) {
-  const [progress, setProgress] = useState(0);
-  const startRef = useRef(Date.now());
-
-  useEffect(() => {
-    startRef.current = Date.now();
-    let rafId: number;
-    const tick = () => {
-      const p = Math.min((Date.now() - startRef.current) / delay * 100, 100);
-      setProgress(p);
-      if (p < 100) rafId = requestAnimationFrame(tick);
-    };
-    rafId = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(rafId);
-  }, [delay]);
-
-  return (
-    <div className="px-[14px] py-[8px] border-t border-[rgba(71,59,171,0.1)] bg-[#f8f7ff]">
-      <div className="flex items-center justify-between mb-[5px]">
-        <span style={{ fontSize: 10, color: "#686576" }}>Applying automatically…</span>
-        <button onClick={onCancel} style={{ fontSize: 10, color: "#473bab", fontWeight: 500 }} className="cursor-pointer hover:text-[#6356e1] transition-colors">
-          Edit manually
-        </button>
-      </div>
-      <div className="h-[3px] bg-[rgba(71,59,171,0.12)] rounded-full overflow-hidden">
-        <div className="h-full rounded-full" style={{ width: `${progress}%`, background: "linear-gradient(90deg, #473bab, #6356e1)", transition: "none" }} />
-      </div>
-    </div>
-  );
-}
-
-// ─── Proactive Questions Card ─────────────────────────────────────────────────
-const PROACTIVE_OPTIONS = {
-  goal:       ["Brand Awareness", "Conquest", "Retention", "Service Drive"] as const,
-  timeline:   ["Weekend Event", "Month-long", "Seasonal", "Flexible"] as const,
-  offerFocus: ["Lease-heavy", "Finance-heavy", "Mixed", "No preference"] as const,
-};
-
-function ProactiveQuestionsCard({
-  input, applied, onSubmit,
-}: {
-  input: ProactiveQuestionsInput;
-  applied: boolean;
-  onSubmit: (goal: string, timeline: string, offerFocus: string) => void;
-}) {
-
-  const [goal,       setGoal]       = useState<string | null>(null);
-  const [timeline,   setTimeline]   = useState<string | null>(null);
-  const [offerFocus, setOfferFocus] = useState<string | null>(null);
-
-  if (applied) {
-    return (
-      <div className="ml-[32px] mt-[4px]">
-        <ConfirmedChip label="Proactive build started" />
-      </div>
-    );
-  }
-
-  const canStart = goal !== null && timeline !== null && offerFocus !== null;
-  const introLine = input.intro_line ?? "I've reviewed your catalog and team data — let me ask three quick questions to guide my selections.";
-
-  function ChipRow({ label, options, value, onChange }: { label: string; options: readonly string[]; value: string | null; onChange: (v: string) => void }) {
-    return (
-      <div>
-        <p style={{ fontSize: 10, fontWeight: 600, color: "#9c99a9", textTransform: "uppercase" as const, letterSpacing: "0.06em", marginBottom: 6 }}>{label}</p>
-        <div className="flex flex-wrap gap-[6px]">
-          {options.map(opt => (
-            <button key={opt} onClick={() => onChange(opt)} style={{ fontSize: 11.5 }}
-              className={["px-[10px] py-[5px] rounded-full border font-medium transition-all cursor-pointer",
-                value === opt ? "bg-[#473bab] border-[#473bab] text-white" : "bg-white border-[rgba(0,0,0,0.12)] text-[#686576] hover:border-[#473bab] hover:text-[#473bab]"
-              ].join(" ")}>
-              {opt}
-            </button>
-          ))}
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}
-      className="ml-[32px] mt-[4px] rounded-[14px] border border-[rgba(0,0,0,0.1)] bg-white overflow-hidden"
-      style={{ boxShadow: "0 2px 12px rgba(0,0,0,0.06)" }}>
-      <div className="px-[14px] pt-[10px] pb-[8px] border-b border-[rgba(0,0,0,0.06)] bg-[#f8f7ff] flex items-center gap-[6px]">
-        <div className="w-[18px] h-[18px] rounded-full flex items-center justify-center shrink-0" style={{ background: "linear-gradient(135deg, #473bab, #6356e1)" }}>
-          <svg width="9" height="9" viewBox="0 0 9 9" fill="none"><path d="M4.5 1v7M1 4.5h7" stroke="white" strokeWidth="1.8" strokeLinecap="round"/></svg>
-        </div>
-        <span style={{ fontSize: 11.5, fontWeight: 600, color: "#473bab", letterSpacing: "0.3px" }}>Proactive Campaign Build</span>
-      </div>
-      <div className="flex flex-col gap-[14px] px-[14px] py-[12px]">
-        <p style={{ fontSize: 12, color: "#686576", lineHeight: 1.5 }}>{introLine}</p>
-        <ChipRow label="Campaign goal" options={PROACTIVE_OPTIONS.goal} value={goal} onChange={setGoal} />
-        <ChipRow label="Timeline" options={PROACTIVE_OPTIONS.timeline} value={timeline} onChange={setTimeline} />
-        <ChipRow label="Offer focus" options={PROACTIVE_OPTIONS.offerFocus} value={offerFocus} onChange={setOfferFocus} />
-      </div>
-      <div className="px-[14px] pb-[12px] flex justify-end">
-        <button onClick={() => { if (canStart) onSubmit(goal!, timeline!, offerFocus!); }} disabled={!canStart}
-          className="px-[16px] py-[8px] rounded-full text-white text-[12px] font-medium cursor-pointer transition-opacity hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed"
-          style={{ background: "linear-gradient(135deg, #473bab 0%, #6356e1 100%)" }}>
-          Start Proactive Build →
-        </button>
-      </div>
-    </motion.div>
-  );
-}
-
-// ─── Setup Project Card ────────────────────────────────────────────────────────
-interface SetupProjectCardProps {
-  input: SetupInput;
-  existingNames?: string[];
-  onApply: (name: string, account: string, oem: string, startDate: string, endDate: string, owner: string, platforms: string[]) => void;
-  onDismiss: () => void;
-  proactive?: boolean;
-}
-function SetupProjectCard({ input, existingNames = [], onApply, onDismiss, proactive }: SetupProjectCardProps) {
-  const dedupedName = deduplicateName(input.project_name, existingNames);
-  const [name,      setName]      = useState(dedupedName);
-  const [account,   setAccount]   = useState(input.account ?? "");
-  const [oem,       setOem]       = useState(input.oem);
-  const [startDate, setStartDate] = useState(input.start_date);
-  const [endDate,   setEndDate]   = useState(input.end_date);
-  const [ownerId,   setOwnerId]   = useState(input.owner ? (PROJECT_OWNERS.find(o => o.name === input.owner)?.id ?? "jorge-verlindo") : "jorge-verlindo");
-  // Normalize agent-supplied platform strings (labels or IDs) → PLATFORM_OPTIONS ids
-  const normalizePlatformIds = (raw: string[]): string[] =>
-    raw.flatMap(val => {
-      if (PLATFORM_OPTIONS.some(p => p.id === val)) return [val]; // already a valid ID
-      const lower = val.toLowerCase().replace(/[-\s]/g, "");
-      const match = PLATFORM_OPTIONS.find(p =>
-        p.id.replace(/-/g, "") === lower ||
-        p.label.toLowerCase().replace(/[-\s]/g, "") === lower
-      );
-      return match ? [match.id] : [];
-    });
-  const [platforms, setPlatforms] = useState<string[]>(normalizePlatformIds(input.platforms ?? []));
-  const [applied,         setApplied]         = useState(false);
-  const [nameError,       setNameError]       = useState("");
-  const [startDateError,  setStartDateError]  = useState("");
-  const [endDateError,    setEndDateError]    = useState("");
-  const wasDeduplicated = dedupedName !== input.project_name;
-  const [manualMode, setManualMode] = useState(false);
-  const autoApplyRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  // Proactive auto-apply
-  useEffect(() => {
-    if (!proactive || manualMode || applied) return;
-    const owner = PROJECT_OWNERS.find(o => o.id === ownerId);
-    autoApplyRef.current = setTimeout(() => {
-      setApplied(true);
-      onApply(name, account, oem, startDate, endDate, owner?.name ?? "", platforms);
-    }, 2000);
-    return () => { if (autoApplyRef.current) clearTimeout(autoApplyRef.current); };
-  }, [proactive, manualMode, applied]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  if (applied) {
-    return (
-      <div className="ml-[32px] mt-[4px]">
-        <ConfirmedChip label={`Project "${name}" created`} />
-      </div>
-    );
-  }
-
-  const inputCls = "w-full px-[10px] py-[7px] rounded-[8px] text-[12px] text-[#1f1d25] border border-[rgba(0,0,0,0.12)] bg-[#fafafb] outline-none focus:border-[#473bab] focus:ring-1 focus:ring-[rgba(71,59,171,0.15)] transition-all";
-  const labelCls = "text-[10px] font-semibold uppercase tracking-[0.06em] text-[#9c99a9] mb-[4px]";
-
-  const menuCls = "z-[500] bg-white rounded-xl shadow-xl border border-[rgba(0,0,0,0.1)] p-1 animate-in fade-in-0 zoom-in-95 min-w-[var(--radix-dropdown-menu-trigger-width)]";
-  const itemCls = "flex items-center gap-2 px-[10px] py-[6px] rounded-lg text-[12px] text-[#1f1d25] cursor-pointer outline-none select-none data-[highlighted]:bg-[#f5f4f8]";
-
-  const selectedOwner = PROJECT_OWNERS.find(o => o.id === ownerId);
-  const togglePlatform = (p: string) =>
-    setPlatforms(prev => prev.includes(p) ? prev.filter(x => x !== p) : [...prev, p]);
-
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}
-      className="ml-[32px] mt-[4px] rounded-[14px] border border-[rgba(0,0,0,0.1)] bg-white overflow-hidden"
-      style={{ boxShadow: "0 2px 12px rgba(0,0,0,0.06)" }}
-    >
-      {/* Header */}
-      <div className="px-[14px] pt-[10px] pb-[8px] border-b border-[rgba(0,0,0,0.06)] bg-[#fafafa] flex items-center gap-[6px]">
-        <div className="w-[18px] h-[18px] rounded-full flex items-center justify-center shrink-0"
-          style={{ background: "linear-gradient(135deg, #473bab, #6356e1)" }}>
-          <Plus size={9} color="white" strokeWidth={3} />
-        </div>
-        <span style={{ fontSize: 11.5, fontWeight: 600, color: "#473bab", letterSpacing: "0.3px" }}>
-          New project setup
-        </span>
-      </div>
-
-      <div className="flex flex-col gap-[10px] px-[14px] py-[12px]">
-        {/* Name */}
-        <div>
-          <p className={labelCls}>Project name</p>
-          <input type="text" value={name} onChange={e => { setName(e.target.value); setNameError(""); }}
-            onFocus={e => e.target.select()}
-            placeholder="e.g. Honda Summer Lease Event"
-            className={inputCls} />
-          {nameError ? (
-            <p className="mt-[4px]" style={{ fontSize: 10, color: "#D2323F" }}>{nameError}</p>
-          ) : (
-            <p className="mt-[4px]" style={{ fontSize: 10, color: "#9c99a9", fontStyle: "italic" }}>
-              {wasDeduplicated
-                ? `"${input.project_name}" already exists — adjusted to avoid a collision. Edit to customise.`
-                : "Suggested name — edit to customise."}
-            </p>
-          )}
-        </div>
-
-        {/* Account + Brand row */}
-        <div className="flex gap-[8px]">
-          <div className="flex-1">
-            <p className={labelCls}>Account</p>
-            <AgentSelect
-              value={account} onChange={setAccount} f={f}
-              placeholder="Select account"
-              options={AVAILABLE_ACCOUNTS.map(a => ({ value: a, label: a }))}
-            />
-          </div>
-          <div className="flex-1">
-            <p className={labelCls}>Brand</p>
-            <AgentSelect
-              value={oem} onChange={setOem} f={f}
-              options={AVAILABLE_BRANDS.map(b => ({ value: b, label: b }))}
-            />
-          </div>
-        </div>
-
-        {/* Owner */}
-        <div>
-          <p className={labelCls}>Owner</p>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <button
-                className="w-full flex items-center gap-[8px] px-[10px] py-[7px] rounded-[8px] text-[12px] border border-[rgba(0,0,0,0.12)] bg-[#fafafb] outline-none transition-all hover:border-[#b0b0b5] focus:border-[#473bab] focus:ring-1 focus:ring-[rgba(71,59,171,0.15)] cursor-pointer text-left"
-              >
-                {selectedOwner ? (
-                  <>
-                    <AvatarInitials initials={selectedOwner.initials} size={18} bgColor={selectedOwner.color} />
-                    <span className="flex-1 text-[#1f1d25] truncate">{selectedOwner.name}</span>
-                  </>
-                ) : (
-                  <span className="flex-1 text-[#9c99a9]">Select owner</span>
-                )}
-                <ChevronDown size={10} className="shrink-0 text-[#9c99a9]" />
-              </button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent className={menuCls + " max-h-[240px] overflow-y-auto"} sideOffset={4} align="start">
-              {PROJECT_OWNERS.map(owner => (
-                <DropdownMenuItem key={owner.id} className={itemCls} onClick={() => setOwnerId(owner.id)}>
-                  <AvatarInitials initials={owner.initials} size={20} bgColor={owner.color} />
-                  <div className="flex-1 min-w-0">
-                    <p style={{ fontSize: 12 }}>{owner.name}</p>
-                    <p style={{ fontSize: 10, color: "#9c99a9" }} className="truncate">{owner.email}</p>
-                  </div>
-                  {owner.id === ownerId && <Check size={11} strokeWidth={2.5} className="text-[#473bab] shrink-0" />}
-                </DropdownMenuItem>
-              ))}
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
-
-        {/* Dates row */}
-        <div className="flex gap-[8px]">
-          <div className="flex-1">
-            <p className={labelCls}>Start date</p>
-            <input type="text" value={startDate}
-              onChange={e => { setStartDate(e.target.value); setStartDateError(""); }}
-              className={inputCls + (startDateError ? " border-[#D2323F]!" : "")} placeholder="Jun 1, 2026" />
-            {startDateError && (
-              <p className="mt-[4px]" style={{ fontSize: 10, color: "#D2323F" }}>{startDateError}</p>
-            )}
-          </div>
-          <div className="flex-1">
-            <p className={labelCls}>End date</p>
-            <input type="text" value={endDate}
-              onChange={e => { setEndDate(e.target.value); setEndDateError(""); }}
-              className={inputCls + (endDateError ? " border-[#D2323F]!" : "")} placeholder="Jun 30, 2026" />
-            {endDateError && (
-              <p className="mt-[4px]" style={{ fontSize: 10, color: "#D2323F" }}>{endDateError}</p>
-            )}
-          </div>
-        </div>
-
-        {/* Platforms */}
-        <div>
-          <p className={labelCls}>Platforms</p>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <button
-                className="w-full flex flex-wrap items-center gap-[4px] min-h-[34px] px-[8px] py-[5px] rounded-[8px] text-[12px] border border-[rgba(0,0,0,0.12)] bg-[#fafafb] outline-none transition-all hover:border-[#b0b0b5] focus:border-[#473bab] cursor-pointer text-left"
-              >
-                {platforms.length === 0 ? (
-                  <span className="flex-1 text-[#9c99a9]">Select platforms</span>
-                ) : (
-                  <div className="flex flex-wrap gap-[3px] flex-1 min-w-0">
-                    {platforms.map(id => {
-                      const p = PLATFORM_OPTIONS.find(o => o.id === id);
-                      if (!p) return null;
-                      return (
-                        <ChannelChip
-                          key={id}
-                          label={p.label}
-                          icon={p.icon}
-                          onRemove={() => togglePlatform(id)}
-                        />
-                      );
-                    })}
-                  </div>
-                )}
-                <ChevronDown size={10} className="shrink-0 text-[#9c99a9] ml-auto self-center" />
-              </button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent className={menuCls} sideOffset={4} align="start">
-              {PLATFORM_OPTIONS.map(p => {
-                const active = platforms.includes(p.id);
-                return (
-                  <DropdownMenuItem
-                    key={p.id}
-                    className={itemCls}
-                    onSelect={e => { e.preventDefault(); togglePlatform(p.id); }}
-                  >
-                    <span
-                      className="w-[14px] h-[14px] rounded-[3px] border flex items-center justify-center shrink-0 transition-all"
-                      style={{ background: active ? "#473bab" : "white", borderColor: active ? "#473bab" : "rgba(0,0,0,0.2)" }}
-                    >
-                      {active && <Check size={9} strokeWidth={3} color="white" />}
-                    </span>
-                    <img src={p.icon} alt="" className="w-[12px] h-[12px] shrink-0 object-contain" />
-                    <span>{p.label}</span>
-                  </DropdownMenuItem>
-                );
-              })}
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
-
-        {/* CTAs */}
-        <div className="flex items-center gap-[8px] pt-[2px]">
-          <button
-            onClick={() => {
-              const norm = (s: string) => s.trim().toLowerCase();
-              let hasError = false;
-              if ((existingNames ?? []).some(n => norm(n) === norm(name))) {
-                setNameError("Already exists — choose a different name");
-                hasError = true;
-              } else {
-                setNameError("");
-              }
-              if (!startDate.trim()) {
-                setStartDateError("Start date is required");
-                hasError = true;
-              } else {
-                setStartDateError("");
-              }
-              if (!endDate.trim()) {
-                setEndDateError("End date is required");
-                hasError = true;
-              } else {
-                setEndDateError("");
-              }
-              if (hasError) return;
-              const ownerName = PROJECT_OWNERS.find(o => o.id === ownerId)?.name ?? "Jorge Verlindo";
-              onApply(name, account, oem, startDate, endDate, ownerName, platforms);
-              setApplied(true);
-            }}
-            disabled={!name.trim()}
-            className="flex-1 py-[8px] rounded-full text-[13px] font-medium tracking-[0.46px] text-white transition-all cursor-pointer disabled:opacity-40"
-            style={{ background: "linear-gradient(99deg, #473bab 0%, #6356e1 100%)" }}
-          >
-            Create project
-          </button>
-          <button onClick={onDismiss}
-            className="px-[14px] py-[8px] rounded-full text-[13px] text-[#686576] hover:bg-black/5 transition-colors cursor-pointer">
-            Dismiss
-          </button>
-        </div>
-      </div>
-      {proactive && !manualMode && !applied && (
-        <ProactiveAutoApplyBar delay={2000} onCancel={() => { if (autoApplyRef.current) clearTimeout(autoApplyRef.current); setManualMode(true); }} />
-      )}
-    </motion.div>
-  );
-}
-
-// ─── Offers Proposal Card ──────────────────────────────────────────────────────
-interface OffersCardProps {
-  input: OffersInput;
-  context: ProjectContextPayload | null;
-  onApply: (offerIds: string[], editedOfferIds: string[]) => void;
-  onDismiss: () => void;
-  proactive?: boolean;
-  dispatchAction?: (a: AgentActionPayload) => void;
-}
-function OffersProposalCard({ input, context, onApply, onDismiss, proactive, dispatchAction }: OffersCardProps) {
-  const [offerIds, setOfferIds] = useState<string[]>(input.offer_ids);
-  const [applied,  setApplied]  = useState(false);
-  const [customizeMode, setCustomizeMode] = useState(false);
-  const [customizations, setCustomizations] = useState<Record<string, {
-    monthlyPayment: number; term: number; totalDueAtSigning: number;
-  }>>({});
-  // Tracks which offers had "Apply" clicked — those switch to regular (non-recommendation) card
-  const [appliedCustomizations, setAppliedCustomizations] = useState<Set<string>>(new Set());
-  const offers = context?.availableOffers ?? [];
-  const [manualMode, setManualMode] = useState(false);
-  const autoApplyRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  // Initialize customization values from catalog when customize mode opens
-  useEffect(() => {
-    if (!customizeMode) return;
-    setCustomizations(prev => {
-      const next = { ...prev };
-      for (const id of offerIds) {
-        if (!next[id]) {
-          const o = offers.find(x => x.id === id);
-          const full = offerLibrary.find(x => x.id === id);
-          next[id] = {
-            monthlyPayment: o?.monthlyPayment ?? 0,
-            term:           o?.term ?? 36,
-            totalDueAtSigning: (full as any)?.totalDueAtSigning ?? 0,
-          };
-        }
-      }
-      return next;
-    });
-  }, [customizeMode]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  // Handle field change with auto-recalculation of totalDueAtSigning
-  const handleCustomChange = useCallback((id: string, key: string, value: number) => {
-    setCustomizations(prev => {
-      const o   = offers.find(x => x.id === id);
-      const full = offerLibrary.find(x => x.id === id);
-      const orig = {
-        monthlyPayment:    o?.monthlyPayment    ?? 0,
-        term:              o?.term              ?? 36,
-        totalDueAtSigning: (full as any)?.totalDueAtSigning ?? 0,
-      };
-      const existing = prev[id] ?? orig;
-      const updated  = { ...existing, [key]: value };
-      // Auto-recalculate totalDueAtSigning proportionally when monthly or term changes
-      if (key === 'monthlyPayment' || key === 'term') {
-        const origRatio = orig.monthlyPayment * orig.term > 0
-          ? orig.totalDueAtSigning / (orig.monthlyPayment * orig.term)
-          : 0.22;
-        updated.totalDueAtSigning = Math.round(updated.monthlyPayment * updated.term * origRatio);
-      }
-      return { ...prev, [id]: updated };
-    });
-  }, [offers]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  useEffect(() => {
-    if (!proactive || manualMode || applied) return;
-    autoApplyRef.current = setTimeout(() => {
-      setApplied(true);
-      onApply(offerIds, [...appliedCustomizations]);
-    }, 2000);
-    return () => { if (autoApplyRef.current) clearTimeout(autoApplyRef.current); };
-  }, [proactive, manualMode, applied]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  // Scroll the main panel to the offers section when this card appears
-  useEffect(() => {
-    window.dispatchEvent(new CustomEvent(AGENT_SCROLL_TO_SECTION_EVENT, { detail: { section: "offers" } }));
-  }, []);
-
-  if (applied) {
-    return (
-      <div className="ml-[32px] mt-[4px]">
-        <ConfirmedChip label={`${offerIds.length} offer${offerIds.length !== 1 ? "s" : ""} added`} />
-      </div>
-    );
-  }
-
-  const labelCls = "text-[10px] font-semibold uppercase tracking-[0.06em] text-[#9c99a9] mb-[4px]";
-
-  return (
-    <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}
-      className="ml-[32px] mt-[4px] flex flex-col gap-[8px]">
-      {/* Rationale — free text, no outer box */}
-      <div className="pl-[2px]">
-        <p style={{ fontSize: 14, color: "#686576", lineHeight: 1.6, letterSpacing: "0.17px" }}>{input.rationale}</p>
-        <WhyThese content={
-          <div style={{ fontSize: 11, color: "#473bab", lineHeight: 1.6 }}>
-            <p style={{ fontWeight: 600, marginBottom: 4 }}>How I picked these</p>
-            <p style={{ marginBottom: 4 }}>I rank every offer in your inventory on two signals:</p>
-            <p style={{ marginBottom: 2 }}>• <strong>Aging</strong> — days each unit has been in stock. Older units get priority to move inventory.</p>
-            <p style={{ marginBottom: 4 }}>• <strong>PVI (Performance Value Index)</strong> — projected return per vehicle at its current price. Higher is better.</p>
-            <p>The offers with the best combined score for your brand made the cut.</p>
-          </div>
-        } />
-      </div>
-      {/* Offer cards list */}
-      <motion.div
-        className="flex flex-col gap-[6px]"
-        variants={{ hidden: {}, show: { transition: { staggerChildren: 0.08, delayChildren: 0.2 } } }}
-        initial="hidden"
-        animate="show"
-      >
-        {offerIds.map((id) => {
-          const o = offers.find(x => x.id === id);
-          if (!o) return null;
-          // Look up the full catalog entry to get the car image
-          const fullOffer = offerLibrary.find(x => x.id === o.id);
-          const custom = customizations[id];
-          const cardData: OfferCardData = {
-            id: o.id,
-            year: o.year,
-            make: o.make,
-            model: o.model,
-            trim: o.trim,
-            image: (fullOffer as any)?.image ?? "",
-            stock: o.stock,
-            offerType: o.offerType,
-            tags: (fullOffer as any)?.tags ?? [],
-            pvi: o.pvi,
-            aging: o.aging,
-            sales: (fullOffer as any)?.sales ?? 0,
-            inventory: (fullOffer as any)?.inventory ?? o.stock,
-            monthlyPayment: custom?.monthlyPayment ?? o.monthlyPayment,
-            term: custom?.term ?? o.term,
-            totalDueAtSigning: custom?.totalDueAtSigning ?? (fullOffer as any)?.totalDueAtSigning ?? 0,
-          };
-          const isApplied = appliedCustomizations.has(id);
-          return (
-            <motion.div key={id}
-              variants={{ hidden: { opacity: 0, y: 8 }, show: { opacity: 1, y: 0, transition: { duration: 0.22, ease: "easeOut" } } }}
-            >
-              <OfferCard
-                offer={cardData}
-                variant={isApplied ? "regular" : "recommendation"}
-                onDelete={() => setOfferIds(p => p.filter(x => x !== id))}
-              />
-              <AnimatePresence>
-                {customizeMode && (
-                  <motion.div
-                    initial={{ opacity: 0, height: 0 }}
-                    animate={{ opacity: 1, height: "auto" }}
-                    exit={{ opacity: 0, height: 0 }}
-                    className="overflow-hidden mt-[4px] px-[12px] py-[10px] rounded-[10px] bg-[rgba(71,59,171,0.04)] border border-[rgba(71,59,171,0.12)] flex flex-wrap gap-x-[16px] gap-y-[8px] items-end"
-                  >
-                    {[
-                      { key: "monthlyPayment",    label: "Monthly Payment ($)", val: custom?.monthlyPayment    ?? o.monthlyPayment },
-                      { key: "term",              label: "Term (mo)",           val: custom?.term              ?? o.term           },
-                      { key: "totalDueAtSigning", label: "Due at Signing ($)",  val: custom?.totalDueAtSigning ?? ((fullOffer as any)?.totalDueAtSigning ?? 0) },
-                    ].map(({ key, label, val }) => (
-                      <label key={key} style={{ fontSize: 11 }} className="flex flex-col gap-[3px] text-[#686576]">
-                        {label}
-                        <input
-                          type="number"
-                          value={val}
-                          onChange={e => handleCustomChange(id, key, Number(e.target.value))}
-                          className="w-[90px] px-[8px] py-[4px] rounded-[6px] border border-[rgba(0,0,0,0.12)] text-[12px] text-[#1f1d25] bg-white outline-none focus:border-[#473bab] focus:ring-1 focus:ring-[rgba(71,59,171,0.15)]"
-                        />
-                      </label>
-                    ))}
-                    <button
-                      onClick={() => {
-                        setAppliedCustomizations(prev => new Set([...prev, id]));
-                        const c = customizations[id];
-                        if (c) {
-                          dispatchAction({ action: "edit_offer", offerId: id, patches: c });
-                        }
-                      }}
-                      className="px-[12px] py-[4px] rounded-full text-[12px] font-medium text-white cursor-pointer transition-all"
-                      style={{ background: "linear-gradient(99deg, #473bab 0%, #6356e1 100%)" }}
-                    >
-                      Apply
-                    </button>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </motion.div>
-          );
-        })}
-      </motion.div>
-
-      {/* Add another + action buttons */}
-      <div className="flex flex-col gap-[6px] mt-[2px]">
-        <AgentAddSelect
-          f={f}
-          placeholder="+ Add another offer…"
-          onAdd={v => setOfferIds(p => [...p, v])}
-          options={offers
-            .filter(o => !offerIds.includes(o.id))
-            .map(o => ({ value: o.id, label: `${o.year} ${o.make} ${o.model} ${o.trim} — ${o.offerType} $${o.monthlyPayment}/mo` }))}
-        />
-        <div className="flex items-center gap-[8px]">
-          <button onClick={() => { onApply(offerIds, [...appliedCustomizations]); setApplied(true); }}
-            disabled={offerIds.length === 0}
-            className="flex-1 py-[8px] rounded-full text-[13px] font-medium tracking-[0.46px] text-white transition-all cursor-pointer disabled:opacity-40"
-            style={{ background: "linear-gradient(99deg, #473bab 0%, #6356e1 100%)" }}>
-            Add {offerIds.length} offer{offerIds.length !== 1 ? "s" : ""}
-          </button>
-          <button
-            onClick={() => setCustomizeMode(m => !m)}
-            className={cn("px-[14px] py-[8px] rounded-full text-[13px] font-medium border transition-colors cursor-pointer",
-              customizeMode
-                ? "bg-[rgba(71,59,171,0.08)] border-[rgba(71,59,171,0.3)] text-[#473bab]"
-                : "border-[rgba(0,0,0,0.12)] text-[#686576] hover:bg-black/5"
-            )}>
-            {customizeMode ? "Done" : "Customize"}
-          </button>
-          <button onClick={onDismiss} className="px-[14px] py-[8px] rounded-full text-[13px] text-[#686576] hover:bg-black/5 transition-colors cursor-pointer">
-            Dismiss
-          </button>
-        </div>
-      </div>
-      {proactive && !manualMode && !applied && (
-        <ProactiveAutoApplyBar delay={2000} onCancel={() => { if (autoApplyRef.current) clearTimeout(autoApplyRef.current); setManualMode(true); }} />
-      )}
-    </motion.div>
-  );
-}
-
-// ─── Template Preview Modal ────────────────────────────────────────────────────
-type TemplateInfo = { id: string; name: string; format: string; width: number; height: number; brand: string };
-
-function TemplatePreviewModal({ template, onClose }: { template: TemplateInfo | null; onClose: () => void }) {
-  if (!template) return null;
-
-  // Scale the template dimensions into a preview box (max 260×140)
-  const maxW = 260; const maxH = 140;
-  const scaleW = maxW / template.width;
-  const scaleH = maxH / template.height;
-  const scale = Math.min(scaleW, scaleH, 1);
-  const pw = Math.round(template.width  * scale);
-  const ph = Math.round(template.height * scale);
-
-  return (
-    <div className="fixed inset-0 z-[999] flex items-center justify-center"
-      style={{ background: "rgba(0,0,0,0.42)", backdropFilter: "blur(2px)" }}
-      onClick={onClose}>
-      <motion.div
-        initial={{ opacity: 0, scale: 0.94 }} animate={{ opacity: 1, scale: 1 }}
-        exit={{ opacity: 0, scale: 0.94 }}
-        transition={{ duration: 0.15, ease: "easeOut" }}
-        className="bg-white rounded-[16px] overflow-hidden mx-[16px]"
-        style={{ width: 300, boxShadow: "0 24px 64px rgba(0,0,0,0.22)" }}
-        onClick={e => e.stopPropagation()}
-      >
-        {/* Header */}
-        <div className="flex items-center justify-between px-[16px] pt-[14px] pb-[10px] border-b border-[rgba(0,0,0,0.06)]">
-          <div>
-            <p style={{ fontSize: 12.5, fontWeight: 600, color: "#1f1d25" }}>{template.name}</p>
-            <p style={{ fontSize: 10.5, color: "#686576", marginTop: 1 }}>{template.brand} · {template.format}</p>
-          </div>
-          <button onClick={onClose}
-            className="flex items-center justify-center w-[26px] h-[26px] rounded-full hover:bg-black/6 transition-colors cursor-pointer text-[#9c99a9]">
-            <X size={13} strokeWidth={1.7} />
-          </button>
-        </div>
-
-        {/* Preview canvas */}
-        <div className="flex items-center justify-center px-[16px] py-[16px] bg-[#f7f7fb]">
-          <div style={{
-            width: pw, height: ph,
-            background: "linear-gradient(135deg, rgba(71,59,171,0.07) 0%, rgba(99,86,225,0.14) 100%)",
-            border: "1.5px dashed rgba(71,59,171,0.28)",
-            borderRadius: 6,
-            display: "flex", flexDirection: "column",
-            alignItems: "center", justifyContent: "center", gap: 5,
-          }}>
-            <FileText size={Math.max(16, Math.min(32, pw * 0.12))} strokeWidth={1.3} style={{ color: "rgba(71,59,171,0.45)" }} />
-            <span style={{ fontSize: 8.5, color: "rgba(71,59,171,0.55)", letterSpacing: "0.6px", textTransform: "uppercase" }}>
-              {template.width}×{template.height}
-            </span>
-          </div>
-        </div>
-
-        {/* Details */}
-        <div className="px-[16px] pb-[16px] flex flex-col gap-[6px]">
-          {([
-            ["Format",     template.format],
-            ["Dimensions", `${template.width} × ${template.height} px`],
-            ["Brand",      template.brand],
-          ] as [string, string][]).map(([label, value]) => (
-            <div key={label} className="flex items-center justify-between">
-              <span style={{ fontSize: 11, color: "#9c99a9", fontWeight: 500 }}>{label}</span>
-              <span style={{ fontSize: 11, color: "#1f1d25" }}>{value}</span>
-            </div>
-          ))}
-        </div>
-      </motion.div>
-    </div>
-  );
-}
-
+// ─── SetupProjectCard → extracted to ./agent/SetupProjectCard.tsx
+// ─── OffersProposalCard → extracted to ./agent/OffersProposalCard.tsx
+// ─── TemplatePreviewModal → extracted to ./agent/TemplatePreviewModal.tsx
 // ─── Templates Proposal Card ───────────────────────────────────────────────────
 interface TemplatesCardProps {
   input: TemplatesInput;
@@ -1470,7 +358,7 @@ function TemplatesProposalCard({ input, context, onApply, onDismiss, proactive }
     );
   }
 
-  const labelCls = "text-[10px] font-semibold uppercase tracking-[0.06em] text-[#9c99a9] mb-[4px]";
+  const labelCls = "text-[10px] font-semibold uppercase tracking-[0.06em] text-[var(--ink-tertiary)] mb-[4px]";
 
   return (
     <>
@@ -1482,9 +370,9 @@ function TemplatesProposalCard({ input, context, onApply, onDismiss, proactive }
       className="ml-[32px] mt-[4px] flex flex-col gap-[8px]">
       {/* Rationale — free text, no outer box */}
       <div className="pl-[2px]">
-        <p style={{ fontSize: 14, color: "#686576", lineHeight: 1.6, letterSpacing: "0.17px" }}>{input.rationale}</p>
+        <p style={{ fontSize: 14, color: "var(--ink-secondary)", lineHeight: 1.6, letterSpacing: "0.17px" }}>{input.rationale}</p>
         <WhyThese content={
-          <div style={{ fontSize: 11, color: "#473bab", lineHeight: 1.6 }}>
+          <div style={{ fontSize: 11, color: "var(--brand-accent)", lineHeight: 1.6 }}>
             <p style={{ fontWeight: 600, marginBottom: 4 }}>How I picked these</p>
             <p style={{ marginBottom: 4 }}>I select templates based on two priorities:</p>
             <p style={{ marginBottom: 2 }}>• <strong>Format coverage</strong> — I aim to cover website banner, display leaderboard, and social square formats for maximum reach across placements.</p>
@@ -1511,19 +399,19 @@ function TemplatesProposalCard({ input, context, onApply, onDismiss, proactive }
                   variants={{ hidden: { opacity: 0, x: -14 }, show: { opacity: 1, x: 0, transition: { duration: 0.26, ease: "easeOut" } } }}
                   className="flex items-center gap-[8px] px-[10px] py-[7px] rounded-[8px] bg-[#f5f4f8] group">
                   <div className="flex-1 min-w-0">
-                    <p className="text-[12px] font-medium text-[#1f1d25] truncate">{t ? t.name : id}</p>
-                    {t && <p className="text-[10.5px] text-[#686576] mt-[1px]">{t.format} · {t.width}×{t.height} · {t.brand}</p>}
+                    <p className="text-[12px] font-medium text-[var(--ink)] truncate">{t ? t.name : id}</p>
+                    {t && <p className="text-[10.5px] text-[var(--ink-secondary)] mt-[1px]">{t.format} · {t.width}×{t.height} · {t.brand}</p>}
                   </div>
                   <div className="flex items-center gap-[4px] opacity-0 group-hover:opacity-100 transition-all shrink-0">
                     {t && (
                       <button onClick={() => setZoneTpl(t)}
-                        className="text-[#9c99a9] hover:text-[#473bab] transition-colors cursor-pointer"
+                        className="text-[var(--ink-tertiary)] hover:text-[var(--brand-accent)] transition-colors cursor-pointer"
                         title="Edit Zone">
                         <Eye size={12} strokeWidth={1.7} />
                       </button>
                     )}
                     <button onClick={() => setTemplateIds(p => p.filter(x => x !== id))}
-                      className="text-[#9c99a9] hover:text-[#dc2626] transition-colors cursor-pointer">
+                      className="text-[var(--ink-tertiary)] hover:text-[#dc2626] transition-colors cursor-pointer">
                       <Trash2 size={12} strokeWidth={1.7} />
                     </button>
                   </div>
@@ -1543,14 +431,14 @@ function TemplatesProposalCard({ input, context, onApply, onDismiss, proactive }
         {/* Customize hint */}
         <div className="flex items-start gap-[6px] px-[2px] pt-[2px]">
           <svg width="12" height="12" viewBox="0 0 12 12" fill="none" className="shrink-0 mt-[1px]">
-            <circle cx="6" cy="6" r="5.5" stroke="#473bab" strokeOpacity="0.5"/>
-            <path d="M6 5.5V8.5M6 3.5V4.5" stroke="#473bab" strokeOpacity="0.7" strokeLinecap="round"/>
+            <circle cx="6" cy="6" r="5.5" stroke="var(--brand-accent)" strokeOpacity="0.5"/>
+            <path d="M6 5.5V8.5M6 3.5V4.5" stroke="var(--brand-accent)" strokeOpacity="0.7" strokeLinecap="round"/>
           </svg>
-          <p style={{ fontSize: 11, color: "#686576", lineHeight: 1.5 }}>
+          <p style={{ fontSize: 11, color: "var(--ink-secondary)", lineHeight: 1.5 }}>
             These templates are all customizable. Click the{" "}
-            <span style={{ fontWeight: 600, color: "#1f1d25" }}>⋮</span>
+            <span style={{ fontWeight: 600, color: "var(--ink)" }}>⋮</span>
             {" "}menu on any template card and select{" "}
-            <span style={{ fontWeight: 600, color: "#473bab" }}>Edit Zone</span>
+            <span style={{ fontWeight: 600, color: "var(--brand-accent)" }}>Edit Zone</span>
             {" "}to customize.
           </p>
         </div>
@@ -1558,10 +446,10 @@ function TemplatesProposalCard({ input, context, onApply, onDismiss, proactive }
           <button onClick={() => { onApply(templateIds); setApplied(true); }}
             disabled={templateIds.length === 0}
             className="flex-1 py-[8px] rounded-full text-[13px] font-medium tracking-[0.46px] text-white transition-all cursor-pointer disabled:opacity-40"
-            style={{ background: "linear-gradient(99deg, #473bab 0%, #6356e1 100%)" }}>
+            style={{ background: "linear-gradient(99deg, var(--brand-accent) 0%, var(--brand-mid) 100%)" }}>
             Add templates
           </button>
-          <button onClick={onDismiss} className="px-[14px] py-[8px] rounded-full text-[13px] text-[#686576] hover:bg-black/5 transition-colors cursor-pointer">
+          <button onClick={onDismiss} className="px-[14px] py-[8px] rounded-full text-[13px] text-[var(--ink-secondary)] hover:bg-black/5 transition-colors cursor-pointer">
             Dismiss
           </button>
         </div>
@@ -1621,17 +509,17 @@ function BrandProposalCard({ input, projectName, onApply, onDismiss, proactive }
     );
   }
 
-  const inputCls = "w-full px-[10px] py-[7px] rounded-[8px] text-[12px] text-[#1f1d25] border border-[rgba(0,0,0,0.12)] bg-[#fafafb] outline-none focus:border-[#473bab] transition-all cursor-pointer appearance-none";
-  const labelCls = "text-[10px] font-semibold uppercase tracking-[0.06em] text-[#9c99a9] mb-[4px]";
+  const inputCls = "w-full px-[10px] py-[7px] rounded-[8px] text-[12px] text-[var(--ink)] border border-[rgba(0,0,0,0.12)] bg-[#fafafb] outline-none focus:border-[var(--brand-accent)] transition-all cursor-pointer appearance-none";
+  const labelCls = "text-[10px] font-semibold uppercase tracking-[0.06em] text-[var(--ink-tertiary)] mb-[4px]";
 
   return (
     <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}
       className="ml-[32px] mt-[4px] flex flex-col gap-[8px]">
       {/* Rationale — free text, no outer box */}
       <div className="pl-[2px]">
-        <p style={{ fontSize: 14, color: "#686576", lineHeight: 1.6, letterSpacing: "0.17px" }}>{input.rationale}</p>
+        <p style={{ fontSize: 14, color: "var(--ink-secondary)", lineHeight: 1.6, letterSpacing: "0.17px" }}>{input.rationale}</p>
         <WhyThese content={
-          <div style={{ fontSize: 11, color: "#473bab", lineHeight: 1.6 }}>
+          <div style={{ fontSize: 11, color: "var(--brand-accent)", lineHeight: 1.6 }}>
             <p style={{ fontWeight: 600, marginBottom: 4 }}>How I picked this</p>
             <p>• <strong>Brand consistency</strong> — the kit matches the OEM on your project, ensuring logos, colours, and typography align with the manufacturer's guidelines across all ad formats.</p>
           </div>
@@ -1642,8 +530,8 @@ function BrandProposalCard({ input, projectName, onApply, onDismiss, proactive }
         style={{ boxShadow: "0 2px 12px rgba(0,0,0,0.06)" }}>
         {projectName && (
           <div className="px-[14px] pt-[10px] pb-[8px] border-b border-[rgba(0,0,0,0.06)] bg-[#fafafa]">
-            <p style={{ fontSize: 10.5, color: "#9c99a9" }}>
-              Project: <span style={{ color: "#1f1d25", fontWeight: 600 }}>{projectName}</span>
+            <p style={{ fontSize: 10.5, color: "var(--ink-tertiary)" }}>
+              Project: <span style={{ color: "var(--ink)", fontWeight: 600 }}>{projectName}</span>
             </p>
           </div>
         )}
@@ -1658,10 +546,10 @@ function BrandProposalCard({ input, projectName, onApply, onDismiss, proactive }
           <div className="flex items-center gap-[8px] pt-[2px]">
             <button onClick={() => { onApply(oem); setApplied(true); }}
               className="flex-1 py-[8px] rounded-full text-[13px] font-medium tracking-[0.46px] text-white transition-all cursor-pointer"
-              style={{ background: "linear-gradient(99deg, #473bab 0%, #6356e1 100%)" }}>
+              style={{ background: "linear-gradient(99deg, var(--brand-accent) 0%, var(--brand-mid) 100%)" }}>
               Activate brand kit
             </button>
-            <button onClick={onDismiss} className="px-[14px] py-[8px] rounded-full text-[13px] text-[#686576] hover:bg-black/5 transition-colors cursor-pointer">
+            <button onClick={onDismiss} className="px-[14px] py-[8px] rounded-full text-[13px] text-[var(--ink-secondary)] hover:bg-black/5 transition-colors cursor-pointer">
               Skip
             </button>
           </div>
@@ -1723,9 +611,9 @@ function BackgroundsProposalCard({ input, onApply, onDismiss }: BackgroundsCardP
       className="ml-[32px] mt-[4px] flex flex-col gap-[8px]">
       {/* Rationale — free text, no outer box */}
       <div className="pl-[2px]">
-        <p style={{ fontSize: 14, color: "#686576", lineHeight: 1.6, letterSpacing: "0.17px" }}>{input.rationale}</p>
+        <p style={{ fontSize: 14, color: "var(--ink-secondary)", lineHeight: 1.6, letterSpacing: "0.17px" }}>{input.rationale}</p>
         <WhyThese content={
-          <div style={{ fontSize: 11, color: "#473bab", lineHeight: 1.6 }}>
+          <div style={{ fontSize: 11, color: "var(--brand-accent)", lineHeight: 1.6 }}>
             <p style={{ fontWeight: 600, marginBottom: 4 }}>How I picked these</p>
             <p style={{ marginBottom: 2 }}>• <strong>Environment variety</strong> — different lighting conditions and settings keep the creative fresh across placements and avoid visual repetition.</p>
             <p>• <strong>Vehicle framing</strong> — I avoid overly generic or cluttered scenes, favouring open roads, urban vistas, and scenic backdrops that naturally frame the vehicle as the hero.</p>
@@ -1737,7 +625,7 @@ function BackgroundsProposalCard({ input, onApply, onDismiss }: BackgroundsCardP
         style={{ boxShadow: "0 2px 12px rgba(0,0,0,0.06)" }}>
         <div className="flex flex-col gap-[10px] px-[14px] py-[12px]">
           <div>
-            <p className="text-[10px] font-semibold uppercase tracking-[0.06em] text-[#9c99a9] mb-[8px]">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.06em] text-[var(--ink-tertiary)] mb-[8px]">
               Backgrounds · {selectedIds.length} selected
             </p>
             <div className="flex gap-[8px] overflow-x-auto pb-1">
@@ -1749,7 +637,7 @@ function BackgroundsProposalCard({ input, onApply, onDismiss }: BackgroundsCardP
                     style={{ width: 64 }}>
                     <div className="relative w-[64px] h-[48px] rounded-[7px] overflow-hidden transition-all"
                       style={{
-                        outline: isSelected ? "2px solid #473bab" : "2px solid transparent",
+                        outline: isSelected ? "2px solid var(--brand-accent)" : "2px solid transparent",
                         outlineOffset: 1,
                         boxShadow: isSelected ? "0 0 0 3px rgba(71,59,171,0.15)" : "none",
                       }}>
@@ -1761,7 +649,7 @@ function BackgroundsProposalCard({ input, onApply, onDismiss }: BackgroundsCardP
                         </div>
                       )}
                     </div>
-                    <span className="text-[9px] text-[#686576] text-center leading-tight truncate w-full">
+                    <span className="text-[9px] text-[var(--ink-secondary)] text-center leading-tight truncate w-full">
                       {bg.name}
                     </span>
                   </button>
@@ -1773,11 +661,11 @@ function BackgroundsProposalCard({ input, onApply, onDismiss }: BackgroundsCardP
             <button onClick={() => { onApply(selectedIds); setApplied(true); }}
               disabled={selectedIds.length === 0}
               className="flex-1 py-[8px] rounded-full text-[13px] font-medium tracking-[0.46px] text-white transition-all cursor-pointer disabled:opacity-40"
-              style={{ background: "linear-gradient(99deg, #473bab 0%, #6356e1 100%)" }}>
+              style={{ background: "linear-gradient(99deg, var(--brand-accent) 0%, var(--brand-mid) 100%)" }}>
               Add {selectedIds.length > 0 ? `${selectedIds.length} ` : ""}background{selectedIds.length !== 1 ? "s" : ""}
             </button>
             <button onClick={onDismiss}
-              className="px-[14px] py-[8px] rounded-full text-[13px] text-[#686576] hover:bg-black/5 transition-colors cursor-pointer">
+              className="px-[14px] py-[8px] rounded-full text-[13px] text-[var(--ink-secondary)] hover:bg-black/5 transition-colors cursor-pointer">
               Skip
             </button>
           </div>
@@ -1833,9 +721,9 @@ function ShareChooserCard({
     >
       {/* Header */}
       <div className="px-[14px] pt-[10px] pb-[8px] border-b border-[rgba(0,0,0,0.06)] bg-[#fafafa]">
-        <p style={{ fontSize: 11, color: "#686576", lineHeight: 1.5 }}>
+        <p style={{ fontSize: 11, color: "var(--ink-secondary)", lineHeight: 1.5 }}>
           How would you like to send to{" "}
-          <strong style={{ color: "#1f1d25" }}>{recipient}</strong>?
+          <strong style={{ color: "var(--ink)" }}>{recipient}</strong>?
         </p>
       </div>
 
@@ -1849,15 +737,15 @@ function ShareChooserCard({
           <div className="w-[30px] h-[30px] rounded-full flex items-center justify-center shrink-0"
             style={{ background: "rgba(99,86,225,0.10)" }}>
             <svg width="14" height="14" viewBox="0 0 20 20" fill="none">
-              <rect x="2" y="5" width="16" height="11" rx="2" stroke="#6356E1" strokeWidth="1.5"/>
-              <path d="M2 7l8 5 8-5" stroke="#6356E1" strokeWidth="1.5" strokeLinecap="round"/>
+              <rect x="2" y="5" width="16" height="11" rx="2" stroke="var(--brand-mid)" strokeWidth="1.5"/>
+              <path d="M2 7l8 5 8-5" stroke="var(--brand-mid)" strokeWidth="1.5" strokeLinecap="round"/>
             </svg>
           </div>
           <div className="flex-1 min-w-0">
-            <p style={{ fontSize: 12, fontWeight: 500, color: "#1f1d25" }}>Send via Email</p>
-            <p style={{ fontSize: 10.5, color: "#9c99a9" }}>Share a project link by email</p>
+            <p style={{ fontSize: 12, fontWeight: 500, color: "var(--ink)" }}>Send via Email</p>
+            <p style={{ fontSize: 10.5, color: "var(--ink-tertiary)" }}>Share a project link by email</p>
           </div>
-          <ChevronDown size={13} strokeWidth={1.5} style={{ color: "#9c99a9", transform: "rotate(-90deg)", flexShrink: 0 }} />
+          <ChevronDown size={13} strokeWidth={1.5} style={{ color: "var(--ink-tertiary)", transform: "rotate(-90deg)", flexShrink: 0 }} />
         </button>
 
         {/* Platform Communications option */}
@@ -1874,10 +762,10 @@ function ShareChooserCard({
             </svg>
           </div>
           <div className="flex-1 min-w-0">
-            <p style={{ fontSize: 12, fontWeight: 500, color: "#1f1d25" }}>Platform Communications</p>
-            <p style={{ fontSize: 10.5, color: "#9c99a9" }}>Send an in-app notification</p>
+            <p style={{ fontSize: 12, fontWeight: 500, color: "var(--ink)" }}>Platform Communications</p>
+            <p style={{ fontSize: 10.5, color: "var(--ink-tertiary)" }}>Send an in-app notification</p>
           </div>
-          <ChevronDown size={13} strokeWidth={1.5} style={{ color: "#9c99a9", transform: "rotate(-90deg)", flexShrink: 0 }} />
+          <ChevronDown size={13} strokeWidth={1.5} style={{ color: "var(--ink-tertiary)", transform: "rotate(-90deg)", flexShrink: 0 }} />
         </button>
       </div>
     </motion.div>
@@ -1955,8 +843,8 @@ function TaskOwnersProposalCard({
 
       {/* Header */}
       <div className="px-[14px] pt-[10px] pb-[8px] border-b border-[rgba(0,0,0,0.06)] bg-[#fafafa]">
-        <p style={{ fontSize: 11, fontWeight: 600, color: "#1f1d25" }}>Assign Task Owners</p>
-        <p style={{ fontSize: 10.5, color: "#9c99a9", marginTop: 2 }}>Choose a responsible owner for each section</p>
+        <p style={{ fontSize: 11, fontWeight: 600, color: "var(--ink)" }}>Assign Task Owners</p>
+        <p style={{ fontSize: 10.5, color: "var(--ink-tertiary)", marginTop: 2 }}>Choose a responsible owner for each section</p>
       </div>
 
       {/* Section rows */}
@@ -1966,7 +854,7 @@ function TaskOwnersProposalCard({
           const owner = PROJECT_OWNERS.find(o => o.id === ownerId);
           return (
             <div key={id} className="flex items-center gap-[10px] px-[14px] py-[8px]">
-              <span style={{ fontSize: 12, color: "#686576", flex: 1 }}>{label}</span>
+              <span style={{ fontSize: 12, color: "var(--ink-secondary)", flex: 1 }}>{label}</span>
               <button
                 ref={el => { triggerRefs.current[id] = el; }}
                 onClick={() => openDropdown(id)}
@@ -1978,12 +866,12 @@ function TaskOwnersProposalCard({
                       ? <img src={owner.avatar} alt={owner.name} className="w-[16px] h-[16px] rounded-full object-cover shrink-0" />
                       : <AvatarInitials initials={owner.initials} size={16} bgColor={owner.color} />
                     }
-                    <span style={{ fontSize: 11, color: "#1f1d25", flex: 1 }}>{owner.name.split(" ")[0]}</span>
+                    <span style={{ fontSize: 11, color: "var(--ink)", flex: 1 }}>{owner.name.split(" ")[0]}</span>
                   </>
                 ) : (
-                  <span style={{ fontSize: 11, color: "#9c99a9", flex: 1 }}>Unassigned</span>
+                  <span style={{ fontSize: 11, color: "var(--ink-tertiary)", flex: 1 }}>Unassigned</span>
                 )}
-                <ChevronDown size={11} strokeWidth={1.5} style={{ color: "#9c99a9", flexShrink: 0 }} />
+                <ChevronDown size={11} strokeWidth={1.5} style={{ color: "var(--ink-tertiary)", flexShrink: 0 }} />
               </button>
             </div>
           );
@@ -1995,7 +883,7 @@ function TaskOwnersProposalCard({
         <button
           onClick={handleConfirm}
           className="flex items-center gap-[6px] px-[14px] py-[7px] rounded-full text-white text-[12px] font-medium cursor-pointer transition-opacity hover:opacity-90"
-          style={{ background: "linear-gradient(135deg, #6356E1 0%, #8B5CF6 100%)" }}
+          style={{ background: "linear-gradient(135deg, var(--brand-mid) 0%, #8B5CF6 100%)" }}
         >
           Apply Task Owners
         </button>
@@ -2017,7 +905,7 @@ function TaskOwnersProposalCard({
               >
                 <button
                   onClick={() => { setSelections(p => { const n = { ...p }; delete n[openSection]; return n; }); setOpenSection(null); }}
-                  className="w-full flex items-center gap-[8px] px-[10px] py-[7px] text-[12px] text-[#9c99a9] hover:bg-[#F4F5F6] cursor-pointer"
+                  className="w-full flex items-center gap-[8px] px-[10px] py-[7px] text-[12px] text-[var(--ink-tertiary)] hover:bg-[#F4F5F6] cursor-pointer"
                 >
                   <span className="w-[16px] h-[16px] flex-shrink-0" />
                   Unassigned
@@ -2027,7 +915,7 @@ function TaskOwnersProposalCard({
                   <button
                     key={o.id}
                     onClick={() => { setSelections(p => ({ ...p, [openSection]: o.id })); setOpenSection(null); }}
-                    className="w-full flex items-center gap-[8px] px-[10px] py-[7px] text-[12px] text-[#1f1d25] hover:bg-[#F4F5F6] cursor-pointer"
+                    className="w-full flex items-center gap-[8px] px-[10px] py-[7px] text-[12px] text-[var(--ink)] hover:bg-[#F4F5F6] cursor-pointer"
                   >
                     {o.avatar
                       ? <img src={o.avatar} alt={o.name} className="w-[16px] h-[16px] rounded-full object-cover shrink-0" />
@@ -2123,8 +1011,8 @@ function NotifyOwnersCard({
                 ? <img src={owner.avatar} alt={owner.name} className="w-[22px] h-[22px] rounded-full object-cover shrink-0" />
                 : <AvatarInitials initials={owner.initials} size={22} bgColor={owner.color} />
               }
-              <span style={{ fontSize: 12, color: "#1f1d25" }}>{owner.name}</span>
-              <span style={{ fontSize: 10.5, color: "#9c99a9", textTransform: "capitalize" }}>{section}</span>
+              <span style={{ fontSize: 12, color: "var(--ink)" }}>{owner.name}</span>
+              <span style={{ fontSize: 10.5, color: "var(--ink-tertiary)", textTransform: "capitalize" }}>{section}</span>
             </div>
           ))}
         </div>
@@ -2149,8 +1037,8 @@ function NotifyOwnersCard({
         style={{ boxShadow: "0 2px 12px rgba(0,0,0,0.06)" }}>
         {/* Header */}
         <div className="px-[14px] pt-[10px] pb-[8px] border-b border-[rgba(0,0,0,0.06)] bg-[#fafafa] flex items-center justify-between">
-          <p style={{ fontSize: 11, fontWeight: 600, color: "#1f1d25" }}>Email to task owners</p>
-          <button onClick={() => setChosen(null)} className="text-[#9c99a9] hover:text-[#1f1d25] transition-colors cursor-pointer">
+          <p style={{ fontSize: 11, fontWeight: 600, color: "var(--ink)" }}>Email to task owners</p>
+          <button onClick={() => setChosen(null)} className="text-[var(--ink-tertiary)] hover:text-[var(--ink)] transition-colors cursor-pointer">
             <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M1 1l10 10M11 1L1 11" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>
           </button>
         </div>
@@ -2158,7 +1046,7 @@ function NotifyOwnersCard({
         <div className="px-[14px] py-[12px] flex flex-col gap-[10px]">
           {/* Recipients */}
           <div>
-            <p style={{ fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.06em", color: "#9c99a9", marginBottom: 6 }}>To</p>
+            <p style={{ fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--ink-tertiary)", marginBottom: 6 }}>To</p>
             <div className="flex flex-wrap gap-[5px]">
               {resolvedOwners.map(({ owner }) => (
                 <div key={owner.id} className="flex items-center gap-[5px] px-[8px] py-[3px] rounded-full bg-[#F4F5F6]">
@@ -2166,7 +1054,7 @@ function NotifyOwnersCard({
                     ? <img src={owner.avatar} alt={owner.name} className="w-[14px] h-[14px] rounded-full object-cover shrink-0" />
                     : <AvatarInitials initials={owner.initials} size={14} bgColor={owner.color} />
                   }
-                  <span style={{ fontSize: 11, color: "#1f1d25" }}>{owner.name}</span>
+                  <span style={{ fontSize: 11, color: "var(--ink)" }}>{owner.name}</span>
                 </div>
               ))}
             </div>
@@ -2174,18 +1062,18 @@ function NotifyOwnersCard({
 
           {/* Subject */}
           <div>
-            <p style={{ fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.06em", color: "#9c99a9", marginBottom: 6 }}>Subject</p>
-            <p style={{ fontSize: 12, color: "#1f1d25" }}>Project shared: {projectName}</p>
+            <p style={{ fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--ink-tertiary)", marginBottom: 6 }}>Subject</p>
+            <p style={{ fontSize: 12, color: "var(--ink)" }}>Project shared: {projectName}</p>
           </div>
 
           {/* Message body */}
           <div>
-            <p style={{ fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.06em", color: "#9c99a9", marginBottom: 6 }}>Message</p>
+            <p style={{ fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--ink-tertiary)", marginBottom: 6 }}>Message</p>
             <textarea
               ref={textareaRef}
               value={message}
               onChange={(e) => setMessage(e.target.value)}
-              className="w-full resize-none text-[12px] text-[#1f1d25] bg-[#F9FAFA] border border-[#E4E4E8] rounded-[8px] px-[10px] py-[8px] outline-none focus:border-[var(--brand-accent)] transition-colors overflow-hidden"
+              className="w-full resize-none text-[12px] text-[var(--ink)] bg-[#F9FAFA] border border-[#E4E4E8] rounded-[8px] px-[10px] py-[8px] outline-none focus:border-[var(--brand-accent)] transition-colors overflow-hidden"
               style={{ minHeight: 80 }}
             />
           </div>
@@ -2194,7 +1082,7 @@ function NotifyOwnersCard({
           <button
             onClick={() => { onApply(); setEmailSent(true); }}
             className="self-end flex items-center gap-[6px] px-[14px] py-[7px] rounded-full text-white text-[12px] font-medium cursor-pointer transition-opacity hover:opacity-90"
-            style={{ background: "linear-gradient(135deg, #6356E1 0%, #8B5CF6 100%)" }}
+            style={{ background: "linear-gradient(135deg, var(--brand-mid) 0%, #8B5CF6 100%)" }}
           >
             <svg width="13" height="13" viewBox="0 0 20 20" fill="none">
               <path d="M3 10l14-7-7 14V10H3z" fill="white"/>
@@ -2213,8 +1101,8 @@ function NotifyOwnersCard({
       style={{ boxShadow: "0 2px 12px rgba(0,0,0,0.06)" }}>
       {/* Header */}
       <div className="px-[14px] pt-[10px] pb-[8px] border-b border-[rgba(0,0,0,0.06)] bg-[#fafafa]">
-        <p style={{ fontSize: 11, color: "#686576", lineHeight: 1.5 }}>
-          Notify <strong style={{ color: "#1f1d25" }}>{resolvedOwners.length} task owner{resolvedOwners.length !== 1 ? "s" : ""}</strong>. How would you like to send?
+        <p style={{ fontSize: 11, color: "var(--ink-secondary)", lineHeight: 1.5 }}>
+          Notify <strong style={{ color: "var(--ink)" }}>{resolvedOwners.length} task owner{resolvedOwners.length !== 1 ? "s" : ""}</strong>. How would you like to send?
         </p>
       </div>
 
@@ -2226,15 +1114,15 @@ function NotifyOwnersCard({
         >
           <div className="w-[30px] h-[30px] rounded-full flex items-center justify-center shrink-0" style={{ background: "rgba(99,86,225,0.10)" }}>
             <svg width="14" height="14" viewBox="0 0 20 20" fill="none">
-              <rect x="2" y="5" width="16" height="11" rx="2" stroke="#6356E1" strokeWidth="1.5"/>
-              <path d="M2 7l8 5 8-5" stroke="#6356E1" strokeWidth="1.5" strokeLinecap="round"/>
+              <rect x="2" y="5" width="16" height="11" rx="2" stroke="var(--brand-mid)" strokeWidth="1.5"/>
+              <path d="M2 7l8 5 8-5" stroke="var(--brand-mid)" strokeWidth="1.5" strokeLinecap="round"/>
             </svg>
           </div>
           <div className="flex-1 min-w-0">
-            <p style={{ fontSize: 12, fontWeight: 500, color: "#1f1d25" }}>Send via Email</p>
-            <p style={{ fontSize: 10.5, color: "#9c99a9" }}>One email to all task owners</p>
+            <p style={{ fontSize: 12, fontWeight: 500, color: "var(--ink)" }}>Send via Email</p>
+            <p style={{ fontSize: 10.5, color: "var(--ink-tertiary)" }}>One email to all task owners</p>
           </div>
-          <ChevronDown size={13} strokeWidth={1.5} style={{ color: "#9c99a9", transform: "rotate(-90deg)", flexShrink: 0 }} />
+          <ChevronDown size={13} strokeWidth={1.5} style={{ color: "var(--ink-tertiary)", transform: "rotate(-90deg)", flexShrink: 0 }} />
         </button>
 
         {/* Platform option */}
@@ -2249,10 +1137,10 @@ function NotifyOwnersCard({
             </svg>
           </div>
           <div className="flex-1 min-w-0">
-            <p style={{ fontSize: 12, fontWeight: 500, color: "#1f1d25" }}>Platform Communications</p>
-            <p style={{ fontSize: 10.5, color: "#9c99a9" }}>In-app notification to all owners</p>
+            <p style={{ fontSize: 12, fontWeight: 500, color: "var(--ink)" }}>Platform Communications</p>
+            <p style={{ fontSize: 10.5, color: "var(--ink-tertiary)" }}>In-app notification to all owners</p>
           </div>
-          <ChevronDown size={13} strokeWidth={1.5} style={{ color: "#9c99a9", transform: "rotate(-90deg)", flexShrink: 0 }} />
+          <ChevronDown size={13} strokeWidth={1.5} style={{ color: "var(--ink-tertiary)", transform: "rotate(-90deg)", flexShrink: 0 }} />
         </button>
       </div>
 
@@ -2264,8 +1152,8 @@ function NotifyOwnersCard({
               ? <img src={owner.avatar} alt={owner.name} className="w-[14px] h-[14px] rounded-full object-cover shrink-0" />
               : <AvatarInitials initials={owner.initials} size={14} bgColor={owner.color} />
             }
-            <span style={{ fontSize: 11, color: "#1f1d25" }}>{owner.name.split(" ")[0]}</span>
-            <span style={{ fontSize: 10, color: "#9c99a9", textTransform: "capitalize" }}>· {section}</span>
+            <span style={{ fontSize: 11, color: "var(--ink)" }}>{owner.name.split(" ")[0]}</span>
+            <span style={{ fontSize: 10, color: "var(--ink-tertiary)", textTransform: "capitalize" }}>· {section}</span>
           </div>
         ))}
       </div>
@@ -2284,7 +1172,7 @@ interface EmailCardProps {
 
 function EmailProposalCard({ input, projectName, onApply, onDismiss }: EmailCardProps) {
 
-  const labelCls = "text-[10px] font-semibold uppercase tracking-[0.06em] text-[#9c99a9] mb-[6px]";
+  const labelCls = "text-[10px] font-semibold uppercase tracking-[0.06em] text-[var(--ink-tertiary)] mb-[6px]";
   const hint = (input.recipient_hint ?? "").trim();
 
   // Find known contact
@@ -2355,8 +1243,8 @@ function EmailProposalCard({ input, projectName, onApply, onDismiss }: EmailCard
 
       {/* Header */}
       <div className="px-[14px] pt-[10px] pb-[8px] border-b border-[rgba(0,0,0,0.06)] bg-[#fafafa]">
-        <p style={{ fontSize: 11, color: "#686576", lineHeight: 1.5 }}>
-          Sharing project link for <strong style={{ color: "#1f1d25" }}>{projectName}</strong>
+        <p style={{ fontSize: 11, color: "var(--ink-secondary)", lineHeight: 1.5 }}>
+          Sharing project link for <strong style={{ color: "var(--ink)" }}>{projectName}</strong>
         </p>
       </div>
 
@@ -2371,31 +1259,31 @@ function EmailProposalCard({ input, projectName, onApply, onDismiss }: EmailCard
             <div className="flex items-center gap-[8px] px-[10px] py-[8px] rounded-[8px]"
               style={{ background: "rgba(71,59,171,0.08)", outline: "1.5px solid rgba(71,59,171,0.35)" }}>
               <div className="w-[28px] h-[28px] rounded-full flex items-center justify-center shrink-0"
-                style={{ background: knownContact.group === "constellation" ? "#473bab" : "#0d7a5f" }}>
+                style={{ background: knownContact.group === "constellation" ? "var(--brand-accent)" : "#0d7a5f" }}>
                 <span style={{ fontSize: 10, fontWeight: 700, color: "white" }}>
                   {knownContact.name.split(" ").map((n: string) => n[0]).join("").slice(0, 2)}
                 </span>
               </div>
               <div className="flex-1 min-w-0">
-                <p style={{ fontSize: 12, fontWeight: 500, color: "#1f1d25" }}>{knownContact.name}</p>
-                <p style={{ fontSize: 10, color: "#9c99a9" }} className="truncate">{knownContact.email}</p>
+                <p style={{ fontSize: 12, fontWeight: 500, color: "var(--ink)" }}>{knownContact.name}</p>
+                <p style={{ fontSize: 10, color: "var(--ink-tertiary)" }} className="truncate">{knownContact.email}</p>
               </div>
-              <Check size={13} strokeWidth={2.5} className="text-[#473bab] shrink-0" />
+              <Check size={13} strokeWidth={2.5} className="text-[var(--brand-accent)] shrink-0" />
             </div>
           )}
 
           {/* Mode B: unknown recipient — ask for email */}
           {isUnknownRecipient && (
             <div className="flex flex-col gap-[6px]">
-              <p style={{ fontSize: 11.5, color: "#686576", lineHeight: 1.5 }}>
-                I don't have <strong style={{ color: "#1f1d25" }}>"{hint}"</strong> in my contacts.
+              <p style={{ fontSize: 11.5, color: "var(--ink-secondary)", lineHeight: 1.5 }}>
+                I don't have <strong style={{ color: "var(--ink)" }}>"{hint}"</strong> in my contacts.
               </p>
               <input
                 type="email"
                 value={unknownEmail}
                 onChange={e => setUnknownEmail(e.target.value)}
                 placeholder="their@email.com"
-                className="w-full px-[10px] py-[7px] rounded-[8px] text-[12px] text-[#1f1d25] border border-[rgba(0,0,0,0.12)] bg-[#fafafb] outline-none focus:border-[#473bab] transition-all"
+                className="w-full px-[10px] py-[7px] rounded-[8px] text-[12px] text-[var(--ink)] border border-[rgba(0,0,0,0.12)] bg-[#fafafb] outline-none focus:border-[var(--brand-accent)] transition-all"
               />
             </div>
           )}
@@ -2411,7 +1299,7 @@ function EmailProposalCard({ input, projectName, onApply, onDismiss }: EmailCard
                     <div className="flex flex-col gap-[3px] mb-[4px]">
                       {contacts.map(c => {
                         const isSelected = selectedEmails.has(c.email);
-                        const avatarBg = group.key === "constellation" ? "#473bab" : "#0d7a5f";
+                        const avatarBg = group.key === "constellation" ? "var(--brand-accent)" : "#0d7a5f";
                         return (
                           <button key={c.email} onClick={() => toggleContact(c.email)}
                             className="flex items-center gap-[8px] px-[10px] py-[7px] rounded-[8px] transition-all cursor-pointer text-left w-full"
@@ -2422,10 +1310,10 @@ function EmailProposalCard({ input, projectName, onApply, onDismiss }: EmailCard
                               </span>
                             </div>
                             <div className="flex-1 min-w-0">
-                              <p style={{ fontSize: 12, fontWeight: 500, color: "#1f1d25" }}>{c.name}</p>
-                              <p style={{ fontSize: 10, color: "#9c99a9" }} className="truncate">{c.email}</p>
+                              <p style={{ fontSize: 12, fontWeight: 500, color: "var(--ink)" }}>{c.name}</p>
+                              <p style={{ fontSize: 10, color: "var(--ink-tertiary)" }} className="truncate">{c.email}</p>
                             </div>
-                            {isSelected && <Check size={12} strokeWidth={2.5} className="text-[#473bab] shrink-0" />}
+                            {isSelected && <Check size={12} strokeWidth={2.5} className="text-[var(--brand-accent)] shrink-0" />}
                           </button>
                         );
                       })}
@@ -2442,7 +1330,7 @@ function EmailProposalCard({ input, projectName, onApply, onDismiss }: EmailCard
           <p className={labelCls}>Message</p>
           <textarea ref={textareaRef} value={message} onChange={e => setMessage(e.target.value)}
             rows={1}
-            className="w-full px-[10px] py-[8px] rounded-[8px] text-[12px] text-[#1f1d25] border border-[rgba(0,0,0,0.12)] bg-[#fafafb] outline-none focus:border-[#473bab] transition-all resize-none leading-relaxed overflow-hidden"
+            className="w-full px-[10px] py-[8px] rounded-[8px] text-[12px] text-[var(--ink)] border border-[rgba(0,0,0,0.12)] bg-[#fafafb] outline-none focus:border-[var(--brand-accent)] transition-all resize-none leading-relaxed overflow-hidden"
             style={{ minHeight: 36 }} />
         </div>
 
@@ -2450,11 +1338,11 @@ function EmailProposalCard({ input, projectName, onApply, onDismiss }: EmailCard
         <div className="flex items-center gap-[8px] pt-[2px]">
           <button onClick={handleSend} disabled={!canSend}
             className="flex-1 py-[8px] rounded-full text-[13px] font-medium tracking-[0.46px] text-white transition-all cursor-pointer disabled:opacity-40"
-            style={{ background: "linear-gradient(99deg, #473bab 0%, #6356e1 100%)" }}>
+            style={{ background: "linear-gradient(99deg, var(--brand-accent) 0%, var(--brand-mid) 100%)" }}>
             Send email
           </button>
           <button onClick={onDismiss}
-            className="px-[14px] py-[8px] rounded-full text-[13px] text-[#686576] hover:bg-black/5 transition-colors cursor-pointer">
+            className="px-[14px] py-[8px] rounded-full text-[13px] text-[var(--ink-secondary)] hover:bg-black/5 transition-colors cursor-pointer">
             Cancel
           </button>
         </div>
@@ -2495,8 +1383,8 @@ function SmartProposalCard({ input, context, onApply, onDismiss }: SmartProposal
     );
   }
 
-  const inputCls = "w-full px-[10px] py-[7px] rounded-[8px] text-[12px] text-[#1f1d25] border border-[rgba(0,0,0,0.12)] bg-[#fafafb] outline-none focus:border-[#473bab] focus:ring-1 focus:ring-[rgba(71,59,171,0.15)] transition-all";
-  const labelCls = "text-[10px] font-semibold uppercase tracking-[0.06em] text-[#9c99a9] mb-[4px]";
+  const inputCls = "w-full px-[10px] py-[7px] rounded-[8px] text-[12px] text-[var(--ink)] border border-[rgba(0,0,0,0.12)] bg-[#fafafb] outline-none focus:border-[var(--brand-accent)] focus:ring-1 focus:ring-[rgba(71,59,171,0.15)] transition-all";
+  const labelCls = "text-[10px] font-semibold uppercase tracking-[0.06em] text-[var(--ink-tertiary)] mb-[4px]";
 
   return (
     <motion.div
@@ -2506,7 +1394,7 @@ function SmartProposalCard({ input, context, onApply, onDismiss }: SmartProposal
     >
       {/* Header strip */}
       <div className="px-[14px] pt-[12px] pb-[10px] border-b border-[rgba(0,0,0,0.06)] bg-[#fafafa]">
-        <p className="text-[11px] text-[#686576] leading-[1.5] tracking-[0.17px]">
+        <p className="text-[11px] text-[var(--ink-secondary)] leading-[1.5] tracking-[0.17px]">
           {input.rationale}
         </p>
       </div>
@@ -2554,18 +1442,18 @@ function SmartProposalCard({ input, context, onApply, onDismiss }: SmartProposal
               return (
                 <div key={id} className="flex items-center gap-[8px] px-[10px] py-[7px] rounded-[8px] bg-[#f5f4f8] group">
                   <div className="flex-1 min-w-0">
-                    <p className="text-[12px] font-medium text-[#1f1d25] truncate">
+                    <p className="text-[12px] font-medium text-[var(--ink)] truncate">
                       {o ? `${o.year} ${o.make} ${o.model} ${o.trim}` : id}
                     </p>
                     {o && (
-                      <p className="text-[10.5px] text-[#686576] mt-[1px]">
+                      <p className="text-[10.5px] text-[var(--ink-secondary)] mt-[1px]">
                         {o.offerType} · ${o.monthlyPayment}/mo · PVI {o.pvi} · {o.aging}d aging
                       </p>
                     )}
                   </div>
                   <button
                     onClick={() => setOfferIds(prev => prev.filter(x => x !== id))}
-                    className="opacity-0 group-hover:opacity-100 text-[#9c99a9] hover:text-[#dc2626] transition-all cursor-pointer shrink-0"
+                    className="opacity-0 group-hover:opacity-100 text-[var(--ink-tertiary)] hover:text-[#dc2626] transition-all cursor-pointer shrink-0"
                   >
                     <Trash2 size={12} strokeWidth={1.7} />
                   </button>
@@ -2578,7 +1466,7 @@ function SmartProposalCard({ input, context, onApply, onDismiss }: SmartProposal
                 <select
                   value=""
                   onChange={e => { if (e.target.value) setOfferIds(prev => [...prev, e.target.value]); }}
-                  className="w-full px-[10px] py-[6px] rounded-[8px] text-[11px] text-[#473bab] border border-dashed border-[rgba(71,59,171,0.35)] bg-transparent cursor-pointer outline-none appearance-none"
+                  className="w-full px-[10px] py-[6px] rounded-[8px] text-[11px] text-[var(--brand-accent)] border border-dashed border-[rgba(71,59,171,0.35)] bg-transparent cursor-pointer outline-none appearance-none"
                 >
                   <option value="">+ Add another offer…</option>
                   {offers.filter(o => !offerIds.includes(o.id)).map(o => (
@@ -2587,7 +1475,7 @@ function SmartProposalCard({ input, context, onApply, onDismiss }: SmartProposal
                     </option>
                   ))}
                 </select>
-                <Plus size={10} className="absolute right-[10px] top-1/2 -translate-y-1/2 text-[#473bab] pointer-events-none" />
+                <Plus size={10} className="absolute right-[10px] top-1/2 -translate-y-1/2 text-[var(--brand-accent)] pointer-events-none" />
               </div>
             )}
           </div>
@@ -2606,18 +1494,18 @@ function SmartProposalCard({ input, context, onApply, onDismiss }: SmartProposal
               return (
                 <div key={id} className="flex items-center gap-[8px] px-[10px] py-[7px] rounded-[8px] bg-[#f5f4f8] group">
                   <div className="flex-1 min-w-0">
-                    <p className="text-[12px] font-medium text-[#1f1d25] truncate">
+                    <p className="text-[12px] font-medium text-[var(--ink)] truncate">
                       {t ? t.name : id}
                     </p>
                     {t && (
-                      <p className="text-[10.5px] text-[#686576] mt-[1px]">
+                      <p className="text-[10.5px] text-[var(--ink-secondary)] mt-[1px]">
                         {t.format} · {t.width}×{t.height} · {t.brand}
                       </p>
                     )}
                   </div>
                   <button
                     onClick={() => setTemplateIds(prev => prev.filter(x => x !== id))}
-                    className="opacity-0 group-hover:opacity-100 text-[#9c99a9] hover:text-[#dc2626] transition-all cursor-pointer shrink-0"
+                    className="opacity-0 group-hover:opacity-100 text-[var(--ink-tertiary)] hover:text-[#dc2626] transition-all cursor-pointer shrink-0"
                   >
                     <Trash2 size={12} strokeWidth={1.7} />
                   </button>
@@ -2629,7 +1517,7 @@ function SmartProposalCard({ input, context, onApply, onDismiss }: SmartProposal
                 <select
                   value=""
                   onChange={e => { if (e.target.value) setTemplateIds(prev => [...prev, e.target.value]); }}
-                  className="w-full px-[10px] py-[6px] rounded-[8px] text-[11px] text-[#473bab] border border-dashed border-[rgba(71,59,171,0.35)] bg-transparent cursor-pointer outline-none appearance-none"
+                  className="w-full px-[10px] py-[6px] rounded-[8px] text-[11px] text-[var(--brand-accent)] border border-dashed border-[rgba(71,59,171,0.35)] bg-transparent cursor-pointer outline-none appearance-none"
                 >
                   <option value="">+ Add another template…</option>
                   {templates.filter(t => !templateIds.includes(t.id)).map(t => (
@@ -2638,7 +1526,7 @@ function SmartProposalCard({ input, context, onApply, onDismiss }: SmartProposal
                     </option>
                   ))}
                 </select>
-                <Plus size={10} className="absolute right-[10px] top-1/2 -translate-y-1/2 text-[#473bab] pointer-events-none" />
+                <Plus size={10} className="absolute right-[10px] top-1/2 -translate-y-1/2 text-[var(--brand-accent)] pointer-events-none" />
               </div>
             )}
           </div>
@@ -2650,13 +1538,13 @@ function SmartProposalCard({ input, context, onApply, onDismiss }: SmartProposal
             onClick={handleApply}
             disabled={offerIds.length === 0 && templateIds.length === 0}
             className="flex-1 py-[8px] rounded-full text-[13px] font-medium tracking-[0.46px] text-white transition-all cursor-pointer disabled:opacity-40"
-            style={{ background: "linear-gradient(99deg, #473bab 0%, #6356e1 100%)" }}
+            style={{ background: "linear-gradient(99deg, var(--brand-accent) 0%, var(--brand-mid) 100%)" }}
           >
             Apply to project
           </button>
           <button
             onClick={onDismiss}
-            className="px-[14px] py-[8px] rounded-full text-[13px] text-[#686576] hover:bg-black/5 transition-colors cursor-pointer"
+            className="px-[14px] py-[8px] rounded-full text-[13px] text-[var(--ink-secondary)] hover:bg-black/5 transition-colors cursor-pointer"
           >
             Dismiss
           </button>
@@ -2677,7 +1565,7 @@ function AdPreviewCard({ offer, template }: {
   offer: { id: string; year: string; make: string; model: string; trim: string; offerType: string; monthlyPayment: number; term: number; pvi: number; aging: number; stock: number };
   template?: { id: string; name: string; format: string; width: number; height: number; brand: string };
 }) {
-  const brandColor = BRAND_COLORS[offer.make] ?? "#473bab";
+  const brandColor = BRAND_COLORS[offer.make] ?? "var(--brand-accent)";
 
   return (
     <motion.div
@@ -2691,8 +1579,8 @@ function AdPreviewCard({ offer, template }: {
       {/* Draft chip */}
       <div className="absolute top-[5px] right-[5px] z-10 flex items-center gap-[3px] px-[5px] py-[2px] rounded-full"
         style={{ background: "rgba(255,255,255,0.82)", backdropFilter: "blur(4px)" }}>
-        <div className="w-[5px] h-[5px] rounded-full" style={{ background: "#9c99a9" }} />
-        <span style={{ fontSize: 8, fontWeight: 600, color: "#686576", letterSpacing: "0.3px" }}>Draft</span>
+        <div className="w-[5px] h-[5px] rounded-full" style={{ background: "var(--ink-tertiary)" }} />
+        <span style={{ fontSize: 8, fontWeight: 600, color: "var(--ink-secondary)", letterSpacing: "0.3px" }}>Draft</span>
       </div>
 
       {/* Top bar */}
@@ -2765,18 +1653,18 @@ function PreviewStrip({ msg, context }: { msg: PreviewMsg; context: ProjectConte
       <button onClick={() => setOpen(o => !o)}
         className="flex items-center gap-[5px] mb-[8px] cursor-pointer group w-full text-left">
         <motion.div animate={{ rotate: open ? 0 : -90 }} transition={{ duration: 0.18 }}>
-          <ChevronDown size={11} strokeWidth={2} className="text-[#686576]" />
+          <ChevronDown size={11} strokeWidth={2} className="text-[var(--ink-secondary)]" />
         </motion.div>
-        <span style={{ fontSize: 11.5, fontWeight: 600, color: "#1f1d25" }}>
+        <span style={{ fontSize: 11.5, fontWeight: 600, color: "var(--ink)" }}>
           Preview ({selectedOffers.length})
         </span>
         {selectedTemplates.length > 0 && (
-          <span style={{ fontSize: 9.5, color: "#473bab", background: "rgba(71,59,171,0.08)", padding: "1px 7px", borderRadius: 100, fontWeight: 500 }}>
+          <span style={{ fontSize: 9.5, color: "var(--brand-accent)", background: "rgba(71,59,171,0.08)", padding: "1px 7px", borderRadius: 100, fontWeight: 500 }}>
             {selectedTemplates.length} template{selectedTemplates.length !== 1 ? "s" : ""}
           </span>
         )}
         <div className="flex-1" />
-        <span style={{ fontSize: 9.5, color: "#9c99a9" }} className="opacity-0 group-hover:opacity-100 transition-opacity">
+        <span style={{ fontSize: 9.5, color: "var(--ink-tertiary)" }} className="opacity-0 group-hover:opacity-100 transition-opacity">
           Details ↗
         </span>
       </button>
@@ -2929,17 +1817,17 @@ function ParsedOffersCard({
       {/* Header */}
       <div className="flex items-center gap-[8px] px-[12px] py-[10px] bg-[#fafafb] border-b border-[rgba(0,0,0,0.07)]">
         <div className="w-[28px] h-[28px] rounded-[6px] bg-[rgba(71,59,171,0.08)] flex items-center justify-center shrink-0">
-          <FileText size={14} className="text-[#473bab]" />
+          <FileText size={14} className="text-[var(--brand-accent)]" />
         </div>
         <div className="flex-1 min-w-0">
-          <p className="text-[12px] text-[#1f1d25] truncate" style={{ fontWeight: 500 }}>
+          <p className="text-[12px] text-[var(--ink)] truncate" style={{ fontWeight: 500 }}>
             {input.source}
           </p>
-          <p className="text-[11px] text-[#686576]">
+          <p className="text-[11px] text-[var(--ink-secondary)]">
             {input.offers.length} offer{input.offers.length === 1 ? "" : "s"} extracted
           </p>
         </div>
-        <button onClick={onDismiss} className="shrink-0 text-[#9c99a9] hover:text-[#686576] transition-colors">
+        <button onClick={onDismiss} className="shrink-0 text-[var(--ink-tertiary)] hover:text-[var(--ink-secondary)] transition-colors">
           <X size={14} />
         </button>
       </div>
@@ -2958,19 +1846,19 @@ function ParsedOffersCard({
             <span
               className="w-[15px] h-[15px] rounded-[3px] border-[1.5px] flex items-center justify-center transition-all pointer-events-none"
               style={{
-                borderColor: allChecked || someChecked ? "#473bab" : "rgba(0,0,0,0.25)",
-                background:  allChecked ? "#473bab" : "white",
+                borderColor: allChecked || someChecked ? "var(--brand-accent)" : "rgba(0,0,0,0.25)",
+                background:  allChecked ? "var(--brand-accent)" : "white",
               }}
             >
               {allChecked  && <Check size={9} className="text-white" strokeWidth={3} />}
-              {someChecked && <span className="w-[7px] h-[1.5px] rounded bg-[#473bab]" />}
+              {someChecked && <span className="w-[7px] h-[1.5px] rounded bg-[var(--brand-accent)]" />}
             </span>
           </span>
-          <span className="text-[11px] text-[#686576] group-hover:text-[#1f1d25] transition-colors">
+          <span className="text-[11px] text-[var(--ink-secondary)] group-hover:text-[var(--ink)] transition-colors">
             {allChecked ? "Deselect all" : someChecked ? `${checkedCount} selected` : "Select all"}
           </span>
         </label>
-        <span className="ml-auto text-[10px] text-[#9c99a9]">
+        <span className="ml-auto text-[10px] text-[var(--ink-tertiary)]">
           {input.offers.length} total
         </span>
       </div>
@@ -2997,7 +1885,7 @@ function ParsedOffersCard({
                     { key: "term",           label: "Term (mo)",           val: customizations[row.id]?.term           ?? row.term           },
                     { key: "dueAtSigning",   label: "Due at Signing ($)",  val: customizations[row.id]?.dueAtSigning   ?? row.due_at_signing ?? "0" },
                   ].map(({ key, label, val }) => (
-                    <label key={key} style={{ fontSize: 11 }} className="flex flex-col gap-[3px] text-[#686576]">
+                    <label key={key} style={{ fontSize: 11 }} className="flex flex-col gap-[3px] text-[var(--ink-secondary)]">
                       {label}
                       <input
                         type="number"
@@ -3011,7 +1899,7 @@ function ParsedOffersCard({
                             [key]: e.target.value,
                           },
                         }))}
-                        className="w-[90px] px-[8px] py-[4px] rounded-[6px] border border-[rgba(0,0,0,0.12)] text-[12px] text-[#1f1d25] bg-white outline-none focus:border-[#473bab] focus:ring-1 focus:ring-[rgba(71,59,171,0.15)]"
+                        className="w-[90px] px-[8px] py-[4px] rounded-[6px] border border-[rgba(0,0,0,0.12)] text-[12px] text-[var(--ink)] bg-white outline-none focus:border-[var(--brand-accent)] focus:ring-1 focus:ring-[rgba(71,59,171,0.15)]"
                       />
                     </label>
                   ))}
@@ -3030,8 +1918,8 @@ function ParsedOffersCard({
           className={cn(
             "flex-1 py-[8px] px-[14px] rounded-full text-[13px] tracking-[0.46px] transition-all duration-200",
             checkedCount > 0
-              ? "bg-[#473bab] hover:bg-[#392e8a] text-white cursor-pointer shadow-sm"
-              : "bg-[#473bab] opacity-40 text-white cursor-not-allowed"
+              ? "bg-[var(--brand-accent)] hover:bg-[#392e8a] text-white cursor-pointer shadow-sm"
+              : "bg-[var(--brand-accent)] opacity-40 text-white cursor-not-allowed"
           )}
           style={{ fontWeight: 500 }}
         >
@@ -3044,8 +1932,8 @@ function ParsedOffersCard({
           className={cn(
             "px-[14px] py-[8px] rounded-full text-[13px] font-medium border transition-colors cursor-pointer shrink-0",
             customizeMode
-              ? "bg-[rgba(71,59,171,0.08)] border-[rgba(71,59,171,0.3)] text-[#473bab]"
-              : "border-[rgba(0,0,0,0.12)] text-[#686576] hover:bg-black/5"
+              ? "bg-[rgba(71,59,171,0.08)] border-[rgba(71,59,171,0.3)] text-[var(--brand-accent)]"
+              : "border-[rgba(0,0,0,0.12)] text-[var(--ink-secondary)] hover:bg-black/5"
           )}
         >
           {customizeMode ? "Done" : "Customize"}
@@ -3060,11 +1948,11 @@ function ToolChipView({ name, input }: { name: string; input: Record<string, unk
   const cfg: Record<string, { label: string; icon: React.ReactNode; color: string; bg: string }> = {
     add_offers_to_project:        { label: "Added offers",     icon: <Plus     size={10} strokeWidth={2.5} />, color: "#16a34a", bg: "rgba(22,163,74,0.09)"  },
     remove_offers_from_project:   { label: "Removed offers",   icon: <Minus    size={10} strokeWidth={2.5} />, color: "#dc2626", bg: "rgba(220,38,38,0.09)"  },
-    add_templates_to_project:     { label: "Added templates",  icon: <FileText size={10} strokeWidth={2.5} />, color: "#6356E1", bg: "rgba(99,86,225,0.09)"  },
+    add_templates_to_project:     { label: "Added templates",  icon: <FileText size={10} strokeWidth={2.5} />, color: "var(--brand-mid)", bg: "rgba(99,86,225,0.09)"  },
     remove_templates_from_project:{ label: "Removed templates",icon: <Minus    size={10} strokeWidth={2.5} />, color: "#dc2626", bg: "rgba(220,38,38,0.09)"  },
     set_project_name:             { label: "Renamed project",  icon: <Tag      size={10} strokeWidth={2.5} />, color: "#0369a1", bg: "rgba(3,105,161,0.09)"  },
   };
-  const c = cfg[name] ?? { label: name, icon: null, color: "#686576", bg: "rgba(104,101,118,0.09)" };
+  const c = cfg[name] ?? { label: name, icon: null, color: "var(--ink-secondary)", bg: "rgba(104,101,118,0.09)" };
   let detail = "";
   if (name === "add_offers_to_project" || name === "remove_offers_from_project") {
     const ids = (input.offer_ids as string[]) ?? []; detail = ids.length === 1 ? ids[0] : `${ids.length} offers`;
@@ -3096,7 +1984,7 @@ function CategoryChip({ label, onClick }: { label: string; onClick?: () => void 
   return (
     <button onClick={onClick}
       className="relative rounded-full border border-[rgba(99,86,225,0.5)] px-[10px] py-[4px] hover:bg-[rgba(71,59,171,0.06)] transition-colors cursor-pointer">
-      <span className="text-[13px] text-[#473bab] tracking-[0.46px] whitespace-nowrap capitalize"
+      <span className="text-[13px] text-[var(--brand-accent)] tracking-[0.46px] whitespace-nowrap capitalize"
         style={{ fontWeight: 500, lineHeight: "22px" }}>
         {label}
       </span>
@@ -4040,14 +2928,14 @@ export function ProjectAgentPane({ isOpen, onClose, userType, activeUserName }: 
                   </button>
                 </Tooltip.Trigger>
                 <Tooltip.Portal>
-                  <Tooltip.Content sideOffset={5} className="z-[999] px-[8px] py-[4px] rounded-[6px] text-[11px] font-medium text-white bg-[#1f1d25] shadow-md select-none">
+                  <Tooltip.Content sideOffset={5} className="z-[999] px-[8px] py-[4px] rounded-[6px] text-[11px] font-medium text-white bg-[var(--ink)] shadow-md select-none">
                     {showHistory ? "Back to conversation" : "Nudge close panel"}
-                    <Tooltip.Arrow className="fill-[#1f1d25]" />
+                    <Tooltip.Arrow className="fill-[var(--ink)]" />
                   </Tooltip.Content>
                 </Tooltip.Portal>
               </Tooltip.Root>
 
-              <span className="ml-0.5 text-[16px] text-[#1f1d25] tracking-[0.15px] whitespace-nowrap shrink-0"
+              <span className="ml-0.5 text-[16px] text-[var(--ink)] tracking-[0.15px] whitespace-nowrap shrink-0"
                 style={{ fontWeight: 500, lineHeight: "1.5" }}>
                 AI Agent Auto
               </span>
@@ -4069,9 +2957,9 @@ export function ProjectAgentPane({ isOpen, onClose, userType, activeUserName }: 
                     </button>
                   </Tooltip.Trigger>
                   <Tooltip.Portal>
-                    <Tooltip.Content sideOffset={5} className="z-[999] px-[8px] py-[4px] rounded-[6px] text-[11px] font-medium text-white bg-[#1f1d25] shadow-md select-none">
+                    <Tooltip.Content sideOffset={5} className="z-[999] px-[8px] py-[4px] rounded-[6px] text-[11px] font-medium text-white bg-[var(--ink)] shadow-md select-none">
                       Thread history
-                      <Tooltip.Arrow className="fill-[#1f1d25]" />
+                      <Tooltip.Arrow className="fill-[var(--ink)]" />
                     </Tooltip.Content>
                   </Tooltip.Portal>
                 </Tooltip.Root>
@@ -4083,9 +2971,9 @@ export function ProjectAgentPane({ isOpen, onClose, userType, activeUserName }: 
                     </button>
                   </Tooltip.Trigger>
                   <Tooltip.Portal>
-                    <Tooltip.Content sideOffset={5} className="z-[999] px-[8px] py-[4px] rounded-[6px] text-[11px] font-medium text-white bg-[#1f1d25] shadow-md select-none">
+                    <Tooltip.Content sideOffset={5} className="z-[999] px-[8px] py-[4px] rounded-[6px] text-[11px] font-medium text-white bg-[var(--ink)] shadow-md select-none">
                       Fullscreen
-                      <Tooltip.Arrow className="fill-[#1f1d25]" />
+                      <Tooltip.Arrow className="fill-[var(--ink)]" />
                     </Tooltip.Content>
                   </Tooltip.Portal>
                 </Tooltip.Root>
@@ -4097,9 +2985,9 @@ export function ProjectAgentPane({ isOpen, onClose, userType, activeUserName }: 
                     </button>
                   </Tooltip.Trigger>
                   <Tooltip.Portal>
-                    <Tooltip.Content sideOffset={5} className="z-[999] px-[8px] py-[4px] rounded-[6px] text-[11px] font-medium text-white bg-[#1f1d25] shadow-md select-none">
+                    <Tooltip.Content sideOffset={5} className="z-[999] px-[8px] py-[4px] rounded-[6px] text-[11px] font-medium text-white bg-[var(--ink)] shadow-md select-none">
                       Close panel
-                      <Tooltip.Arrow className="fill-[#1f1d25]" />
+                      <Tooltip.Arrow className="fill-[var(--ink)]" />
                     </Tooltip.Content>
                   </Tooltip.Portal>
                 </Tooltip.Root>
@@ -4116,19 +3004,19 @@ export function ProjectAgentPane({ isOpen, onClose, userType, activeUserName }: 
                   {/* Search + new-thread row */}
                   <div className="flex items-center gap-[8px] mb-[12px] shrink-0">
                     <div className="relative flex-1">
-                      <Search size={13} className="absolute left-[10px] top-1/2 -translate-y-1/2 text-[#9c99a9] pointer-events-none" />
+                      <Search size={13} className="absolute left-[10px] top-1/2 -translate-y-1/2 text-[var(--ink-tertiary)] pointer-events-none" />
                       <input
                         type="text"
                         value={historySearch}
                         onChange={e => setHistorySearch(e.target.value)}
                         placeholder="Search conversations…"
-                        className="w-full pl-[30px] pr-[10px] py-[7px] rounded-[10px] text-[12px] text-[#1f1d25] border border-[rgba(0,0,0,0.1)] bg-[#fafafb] outline-none focus:border-[#473bab] focus:ring-1 focus:ring-[rgba(71,59,171,0.15)] transition-all"
+                        className="w-full pl-[30px] pr-[10px] py-[7px] rounded-[10px] text-[12px] text-[var(--ink)] border border-[rgba(0,0,0,0.1)] bg-[#fafafb] outline-none focus:border-[var(--brand-accent)] focus:ring-1 focus:ring-[rgba(71,59,171,0.15)] transition-all"
                       />
                     </div>
                     <button
                       onClick={handleNewThread}
                       title="New conversation"
-                      className="flex items-center justify-center w-[34px] h-[34px] rounded-full bg-[rgba(71,59,171,0.08)] hover:bg-[rgba(71,59,171,0.14)] transition-colors cursor-pointer shrink-0 text-[#473bab]"
+                      className="flex items-center justify-center w-[34px] h-[34px] rounded-full bg-[rgba(71,59,171,0.08)] hover:bg-[rgba(71,59,171,0.14)] transition-colors cursor-pointer shrink-0 text-[var(--brand-accent)]"
                     >
                       <Plus size={15} strokeWidth={2} />
                     </button>
@@ -4143,14 +3031,14 @@ export function ProjectAgentPane({ isOpen, onClose, userType, activeUserName }: 
                       const groups = groupThreadsByDate(filtered);
                       if (groups.length === 0) {
                         return (
-                          <div className="flex items-center justify-center h-[120px] text-[13px] text-[#9c99a9]">
+                          <div className="flex items-center justify-center h-[120px] text-[13px] text-[var(--ink-tertiary)]">
                             No conversations yet
                           </div>
                         );
                       }
                       return groups.map(({ label, items }) => (
                         <div key={label} className="mb-[16px]">
-                          <p className="text-[10px] font-semibold uppercase tracking-[0.06em] text-[#9c99a9] mb-[6px] px-[2px]">{label}</p>
+                          <p className="text-[10px] font-semibold uppercase tracking-[0.06em] text-[var(--ink-tertiary)] mb-[6px] px-[2px]">{label}</p>
                           <div className="flex flex-col gap-[2px]">
                             {items.map(thread => (
                               <button
@@ -4161,11 +3049,11 @@ export function ProjectAgentPane({ isOpen, onClose, userType, activeUserName }: 
                                   thread.id === currentThreadIdRef.current && "bg-[rgba(71,59,171,0.06)]"
                                 )}
                               >
-                                <p className="text-[13px] text-[#1f1d25] truncate"
+                                <p className="text-[13px] text-[var(--ink)] truncate"
                                   style={{ fontWeight: 500 }}>
                                   {thread.title}
                                 </p>
-                                <p className="text-[11px] text-[#9c99a9] mt-[1px]">
+                                <p className="text-[11px] text-[var(--ink-tertiary)] mt-[1px]">
                                   {new Date(thread.updatedAt).toLocaleString([], { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}
                                 </p>
                               </button>
@@ -4186,20 +3074,20 @@ export function ProjectAgentPane({ isOpen, onClose, userType, activeUserName }: 
                         WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>
                       Welcome, Jorge
                     </p>
-                    <p className="text-[14px] text-[#1f1d25] tracking-[0.15px] leading-[1.5] opacity-90 mb-[10px]">
+                    <p className="text-[14px] text-[var(--ink)] tracking-[0.15px] leading-[1.5] opacity-90 mb-[10px]">
                       {`Hi, I'm your Auto Intelligence Agent, ready to help you build and optimise your advertising projects.`}
                     </p>
                     <div className="flex items-center gap-[6px]">
-                      <p className="text-[14px] text-[#1f1d25] tracking-[0.15px] leading-[1.5] opacity-90 whitespace-nowrap shrink-0">My current focus is</p>
+                      <p className="text-[14px] text-[var(--ink)] tracking-[0.15px] leading-[1.5] opacity-90 whitespace-nowrap shrink-0">My current focus is</p>
                       <button className="flex items-center cursor-pointer">
                         <span className="text-[14px] tracking-[0.15px] leading-[1.5] opacity-90 whitespace-nowrap"
                           style={{ fontWeight: 700,
-                            backgroundImage: "linear-gradient(90deg, #473bab, #acabff)",
+                            backgroundImage: "linear-gradient(90deg, var(--brand-accent), var(--brand-dark-mode))",
                             WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>
                           {focusLabel}
                         </span>
                         <div className="size-[22px] flex items-center justify-center ml-[-2px]">
-                          <ChevronDown size={12} strokeWidth={1.5} style={{ color: "#473BAB" }} />
+                          <ChevronDown size={12} strokeWidth={1.5} style={{ color: "var(--brand-accent)" }} />
                         </div>
                       </button>
                     </div>
@@ -4266,7 +3154,7 @@ export function ProjectAgentPane({ isOpen, onClose, userType, activeUserName }: 
                           <img src={imgAgentAvatar} alt="AI" className="w-[22px] h-[22px] rounded-full object-cover shrink-0" />
                           <div className="flex items-center gap-[6px]">
                             <ConstellationArcMark arcs={arcState} size={18} />
-                            <span className="text-[12px] text-[#686576] tracking-[0.4px]">{simulatingStream ? "Setting up your project…" : loadingLabel}</span>
+                            <span className="text-[12px] text-[var(--ink-secondary)] tracking-[0.4px]">{simulatingStream ? "Setting up your project…" : loadingLabel}</span>
                           </div>
                         </div>
                       )}
@@ -4359,13 +3247,13 @@ function MessageBubble({
         <div className="ml-[40px] bg-[#fafaff] rounded-bl-[12px] rounded-tl-[12px] rounded-tr-[12px] px-[12px] py-[10px] relative">
           <div aria-hidden="true" className="absolute inset-0 rounded-bl-[12px] rounded-tl-[12px] rounded-tr-[12px] border border-[rgba(99,86,225,0.5)] pointer-events-none" />
           {message.text && (
-            <p className="text-[12px] text-[#1f1d25] leading-[1.43] tracking-[0.17px] mb-[6px]">{message.text}</p>
+            <p className="text-[12px] text-[var(--ink)] leading-[1.43] tracking-[0.17px] mb-[6px]">{message.text}</p>
           )}
           <div className="flex flex-wrap gap-[6px]">
             {message.files.map((f, i) => (
               <div key={i} className="flex items-center gap-[6px] px-[8px] py-[5px] bg-[rgba(71,59,171,0.06)] border border-[rgba(71,59,171,0.18)] rounded-[8px]">
-                <FileText size={11} className="text-[#473bab] shrink-0" />
-                <span className="text-[11px] text-[#473bab] truncate max-w-[160px]"
+                <FileText size={11} className="text-[var(--brand-accent)] shrink-0" />
+                <span className="text-[11px] text-[var(--brand-accent)] truncate max-w-[160px]"
                   style={{ fontWeight: 500 }}>{f.name}</span>
               </div>
             ))}
@@ -4529,7 +3417,7 @@ function MessageBubble({
       <div className="flex justify-end">
         <div className="ml-[40px] bg-[#fafaff] rounded-bl-[12px] rounded-tl-[12px] rounded-tr-[12px] px-[12px] py-[10px] relative">
           <div aria-hidden="true" className="absolute inset-0 rounded-bl-[12px] rounded-tl-[12px] rounded-tr-[12px] border border-[rgba(99,86,225,0.5)] pointer-events-none" />
-          <p className="text-[12px] text-[#1f1d25] leading-[1.43] tracking-[0.17px]">{message.content}</p>
+          <p className="text-[12px] text-[var(--ink)] leading-[1.43] tracking-[0.17px]">{message.content}</p>
         </div>
       </div>
     );
@@ -4551,10 +3439,10 @@ function AssistantBubble({ text, streaming = false, isGeneratePrompt = false }: 
           {hasMarkdown && !streaming
             ? <MarkdownContent text={text} />
             : (
-              <p className="text-[13px] text-[#1f1d25] leading-[1.6] tracking-[0.17px] whitespace-pre-wrap">
+              <p className="text-[13px] text-[var(--ink)] leading-[1.6] tracking-[0.17px] whitespace-pre-wrap">
                 {text}
                 {streaming && (
-                  <span style={{ display: "inline-block", width: 2, height: 13, background: "#473bab",
+                  <span style={{ display: "inline-block", width: 2, height: 13, background: "var(--brand-accent)",
                     marginLeft: 2, verticalAlign: "middle", animation: "blink 1s step-end infinite" }} />
                 )}
               </p>
@@ -4567,7 +3455,7 @@ function AssistantBubble({ text, streaming = false, isGeneratePrompt = false }: 
           <button
             onClick={() => window.dispatchEvent(new CustomEvent(AGENT_GENERATE_ASSETS_EVENT))}
             className="px-[18px] py-[9px] rounded-full text-[13px] font-medium tracking-[0.46px] text-white cursor-pointer transition-all"
-            style={{ background: "linear-gradient(99deg, #473bab 0%, #6356e1 100%)" }}
+            style={{ background: "linear-gradient(99deg, var(--brand-accent) 0%, var(--brand-mid) 100%)" }}
           >
             Generate Assets
           </button>

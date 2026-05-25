@@ -97,9 +97,6 @@ export function SetupProjectCard({ input, existingNames = [], onApply, onDismiss
   const togglePlatform = (p: string) =>
     setPlatforms(prev => prev.includes(p) ? prev.filter(x => x !== p) : [...prev, p]);
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const f: any = undefined;
-
   return (
     <motion.div
       initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}
@@ -141,7 +138,7 @@ export function SetupProjectCard({ input, existingNames = [], onApply, onDismiss
           <div className="flex-1">
             <p className={labelCls}>Account</p>
             <AgentSelect
-              value={account} onChange={setAccount} f={f}
+              value={account} onChange={setAccount}
               placeholder="Select account"
               options={AVAILABLE_ACCOUNTS.map(a => ({ value: a, label: a }))}
             />
@@ -149,7 +146,7 @@ export function SetupProjectCard({ input, existingNames = [], onApply, onDismiss
           <div className="flex-1">
             <p className={labelCls}>Brand</p>
             <AgentSelect
-              value={oem} onChange={setOem} f={f}
+              value={oem} onChange={setOem}
               options={AVAILABLE_BRANDS.map(b => ({ value: b, label: b }))}
             />
           </div>

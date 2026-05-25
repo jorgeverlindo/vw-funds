@@ -32,7 +32,7 @@ import { ProactiveAutoApplyBar, ProactiveQuestionsCard } from "./agent/Proactive
 import { AgentSelect, AgentAddSelect, ConfirmedChip, WhyThese } from "./agent/AgentSelects";
 import { SetupProjectCard } from "./agent/SetupProjectCard";
 import { OffersProposalCard } from "./agent/OffersProposalCard";
-import { TemplatePreviewModal } from "./agent/TemplatePreviewModal";
+import { type TemplateInfo } from "./agent/TemplatePreviewModal";
 import {
   loadAgentThreads, saveAgentThreads, getThreadTitle, groupThreadsByDate,
   fileToBase64, parseExcelToText, deduplicateName,
@@ -419,7 +419,6 @@ function TemplatesProposalCard({ input, context, onApply, onDismiss, proactive }
               );
             })}
             <AgentAddSelect
-              f={f}
               placeholder="+ Add another template…"
               onAdd={v => setTemplateIds(p => [...p, v])}
               options={templates
@@ -539,7 +538,7 @@ function BrandProposalCard({ input, projectName, onApply, onDismiss, proactive }
           <div>
             <p className={labelCls}>Brand / Theme Kit</p>
             <AgentSelect
-              value={oem} onChange={setOem} f={f}
+              value={oem} onChange={setOem}
               options={AVAILABLE_BRANDS.map(b => ({ value: b, label: b }))}
             />
           </div>

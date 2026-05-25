@@ -134,9 +134,6 @@ export function OffersProposalCard({ input, context, onApply, onDismiss, proacti
     );
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const f: any = undefined;
-
   return (
     <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}
       className="ml-[32px] mt-[4px] flex flex-col gap-[8px]">
@@ -241,7 +238,6 @@ export function OffersProposalCard({ input, context, onApply, onDismiss, proacti
       {/* Add another + action buttons */}
       <div className="flex flex-col gap-[6px] mt-[2px]">
         <AgentAddSelect
-          f={f}
           placeholder="+ Add another offer…"
           onAdd={v => setOfferIds(p => [...p, v])}
           options={offers

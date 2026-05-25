@@ -1,12 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import React, { useState } from "react";
 import { ChevronDown, Check, Plus } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import {
   DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem,
 } from "../../ui/dropdown-menu";
-import { cn } from "../../../../lib/utils";
 
 // ─── Confirmed chip ────────────────────────────────────────────────────────────
 export function ConfirmedChip({ label }: { label: string }) {
@@ -28,13 +27,12 @@ export function ConfirmedChip({ label }: { label: string }) {
 
 /** Standard select — shows current value, opens custom dropdown menu. */
 export function AgentSelect({
-  value, onChange, options, placeholder, f,
+  value, onChange, options, placeholder,
 }: {
   value: string;
   onChange: (v: string) => void;
   options: { value: string; label: string }[];
   placeholder?: string;
-  f: React.CSSProperties;
 }) {
   const label = options.find(o => o.value === value)?.label ?? placeholder ?? "Select";
   const menuCls = "z-[500] bg-white rounded-xl shadow-xl border border-[rgba(0,0,0,0.1)] p-1 animate-in fade-in-0 zoom-in-95 min-w-[var(--radix-dropdown-menu-trigger-width)]";
@@ -63,12 +61,11 @@ export function AgentSelect({
 
 /** "Add another" variant — dashed border, purple text, Plus icon trigger. */
 export function AgentAddSelect({
-  onAdd, options, placeholder, f,
+  onAdd, options, placeholder,
 }: {
   onAdd: (v: string) => void;
   options: { value: string; label: string }[];
   placeholder?: string;
-  f: React.CSSProperties;
 }) {
   if (options.length === 0) return null;
   const menuCls = "z-[500] bg-white rounded-xl shadow-xl border border-[rgba(0,0,0,0.1)] p-1 animate-in fade-in-0 zoom-in-95 min-w-[var(--radix-dropdown-menu-trigger-width)] max-h-[240px] overflow-y-auto";

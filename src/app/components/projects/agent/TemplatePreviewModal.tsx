@@ -4,7 +4,7 @@ import { motion } from "motion/react";
 import { X, FileText } from "lucide-react";
 
 // ─── Template Preview Modal ────────────────────────────────────────────────────
-type TemplateInfo = { id: string; name: string; format: string; width: number; height: number; brand: string };
+export type TemplateInfo = { id: string; name: string; format: string; width: number; height: number; brand: string };
 
 export function TemplatePreviewModal({ template, onClose }: { template: TemplateInfo | null; onClose: () => void }) {
   if (!template) return null;

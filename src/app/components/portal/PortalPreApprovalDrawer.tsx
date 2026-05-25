@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { X, CheckCircle2 } from 'lucide-react';
 import { PortalPreviewArea } from './PortalPreviewArea';
 import { PreApprovalForm } from '../pre-approval/PreApprovalForm';
+import type { FormValues } from '../pre-approval/PreApprovalForm';
 import { emitSnackbar } from '@/app/components/Snackbar';
 import { useWorkflow } from '@/app/contexts/WorkflowContext';
 
@@ -33,14 +34,14 @@ export function PortalPreApprovalDrawer({ open, onClose, assets }: PortalPreAppr
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [open, onClose, isSubmitting, isSubmitted]);
 
-  const handleSubmit = (data: any) => {
+  const handleSubmit = (data: FormValues) => {
     setIsSubmitting(true);
     setTimeout(() => {
       // Create a new sequential ID in the datagrid
       addPortalSubmission({
-        title: data?.title,
-        mediaType: data?.mediaType,
-        initiativeType: data?.initiativeType,
+        title: data.title,
+        mediaType: data.mediaType,
+        initiativeType: data.initiativeType,
       });
       setIsSubmitting(false);
       setIsSubmitted(true);

@@ -16,7 +16,7 @@ import { DocumentPreviewModal } from './DocumentPreviewModal';
 
 // ─── Types ─────────────────────────────────────────────────────────────────
 
-interface FormValues {
+export interface FormValues {
   title: string;
   fund: string;
   dealershipName: string;

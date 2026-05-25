@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { X, CheckCircle2 } from 'lucide-react';
 import { PreviewArea } from './PreviewArea';
 import { PreApprovalForm } from './PreApprovalForm';
+import type { FormValues } from './PreApprovalForm';
 import { VideoAnnotationDrawer } from './VideoAnnotationDrawer';
 import { useWorkflow } from '@/app/contexts/WorkflowContext';
 import type { WorkflowDocument } from '@/app/contexts/WorkflowContext';
@@ -24,7 +25,7 @@ export function PreApprovalDrawer({ open, onClose }: PreApprovalDrawerProps) {
     if (open) clearPreApprovalDocuments();
   }, [open]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const handleSubmit = (_data: any) => {
+  const handleSubmit = (_data: FormValues) => {
     setIsSubmitting(true);
     setTimeout(() => {
       // Persist to WorkflowContext — marks PA as Submitted and fires OEM notification

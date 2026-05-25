@@ -36,7 +36,7 @@ function Tooltip({ label, children, side = 'top' }: {
               side === 'top' && 'bottom-full mb-[6px] whitespace-nowrap',
               side === 'right' && 'left-full ml-[6px]',
             )}
-            style={{ fontSize: 11, fontFamily: "'Roboto', sans-serif", letterSpacing: '0.17px', lineHeight: '1.43', maxWidth: 220, whiteSpace: side === 'right' ? 'normal' : 'nowrap' }}
+            style={{ fontSize: 11, letterSpacing: '0.17px', lineHeight: '1.43', maxWidth: 220, whiteSpace: side === 'right' ? 'normal' : 'nowrap' }}
           >
             {label}
             {side === 'top' && <div className="absolute left-1/2 -translate-x-1/2 top-full w-0 h-0 border-l-[4px] border-r-[4px] border-t-[4px] border-l-transparent border-r-transparent border-t-[#1f1d25]" />}
@@ -149,7 +149,7 @@ function LoadingState({ onComplete }: { onComplete: () => void }) {
         <ConstellationArcMark arcs={arcs} size={20} />
         <AnimatePresence mode="wait">
           <motion.span key={step.label} initial={{ opacity: 0, y: 3 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -3 }} transition={{ duration: 0.18 }}
-            className="text-[12px] text-[#686576] tracking-[0.4px] leading-[1.66]" style={{ fontFamily: "'Roboto', sans-serif" }}>
+            className="text-[12px] text-[#686576] tracking-[0.4px] leading-[1.66]">
             {step.label}…
           </motion.span>
         </AnimatePresence>
@@ -179,7 +179,7 @@ function LoadingState({ onComplete }: { onComplete: () => void }) {
                       state === 'idle'   && 'text-[#9c99a9]',
                       state === 'active' && 'text-[#473bab]',
                       state === 'done'   && 'text-[#686576] line-through',
-                    )} style={{ fontFamily: "'Roboto', sans-serif" }}>{t}</span>
+                    )}>{t}</span>
                   </motion.div>
                 );
               })}
@@ -265,7 +265,7 @@ function VoiceStatus({ isActive }: { isActive: boolean }) {
     <AnimatePresence>
       {isActive && (
         <motion.p key="voice-status" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }}
-          className="text-center select-none" style={{ fontFamily: "'Roboto', sans-serif", fontWeight: 500, fontSize: 10, color: '#473bab', letterSpacing: '0.03em', lineHeight: 1.5 }}>
+          className="text-center select-none" style={{ fontWeight: 500, fontSize: 10, color: '#473bab', letterSpacing: '0.03em', lineHeight: 1.5 }}>
           Listening…
         </motion.p>
       )}
@@ -509,7 +509,6 @@ export function AgentInput({ onSubmit, compact = false, accountName }: AgentInpu
             ref={textareaRef}
             placeholder={isListening ? '' : 'Ask anything'}
             className="flex-1 resize-none bg-transparent border-none outline-none text-[14px] text-[#1f1d25] placeholder-[#9c99a9] tracking-[0.15px] leading-[1.5] min-h-[22px] custom-scrollbar"
-            style={{ fontFamily: "'Roboto', sans-serif" }}
             onPaste={handlePaste} />
         </div>
         <VoiceWaveRegion isActive={isListening} amplitudeData={amplitudeData} />
@@ -526,7 +525,7 @@ export function AgentInput({ onSubmit, compact = false, accountName }: AgentInpu
                   <path d={svgPaths.p2fb20000} fill="#111014" fillOpacity="0.56" />
                 </svg>
               </div>
-              <span className="text-[13px] text-[rgba(17,16,20,0.56)] tracking-[0.46px] whitespace-nowrap" style={{ fontFamily: "'Roboto', sans-serif", fontWeight: 500 }}>{accountName ?? "Jack Daniels Volkswagen"}</span>
+              <span className="text-[13px] text-[rgba(17,16,20,0.56)] tracking-[0.46px] whitespace-nowrap" style={{ fontWeight: 500 }}>{accountName ?? "Jack Daniels Volkswagen"}</span>
             </button>
           </div>
           <div className="flex items-center gap-[10px]">
@@ -559,7 +558,7 @@ export function AgentInput({ onSubmit, compact = false, accountName }: AgentInpu
 function CategoryChip({ label }: { label: string }) {
   return (
     <button className="relative rounded-full border border-[rgba(99,86,225,0.5)] px-[10px] py-[4px] hover:bg-[rgba(71,59,171,0.06)] transition-colors cursor-pointer">
-      <span className="text-[13px] text-[#473bab] tracking-[0.46px] whitespace-nowrap capitalize" style={{ fontFamily: "'Roboto', sans-serif", fontWeight: 500, lineHeight: '22px' }}>{label}</span>
+      <span className="text-[13px] text-[#473bab] tracking-[0.46px] whitespace-nowrap capitalize" style={{ fontWeight: 500, lineHeight: '22px' }}>{label}</span>
     </button>
   );
 }
@@ -578,8 +577,8 @@ function WarningBox({ variant, title, body }: WarningBoxProps) {
     <div className={cn('rounded-[8px] flex gap-0 overflow-hidden', TOKEN.bg, TOKEN.borderLeft)}>
       <div className="flex flex-col items-center pt-[13px] pl-[10px] pr-[6px] shrink-0"><div className={cn('w-[5px] h-[5px] rounded-full shrink-0', TOKEN.dot)} /></div>
       <div className="flex flex-col gap-[3px] py-[10px] pr-[12px] min-w-0">
-        <p className={cn('text-[13px] leading-[1.46] tracking-[0.17px]', TOKEN.titleColor)} style={{ fontFamily: "'Roboto', sans-serif", fontWeight: 500 }}>{title}</p>
-        <p className={cn('text-[12px] leading-[1.5] tracking-[0.17px]', TOKEN.bodyColor)} style={{ fontFamily: "'Roboto', sans-serif" }}>{body}</p>
+        <p className={cn('text-[13px] leading-[1.46] tracking-[0.17px]', TOKEN.titleColor)} style={{ fontWeight: 500 }}>{title}</p>
+        <p className={cn('text-[12px] leading-[1.5] tracking-[0.17px]', TOKEN.bodyColor)}>{body}</p>
       </div>
     </div>
   );
@@ -589,7 +588,7 @@ function WarningBox({ variant, title, body }: WarningBoxProps) {
 function SourceChip({ label }: { label: string }) {
   const isVin = label.toLowerCase().startsWith('vin');
   return (
-    <span className="inline-flex items-center gap-[3px] px-[5px] py-[1px] rounded-[5px] text-[10px] tracking-[0.3px] whitespace-nowrap shrink-0 bg-[#f0f2f4] text-[#686576]" style={{ fontFamily: "'Roboto', sans-serif" }}>
+    <span className="inline-flex items-center gap-[3px] px-[5px] py-[1px] rounded-[5px] text-[10px] tracking-[0.3px] whitespace-nowrap shrink-0 bg-[#f0f2f4] text-[#686576]">
       {label}
       {isVin && <svg className="w-[5px] h-[5px] shrink-0 opacity-60" fill="none" viewBox="0 0 3 5"><path d="M0.5 4.5L2.32322 2.67678C2.42085 2.57915 2.42085 2.42085 2.32322 2.32322L0.5 0.5" stroke="#686576" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.1" /></svg>}
     </span>
@@ -600,7 +599,7 @@ function RatingBadge({ rating }: { rating: 'Excellent' | 'Good' | 'OK' }) {
   return (
     <span className={cn('inline-flex items-center px-[6px] py-[2px] rounded-[4px] text-[10px] tracking-[0.3px] text-white shrink-0',
       rating === 'Excellent' && 'bg-[#3e8346]', rating === 'Good' && 'bg-[#f57c00]', rating === 'OK' && 'bg-[#9e9e9e]',
-    )} style={{ fontFamily: "'Roboto', sans-serif", fontWeight: 700 }}>{rating}</span>
+    )} style={{ fontWeight: 700 }}>{rating}</span>
   );
 }
 
@@ -608,7 +607,7 @@ function PriorityBadge({ level }: { level: 'High' | 'Medium' | 'Low' }) {
   return (
     <span className={cn('text-[11px] tracking-[0.4px] leading-[1.5] px-[6px] py-[2px] rounded-[4px] whitespace-nowrap',
       level === 'High' && 'bg-[#fde8e8] text-[#c62828]', level === 'Medium' && 'bg-[#fff8e1] text-[#f57f17]', level === 'Low' && 'bg-[#f0f2f4] text-[#686576]',
-    )} style={{ fontFamily: "'Roboto', sans-serif", fontWeight: 500 }}>{level}</span>
+    )} style={{ fontWeight: 500 }}>{level}</span>
   );
 }
 
@@ -658,28 +657,28 @@ function RecommendationsCard({ priority, title, budget, stock, transit, descript
           />
           {/* Priority badge overlay */}
           <div className="absolute top-[4px] left-[4px] w-[17px] h-[17px] rounded-full bg-[#473bab] shadow-sm flex items-center justify-center shrink-0">
-            <span style={{ fontFamily: "'Roboto', sans-serif", fontWeight: 700, fontSize: 9, lineHeight: 1, color: 'white' }}>{priority}</span>
+            <span style={{ fontWeight: 700, fontSize: 9, lineHeight: 1, color: 'white' }}>{priority}</span>
           </div>
         </div>
         <div className="flex flex-col gap-[5px] min-w-0 flex-1 pt-[1px]">
-          <p className="text-[12px] text-[#1f1d25] tracking-[0.17px] leading-[1.43]" style={{ fontFamily: "'Roboto', sans-serif", fontWeight: 500 }}>{title}</p>
+          <p className="text-[12px] text-[#1f1d25] tracking-[0.17px] leading-[1.43]" style={{ fontWeight: 500 }}>{title}</p>
           <div className="flex items-center gap-[6px] flex-wrap">
-            <span className="inline-flex items-center px-[7px] py-[2px] bg-[#e8f5e9] rounded-[6px] text-[11px] text-[#1b5e20] tracking-[0.4px] leading-[1.5] shrink-0" style={{ fontFamily: "'Roboto', sans-serif", fontWeight: 500 }}>{budget}</span>
-            <span className="text-[11px] text-[#686576] tracking-[0.4px] leading-[1.5] whitespace-nowrap" style={{ fontFamily: "'Roboto', sans-serif" }}>{stock}</span>
-            {transit && <><span className="text-[#ccc] select-none">·</span><span className="text-[11px] text-[#686576] tracking-[0.4px] leading-[1.5] whitespace-nowrap" style={{ fontFamily: "'Roboto', sans-serif" }}>{transit}</span></>}
+            <span className="inline-flex items-center px-[7px] py-[2px] bg-[#e8f5e9] rounded-[6px] text-[11px] text-[#1b5e20] tracking-[0.4px] leading-[1.5] shrink-0" style={{ fontWeight: 500 }}>{budget}</span>
+            <span className="text-[11px] text-[#686576] tracking-[0.4px] leading-[1.5] whitespace-nowrap">{stock}</span>
+            {transit && <><span className="text-[#ccc] select-none">·</span><span className="text-[11px] text-[#686576] tracking-[0.4px] leading-[1.5] whitespace-nowrap">{transit}</span></>}
           </div>
         </div>
       </div>
 
       {/* Rationale */}
       <div className="border-t border-[rgba(0,0,0,0.07)] px-[10px] py-[8px] bg-[#fafafa]">
-        <p className="text-[11px] text-[#1f1d25] leading-[1.6] tracking-[0.16px]" style={{ fontFamily: "'Roboto', sans-serif" }}>{description}</p>
+        <p className="text-[11px] text-[#1f1d25] leading-[1.6] tracking-[0.16px]">{description}</p>
       </div>
 
       {/* Recommended Offers */}
       <div className="border-t border-[rgba(0,0,0,0.07)]">
         <button onClick={() => setOffersOpen(o => !o)} className="w-full flex items-center justify-between px-[10px] pt-[7px] pb-[5px] hover:bg-[rgba(0,0,0,0.02)] transition-colors cursor-pointer">
-          <p className="text-[10px] text-[#686576] tracking-[0.5px] uppercase" style={{ fontFamily: "'Roboto', sans-serif", fontWeight: 600 }}>Recommended Offers</p>
+          <p className="text-[10px] text-[#686576] tracking-[0.5px] uppercase" style={{ fontWeight: 600 }}>Recommended Offers</p>
           <motion.div animate={{ rotate: offersOpen ? 0 : -90 }} transition={{ duration: 0.18 }}>
             <svg className="w-[8px] h-[5px]" fill="none" viewBox="0 0 9.5 5.3"><path d={svgPaths.p14229000} stroke="#686576" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" /></svg>
           </motion.div>
@@ -692,14 +691,14 @@ function RecommendationsCard({ priority, title, budget, stock, transit, descript
                   <colgroup><col style={{ width: '50px' }} /><col style={{ width: '110px' }} /><col /><col style={{ width: '64px' }} /></colgroup>
                   <thead>
                     <tr>{['Type', 'Terms', 'Source', 'Rating'].map(h => (
-                      <th key={h} className="pb-[4px] text-left whitespace-nowrap" style={{ fontFamily: "'Roboto', sans-serif", fontWeight: 400, fontSize: 10, color: '#9c99a9', letterSpacing: '0.3px' }}>{h}</th>
+                      <th key={h} className="pb-[4px] text-left whitespace-nowrap" style={{ fontWeight: 400, fontSize: 10, color: '#9c99a9', letterSpacing: '0.3px' }}>{h}</th>
                     ))}</tr>
                   </thead>
                   <tbody>
                     {offers.map((o, i) => (
                       <tr key={i} className={cn('border-t border-[rgba(0,0,0,0.05)]', i === 0 && 'border-t-0')}>
-                        <td className="py-[4px] pr-[6px] align-middle"><span className="text-[11px] text-[#686576] tracking-[0.17px] whitespace-nowrap" style={{ fontFamily: "'Roboto', sans-serif" }}>{o.type}</span></td>
-                        <td className="py-[4px] pr-[6px] align-middle"><span className="text-[11px] text-[#1f1d25] tracking-[0.17px] whitespace-nowrap" style={{ fontFamily: "'Roboto', sans-serif", fontWeight: 500 }}>{o.detail}</span></td>
+                        <td className="py-[4px] pr-[6px] align-middle"><span className="text-[11px] text-[#686576] tracking-[0.17px] whitespace-nowrap">{o.type}</span></td>
+                        <td className="py-[4px] pr-[6px] align-middle"><span className="text-[11px] text-[#1f1d25] tracking-[0.17px] whitespace-nowrap" style={{ fontWeight: 500 }}>{o.detail}</span></td>
                         <td className="py-[4px] pr-[6px] align-middle"><SourceChip label={o.source} /></td>
                         <td className="py-[4px] text-right align-middle"><RatingBadge rating={o.rating} /></td>
                       </tr>
@@ -731,7 +730,7 @@ function RecommendationsCard({ priority, title, budget, stock, transit, descript
         </button>
         <span
           className={cn('text-[11px] tracking-[0.4px] leading-[1.5] select-none cursor-pointer', included ? 'text-[#473bab]' : 'text-[#9c99a9]')}
-          style={{ fontFamily: "'Roboto', sans-serif", fontWeight: included ? 500 : 400 }}
+          style={{ fontWeight: included ? 500 : 400 }}
           onClick={onToggleIncluded}
         >
           Include Campaign
@@ -898,7 +897,7 @@ function ResponseState({ prompt, attachment }: { prompt: string; attachment: Fil
       <div className="flex flex-col items-end gap-[6px]">
         <div className="ml-[40px] bg-[#fafaff] rounded-bl-[12px] rounded-tl-[12px] rounded-tr-[12px] px-[12px] py-[10px] relative">
           <div aria-hidden="true" className="absolute inset-0 rounded-bl-[12px] rounded-tl-[12px] rounded-tr-[12px] border border-[rgba(99,86,225,0.5)] pointer-events-none" />
-          <p className="text-[12px] text-[#1f1d25] leading-[1.43] tracking-[0.17px]" style={{ fontFamily: "'Roboto', sans-serif" }}>
+          <p className="text-[12px] text-[#1f1d25] leading-[1.43] tracking-[0.17px]">
             {prompt || 'Raise what I have in accrued funds and plan strategies based on my inventory for April. Order them by priority and justify each one, with the corresponding budget allocation.'}
           </p>
           {attachment && (
@@ -912,7 +911,7 @@ function ResponseState({ prompt, attachment }: { prompt: string; attachment: Fil
 
       {/* Thinking summary */}
       <div className="flex items-center gap-[6px]">
-        <span className="text-[11px] text-[#686576] tracking-[0.4px] leading-[1.66]" style={{ fontFamily: "'Roboto', sans-serif" }}>Thought for 41s</span>
+        <span className="text-[11px] text-[#686576] tracking-[0.4px] leading-[1.66]">Thought for 41s</span>
         <button onClick={() => setThinkingOpen(o => !o)} className="hover:bg-black/5 rounded p-0.5 transition-colors cursor-pointer">
           <motion.div animate={{ rotate: thinkingOpen ? 180 : 0 }} transition={{ duration: 0.18 }}>
             <svg className="w-[9px] h-[5px]" fill="none" viewBox="0 0 9.5 5.3"><path d={svgPaths.p14229000} stroke="#686576" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" /></svg>
@@ -926,7 +925,7 @@ function ResponseState({ prompt, attachment }: { prompt: string; attachment: Fil
               {THINKING_STEPS.map(s => (
                 <div key={s.label} className="flex items-center gap-[8px]">
                   <div className="w-[14px] h-[14px] rounded-full bg-[#473bab] flex items-center justify-center shrink-0"><Check className="w-2.5 h-2.5 text-white" strokeWidth={3} /></div>
-                  <span className="text-[11px] text-[#686576] tracking-[0.4px] line-through" style={{ fontFamily: "'Roboto', sans-serif" }}>{s.label}</span>
+                  <span className="text-[11px] text-[#686576] tracking-[0.4px] line-through">{s.label}</span>
                 </div>
               ))}
             </div>
@@ -937,42 +936,42 @@ function ResponseState({ prompt, attachment }: { prompt: string; attachment: Fil
       {/* Agent identity row */}
       <div className="flex items-center gap-[6px]">
         <img src={imgAgentAvatar} alt="AI Agent" className="w-[24px] h-[24px] rounded-full object-cover shrink-0" />
-        <span className="text-[12px] text-[#1f1d25] tracking-[0.17px]" style={{ fontFamily: "'Roboto', sans-serif", fontWeight: 500 }}>AI Agent Auto</span>
+        <span className="text-[12px] text-[#1f1d25] tracking-[0.17px]" style={{ fontWeight: 500 }}>AI Agent Auto</span>
         <div className="flex-1 h-[1px] bg-[rgba(0,0,0,0.12)]" />
       </div>
 
       {/* Budget Summary */}
       <div className="flex flex-col gap-[10px]">
         <div className="flex items-center gap-[8px]">
-          <p className="text-[20px] text-[#1f1d25] tracking-[0.15px] leading-[1.6] shrink-0" style={{ fontFamily: "'Roboto', sans-serif", fontWeight: 500 }}>Budget Summary</p>
+          <p className="text-[20px] text-[#1f1d25] tracking-[0.15px] leading-[1.6] shrink-0" style={{ fontWeight: 500 }}>Budget Summary</p>
           <div className="flex-1 h-[1px] bg-[rgba(0,0,0,0.12)]" />
         </div>
-        <p className="text-[11px] text-[#686576] tracking-[0.4px] -mt-[6px]" style={{ fontFamily: "'Roboto', sans-serif" }}>Company Plan · April 2025</p>
+        <p className="text-[11px] text-[#686576] tracking-[0.4px] -mt-[6px]">Company Plan · April 2025</p>
         <div className="flex gap-[8px]">
           <div className="flex-1 bg-[#edf7ed] rounded-[12px] border border-[rgba(0,0,0,0.12)] px-[12px] pt-[12px] pb-[8px] flex flex-col gap-[2px]">
-            <span className="text-[11px] text-[#1b5e20] tracking-[0.4px] leading-[1.66]" style={{ fontFamily: "'Roboto', sans-serif" }}>Approved</span>
-            <span className="text-[16px] text-[#1b5e20] tracking-[0.15px]" style={{ fontFamily: "'Roboto', sans-serif" }}>$140K</span>
+            <span className="text-[11px] text-[#1b5e20] tracking-[0.4px] leading-[1.66]">Approved</span>
+            <span className="text-[16px] text-[#1b5e20] tracking-[0.15px]">$140K</span>
           </div>
           <div className="flex-1 bg-[#f4f5f6] rounded-[12px] border border-[rgba(0,0,0,0.12)] px-[12px] pt-[12px] pb-[8px] flex flex-col gap-[2px]">
-            <span className="text-[11px] text-[#1f1d25] tracking-[0.4px] leading-[1.66]" style={{ fontFamily: "'Roboto', sans-serif" }}>Recommended</span>
-            <span className="text-[16px] text-[#686576] tracking-[0.15px]" style={{ fontFamily: "'Roboto', sans-serif" }}>$132K</span>
+            <span className="text-[11px] text-[#1f1d25] tracking-[0.4px] leading-[1.66]">Recommended</span>
+            <span className="text-[16px] text-[#686576] tracking-[0.15px]">$132K</span>
           </div>
           <div className="flex-1 bg-[#f4f5f6] rounded-[12px] border border-[rgba(0,0,0,0.12)] px-[12px] pt-[12px] pb-[8px] flex flex-col gap-[2px]">
-            <span className="text-[11px] text-[#1f1d25] tracking-[0.4px] leading-[1.66]" style={{ fontFamily: "'Roboto', sans-serif" }}>Unallocated</span>
-            <span className="text-[16px] text-[#686576] tracking-[0.15px]" style={{ fontFamily: "'Roboto', sans-serif" }}>$8K</span>
+            <span className="text-[11px] text-[#1f1d25] tracking-[0.4px] leading-[1.66]">Unallocated</span>
+            <span className="text-[16px] text-[#686576] tracking-[0.15px]">$8K</span>
           </div>
         </div>
         {/* TASK 1 — "Nauman" replaced with "Mallory" */}
-        <p className="text-[12px] text-[#1f1d25] leading-[1.43] tracking-[0.17px]" style={{ fontFamily: "'Roboto', sans-serif" }}>
+        <p className="text-[12px] text-[#1f1d25] leading-[1.43] tracking-[0.17px]">
           Hi Mallory — <strong>$140,000 in approved/accrued funds</strong> available for April. Based on inventory depth, offer quality, and March signals, I've prioritized four campaigns. Total recommended: $132,000, keeping $8,000 in reserve.
         </p>
       </div>
 
       {/* Inventory Mapping */}
       <div className="flex flex-col gap-[8px]">
-        <p className="text-[14px] text-[#1f1d25] tracking-[0.15px]" style={{ fontFamily: "'Roboto', sans-serif", fontWeight: 500 }}>1. Inventory Mapping</p>
+        <p className="text-[14px] text-[#1f1d25] tracking-[0.15px]" style={{ fontWeight: 500 }}>1. Inventory Mapping</p>
         <div className="overflow-x-auto rounded-[8px] border border-[rgba(0,0,0,0.1)]">
-          <table className="w-full min-w-[340px] border-collapse text-[11px]" style={{ fontFamily: "'Roboto', sans-serif" }}>
+          <table className="w-full min-w-[340px] border-collapse text-[11px]">
             <thead>
               <tr className="bg-[#f4f5f6] border-b border-[rgba(0,0,0,0.1)]">
                 {['Model', 'Inventory', 'State', 'Priority'].map(h => (
@@ -1001,7 +1000,7 @@ function ResponseState({ prompt, attachment }: { prompt: string; attachment: Fil
 
       {/* Main Insights */}
       <div className="flex flex-col gap-[8px]">
-        <p className="text-[14px] text-[#1f1d25] tracking-[0.15px]" style={{ fontFamily: "'Roboto', sans-serif", fontWeight: 500 }}>2. Main Insights</p>
+        <p className="text-[14px] text-[#1f1d25] tracking-[0.15px]" style={{ fontWeight: 500 }}>2. Main Insights</p>
         <WarningBox variant="green"  title="ID.4"        body="EV lease campaigns drove 3.1× more VDP views vs March avg. Tax credit messaging converted at 2.4× the national rate — prioritize while window is open." />
         <WarningBox variant="purple" title="Atlas"       body="Finance + cash bonus format outperformed lease-only by 40% on lead volume. APR + customer bonus is the recommended combination." />
         <WarningBox variant="info"   title="Paid Social" body="Broad-audience social underperformed across all models (avg TI 1.6). All April campaigns should use in-AOR remarketing + conquest only." />
@@ -1009,7 +1008,7 @@ function ResponseState({ prompt, attachment }: { prompt: string; attachment: Fil
 
       {/* TASK 2 — Recommended Campaigns: 4 unique cards with correct data from Annex 4 */}
       <div className="flex flex-col gap-[10px]">
-        <p className="text-[14px] text-[#1f1d25] tracking-[0.15px]" style={{ fontFamily: "'Roboto', sans-serif", fontWeight: 500 }}>3. Recommended Campaigns</p>
+        <p className="text-[14px] text-[#1f1d25] tracking-[0.15px]" style={{ fontWeight: 500 }}>3. Recommended Campaigns</p>
         {CAMPAIGNS.map(c => (
           <RecommendationsCard
             key={c.id}
@@ -1029,10 +1028,10 @@ function ResponseState({ prompt, attachment }: { prompt: string; attachment: Fil
 
       {/* Bottom CTA */}
       <div className="flex flex-col gap-[10px] pb-[4px]">
-        <p className="text-[12px] text-[#686576] leading-[1.43] tracking-[0.17px]" style={{ fontFamily: "'Roboto', sans-serif" }}>
+        <p className="text-[12px] text-[#686576] leading-[1.43] tracking-[0.17px]">
           All offers subject to OEM availability and regional compliance. Budgets are based on March performance signals.
         </p>
-        <p className="text-[12px] text-[#1f1d25] leading-[1.43] tracking-[0.17px]" style={{ fontFamily: "'Roboto', sans-serif" }}>
+        <p className="text-[12px] text-[#1f1d25] leading-[1.43] tracking-[0.17px]">
           Can I proceed and create these campaigns in your Planner?
         </p>
         {/* TASK 3 — dynamic count, disabled when 0 */}
@@ -1044,7 +1043,7 @@ function ResponseState({ prompt, attachment }: { prompt: string; attachment: Fil
               ? 'bg-[#473bab] hover:bg-[#392e8a] active:bg-[#2d2478] text-white cursor-pointer shadow-sm'
               : 'bg-[#473bab] opacity-40 text-white cursor-not-allowed',
           )}
-          style={{ fontFamily: "'Roboto', sans-serif", fontWeight: 500 }}
+          style={{ fontWeight: 500 }}
         >
           {ctaLabel}
         </button>
@@ -1062,7 +1061,7 @@ function AgentTopBar({ onClose }: { onClose: () => void }) {
       <button aria-label="Back" className="p-[5px] rounded-full hover:bg-black/5 transition-colors cursor-pointer shrink-0">
         <div className="size-[20px] flex items-center justify-center"><svg className="w-[13px] h-[13px]" fill="none" viewBox="0 0 12.9854 12.6458"><path d={svgPaths.p111f7e00} fill="#111014" fillOpacity="0.56" /></svg></div>
       </button>
-      <span className="ml-0.5 text-[16px] text-[#1f1d25] tracking-[0.15px] whitespace-nowrap shrink-0" style={{ fontFamily: "'Roboto', sans-serif", fontWeight: 500, lineHeight: '1.5' }}>AI Agent Auto</span>
+      <span className="ml-0.5 text-[16px] text-[#1f1d25] tracking-[0.15px] whitespace-nowrap shrink-0" style={{ fontWeight: 500, lineHeight: '1.5' }}>AI Agent Auto</span>
       <button aria-label="Select agent" className="p-[5px] rounded-full hover:bg-black/5 transition-colors cursor-pointer shrink-0 ml-[2px]">
         <div className="size-[20px] flex items-center justify-center"><svg className="w-[8px] h-[5px]" fill="none" viewBox="0 0 8.16667 4.66074"><path d={svgPaths.p13692480} stroke="#111014" strokeLinecap="round" strokeLinejoin="round" strokeOpacity="0.56" strokeWidth="1.5" /></svg></div>
       </button>
@@ -1120,17 +1119,17 @@ export function AgentPane({ isOpen, onClose, accountName }: AgentPaneProps) {
                     <div className="pt-[12px] shrink-0">
                       {/* TASK 1 — "Welcome, Mallory" */}
                       <p className="text-[20px] tracking-[0.15px] leading-[1.6] opacity-90 mb-[10px]"
-                        style={{ fontFamily: "'Roboto', sans-serif", fontWeight: 700, backgroundImage: 'linear-gradient(99.7748deg, rgb(71,59,171) 37.41%, rgb(172,171,255) 55.078%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>
+                        style={{ fontWeight: 700, backgroundImage: 'linear-gradient(99.7748deg, rgb(71,59,171) 37.41%, rgb(172,171,255) 55.078%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>
                         Welcome, Mallory
                       </p>
-                      <p className="text-[14px] text-[#1f1d25] tracking-[0.15px] leading-[1.5] opacity-90 mb-[10px]" style={{ fontFamily: "'Roboto', sans-serif" }}>
+                      <p className="text-[14px] text-[#1f1d25] tracking-[0.15px] leading-[1.5] opacity-90 mb-[10px]">
                         {`Hi, I'm your Auto Intelligence Agent currently focused on your store, how can I help you today?`}
                       </p>
                       <div className="flex items-center gap-[10px]">
-                        <p className="text-[14px] text-[#1f1d25] tracking-[0.15px] leading-[1.5] opacity-90 whitespace-nowrap shrink-0" style={{ fontFamily: "'Roboto', sans-serif" }}>My current focus is</p>
+                        <p className="text-[14px] text-[#1f1d25] tracking-[0.15px] leading-[1.5] opacity-90 whitespace-nowrap shrink-0">My current focus is</p>
                         <button className="flex items-center cursor-pointer">
                           <span className="text-[14px] tracking-[0.15px] leading-[1.5] opacity-90 whitespace-nowrap"
-                            style={{ fontFamily: "'Roboto', sans-serif", fontWeight: 700, backgroundImage: 'linear-gradient(90deg, #473bab, #acabff)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>
+                            style={{ fontWeight: 700, backgroundImage: 'linear-gradient(90deg, #473bab, #acabff)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>
                             {accountName ?? "Jack Daniels Volkswagen"}
                           </span>
                           <div className="size-[24px] flex items-center justify-center ml-[-2px]">
@@ -1155,7 +1154,7 @@ export function AgentPane({ isOpen, onClose, accountName }: AgentPaneProps) {
                     <div className="flex justify-end mb-[16px]">
                       <div className="ml-[40px] bg-[#fafaff] rounded-bl-[12px] rounded-tl-[12px] rounded-tr-[12px] px-[12px] py-[10px] relative">
                         <div aria-hidden="true" className="absolute inset-0 rounded-bl-[12px] rounded-tl-[12px] rounded-tr-[12px] border border-[rgba(99,86,225,0.5)] pointer-events-none" />
-                        <p className="text-[12px] text-[#1f1d25] leading-[1.43] tracking-[0.17px]" style={{ fontFamily: "'Roboto', sans-serif" }}>
+                        <p className="text-[12px] text-[#1f1d25] leading-[1.43] tracking-[0.17px]">
                           {submittedPrompt || 'Raise what I have in accrued funds…'}
                         </p>
                       </div>

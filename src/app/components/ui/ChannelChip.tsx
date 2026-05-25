@@ -16,8 +16,6 @@
 import React from "react";
 import { X } from "lucide-react";
 
-const R = { fontFamily: "'Roboto', sans-serif" };
-
 export interface ChannelChipProps {
   /** Platform display label, e.g. "Google PMax" */
   label: string;
@@ -33,7 +31,7 @@ export function ChannelChip({ label, icon, onRemove, className = "" }: ChannelCh
   return (
     <span
       className={`inline-flex items-center gap-[3px] h-[24px] px-[4px] rounded-[8px] bg-[#F0F2F4] text-[11px] text-[#1f1d25] select-none ${className}`}
-      style={{ ...R, letterSpacing: "0.16px", lineHeight: "18px" }}
+      style={{ letterSpacing: "0.16px", lineHeight: "18px" }}
     >
       {/* Icon in white pill container */}
       {icon && (

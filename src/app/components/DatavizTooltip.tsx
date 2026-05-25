@@ -1,9 +1,13 @@
-import { TooltipProps } from 'recharts';
+import type { TooltipProps } from 'recharts';
+import type { ValueType, NameType } from 'recharts/types/component/DefaultTooltipContent';
+import React from 'react';
 
-interface DatavizTooltipProps extends TooltipProps<any, any> {
+type TooltipPayload = NonNullable<TooltipProps<ValueType, NameType>['payload']>[number];
+
+interface DatavizTooltipProps extends TooltipProps<ValueType, NameType> {
   title?: string;
-  renderTitle?: (payload: any[]) => string;
-  renderItems?: (payload: any[]) => React.ReactNode;
+  renderTitle?: (payload: TooltipPayload[]) => string;
+  renderItems?: (payload: TooltipPayload[]) => React.ReactNode;
 }
 
 export function DatavizTooltip({ active, payload, label, title, renderTitle, renderItems }: DatavizTooltipProps) {

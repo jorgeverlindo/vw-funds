@@ -484,7 +484,7 @@ export default function AppContent() {
       const next: UserType = prev === 'oem' ? 'dealer' : 'oem';
       const nextTab = next === 'oem' && activeTab === 'guidelines' ? 'overview' : activeTab;
       if (nextTab !== activeTab) setActiveTab(nextTab);
-      if (next === 'dealer') unlockDealership(); else unlockDealership();
+      if (next === 'dealer') unlockDealership(); else lockDealership(WORKFLOW_DEALER.code);
       navigate(buildUrl(next, client.clientId, nextTab), { replace: true });
       return next;
     });
@@ -695,6 +695,7 @@ export default function AppContent() {
           setIsCreatingInfraction(false);
           navigate(buildUrl(userType, client.clientId, 'web-monitoring'), { replace: true });
         }}
+        // Portal submission notifications — feature not yet wired; props kept for future use
         dealerSubmittedNotifs={undefined}
         dealerSeenSubmittedIds={undefined}
         dealerSubmittedUnread={0}

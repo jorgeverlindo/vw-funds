@@ -3,6 +3,7 @@
  */
 
 import React, { useState, useMemo, useEffect, useRef, useCallback } from "react";
+import { STORAGE_KEYS } from "../../constants/storageKeys";
 import {
   ChevronDown, ChevronRight, Check, Plus,
   Search, MoreVertical, History,
@@ -50,7 +51,6 @@ import { emitSnackbar } from "../Snackbar";
 import { TaskOwner } from "@projects/ui/TaskOwner";
 import { useComments, CommentsButton } from "@comments";
 
-
 // ─── Left-pane toggle icon (from design asset) ────────────────────────────────
 function LeftPaneIcon({ className }: { className?: string }) {
   return (
@@ -63,8 +63,6 @@ function LeftPaneIcon({ className }: { className?: string }) {
 
 // ─── Custom offer library (localStorage store for non-catalog offers) ─────────
 
-const CUSTOM_OFFER_LIBRARY_KEY = "constellation_custom_offer_library";
-
 // The shape stored in localStorage — all 16 fields required by OfferCard
 interface StoredOffer {
   id: string; year: string; make: string; model: string; trim: string;
@@ -75,13 +73,13 @@ interface StoredOffer {
 
 function loadCustomOfferLibrary(): StoredOffer[] {
   try {
-    const raw = localStorage.getItem(CUSTOM_OFFER_LIBRARY_KEY);
+    const raw = localStorage.getItem(STORAGE_KEYS.CUSTOM_OFFER_LIBRARY);
     return raw ? (JSON.parse(raw) as StoredOffer[]) : [];
   } catch { return []; }
 }
 
 function saveCustomOfferLibrary(offers: StoredOffer[]) {
-  try { localStorage.setItem(CUSTOM_OFFER_LIBRARY_KEY, JSON.stringify(offers)); } catch {}
+  try { localStorage.setItem(STORAGE_KEYS.CUSTOM_OFFER_LIBRARY, JSON.stringify(offers)); } catch {}
 }
 
 // Convert a CustomOffer (from ParsedOffersCard) to a StoredOffer with defaults
@@ -110,7 +108,7 @@ function customOfferToStored(co: import("@projects/ProjectAgentPane").CustomOffe
 
 function loadProjectState(projectId: string) {
   try {
-    const raw = localStorage.getItem(`constellation_proj_state_${projectId}`);
+    const raw = localStorage.getItem(STORAGE_KEYS.PROJECT_STATE(projectId));
     if (!raw) return null;
     return JSON.parse(raw) as {
       addedOfferIds?: string[];
@@ -195,7 +193,7 @@ function ProjectsModuleInner({
   // Local projects (newly created) — persisted to localStorage
   const [localProjects, setLocalProjects] = useState<LocalProject[]>(() => {
     try {
-      const raw = localStorage.getItem("constellation_local_projects");
+      const raw = localStorage.getItem(STORAGE_KEYS.LOCAL_PROJECTS);
       if (!raw) return [];
       return JSON.parse(raw) as LocalProject[];
     } catch { return []; }
@@ -203,7 +201,7 @@ function ProjectsModuleInner({
   // Status overrides for drag-drop on mock-data projects
   const [statusOverrides, setStatusOverrides] = useState<Record<string, ProjectStatus>>(() => {
     try {
-      const raw = localStorage.getItem("constellation_status_overrides");
+      const raw = localStorage.getItem(STORAGE_KEYS.STATUS_OVERRIDES);
       return raw ? JSON.parse(raw) : {};
     } catch { return {}; }
   });
@@ -264,12 +262,12 @@ function ProjectsModuleInner({
 
   // ── Persist localProjects to localStorage ───────────────────────────────────
   useEffect(() => {
-    localStorage.setItem("constellation_local_projects", JSON.stringify(localProjects));
+    localStorage.setItem(STORAGE_KEYS.LOCAL_PROJECTS, JSON.stringify(localProjects));
   }, [localProjects]);
 
   // ── Persist statusOverrides to localStorage ──────────────────────────────────
   useEffect(() => {
-    localStorage.setItem("constellation_status_overrides", JSON.stringify(statusOverrides));
+    localStorage.setItem(STORAGE_KEYS.STATUS_OVERRIDES, JSON.stringify(statusOverrides));
   }, [statusOverrides]);
 
   // ── Listen for project status change events (e.g. from generate assets) ──────
@@ -493,7 +491,7 @@ function ProjectCard({
   // Merge base project IDs with agent-added/removed IDs from localStorage
   const { offersCount, templatesCount, bgCount } = (() => {
     try {
-      const saved = JSON.parse(localStorage.getItem(`constellation_proj_state_${project.id}`) ?? 'null');
+      const saved = JSON.parse(localStorage.getItem(STORAGE_KEYS.PROJECT_STATE(project.id)) ?? 'null');
       const addedOffers    = (saved?.addedOfferIds    as string[] | undefined) ?? [];
       const addedTemplates = (saved?.addedTemplateIds as string[] | undefined) ?? [];
       const removedOffers  = new Set<string>((saved?.removedOfferIds  as string[] | undefined) ?? []);
@@ -610,7 +608,6 @@ function ProjectCard({
     </div>
   );
 }
-
 
 // ─── Projects list / kanban view ──────────────────────────────────────────────
 
@@ -909,7 +906,6 @@ function JellyBeanCard({
   const ar = template.width / template.height;
   const w = Math.min(Math.round(h * ar), 540);
   const isWide = ar > 2.0; // 2000×500 (4:1), 970×250 (3.88:1)
-  const f: React.CSSProperties = { fontFamily: "'Roboto', sans-serif" };
 
   // Fixed chip / text sizes (consistent across all card widths)
   const chipFontSize = 9.5;
@@ -968,13 +964,13 @@ function JellyBeanCard({
           {/* Top row: dealer + primary logo (or make text fallback) */}
           <div className="absolute top-0 left-0 right-0 flex items-center justify-between"
             style={{ padding: `${barPadV}px ${barPadH}px` }}>
-            <span style={{ ...f, fontSize: 11, fontWeight: 500, color: dealerColor, whiteSpace: "nowrap" }}>
+            <span style={{ fontSize: 11, fontWeight: 500, color: dealerColor, whiteSpace: "nowrap" }}>
               {offer.make} Dealer
             </span>
             {primaryLogoSrc
               ? <img src={primaryLogoSrc} alt={offer.make} draggable={false}
                   style={{ height: primaryLogoH, width: "auto", objectFit: "contain" }} />
-              : <span style={{ ...f, fontSize: 10, fontWeight: 700, color: makeColor, letterSpacing: "0.8px", textTransform: "uppercase" }}>
+              : <span style={{ fontSize: 10, fontWeight: 700, color: makeColor, letterSpacing: "0.8px", textTransform: "uppercase" }}>
                   {offer.make}
                 </span>
             }
@@ -983,7 +979,7 @@ function JellyBeanCard({
           {/* Template badge */}
           <div className="absolute rounded"
             style={{ top: Math.round(h * 0.13), left: barPadH, background: "rgba(71,59,171,0.82)", padding: "2px 5px" }}>
-            <span style={{ ...f, fontSize: chipFontSize, fontWeight: 600, color: "white", letterSpacing: "0.3px" }}>
+            <span style={{ fontSize: chipFontSize, fontWeight: 600, color: "white", letterSpacing: "0.3px" }}>
               {template.width}×{template.height}
             </span>
           </div>
@@ -992,22 +988,22 @@ function JellyBeanCard({
           <div className="absolute flex items-center gap-[3px] rounded-full"
             style={{ top: Math.round(h * 0.13), right: barPadH, background: "rgba(255,255,255,0.88)", padding: "2px 6px" }}>
             <div className="rounded-full" style={{ width: 5, height: 5, background: "#9c99a9" }} />
-            <span style={{ ...f, fontSize: chipFontSize, fontWeight: 600, color: "#686576" }}>Draft</span>
+            <span style={{ fontSize: chipFontSize, fontWeight: 600, color: "#686576" }}>Draft</span>
           </div>
 
           {/* Bottom left: price + optional event logo bottom-right */}
           <div className="absolute bottom-0 left-0"
             style={{ width: "48%", padding: `${Math.round(h * 0.06)}px ${barPadH}px ${Math.round(h * 0.07)}px` }}>
-            <p style={{ ...f, fontSize: labelFontSize, fontWeight: 500, color: labelColor, letterSpacing: "0.4px", textTransform: "uppercase", marginBottom: 1 }}>
+            <p style={{ fontSize: labelFontSize, fontWeight: 500, color: labelColor, letterSpacing: "0.4px", textTransform: "uppercase", marginBottom: 1 }}>
               {offer.offerType} · {offer.year} {offer.make}
             </p>
             <div className="flex items-baseline" style={{ gap: 2 }}>
-              <span style={{ ...f, fontSize: priceFontSize, fontWeight: 700, color: priceColor, lineHeight: 1 }}>
+              <span style={{ fontSize: priceFontSize, fontWeight: 700, color: priceColor, lineHeight: 1 }}>
                 ${offer.monthlyPayment}
               </span>
-              <span style={{ ...f, fontSize: 11, color: moColor }}>/mo</span>
+              <span style={{ fontSize: 11, color: moColor }}>/mo</span>
             </div>
-            <p style={{ ...f, fontSize: labelFontSize, color: termColor, marginTop: 1 }}>
+            <p style={{ fontSize: labelFontSize, color: termColor, marginTop: 1 }}>
               {offer.term}mo · {offer.trim}
             </p>
           </div>
@@ -1042,13 +1038,13 @@ function JellyBeanCard({
           {/* Top row: dealer + primary logo (or make text fallback) */}
           <div className="absolute top-0 left-0 right-0 flex items-center justify-between"
             style={{ padding: `${barPadV}px ${barPadH}px` }}>
-            <span style={{ ...f, fontSize: 11, fontWeight: 500, color: dealerColor, whiteSpace: "nowrap" }}>
+            <span style={{ fontSize: 11, fontWeight: 500, color: dealerColor, whiteSpace: "nowrap" }}>
               {offer.make} Dealer
             </span>
             {primaryLogoSrc
               ? <img src={primaryLogoSrc} alt={offer.make} draggable={false}
                   style={{ height: primaryLogoH, width: "auto", objectFit: "contain" }} />
-              : <span style={{ ...f, fontSize: 10, fontWeight: 700, color: makeColor, letterSpacing: "0.8px", textTransform: "uppercase" }}>
+              : <span style={{ fontSize: 10, fontWeight: 700, color: makeColor, letterSpacing: "0.8px", textTransform: "uppercase" }}>
                   {offer.make}
                 </span>
             }
@@ -1058,13 +1054,13 @@ function JellyBeanCard({
           <div className="absolute flex items-center gap-[3px] rounded-full"
             style={{ top: Math.round(h * 0.12), right: Math.round(w * 0.04), background: "rgba(255,255,255,0.88)", padding: "2px 6px" }}>
             <div className="rounded-full" style={{ width: 5, height: 5, background: "#9c99a9" }} />
-            <span style={{ ...f, fontSize: chipFontSize, fontWeight: 600, color: "#686576" }}>Draft</span>
+            <span style={{ fontSize: chipFontSize, fontWeight: 600, color: "#686576" }}>Draft</span>
           </div>
 
           {/* Template badge */}
           <div className="absolute rounded"
             style={{ top: Math.round(h * 0.12), left: Math.round(w * 0.04), background: "rgba(71,59,171,0.82)", padding: "2px 5px" }}>
-            <span style={{ ...f, fontSize: chipFontSize, fontWeight: 600, color: "white", letterSpacing: "0.3px" }}>
+            <span style={{ fontSize: chipFontSize, fontWeight: 600, color: "white", letterSpacing: "0.3px" }}>
               {template.width}×{template.height}
             </span>
           </div>
@@ -1079,16 +1075,16 @@ function JellyBeanCard({
                 style={{ height: eventLogoH, width: "auto", objectFit: "contain",
                   margin: `${Math.round(h * 0.04)}px ${barPadH}px 0 0` }} />
             )}
-            <p style={{ ...f, fontSize: labelFontSize, fontWeight: 500, color: labelColor, letterSpacing: "0.4px", textTransform: "uppercase", marginBottom: 1 }}>
+            <p style={{ fontSize: labelFontSize, fontWeight: 500, color: labelColor, letterSpacing: "0.4px", textTransform: "uppercase", marginBottom: 1 }}>
               {offer.offerType} · {offer.year} {offer.make} {offer.model}
             </p>
             <div className="flex items-baseline" style={{ gap: 2 }}>
-              <span style={{ ...f, fontSize: priceFontSize, fontWeight: 700, color: priceColor, lineHeight: 1 }}>
+              <span style={{ fontSize: priceFontSize, fontWeight: 700, color: priceColor, lineHeight: 1 }}>
                 ${offer.monthlyPayment}
               </span>
-              <span style={{ ...f, fontSize: 11, color: moColor }}>/mo</span>
+              <span style={{ fontSize: 11, color: moColor }}>/mo</span>
             </div>
-            <p style={{ ...f, fontSize: labelFontSize, color: termColor, marginTop: 1 }}>
+            <p style={{ fontSize: labelFontSize, color: termColor, marginTop: 1 }}>
               {offer.term}mo · {offer.trim}
             </p>
           </div>
@@ -1276,7 +1272,7 @@ function ProjectDetailView({
       taskOwners,
       generatedAssetIds: generatedAssets.map(a => ({ offerId: a.offer.id, templateId: a.template.id, bgId: a.bgId })),
     };
-    localStorage.setItem(`constellation_proj_state_${project.id}`, JSON.stringify(state));
+    localStorage.setItem(STORAGE_KEYS.PROJECT_STATE(project.id), JSON.stringify(state));
   }, [agentAddedOfferIds, agentAddedTemplateIds, removedOfferIds, removedTemplateIds, selectedBgId, agentAddedBgIds, agentActivatedOems, project.id, taskOwners, generatedAssets]);
 
   const visibleOffers = [
@@ -1704,7 +1700,7 @@ function ProjectDetailViewInner({
       agentAddedBgIds,
       activatedOems: agentActivatedOems,
     });
-    emitSnackbar({ message: `${confirmDelete.type === "offer" ? "Offer" : "Template"} removed`, type: "info" });
+    emitSnackbar(`${confirmDelete.type === "offer" ? "Offer" : "Template"} removed`);
   };
 
   const actnBtn = "flex items-center gap-1 text-[12px] text-[var(--brand-accent)] font-medium cursor-pointer hover:opacity-75 transition";
@@ -2025,8 +2021,7 @@ function ProjectDetailViewInner({
                     )}
                   </div>
                 </button>
-                <span className="text-[10px] text-[#686576] text-center leading-tight font-medium"
-                  style={{ fontFamily: "'Roboto', sans-serif" }}>
+                <span className="text-[10px] text-[#686576] text-center leading-tight font-medium">
                   {bg.name}
                 </span>
               </motion.div>
@@ -2066,7 +2061,6 @@ function ProjectDetailViewInner({
                       if (!isActive) setActiveBrandKit(project.id, k.oem, k.id);
                     }}
                     className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-[12px] font-medium border transition-all cursor-pointer ${isActive ? "bg-[rgba(99,86,225,0.08)] border-[rgba(99,86,225,0.3)] text-[#473bab]" : "bg-white border-[rgba(0,0,0,0.12)] text-[#686576] hover:border-[rgba(99,86,225,0.3)]"}`}
-                    style={{ fontFamily: "'Roboto', sans-serif" }}
                   >
                     <span className={`w-[14px] h-[14px] rounded-[3px] border flex items-center justify-center shrink-0 transition-colors ${isActive ? "bg-[#6356e1] border-[#6356e1]" : "border-[rgba(0,0,0,0.3)]"}`}>
                       {isActive && (
@@ -2128,7 +2122,7 @@ function ProjectDetailViewInner({
             visibleOffers.length > 0 && visibleTemplates.length > 0
               ? <button
                   className="flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-medium text-white cursor-pointer"
-                  style={{ background: "linear-gradient(99deg, #473bab 0%, #6356e1 100%)", fontFamily: "'Roboto', sans-serif" }}
+                  style={{ background: "linear-gradient(99deg, #473bab 0%, #6356e1 100%)" }}
                   onClick={() => setShowGenerateModal(true)}
                 >
                   <Wand2 size={11} strokeWidth={2} />
@@ -2420,7 +2414,7 @@ function ProjectDetailViewInner({
             assignee:   { name: ownerObj?.name ?? project.assignee?.name ?? "", avatar: project.assignee?.avatar ?? "" },
           });
           setShowEditProject(false);
-          emitSnackbar({ message: "Project updated", type: "success" });
+          emitSnackbar("Project updated");
         }}
       />
     </div>
@@ -2428,7 +2422,6 @@ function ProjectDetailViewInner({
     </div>
   );
 }
-
 
 // ─── New Project Form ─────────────────────────────────────────────────────────
 

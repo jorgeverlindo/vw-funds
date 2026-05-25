@@ -59,7 +59,6 @@ function TextVar({
     fontSize: el.fontSize,
     fontWeight: weight,
     color: TEXT_COLOR,
-    fontFamily: "Roboto, sans-serif",
     margin: 0,
     lineHeight: "143%",
     letterSpacing: "0.17px",
@@ -94,7 +93,6 @@ function CTAVar({
       display: "flex",
       alignItems: "center",
       justifyContent: "center",
-      fontFamily: "Roboto, sans-serif",
       fontWeight: 500,
       fontSize: el.fontSize,
       textTransform: "uppercase",
@@ -170,7 +168,6 @@ function MultiProductTextOverlay({
             margin: 0,
             width: slot.w,
             textAlign: "center",
-            fontFamily: "Roboto, sans-serif",
             outline: activeField === "title" ? "2px dashed #ea580c" : undefined,
             outlineOffset: activeField === "title" ? 4 : undefined,
           }}>
@@ -188,7 +185,6 @@ function MultiProductTextOverlay({
             margin: 0,
             width: slot.w,
             textAlign: "center",
-            fontFamily: "Roboto, sans-serif",
             outline: activeField === "trim" ? "2px dashed #ea580c" : undefined,
             outlineOffset: activeField === "trim" ? 4 : undefined,
           }}>
@@ -206,7 +202,6 @@ function MultiProductTextOverlay({
             margin: 0,
             width: slot.w,
             textAlign: "center",
-            fontFamily: "Roboto, sans-serif",
             outline: activeField === "price" ? "2px dashed #ea580c" : undefined,
             outlineOffset: activeField === "price" ? 4 : undefined,
           }}>
@@ -234,7 +229,6 @@ function MultiProductTextOverlay({
               justifyContent: "center",
               fontSize: tl.ctaFontSize,
               fontWeight: 500,
-              fontFamily: "Roboto, sans-serif",
               textTransform: "uppercase",
               letterSpacing: "0.46px",
               whiteSpace: "nowrap",
@@ -255,7 +249,6 @@ function MultiProductTextOverlay({
         fontSize: tl.disclaimer.fontSize,
         color: TEXT_COLOR,
         margin: 0,
-        fontFamily: "Roboto, sans-serif",
         outline: activeField === "disclaimer" ? "2px dashed #ea580c" : undefined,
         outlineOffset: activeField === "disclaimer" ? 4 : undefined,
       }}>
@@ -316,7 +309,6 @@ function PharmaTextOverlay({
     fontSize: el.fontSize,
     fontWeight: field === "keyMessage" ? 700 : 400,
     color: PHARMA_TEXT_COLOR,
-    fontFamily: "Roboto, sans-serif",
     lineHeight: "1.3",
     whiteSpace: "nowrap",
     outline: activeField === field ? "2px dashed #ea580c" : undefined,

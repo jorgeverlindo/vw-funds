@@ -102,8 +102,6 @@ const itemCls =
 const labelCls =
   "block text-[11px] font-medium text-[rgba(0,0,0,0.6)] mb-1.5 tracking-wide";
 
-const R = { fontFamily: "'Roboto', sans-serif" };
-
 // ─── OwnerAvatar — photo if available, otherwise initials ─────────────────────
 
 function OwnerAvatar({ owner, size = 24 }: { owner: typeof PROJECT_OWNERS[number]; size?: number }) {
@@ -154,10 +152,10 @@ function RecommendationCard({
 
       {/* Text */}
       <div className="flex-1 min-w-0">
-        <p className="text-[13px] font-semibold text-[#1f1d25] leading-tight" style={R}>
+        <p className="text-[13px] font-semibold text-[#1f1d25] leading-tight">
           {title}
         </p>
-        <p className="text-[12px] text-[rgba(0,0,0,0.6)] mt-[3px] leading-[1.43]" style={R}>
+        <p className="text-[12px] text-[rgba(0,0,0,0.6)] mt-[3px] leading-[1.43]">
           {description}
         </p>
         {children && (
@@ -195,10 +193,9 @@ function PlatformMultiSelect({
         <button
           type="button"
           className="w-full flex flex-wrap items-center gap-1.5 min-h-[40px] border border-[#CAC9CF] rounded-[8px] px-2.5 py-1.5 bg-[#F9FAFA] cursor-pointer hover:border-[#B0B0B5] transition-colors text-left focus:outline-none focus:border-[var(--brand-accent)]"
-          style={R}
         >
           {selectedPlatforms.length === 0 ? (
-            <span className="text-[13px] text-[rgba(0,0,0,0.38)] flex-1" style={R}>Select platforms</span>
+            <span className="text-[13px] text-[rgba(0,0,0,0.38)] flex-1">Select platforms</span>
           ) : (
             <div className="flex flex-wrap gap-[3px] flex-1 min-w-0">
               {selectedPlatforms.map(p => (
@@ -225,7 +222,7 @@ function PlatformMultiSelect({
                 {active && <Check size={9} strokeWidth={3} color="white" />}
               </span>
               <img src={p.icon} alt="" className="w-[16px] h-[16px] shrink-0 object-contain" />
-              <span style={R}>{p.label}</span>
+              <span>{p.label}</span>
             </DropdownMenuItem>
           );
         })}
@@ -256,7 +253,6 @@ function TagInput({ tags, onChange }: { tags: string[]; onChange: (t: string[]) 
         <span
           key={tag}
           className="inline-flex items-center gap-1 bg-[#F3F4F6] text-[#686576] text-[11px] px-2 py-0.5 rounded-full select-none border border-[#E4E4E8]"
-          style={R}
         >
           {tag}
           <button
@@ -283,7 +279,6 @@ function TagInput({ tags, onChange }: { tags: string[]; onChange: (t: string[]) 
           if (e.key === "Backspace" && !val && tags.length) remove(tags.length - 1);
         }}
         className="flex-1 min-w-[80px] bg-transparent text-[13px] text-[#1f1d25] placeholder:text-[rgba(0,0,0,0.38)] outline-none leading-tight"
-        style={R}
       />
     </div>
   );
@@ -383,7 +378,7 @@ export function CreateProjectDialog({
 
         {/* ── Header — no bottom border ───────────────────────────────── */}
         <div className="flex items-center justify-between px-4 pt-4 pb-2 rounded-t-[24px] bg-white">
-          <h2 className="text-[20px] font-medium text-[#1f1d25] leading-tight" style={R}>
+          <h2 className="text-[20px] font-medium text-[#1f1d25] leading-tight">
             {mode === "edit" ? "Edit Project" : "Create Project"}
           </h2>
           <button
@@ -402,7 +397,7 @@ export function CreateProjectDialog({
 
             {/* Project Name */}
             <div className="flex flex-col gap-1">
-              <label className={labelCls} style={R}>Project Name</label>
+              <label className={labelCls}>Project Name</label>
               <input
                 type="text"
                 autoFocus
@@ -414,17 +409,16 @@ export function CreateProjectDialog({
                     ? "border-[#D2323F] ring-1 ring-[#D2323F]"
                     : "border-[#CAC9CF] hover:border-[#B0B0B5] focus:border-[var(--brand-accent)] focus:ring-1 focus:ring-[var(--brand-accent)]"
                 }`}
-                style={R}
               />
-              {errors.name && <p className="text-[11px] text-[#D2323F]" style={R}>{errors.name}</p>}
+              {errors.name && <p className="text-[11px] text-[#D2323F]">{errors.name}</p>}
             </div>
 
             {/* Account */}
             <div className="flex flex-col gap-1">
-              <label className={labelCls} style={R}>Account</label>
+              <label className={labelCls}>Account</label>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <button className={fieldCls} style={R}>
+                  <button className={fieldCls}>
                     <span className={account ? "text-[#1f1d25]" : "text-[rgba(0,0,0,0.38)]"}>
                       {account || "Select account"}
                     </span>
@@ -433,7 +427,7 @@ export function CreateProjectDialog({
                 </DropdownMenuTrigger>
                 <DropdownMenuContent className={menuCls} sideOffset={4}>
                   {ACCOUNTS.map((a) => (
-                    <DropdownMenuItem key={a} className={itemCls} onClick={() => setAccount(a)} style={R}>
+                    <DropdownMenuItem key={a} className={itemCls} onClick={() => setAccount(a)}>
                       <span className="flex-1">{a}</span>
                       {account === a && <Check size={13} className="text-[var(--brand-accent)]" />}
                     </DropdownMenuItem>
@@ -444,10 +438,10 @@ export function CreateProjectDialog({
 
             {/* Owner */}
             <div className="flex flex-col gap-1">
-              <label className={labelCls} style={R}>Owner</label>
+              <label className={labelCls}>Owner</label>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <button className={fieldCls} style={R}>
+                  <button className={fieldCls}>
                     {selectedOwner ? (
                       <div className="flex items-center gap-2 flex-1 min-w-0">
                         <OwnerAvatar owner={selectedOwner} size={22} />
@@ -467,8 +461,8 @@ export function CreateProjectDialog({
                     <DropdownMenuItem key={owner.id} className={itemCls} onClick={() => setOwnerId(owner.id)}>
                       <OwnerAvatar owner={owner} size={24} />
                       <div className="flex-1 min-w-0">
-                        <p className="text-[13px] text-[#1f1d25] leading-tight" style={R}>{owner.name}</p>
-                        <p className="text-[11px] text-[rgba(0,0,0,0.38)] truncate" style={R}>{owner.email}</p>
+                        <p className="text-[13px] text-[#1f1d25] leading-tight">{owner.name}</p>
+                        <p className="text-[11px] text-[rgba(0,0,0,0.38)] truncate">{owner.email}</p>
                       </div>
                       {owner.id === ownerId && <Check size={13} className="text-[var(--brand-accent)] shrink-0" />}
                     </DropdownMenuItem>
@@ -480,7 +474,7 @@ export function CreateProjectDialog({
             {/* Dates */}
             <div className="flex gap-3">
               <div className="flex-1 flex flex-col gap-1">
-                <label className={labelCls} style={R}>Start Date</label>
+                <label className={labelCls}>Start Date</label>
                 <SingleDatePicker
                   value={startDate}
                   onChange={(d) => { setStartDate(d); if (errors.startDate) setErrors((p) => ({ ...p, startDate: undefined })); }}
@@ -488,10 +482,10 @@ export function CreateProjectDialog({
                   direction="down"
                   error={!!errors.startDate}
                 />
-                {errors.startDate && <p className="text-[11px] text-[#D2323F]" style={R}>{errors.startDate}</p>}
+                {errors.startDate && <p className="text-[11px] text-[#D2323F]">{errors.startDate}</p>}
               </div>
               <div className="flex-1 flex flex-col gap-1">
-                <label className={labelCls} style={R}>Expiration Date</label>
+                <label className={labelCls}>Expiration Date</label>
                 <SingleDatePicker
                   value={endDate}
                   onChange={(d) => { setEndDate(d); if (errors.endDate) setErrors((p) => ({ ...p, endDate: undefined })); }}
@@ -499,26 +493,26 @@ export function CreateProjectDialog({
                   direction="down"
                   error={!!errors.endDate}
                 />
-                {errors.endDate && <p className="text-[11px] text-[#D2323F]" style={R}>{errors.endDate}</p>}
+                {errors.endDate && <p className="text-[11px] text-[#D2323F]">{errors.endDate}</p>}
               </div>
             </div>
 
             {/* Platforms */}
             <div className="flex flex-col gap-1">
-              <label className={labelCls} style={R}>Platforms</label>
+              <label className={labelCls}>Platforms</label>
               <PlatformMultiSelect selected={platforms} onChange={setPlatforms} />
             </div>
 
             {/* Tags */}
             <div className="flex flex-col gap-1">
-              <label className={labelCls} style={R}>Tags</label>
+              <label className={labelCls}>Tags</label>
               <TagInput tags={tags} onChange={setTags} />
             </div>
           </div>
 
           {/* Right: Project Recommendations — no left border, clean background */}
           <div className="w-[300px] shrink-0 px-4 py-2 flex flex-col gap-2.5 bg-white overflow-y-auto max-h-[480px]">
-            <p className="text-[14px] font-medium text-[#1f1d25]" style={R}>Project Recommendations</p>
+            <p className="text-[14px] font-medium text-[#1f1d25]">Project Recommendations</p>
 
             <RecommendationCard
               checked={recOffers}
@@ -534,10 +528,9 @@ export function CreateProjectDialog({
               description="We will choose the templates that matches the selected dimensions and aligns best with the recommended offers."
             >
               <div className="flex flex-col gap-1">
-                <label className="text-[11px] text-[rgba(0,0,0,0.6)]" style={R}>* Dimensions</label>
+                <label className="text-[11px] text-[rgba(0,0,0,0.6)]">* Dimensions</label>
                 <button
                   className="h-9 w-full flex items-center gap-2 border border-[#CAC9CF] rounded-[6px] px-3 text-[12px] bg-[#F9FAFA] text-left opacity-50 cursor-not-allowed"
-                  style={R}
                   disabled
                   tabIndex={-1}
                 >
@@ -561,7 +554,6 @@ export function CreateProjectDialog({
           <button
             onClick={handleCancel}
             className="px-4 py-1.5 rounded-full text-[14px] font-medium text-[#473bab] hover:bg-[rgba(71,59,171,0.06)] transition-colors cursor-pointer"
-            style={R}
           >
             Cancel
           </button>
@@ -569,7 +561,7 @@ export function CreateProjectDialog({
             onClick={handleSave}
             disabled={!name.trim()}
             className="px-4 py-1.5 rounded-full text-[14px] font-semibold text-white transition-all cursor-pointer disabled:opacity-50"
-            style={{ background: "#473bab", ...R }}
+            style={{ background: "#473bab" }}
           >
             {mode === "edit" ? "Save Changes" : "Create Project"}
           </button>

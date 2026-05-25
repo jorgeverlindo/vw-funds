@@ -59,7 +59,6 @@ function CommentsTooltip({
             top: pos.top,
             left: pos.left,
             fontSize: 11,
-            fontFamily: "'Roboto', sans-serif",
             letterSpacing: "0.17px",
             lineHeight: "1.43",
             zIndex: 9999,

@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { X, CheckCircle2 } from 'lucide-react';
 import { ProjectsPreviewArea } from './ProjectsPreviewArea';
 import { PreApprovalForm } from '../pre-approval/PreApprovalForm';
+import type { FormValues } from '../pre-approval/PreApprovalForm';
 import { emitSnackbar } from '@/app/components/Snackbar';
 
 interface ProjectsPreApprovalDrawerProps {
@@ -27,7 +28,7 @@ export function ProjectsPreApprovalDrawer({ open, onClose, assets }: ProjectsPre
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [open, onClose, isSubmitting, isSubmitted]);
 
-  const handleSubmit = (data: any) => {
+  const handleSubmit = (_data: FormValues) => {
     setIsSubmitting(true);
     // Simulate API call
     setTimeout(() => {

@@ -263,7 +263,7 @@ export function PreviewPage({ projectId, onNavigateTo }: { projectId: string; on
       // Render bg+car off-screen, wrapped in a hard-clipping div at exact
       // template dimensions. Any part of the car placeholder that extends
       // outside the banner bounds is discarded before sending to Flux.
-      console.log("[Optimize] Rendering off-screen for", key);
+      if (import.meta.env.DEV) console.log("[Optimize] Rendering off-screen for", key);
       const container = document.createElement("div");
       container.style.cssText = "position:fixed;left:0;top:0;z-index:9999;opacity:0.001;pointer-events:none;";
       document.body.appendChild(container);
@@ -294,11 +294,11 @@ export function PreviewPage({ projectId, onNavigateTo }: { projectId: string; on
       await waitForImages(container);
       await new Promise<void>((r) => setTimeout(r, 400));
 
-      console.log("[Optimize] Capturing PNG via toPng...");
+      if (import.meta.env.DEV) console.log("[Optimize] Capturing PNG via toPng...");
       // Capture the clipping wrapper (first child), not the AdTemplate root
       const el = container.firstElementChild as HTMLElement;
       const imageDataUrl = await toPng(el, { pixelRatio: 1, skipFonts: true, cacheBust: true });
-      console.log("[Optimize] toPng done, raw size:", Math.round(imageDataUrl.length / 1024), "KB");
+      if (import.meta.env.DEV) console.log("[Optimize] toPng done, raw size:", Math.round(imageDataUrl.length / 1024), "KB");
 
       root.unmount();
       document.body.removeChild(container);
@@ -309,20 +309,20 @@ export function PreviewPage({ projectId, onNavigateTo }: { projectId: string; on
 
       // Compress to JPEG (max 1400px, 85% quality) to stay under Vercel's
       // 4.5 MB request body limit. Full-res PNG of a 2000×500 can exceed it.
-      console.log("[Optimize] Compressing for API...");
+      if (import.meta.env.DEV) console.log("[Optimize] Compressing for API...");
       const compressed = await compressForApi(pad.paddedUrl);
-      console.log("[Optimize] Compressed size:", Math.round(compressed.length / 1024), "KB");
+      if (import.meta.env.DEV) console.log("[Optimize] Compressed size:", Math.round(compressed.length / 1024), "KB");
 
       // Send to Replicate via browser-side client
-      console.log("[Optimize] Sending to Replicate...");
+      if (import.meta.env.DEV) console.log("[Optimize] Sending to Replicate...");
       const result = await optimizeImageWithReplicate(compressed);
-      console.log("[Optimize] Replicate result received, cropping...");
+      if (import.meta.env.DEV) console.log("[Optimize] Replicate result received, cropping...");
 
       // Crop back to original content area, then scale to exact template dimensions.
       // Stored image is always templateW×templateH so objectFit:cover never zooms.
       const resized = await cropAndResizeResult(result, pad, template.width, template.height);
       setAiResult(key, resized);
-      console.log("[Optimize] Done!");
+      if (import.meta.env.DEV) console.log("[Optimize] Done!");
     } catch (err) {
       console.error("[Optimize] Failed:", err);
     } finally {
@@ -462,7 +462,7 @@ export function PreviewPage({ projectId, onNavigateTo }: { projectId: string; on
             new Promise<never>((_, reject) => setTimeout(() => reject(new Error("toPng timeout")), 15000)),
           ]);
         } catch (err) {
-          console.warn(`Export failed for job ${i}:`, err);
+          if (import.meta.env.DEV) console.warn(`Export failed for job ${i}:`, err);
           root.unmount();
           offscreen.removeChild(container);
           setExportProgress(Math.round(((i + 1) / jobs.length) * 100));

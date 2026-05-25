@@ -189,8 +189,8 @@ export function TopNavBar({
       </div>
 
       {/* Center: Global Search */}
-      <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[560px]">
-        <div className="bg-white h-[34px] rounded-full flex items-center gap-2 border border-[rgba(0,0,0,0.12)] pt-[0px] pr-[0px] pb-[0px] pl-[8px]">
+      <div className="flex-1 min-w-0 mx-6">
+        <div className="bg-white h-[34px] rounded-full flex items-center gap-2 border border-[rgba(0,0,0,0.12)] pl-[8px] max-w-[560px] mx-auto">
           <svg className="size-6 text-black/56" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5">
             <path d={svgPaths.p103c0600} strokeLinecap="round" strokeLinejoin="round" />
           </svg>

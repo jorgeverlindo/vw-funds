@@ -85,13 +85,8 @@ export function StatusChip({ status, className }: StatusChipProps) {
       icon = <Eye className="w-3.5 h-3.5 mr-1.5 text-[#EF6C00]" />;
       break;
     case 'Revision Requested':
-      styles = "bg-[#FFF3E0] text-[#E65100]"; // Orange/Brown (Same as In Review base, but maybe different icon)
-      // Annex 3 shows Revision Requested with Hourglass and light orange bg
-      icon = <Hourglass className="w-3.5 h-3.5 mr-1.5 text-[#E17613]" />;
-      styles = "bg-[#FFF3E0] text-[#613f02]"; // Specific color from Annex 3
-      // Override based on NotificationStack import which uses specific colors
-      // "bg-[rgba(225,118,19,0.08)] text-[#613f02]"
       styles = "bg-[rgba(225,118,19,0.08)] text-[#613f02]";
+      icon = <Hourglass className="w-3.5 h-3.5 mr-1.5 text-[#E17613]" />;
       break;
     case 'Denied':
     case 'Declined':

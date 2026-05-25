@@ -9,6 +9,7 @@ import {
   Plus, Minus, FileText, Tag, Trash2, Eye,
 } from "lucide-react";
 import { cn } from "../../../lib/utils";
+import { STORAGE_KEYS } from "../../constants/storageKeys";
 import { AgentInput } from "../AgentPane";
 import type { UserType } from "../../AppContent";
 import {
@@ -269,17 +270,15 @@ interface AgentThread {
   updatedAt: number;
 }
 
-const THREADS_KEY = "constellation_agent_threads";
-
 function loadAgentThreads(): AgentThread[] {
   try {
-    const raw = localStorage.getItem(THREADS_KEY);
+    const raw = localStorage.getItem(STORAGE_KEYS.AGENT_THREADS);
     return raw ? (JSON.parse(raw) as AgentThread[]) : [];
   } catch { return []; }
 }
 
 function saveAgentThreads(threads: AgentThread[]) {
-  try { localStorage.setItem(THREADS_KEY, JSON.stringify(threads)); } catch {}
+  try { localStorage.setItem(STORAGE_KEYS.AGENT_THREADS, JSON.stringify(threads)); } catch {}
 }
 
 function getThreadTitle(msgs: Message[]): string {
@@ -477,7 +476,7 @@ function MarkdownContent({ text }: { text: string }) {
         const [header, ...body] = rows;
         nodes.push(
           <div key={`tbl-${i}`} className="overflow-x-auto my-[8px]">
-            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 11.5, fontFamily: "'Roboto', sans-serif" }}>
+            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 11.5 }}>
               <thead>
                 <tr style={{ background: "rgba(71,59,171,0.06)", borderBottom: "1.5px solid rgba(71,59,171,0.18)" }}>
                   {header.map((cell, ci) => (
@@ -508,7 +507,7 @@ function MarkdownContent({ text }: { text: string }) {
     // ### heading
     if (line.startsWith("### ")) {
       nodes.push(
-        <p key={i} style={{ fontFamily: "'Roboto', sans-serif", fontWeight: 700, fontSize: 13, color: "#1f1d25", marginBottom: 2, marginTop: 6 }}>
+        <p key={i} style={{ fontWeight: 700, fontSize: 13, color: "#1f1d25", marginBottom: 2, marginTop: 6 }}>
           {inlineMarkdown(line.slice(4))}
         </p>
       );
@@ -518,7 +517,7 @@ function MarkdownContent({ text }: { text: string }) {
     // ## heading
     if (line.startsWith("## ")) {
       nodes.push(
-        <p key={i} style={{ fontFamily: "'Roboto', sans-serif", fontWeight: 700, fontSize: 13.5, color: "#1f1d25", marginBottom: 3, marginTop: 8 }}>
+        <p key={i} style={{ fontWeight: 700, fontSize: 13.5, color: "#1f1d25", marginBottom: 3, marginTop: 8 }}>
           {inlineMarkdown(line.slice(3))}
         </p>
       );
@@ -533,7 +532,7 @@ function MarkdownContent({ text }: { text: string }) {
 
     // Regular line
     nodes.push(
-      <p key={i} style={{ fontFamily: "'Roboto', sans-serif", fontSize: 13, color: "#1f1d25", lineHeight: 1.6, letterSpacing: "0.17px" }}>
+      <p key={i} style={{ fontSize: 13, color: "#1f1d25", lineHeight: 1.6, letterSpacing: "0.17px" }}>
         {inlineMarkdown(line)}
       </p>
     );
@@ -600,7 +599,7 @@ function ConfirmedChip({ label }: { label: string }) {
         style={{ background: "#2e9c5e" }}>
         <Check size={9} color="white" strokeWidth={3} />
       </div>
-      <span style={{ fontSize: 12, fontFamily: "'Roboto', sans-serif", fontWeight: 500, letterSpacing: "0.17px" }}>
+      <span style={{ fontSize: 12, fontWeight: 500, letterSpacing: "0.17px" }}>
         {label}
       </span>
     </div>
@@ -647,7 +646,6 @@ function AgentSelect({
       <DropdownMenuTrigger asChild>
         <button
           className="w-full flex items-center px-[10px] py-[7px] rounded-[8px] text-[12px] border border-[rgba(0,0,0,0.12)] bg-[#fafafb] outline-none transition-all hover:border-[#b0b0b5] focus:border-[#473bab] focus:ring-1 focus:ring-[rgba(71,59,171,0.15)] cursor-pointer text-left"
-          style={f}
         >
           <span className="flex-1 truncate" style={{ color: value ? "#1f1d25" : "#9c99a9" }}>{label}</span>
           <ChevronDown size={10} className="shrink-0 text-[#9c99a9] ml-1" />
@@ -682,7 +680,6 @@ function AgentAddSelect({
       <DropdownMenuTrigger asChild>
         <button
           className="w-full flex items-center gap-[6px] px-[10px] py-[6px] mt-[2px] rounded-[8px] text-[11px] text-[#473bab] border border-dashed border-[rgba(71,59,171,0.35)] bg-transparent cursor-pointer hover:bg-[rgba(71,59,171,0.04)] transition-colors"
-          style={f}
         >
           <Plus size={10} className="shrink-0" />
           <span className="flex-1 text-left">{placeholder ?? "+ Add another…"}</span>
@@ -703,13 +700,12 @@ function AgentAddSelect({
 // ─── "Why these?" expandable rationale box — accordion animation ──────────────
 function WhyThese({ content }: { content: React.ReactNode }) {
   const [open, setOpen] = useState(false);
-  const f = { fontFamily: "'Roboto', sans-serif" };
+
   return (
     <div className="mt-[6px]">
       <button
         onClick={() => setOpen(o => !o)}
         className="flex items-center gap-[4px] text-[11px] text-[#473bab] cursor-pointer transition-colors hover:opacity-75"
-        style={f}
       >
         <motion.span
           animate={{ rotate: open ? 90 : 0 }}
@@ -755,7 +751,6 @@ function deduplicateName(desired: string, existing: string[]): string {
 function ProactiveAutoApplyBar({ delay, onCancel }: { delay: number; onCancel: () => void }) {
   const [progress, setProgress] = useState(0);
   const startRef = useRef(Date.now());
-  const f = { fontFamily: "'Roboto', sans-serif" };
 
   useEffect(() => {
     startRef.current = Date.now();
@@ -772,8 +767,8 @@ function ProactiveAutoApplyBar({ delay, onCancel }: { delay: number; onCancel: (
   return (
     <div className="px-[14px] py-[8px] border-t border-[rgba(71,59,171,0.1)] bg-[#f8f7ff]">
       <div className="flex items-center justify-between mb-[5px]">
-        <span style={{ ...f, fontSize: 10, color: "#686576" }}>Applying automatically…</span>
-        <button onClick={onCancel} style={{ ...f, fontSize: 10, color: "#473bab", fontWeight: 500 }} className="cursor-pointer hover:text-[#6356e1] transition-colors">
+        <span style={{ fontSize: 10, color: "#686576" }}>Applying automatically…</span>
+        <button onClick={onCancel} style={{ fontSize: 10, color: "#473bab", fontWeight: 500 }} className="cursor-pointer hover:text-[#6356e1] transition-colors">
           Edit manually
         </button>
       </div>
@@ -798,7 +793,7 @@ function ProactiveQuestionsCard({
   applied: boolean;
   onSubmit: (goal: string, timeline: string, offerFocus: string) => void;
 }) {
-  const f = { fontFamily: "'Roboto', sans-serif" };
+
   const [goal,       setGoal]       = useState<string | null>(null);
   const [timeline,   setTimeline]   = useState<string | null>(null);
   const [offerFocus, setOfferFocus] = useState<string | null>(null);
@@ -817,10 +812,10 @@ function ProactiveQuestionsCard({
   function ChipRow({ label, options, value, onChange }: { label: string; options: readonly string[]; value: string | null; onChange: (v: string) => void }) {
     return (
       <div>
-        <p style={{ ...f, fontSize: 10, fontWeight: 600, color: "#9c99a9", textTransform: "uppercase" as const, letterSpacing: "0.06em", marginBottom: 6 }}>{label}</p>
+        <p style={{ fontSize: 10, fontWeight: 600, color: "#9c99a9", textTransform: "uppercase" as const, letterSpacing: "0.06em", marginBottom: 6 }}>{label}</p>
         <div className="flex flex-wrap gap-[6px]">
           {options.map(opt => (
-            <button key={opt} onClick={() => onChange(opt)} style={{ ...f, fontSize: 11.5 }}
+            <button key={opt} onClick={() => onChange(opt)} style={{ fontSize: 11.5 }}
               className={["px-[10px] py-[5px] rounded-full border font-medium transition-all cursor-pointer",
                 value === opt ? "bg-[#473bab] border-[#473bab] text-white" : "bg-white border-[rgba(0,0,0,0.12)] text-[#686576] hover:border-[#473bab] hover:text-[#473bab]"
               ].join(" ")}>
@@ -840,10 +835,10 @@ function ProactiveQuestionsCard({
         <div className="w-[18px] h-[18px] rounded-full flex items-center justify-center shrink-0" style={{ background: "linear-gradient(135deg, #473bab, #6356e1)" }}>
           <svg width="9" height="9" viewBox="0 0 9 9" fill="none"><path d="M4.5 1v7M1 4.5h7" stroke="white" strokeWidth="1.8" strokeLinecap="round"/></svg>
         </div>
-        <span style={{ ...f, fontSize: 11.5, fontWeight: 600, color: "#473bab", letterSpacing: "0.3px" }}>Proactive Campaign Build</span>
+        <span style={{ fontSize: 11.5, fontWeight: 600, color: "#473bab", letterSpacing: "0.3px" }}>Proactive Campaign Build</span>
       </div>
       <div className="flex flex-col gap-[14px] px-[14px] py-[12px]">
-        <p style={{ ...f, fontSize: 12, color: "#686576", lineHeight: 1.5 }}>{introLine}</p>
+        <p style={{ fontSize: 12, color: "#686576", lineHeight: 1.5 }}>{introLine}</p>
         <ChipRow label="Campaign goal" options={PROACTIVE_OPTIONS.goal} value={goal} onChange={setGoal} />
         <ChipRow label="Timeline" options={PROACTIVE_OPTIONS.timeline} value={timeline} onChange={setTimeline} />
         <ChipRow label="Offer focus" options={PROACTIVE_OPTIONS.offerFocus} value={offerFocus} onChange={setOfferFocus} />
@@ -851,7 +846,7 @@ function ProactiveQuestionsCard({
       <div className="px-[14px] pb-[12px] flex justify-end">
         <button onClick={() => { if (canStart) onSubmit(goal!, timeline!, offerFocus!); }} disabled={!canStart}
           className="px-[16px] py-[8px] rounded-full text-white text-[12px] font-medium cursor-pointer transition-opacity hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed"
-          style={{ background: "linear-gradient(135deg, #473bab 0%, #6356e1 100%)", ...f }}>
+          style={{ background: "linear-gradient(135deg, #473bab 0%, #6356e1 100%)" }}>
           Start Proactive Build →
         </button>
       </div>
@@ -916,7 +911,7 @@ function SetupProjectCard({ input, existingNames = [], onApply, onDismiss, proac
 
   const inputCls = "w-full px-[10px] py-[7px] rounded-[8px] text-[12px] text-[#1f1d25] border border-[rgba(0,0,0,0.12)] bg-[#fafafb] outline-none focus:border-[#473bab] focus:ring-1 focus:ring-[rgba(71,59,171,0.15)] transition-all";
   const labelCls = "text-[10px] font-semibold uppercase tracking-[0.06em] text-[#9c99a9] mb-[4px]";
-  const f = { fontFamily: "'Roboto', sans-serif" };
+
   const menuCls = "z-[500] bg-white rounded-xl shadow-xl border border-[rgba(0,0,0,0.1)] p-1 animate-in fade-in-0 zoom-in-95 min-w-[var(--radix-dropdown-menu-trigger-width)]";
   const itemCls = "flex items-center gap-2 px-[10px] py-[6px] rounded-lg text-[12px] text-[#1f1d25] cursor-pointer outline-none select-none data-[highlighted]:bg-[#f5f4f8]";
 
@@ -936,7 +931,7 @@ function SetupProjectCard({ input, existingNames = [], onApply, onDismiss, proac
           style={{ background: "linear-gradient(135deg, #473bab, #6356e1)" }}>
           <Plus size={9} color="white" strokeWidth={3} />
         </div>
-        <span style={{ ...f, fontSize: 11.5, fontWeight: 600, color: "#473bab", letterSpacing: "0.3px" }}>
+        <span style={{ fontSize: 11.5, fontWeight: 600, color: "#473bab", letterSpacing: "0.3px" }}>
           New project setup
         </span>
       </div>
@@ -944,15 +939,15 @@ function SetupProjectCard({ input, existingNames = [], onApply, onDismiss, proac
       <div className="flex flex-col gap-[10px] px-[14px] py-[12px]">
         {/* Name */}
         <div>
-          <p className={labelCls} style={f}>Project name</p>
+          <p className={labelCls}>Project name</p>
           <input type="text" value={name} onChange={e => { setName(e.target.value); setNameError(""); }}
             onFocus={e => e.target.select()}
             placeholder="e.g. Honda Summer Lease Event"
-            className={inputCls} style={f} />
+            className={inputCls} />
           {nameError ? (
-            <p className="mt-[4px]" style={{ ...f, fontSize: 10, color: "#D2323F" }}>{nameError}</p>
+            <p className="mt-[4px]" style={{ fontSize: 10, color: "#D2323F" }}>{nameError}</p>
           ) : (
-            <p className="mt-[4px]" style={{ ...f, fontSize: 10, color: "#9c99a9", fontStyle: "italic" }}>
+            <p className="mt-[4px]" style={{ fontSize: 10, color: "#9c99a9", fontStyle: "italic" }}>
               {wasDeduplicated
                 ? `"${input.project_name}" already exists — adjusted to avoid a collision. Edit to customise.`
                 : "Suggested name — edit to customise."}
@@ -963,7 +958,7 @@ function SetupProjectCard({ input, existingNames = [], onApply, onDismiss, proac
         {/* Account + Brand row */}
         <div className="flex gap-[8px]">
           <div className="flex-1">
-            <p className={labelCls} style={f}>Account</p>
+            <p className={labelCls}>Account</p>
             <AgentSelect
               value={account} onChange={setAccount} f={f}
               placeholder="Select account"
@@ -971,7 +966,7 @@ function SetupProjectCard({ input, existingNames = [], onApply, onDismiss, proac
             />
           </div>
           <div className="flex-1">
-            <p className={labelCls} style={f}>Brand</p>
+            <p className={labelCls}>Brand</p>
             <AgentSelect
               value={oem} onChange={setOem} f={f}
               options={AVAILABLE_BRANDS.map(b => ({ value: b, label: b }))}
@@ -981,12 +976,11 @@ function SetupProjectCard({ input, existingNames = [], onApply, onDismiss, proac
 
         {/* Owner */}
         <div>
-          <p className={labelCls} style={f}>Owner</p>
+          <p className={labelCls}>Owner</p>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <button
                 className="w-full flex items-center gap-[8px] px-[10px] py-[7px] rounded-[8px] text-[12px] border border-[rgba(0,0,0,0.12)] bg-[#fafafb] outline-none transition-all hover:border-[#b0b0b5] focus:border-[#473bab] focus:ring-1 focus:ring-[rgba(71,59,171,0.15)] cursor-pointer text-left"
-                style={f}
               >
                 {selectedOwner ? (
                   <>
@@ -1004,8 +998,8 @@ function SetupProjectCard({ input, existingNames = [], onApply, onDismiss, proac
                 <DropdownMenuItem key={owner.id} className={itemCls} onClick={() => setOwnerId(owner.id)}>
                   <AvatarInitials initials={owner.initials} size={20} bgColor={owner.color} />
                   <div className="flex-1 min-w-0">
-                    <p style={{ ...f, fontSize: 12 }}>{owner.name}</p>
-                    <p style={{ ...f, fontSize: 10, color: "#9c99a9" }} className="truncate">{owner.email}</p>
+                    <p style={{ fontSize: 12 }}>{owner.name}</p>
+                    <p style={{ fontSize: 10, color: "#9c99a9" }} className="truncate">{owner.email}</p>
                   </div>
                   {owner.id === ownerId && <Check size={11} strokeWidth={2.5} className="text-[#473bab] shrink-0" />}
                 </DropdownMenuItem>
@@ -1017,36 +1011,35 @@ function SetupProjectCard({ input, existingNames = [], onApply, onDismiss, proac
         {/* Dates row */}
         <div className="flex gap-[8px]">
           <div className="flex-1">
-            <p className={labelCls} style={f}>Start date</p>
+            <p className={labelCls}>Start date</p>
             <input type="text" value={startDate}
               onChange={e => { setStartDate(e.target.value); setStartDateError(""); }}
-              className={inputCls + (startDateError ? " border-[#D2323F]!" : "")} style={f} placeholder="Jun 1, 2026" />
+              className={inputCls + (startDateError ? " border-[#D2323F]!" : "")} placeholder="Jun 1, 2026" />
             {startDateError && (
-              <p className="mt-[4px]" style={{ ...f, fontSize: 10, color: "#D2323F" }}>{startDateError}</p>
+              <p className="mt-[4px]" style={{ fontSize: 10, color: "#D2323F" }}>{startDateError}</p>
             )}
           </div>
           <div className="flex-1">
-            <p className={labelCls} style={f}>End date</p>
+            <p className={labelCls}>End date</p>
             <input type="text" value={endDate}
               onChange={e => { setEndDate(e.target.value); setEndDateError(""); }}
-              className={inputCls + (endDateError ? " border-[#D2323F]!" : "")} style={f} placeholder="Jun 30, 2026" />
+              className={inputCls + (endDateError ? " border-[#D2323F]!" : "")} placeholder="Jun 30, 2026" />
             {endDateError && (
-              <p className="mt-[4px]" style={{ ...f, fontSize: 10, color: "#D2323F" }}>{endDateError}</p>
+              <p className="mt-[4px]" style={{ fontSize: 10, color: "#D2323F" }}>{endDateError}</p>
             )}
           </div>
         </div>
 
         {/* Platforms */}
         <div>
-          <p className={labelCls} style={f}>Platforms</p>
+          <p className={labelCls}>Platforms</p>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <button
                 className="w-full flex flex-wrap items-center gap-[4px] min-h-[34px] px-[8px] py-[5px] rounded-[8px] text-[12px] border border-[rgba(0,0,0,0.12)] bg-[#fafafb] outline-none transition-all hover:border-[#b0b0b5] focus:border-[#473bab] cursor-pointer text-left"
-                style={f}
               >
                 {platforms.length === 0 ? (
-                  <span className="flex-1 text-[#9c99a9]" style={f}>Select platforms</span>
+                  <span className="flex-1 text-[#9c99a9]">Select platforms</span>
                 ) : (
                   <div className="flex flex-wrap gap-[3px] flex-1 min-w-0">
                     {platforms.map(id => {
@@ -1082,7 +1075,7 @@ function SetupProjectCard({ input, existingNames = [], onApply, onDismiss, proac
                       {active && <Check size={9} strokeWidth={3} color="white" />}
                     </span>
                     <img src={p.icon} alt="" className="w-[12px] h-[12px] shrink-0 object-contain" />
-                    <span style={f}>{p.label}</span>
+                    <span>{p.label}</span>
                   </DropdownMenuItem>
                 );
               })}
@@ -1121,13 +1114,12 @@ function SetupProjectCard({ input, existingNames = [], onApply, onDismiss, proac
             }}
             disabled={!name.trim()}
             className="flex-1 py-[8px] rounded-full text-[13px] font-medium tracking-[0.46px] text-white transition-all cursor-pointer disabled:opacity-40"
-            style={{ background: "linear-gradient(99deg, #473bab 0%, #6356e1 100%)", ...f }}
+            style={{ background: "linear-gradient(99deg, #473bab 0%, #6356e1 100%)" }}
           >
             Create project
           </button>
           <button onClick={onDismiss}
-            className="px-[14px] py-[8px] rounded-full text-[13px] text-[#686576] hover:bg-black/5 transition-colors cursor-pointer"
-            style={f}>
+            className="px-[14px] py-[8px] rounded-full text-[13px] text-[#686576] hover:bg-black/5 transition-colors cursor-pointer">
             Dismiss
           </button>
         </div>
@@ -1226,7 +1218,6 @@ function OffersProposalCard({ input, context, onApply, onDismiss, proactive, dis
     );
   }
 
-  const f = { fontFamily: "'Roboto', sans-serif" };
   const labelCls = "text-[10px] font-semibold uppercase tracking-[0.06em] text-[#9c99a9] mb-[4px]";
 
   return (
@@ -1234,9 +1225,9 @@ function OffersProposalCard({ input, context, onApply, onDismiss, proactive, dis
       className="ml-[32px] mt-[4px] flex flex-col gap-[8px]">
       {/* Rationale — free text, no outer box */}
       <div className="pl-[2px]">
-        <p style={{ ...f, fontSize: 14, color: "#686576", lineHeight: 1.6, letterSpacing: "0.17px" }}>{input.rationale}</p>
+        <p style={{ fontSize: 14, color: "#686576", lineHeight: 1.6, letterSpacing: "0.17px" }}>{input.rationale}</p>
         <WhyThese content={
-          <div style={{ ...f, fontSize: 11, color: "#473bab", lineHeight: 1.6 }}>
+          <div style={{ fontSize: 11, color: "#473bab", lineHeight: 1.6 }}>
             <p style={{ fontWeight: 600, marginBottom: 4 }}>How I picked these</p>
             <p style={{ marginBottom: 4 }}>I rank every offer in your inventory on two signals:</p>
             <p style={{ marginBottom: 2 }}>• <strong>Aging</strong> — days each unit has been in stock. Older units get priority to move inventory.</p>
@@ -1299,14 +1290,13 @@ function OffersProposalCard({ input, context, onApply, onDismiss, proactive, dis
                       { key: "term",              label: "Term (mo)",           val: custom?.term              ?? o.term           },
                       { key: "totalDueAtSigning", label: "Due at Signing ($)",  val: custom?.totalDueAtSigning ?? ((fullOffer as any)?.totalDueAtSigning ?? 0) },
                     ].map(({ key, label, val }) => (
-                      <label key={key} style={{ ...f, fontSize: 11 }} className="flex flex-col gap-[3px] text-[#686576]">
+                      <label key={key} style={{ fontSize: 11 }} className="flex flex-col gap-[3px] text-[#686576]">
                         {label}
                         <input
                           type="number"
                           value={val}
                           onChange={e => handleCustomChange(id, key, Number(e.target.value))}
                           className="w-[90px] px-[8px] py-[4px] rounded-[6px] border border-[rgba(0,0,0,0.12)] text-[12px] text-[#1f1d25] bg-white outline-none focus:border-[#473bab] focus:ring-1 focus:ring-[rgba(71,59,171,0.15)]"
-                          style={f}
                         />
                       </label>
                     ))}
@@ -1319,7 +1309,7 @@ function OffersProposalCard({ input, context, onApply, onDismiss, proactive, dis
                         }
                       }}
                       className="px-[12px] py-[4px] rounded-full text-[12px] font-medium text-white cursor-pointer transition-all"
-                      style={{ background: "linear-gradient(99deg, #473bab 0%, #6356e1 100%)", ...f }}
+                      style={{ background: "linear-gradient(99deg, #473bab 0%, #6356e1 100%)" }}
                     >
                       Apply
                     </button>
@@ -1345,7 +1335,7 @@ function OffersProposalCard({ input, context, onApply, onDismiss, proactive, dis
           <button onClick={() => { onApply(offerIds, [...appliedCustomizations]); setApplied(true); }}
             disabled={offerIds.length === 0}
             className="flex-1 py-[8px] rounded-full text-[13px] font-medium tracking-[0.46px] text-white transition-all cursor-pointer disabled:opacity-40"
-            style={{ background: "linear-gradient(99deg, #473bab 0%, #6356e1 100%)", ...f }}>
+            style={{ background: "linear-gradient(99deg, #473bab 0%, #6356e1 100%)" }}>
             Add {offerIds.length} offer{offerIds.length !== 1 ? "s" : ""}
           </button>
           <button
@@ -1354,11 +1344,10 @@ function OffersProposalCard({ input, context, onApply, onDismiss, proactive, dis
               customizeMode
                 ? "bg-[rgba(71,59,171,0.08)] border-[rgba(71,59,171,0.3)] text-[#473bab]"
                 : "border-[rgba(0,0,0,0.12)] text-[#686576] hover:bg-black/5"
-            )}
-            style={f}>
+            )}>
             {customizeMode ? "Done" : "Customize"}
           </button>
-          <button onClick={onDismiss} className="px-[14px] py-[8px] rounded-full text-[13px] text-[#686576] hover:bg-black/5 transition-colors cursor-pointer" style={f}>
+          <button onClick={onDismiss} className="px-[14px] py-[8px] rounded-full text-[13px] text-[#686576] hover:bg-black/5 transition-colors cursor-pointer">
             Dismiss
           </button>
         </div>
@@ -1384,8 +1373,6 @@ function TemplatePreviewModal({ template, onClose }: { template: TemplateInfo | 
   const pw = Math.round(template.width  * scale);
   const ph = Math.round(template.height * scale);
 
-  const f = { fontFamily: "'Roboto', sans-serif" };
-
   return (
     <div className="fixed inset-0 z-[999] flex items-center justify-center"
       style={{ background: "rgba(0,0,0,0.42)", backdropFilter: "blur(2px)" }}
@@ -1401,8 +1388,8 @@ function TemplatePreviewModal({ template, onClose }: { template: TemplateInfo | 
         {/* Header */}
         <div className="flex items-center justify-between px-[16px] pt-[14px] pb-[10px] border-b border-[rgba(0,0,0,0.06)]">
           <div>
-            <p style={{ ...f, fontSize: 12.5, fontWeight: 600, color: "#1f1d25" }}>{template.name}</p>
-            <p style={{ ...f, fontSize: 10.5, color: "#686576", marginTop: 1 }}>{template.brand} · {template.format}</p>
+            <p style={{ fontSize: 12.5, fontWeight: 600, color: "#1f1d25" }}>{template.name}</p>
+            <p style={{ fontSize: 10.5, color: "#686576", marginTop: 1 }}>{template.brand} · {template.format}</p>
           </div>
           <button onClick={onClose}
             className="flex items-center justify-center w-[26px] h-[26px] rounded-full hover:bg-black/6 transition-colors cursor-pointer text-[#9c99a9]">
@@ -1421,7 +1408,7 @@ function TemplatePreviewModal({ template, onClose }: { template: TemplateInfo | 
             alignItems: "center", justifyContent: "center", gap: 5,
           }}>
             <FileText size={Math.max(16, Math.min(32, pw * 0.12))} strokeWidth={1.3} style={{ color: "rgba(71,59,171,0.45)" }} />
-            <span style={{ ...f, fontSize: 8.5, color: "rgba(71,59,171,0.55)", letterSpacing: "0.6px", textTransform: "uppercase" }}>
+            <span style={{ fontSize: 8.5, color: "rgba(71,59,171,0.55)", letterSpacing: "0.6px", textTransform: "uppercase" }}>
               {template.width}×{template.height}
             </span>
           </div>
@@ -1435,8 +1422,8 @@ function TemplatePreviewModal({ template, onClose }: { template: TemplateInfo | 
             ["Brand",      template.brand],
           ] as [string, string][]).map(([label, value]) => (
             <div key={label} className="flex items-center justify-between">
-              <span style={{ ...f, fontSize: 11, color: "#9c99a9", fontWeight: 500 }}>{label}</span>
-              <span style={{ ...f, fontSize: 11, color: "#1f1d25" }}>{value}</span>
+              <span style={{ fontSize: 11, color: "#9c99a9", fontWeight: 500 }}>{label}</span>
+              <span style={{ fontSize: 11, color: "#1f1d25" }}>{value}</span>
             </div>
           ))}
         </div>
@@ -1483,7 +1470,6 @@ function TemplatesProposalCard({ input, context, onApply, onDismiss, proactive }
     );
   }
 
-  const f = { fontFamily: "'Roboto', sans-serif" };
   const labelCls = "text-[10px] font-semibold uppercase tracking-[0.06em] text-[#9c99a9] mb-[4px]";
 
   return (
@@ -1496,9 +1482,9 @@ function TemplatesProposalCard({ input, context, onApply, onDismiss, proactive }
       className="ml-[32px] mt-[4px] flex flex-col gap-[8px]">
       {/* Rationale — free text, no outer box */}
       <div className="pl-[2px]">
-        <p style={{ ...f, fontSize: 14, color: "#686576", lineHeight: 1.6, letterSpacing: "0.17px" }}>{input.rationale}</p>
+        <p style={{ fontSize: 14, color: "#686576", lineHeight: 1.6, letterSpacing: "0.17px" }}>{input.rationale}</p>
         <WhyThese content={
-          <div style={{ ...f, fontSize: 11, color: "#473bab", lineHeight: 1.6 }}>
+          <div style={{ fontSize: 11, color: "#473bab", lineHeight: 1.6 }}>
             <p style={{ fontWeight: 600, marginBottom: 4 }}>How I picked these</p>
             <p style={{ marginBottom: 4 }}>I select templates based on two priorities:</p>
             <p style={{ marginBottom: 2 }}>• <strong>Format coverage</strong> — I aim to cover website banner, display leaderboard, and social square formats for maximum reach across placements.</p>
@@ -1511,7 +1497,7 @@ function TemplatesProposalCard({ input, context, onApply, onDismiss, proactive }
         style={{ boxShadow: "0 2px 12px rgba(0,0,0,0.06)" }}>
       <div className="flex flex-col gap-[10px] px-[14px] py-[12px]">
         <div>
-          <p className={labelCls} style={f}>Templates · {templateIds.length} selected</p>
+          <p className={labelCls}>Templates · {templateIds.length} selected</p>
           <motion.div
             className="flex flex-col gap-[4px]"
             variants={{ hidden: {}, show: { transition: { staggerChildren: 0.1, delayChildren: 0.28 } } }}
@@ -1525,8 +1511,8 @@ function TemplatesProposalCard({ input, context, onApply, onDismiss, proactive }
                   variants={{ hidden: { opacity: 0, x: -14 }, show: { opacity: 1, x: 0, transition: { duration: 0.26, ease: "easeOut" } } }}
                   className="flex items-center gap-[8px] px-[10px] py-[7px] rounded-[8px] bg-[#f5f4f8] group">
                   <div className="flex-1 min-w-0">
-                    <p className="text-[12px] font-medium text-[#1f1d25] truncate" style={f}>{t ? t.name : id}</p>
-                    {t && <p className="text-[10.5px] text-[#686576] mt-[1px]" style={f}>{t.format} · {t.width}×{t.height} · {t.brand}</p>}
+                    <p className="text-[12px] font-medium text-[#1f1d25] truncate">{t ? t.name : id}</p>
+                    {t && <p className="text-[10.5px] text-[#686576] mt-[1px]">{t.format} · {t.width}×{t.height} · {t.brand}</p>}
                   </div>
                   <div className="flex items-center gap-[4px] opacity-0 group-hover:opacity-100 transition-all shrink-0">
                     {t && (
@@ -1560,7 +1546,7 @@ function TemplatesProposalCard({ input, context, onApply, onDismiss, proactive }
             <circle cx="6" cy="6" r="5.5" stroke="#473bab" strokeOpacity="0.5"/>
             <path d="M6 5.5V8.5M6 3.5V4.5" stroke="#473bab" strokeOpacity="0.7" strokeLinecap="round"/>
           </svg>
-          <p style={{ ...f, fontSize: 11, color: "#686576", lineHeight: 1.5 }}>
+          <p style={{ fontSize: 11, color: "#686576", lineHeight: 1.5 }}>
             These templates are all customizable. Click the{" "}
             <span style={{ fontWeight: 600, color: "#1f1d25" }}>⋮</span>
             {" "}menu on any template card and select{" "}
@@ -1572,10 +1558,10 @@ function TemplatesProposalCard({ input, context, onApply, onDismiss, proactive }
           <button onClick={() => { onApply(templateIds); setApplied(true); }}
             disabled={templateIds.length === 0}
             className="flex-1 py-[8px] rounded-full text-[13px] font-medium tracking-[0.46px] text-white transition-all cursor-pointer disabled:opacity-40"
-            style={{ background: "linear-gradient(99deg, #473bab 0%, #6356e1 100%)", ...f }}>
+            style={{ background: "linear-gradient(99deg, #473bab 0%, #6356e1 100%)" }}>
             Add templates
           </button>
-          <button onClick={onDismiss} className="px-[14px] py-[8px] rounded-full text-[13px] text-[#686576] hover:bg-black/5 transition-colors cursor-pointer" style={f}>
+          <button onClick={onDismiss} className="px-[14px] py-[8px] rounded-full text-[13px] text-[#686576] hover:bg-black/5 transition-colors cursor-pointer">
             Dismiss
           </button>
         </div>
@@ -1609,7 +1595,7 @@ interface BrandCardProps {
 function BrandProposalCard({ input, projectName, onApply, onDismiss, proactive }: BrandCardProps) {
   const [oem,     setOem]     = useState(() => normalizeOem(input.oem));
   const [applied, setApplied] = useState(false);
-  const f = { fontFamily: "'Roboto', sans-serif" };
+
   const [manualMode, setManualMode] = useState(false);
   const autoApplyRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -1643,9 +1629,9 @@ function BrandProposalCard({ input, projectName, onApply, onDismiss, proactive }
       className="ml-[32px] mt-[4px] flex flex-col gap-[8px]">
       {/* Rationale — free text, no outer box */}
       <div className="pl-[2px]">
-        <p style={{ ...f, fontSize: 14, color: "#686576", lineHeight: 1.6, letterSpacing: "0.17px" }}>{input.rationale}</p>
+        <p style={{ fontSize: 14, color: "#686576", lineHeight: 1.6, letterSpacing: "0.17px" }}>{input.rationale}</p>
         <WhyThese content={
-          <div style={{ ...f, fontSize: 11, color: "#473bab", lineHeight: 1.6 }}>
+          <div style={{ fontSize: 11, color: "#473bab", lineHeight: 1.6 }}>
             <p style={{ fontWeight: 600, marginBottom: 4 }}>How I picked this</p>
             <p>• <strong>Brand consistency</strong> — the kit matches the OEM on your project, ensuring logos, colours, and typography align with the manufacturer's guidelines across all ad formats.</p>
           </div>
@@ -1656,14 +1642,14 @@ function BrandProposalCard({ input, projectName, onApply, onDismiss, proactive }
         style={{ boxShadow: "0 2px 12px rgba(0,0,0,0.06)" }}>
         {projectName && (
           <div className="px-[14px] pt-[10px] pb-[8px] border-b border-[rgba(0,0,0,0.06)] bg-[#fafafa]">
-            <p style={{ ...f, fontSize: 10.5, color: "#9c99a9" }}>
+            <p style={{ fontSize: 10.5, color: "#9c99a9" }}>
               Project: <span style={{ color: "#1f1d25", fontWeight: 600 }}>{projectName}</span>
             </p>
           </div>
         )}
         <div className="flex flex-col gap-[10px] px-[14px] py-[12px]">
           <div>
-            <p className={labelCls} style={f}>Brand / Theme Kit</p>
+            <p className={labelCls}>Brand / Theme Kit</p>
             <AgentSelect
               value={oem} onChange={setOem} f={f}
               options={AVAILABLE_BRANDS.map(b => ({ value: b, label: b }))}
@@ -1672,10 +1658,10 @@ function BrandProposalCard({ input, projectName, onApply, onDismiss, proactive }
           <div className="flex items-center gap-[8px] pt-[2px]">
             <button onClick={() => { onApply(oem); setApplied(true); }}
               className="flex-1 py-[8px] rounded-full text-[13px] font-medium tracking-[0.46px] text-white transition-all cursor-pointer"
-              style={{ background: "linear-gradient(99deg, #473bab 0%, #6356e1 100%)", ...f }}>
+              style={{ background: "linear-gradient(99deg, #473bab 0%, #6356e1 100%)" }}>
               Activate brand kit
             </button>
-            <button onClick={onDismiss} className="px-[14px] py-[8px] rounded-full text-[13px] text-[#686576] hover:bg-black/5 transition-colors cursor-pointer" style={f}>
+            <button onClick={onDismiss} className="px-[14px] py-[8px] rounded-full text-[13px] text-[#686576] hover:bg-black/5 transition-colors cursor-pointer">
               Skip
             </button>
           </div>
@@ -1715,7 +1701,6 @@ interface BackgroundsCardProps {
 function BackgroundsProposalCard({ input, onApply, onDismiss }: BackgroundsCardProps) {
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [applied, setApplied] = useState(false);
-  const f = { fontFamily: "'Roboto', sans-serif" };
 
   // Scroll the main panel to the backgrounds section when this card appears
   useEffect(() => {
@@ -1738,9 +1723,9 @@ function BackgroundsProposalCard({ input, onApply, onDismiss }: BackgroundsCardP
       className="ml-[32px] mt-[4px] flex flex-col gap-[8px]">
       {/* Rationale — free text, no outer box */}
       <div className="pl-[2px]">
-        <p style={{ ...f, fontSize: 14, color: "#686576", lineHeight: 1.6, letterSpacing: "0.17px" }}>{input.rationale}</p>
+        <p style={{ fontSize: 14, color: "#686576", lineHeight: 1.6, letterSpacing: "0.17px" }}>{input.rationale}</p>
         <WhyThese content={
-          <div style={{ ...f, fontSize: 11, color: "#473bab", lineHeight: 1.6 }}>
+          <div style={{ fontSize: 11, color: "#473bab", lineHeight: 1.6 }}>
             <p style={{ fontWeight: 600, marginBottom: 4 }}>How I picked these</p>
             <p style={{ marginBottom: 2 }}>• <strong>Environment variety</strong> — different lighting conditions and settings keep the creative fresh across placements and avoid visual repetition.</p>
             <p>• <strong>Vehicle framing</strong> — I avoid overly generic or cluttered scenes, favouring open roads, urban vistas, and scenic backdrops that naturally frame the vehicle as the hero.</p>
@@ -1752,7 +1737,7 @@ function BackgroundsProposalCard({ input, onApply, onDismiss }: BackgroundsCardP
         style={{ boxShadow: "0 2px 12px rgba(0,0,0,0.06)" }}>
         <div className="flex flex-col gap-[10px] px-[14px] py-[12px]">
           <div>
-            <p className="text-[10px] font-semibold uppercase tracking-[0.06em] text-[#9c99a9] mb-[8px]" style={f}>
+            <p className="text-[10px] font-semibold uppercase tracking-[0.06em] text-[#9c99a9] mb-[8px]">
               Backgrounds · {selectedIds.length} selected
             </p>
             <div className="flex gap-[8px] overflow-x-auto pb-1">
@@ -1776,7 +1761,7 @@ function BackgroundsProposalCard({ input, onApply, onDismiss }: BackgroundsCardP
                         </div>
                       )}
                     </div>
-                    <span className="text-[9px] text-[#686576] text-center leading-tight truncate w-full" style={f}>
+                    <span className="text-[9px] text-[#686576] text-center leading-tight truncate w-full">
                       {bg.name}
                     </span>
                   </button>
@@ -1788,11 +1773,11 @@ function BackgroundsProposalCard({ input, onApply, onDismiss }: BackgroundsCardP
             <button onClick={() => { onApply(selectedIds); setApplied(true); }}
               disabled={selectedIds.length === 0}
               className="flex-1 py-[8px] rounded-full text-[13px] font-medium tracking-[0.46px] text-white transition-all cursor-pointer disabled:opacity-40"
-              style={{ background: "linear-gradient(99deg, #473bab 0%, #6356e1 100%)", ...f }}>
+              style={{ background: "linear-gradient(99deg, #473bab 0%, #6356e1 100%)" }}>
               Add {selectedIds.length > 0 ? `${selectedIds.length} ` : ""}background{selectedIds.length !== 1 ? "s" : ""}
             </button>
             <button onClick={onDismiss}
-              className="px-[14px] py-[8px] rounded-full text-[13px] text-[#686576] hover:bg-black/5 transition-colors cursor-pointer" style={f}>
+              className="px-[14px] py-[8px] rounded-full text-[13px] text-[#686576] hover:bg-black/5 transition-colors cursor-pointer">
               Skip
             </button>
           </div>
@@ -1817,7 +1802,7 @@ function ShareChooserCard({
   onChooseEmail: (recipientHint: string) => void;
   onChoosePlatform: (recipientName: string) => void;
 }) {
-  const f = { fontFamily: "'Roboto', sans-serif" };
+
   const [chosen, setChosen] = useState<"email" | "platform" | null>(null);
 
   const recipient = input.recipient_hint || "the recipient";
@@ -1848,7 +1833,7 @@ function ShareChooserCard({
     >
       {/* Header */}
       <div className="px-[14px] pt-[10px] pb-[8px] border-b border-[rgba(0,0,0,0.06)] bg-[#fafafa]">
-        <p style={{ ...f, fontSize: 11, color: "#686576", lineHeight: 1.5 }}>
+        <p style={{ fontSize: 11, color: "#686576", lineHeight: 1.5 }}>
           How would you like to send to{" "}
           <strong style={{ color: "#1f1d25" }}>{recipient}</strong>?
         </p>
@@ -1869,8 +1854,8 @@ function ShareChooserCard({
             </svg>
           </div>
           <div className="flex-1 min-w-0">
-            <p style={{ ...f, fontSize: 12, fontWeight: 500, color: "#1f1d25" }}>Send via Email</p>
-            <p style={{ ...f, fontSize: 10.5, color: "#9c99a9" }}>Share a project link by email</p>
+            <p style={{ fontSize: 12, fontWeight: 500, color: "#1f1d25" }}>Send via Email</p>
+            <p style={{ fontSize: 10.5, color: "#9c99a9" }}>Share a project link by email</p>
           </div>
           <ChevronDown size={13} strokeWidth={1.5} style={{ color: "#9c99a9", transform: "rotate(-90deg)", flexShrink: 0 }} />
         </button>
@@ -1889,8 +1874,8 @@ function ShareChooserCard({
             </svg>
           </div>
           <div className="flex-1 min-w-0">
-            <p style={{ ...f, fontSize: 12, fontWeight: 500, color: "#1f1d25" }}>Platform Communications</p>
-            <p style={{ ...f, fontSize: 10.5, color: "#9c99a9" }}>Send an in-app notification</p>
+            <p style={{ fontSize: 12, fontWeight: 500, color: "#1f1d25" }}>Platform Communications</p>
+            <p style={{ fontSize: 10.5, color: "#9c99a9" }}>Send an in-app notification</p>
           </div>
           <ChevronDown size={13} strokeWidth={1.5} style={{ color: "#9c99a9", transform: "rotate(-90deg)", flexShrink: 0 }} />
         </button>
@@ -1921,7 +1906,6 @@ function TaskOwnersProposalCard({
   liveOwners?: Record<string, string>;
   onApply: (owners: Record<string, string>) => void;
 }) {
-  const f = { fontFamily: "'Roboto', sans-serif" };
 
   // Merge agent suggestions with live owners from context
   const [selections, setSelections] = useState<Record<string, string>>(() => {
@@ -1971,8 +1955,8 @@ function TaskOwnersProposalCard({
 
       {/* Header */}
       <div className="px-[14px] pt-[10px] pb-[8px] border-b border-[rgba(0,0,0,0.06)] bg-[#fafafa]">
-        <p style={{ ...f, fontSize: 11, fontWeight: 600, color: "#1f1d25" }}>Assign Task Owners</p>
-        <p style={{ ...f, fontSize: 10.5, color: "#9c99a9", marginTop: 2 }}>Choose a responsible owner for each section</p>
+        <p style={{ fontSize: 11, fontWeight: 600, color: "#1f1d25" }}>Assign Task Owners</p>
+        <p style={{ fontSize: 10.5, color: "#9c99a9", marginTop: 2 }}>Choose a responsible owner for each section</p>
       </div>
 
       {/* Section rows */}
@@ -1982,12 +1966,11 @@ function TaskOwnersProposalCard({
           const owner = PROJECT_OWNERS.find(o => o.id === ownerId);
           return (
             <div key={id} className="flex items-center gap-[10px] px-[14px] py-[8px]">
-              <span style={{ ...f, fontSize: 12, color: "#686576", flex: 1 }}>{label}</span>
+              <span style={{ fontSize: 12, color: "#686576", flex: 1 }}>{label}</span>
               <button
                 ref={el => { triggerRefs.current[id] = el; }}
                 onClick={() => openDropdown(id)}
                 className="flex items-center gap-[6px] px-[8px] py-[4px] rounded-[8px] border border-[rgba(0,0,0,0.10)] bg-[#F9FAFA] hover:border-[var(--brand-accent)] hover:bg-[#f5f4ff] transition-all cursor-pointer min-w-[130px] text-left"
-                style={f}
               >
                 {owner ? (
                   <>
@@ -1995,10 +1978,10 @@ function TaskOwnersProposalCard({
                       ? <img src={owner.avatar} alt={owner.name} className="w-[16px] h-[16px] rounded-full object-cover shrink-0" />
                       : <AvatarInitials initials={owner.initials} size={16} bgColor={owner.color} />
                     }
-                    <span style={{ ...f, fontSize: 11, color: "#1f1d25", flex: 1 }}>{owner.name.split(" ")[0]}</span>
+                    <span style={{ fontSize: 11, color: "#1f1d25", flex: 1 }}>{owner.name.split(" ")[0]}</span>
                   </>
                 ) : (
-                  <span style={{ ...f, fontSize: 11, color: "#9c99a9", flex: 1 }}>Unassigned</span>
+                  <span style={{ fontSize: 11, color: "#9c99a9", flex: 1 }}>Unassigned</span>
                 )}
                 <ChevronDown size={11} strokeWidth={1.5} style={{ color: "#9c99a9", flexShrink: 0 }} />
               </button>
@@ -2012,7 +1995,7 @@ function TaskOwnersProposalCard({
         <button
           onClick={handleConfirm}
           className="flex items-center gap-[6px] px-[14px] py-[7px] rounded-full text-white text-[12px] font-medium cursor-pointer transition-opacity hover:opacity-90"
-          style={{ background: "linear-gradient(135deg, #6356E1 0%, #8B5CF6 100%)", ...f }}
+          style={{ background: "linear-gradient(135deg, #6356E1 0%, #8B5CF6 100%)" }}
         >
           Apply Task Owners
         </button>
@@ -2035,7 +2018,6 @@ function TaskOwnersProposalCard({
                 <button
                   onClick={() => { setSelections(p => { const n = { ...p }; delete n[openSection]; return n; }); setOpenSection(null); }}
                   className="w-full flex items-center gap-[8px] px-[10px] py-[7px] text-[12px] text-[#9c99a9] hover:bg-[#F4F5F6] cursor-pointer"
-                  style={f}
                 >
                   <span className="w-[16px] h-[16px] flex-shrink-0" />
                   Unassigned
@@ -2046,7 +2028,6 @@ function TaskOwnersProposalCard({
                     key={o.id}
                     onClick={() => { setSelections(p => ({ ...p, [openSection]: o.id })); setOpenSection(null); }}
                     className="w-full flex items-center gap-[8px] px-[10px] py-[7px] text-[12px] text-[#1f1d25] hover:bg-[#F4F5F6] cursor-pointer"
-                    style={f}
                   >
                     {o.avatar
                       ? <img src={o.avatar} alt={o.name} className="w-[16px] h-[16px] rounded-full object-cover shrink-0" />
@@ -2077,7 +2058,7 @@ function NotifyOwnersCard({
   projectName: string;
   onApply: () => void;
 }) {
-  const f = { fontFamily: "'Roboto', sans-serif" };
+
   const [chosen, setChosen] = useState<"email" | "platform" | null>(null);
   const [emailSent, setEmailSent] = useState(false);
   const [message, setMessage] = useState("");
@@ -2132,7 +2113,7 @@ function NotifyOwnersCard({
             <div className="w-4 h-4 rounded-full bg-[#0d7a5f] flex items-center justify-center shrink-0">
               <svg width="9" height="9" viewBox="0 0 10 10" fill="none"><path d="M2 5.5l2 2 4-4" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
             </div>
-            <p style={{ ...f, fontSize: 11, fontWeight: 600, color: "#0d7a5f" }}>Task owners notified via platform</p>
+            <p style={{ fontSize: 11, fontWeight: 600, color: "#0d7a5f" }}>Task owners notified via platform</p>
           </div>
         </div>
         <div className="flex flex-col gap-[2px] px-[14px] py-[10px]">
@@ -2142,8 +2123,8 @@ function NotifyOwnersCard({
                 ? <img src={owner.avatar} alt={owner.name} className="w-[22px] h-[22px] rounded-full object-cover shrink-0" />
                 : <AvatarInitials initials={owner.initials} size={22} bgColor={owner.color} />
               }
-              <span style={{ ...f, fontSize: 12, color: "#1f1d25" }}>{owner.name}</span>
-              <span style={{ ...f, fontSize: 10.5, color: "#9c99a9", textTransform: "capitalize" }}>{section}</span>
+              <span style={{ fontSize: 12, color: "#1f1d25" }}>{owner.name}</span>
+              <span style={{ fontSize: 10.5, color: "#9c99a9", textTransform: "capitalize" }}>{section}</span>
             </div>
           ))}
         </div>
@@ -2168,7 +2149,7 @@ function NotifyOwnersCard({
         style={{ boxShadow: "0 2px 12px rgba(0,0,0,0.06)" }}>
         {/* Header */}
         <div className="px-[14px] pt-[10px] pb-[8px] border-b border-[rgba(0,0,0,0.06)] bg-[#fafafa] flex items-center justify-between">
-          <p style={{ ...f, fontSize: 11, fontWeight: 600, color: "#1f1d25" }}>Email to task owners</p>
+          <p style={{ fontSize: 11, fontWeight: 600, color: "#1f1d25" }}>Email to task owners</p>
           <button onClick={() => setChosen(null)} className="text-[#9c99a9] hover:text-[#1f1d25] transition-colors cursor-pointer">
             <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M1 1l10 10M11 1L1 11" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>
           </button>
@@ -2177,7 +2158,7 @@ function NotifyOwnersCard({
         <div className="px-[14px] py-[12px] flex flex-col gap-[10px]">
           {/* Recipients */}
           <div>
-            <p style={{ ...f, fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.06em", color: "#9c99a9", marginBottom: 6 }}>To</p>
+            <p style={{ fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.06em", color: "#9c99a9", marginBottom: 6 }}>To</p>
             <div className="flex flex-wrap gap-[5px]">
               {resolvedOwners.map(({ owner }) => (
                 <div key={owner.id} className="flex items-center gap-[5px] px-[8px] py-[3px] rounded-full bg-[#F4F5F6]">
@@ -2185,7 +2166,7 @@ function NotifyOwnersCard({
                     ? <img src={owner.avatar} alt={owner.name} className="w-[14px] h-[14px] rounded-full object-cover shrink-0" />
                     : <AvatarInitials initials={owner.initials} size={14} bgColor={owner.color} />
                   }
-                  <span style={{ ...f, fontSize: 11, color: "#1f1d25" }}>{owner.name}</span>
+                  <span style={{ fontSize: 11, color: "#1f1d25" }}>{owner.name}</span>
                 </div>
               ))}
             </div>
@@ -2193,19 +2174,19 @@ function NotifyOwnersCard({
 
           {/* Subject */}
           <div>
-            <p style={{ ...f, fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.06em", color: "#9c99a9", marginBottom: 6 }}>Subject</p>
-            <p style={{ ...f, fontSize: 12, color: "#1f1d25" }}>Project shared: {projectName}</p>
+            <p style={{ fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.06em", color: "#9c99a9", marginBottom: 6 }}>Subject</p>
+            <p style={{ fontSize: 12, color: "#1f1d25" }}>Project shared: {projectName}</p>
           </div>
 
           {/* Message body */}
           <div>
-            <p style={{ ...f, fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.06em", color: "#9c99a9", marginBottom: 6 }}>Message</p>
+            <p style={{ fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.06em", color: "#9c99a9", marginBottom: 6 }}>Message</p>
             <textarea
               ref={textareaRef}
               value={message}
               onChange={(e) => setMessage(e.target.value)}
               className="w-full resize-none text-[12px] text-[#1f1d25] bg-[#F9FAFA] border border-[#E4E4E8] rounded-[8px] px-[10px] py-[8px] outline-none focus:border-[var(--brand-accent)] transition-colors overflow-hidden"
-              style={{ ...f, minHeight: 80 }}
+              style={{ minHeight: 80 }}
             />
           </div>
 
@@ -2213,7 +2194,7 @@ function NotifyOwnersCard({
           <button
             onClick={() => { onApply(); setEmailSent(true); }}
             className="self-end flex items-center gap-[6px] px-[14px] py-[7px] rounded-full text-white text-[12px] font-medium cursor-pointer transition-opacity hover:opacity-90"
-            style={{ background: "linear-gradient(135deg, #6356E1 0%, #8B5CF6 100%)", ...f }}
+            style={{ background: "linear-gradient(135deg, #6356E1 0%, #8B5CF6 100%)" }}
           >
             <svg width="13" height="13" viewBox="0 0 20 20" fill="none">
               <path d="M3 10l14-7-7 14V10H3z" fill="white"/>
@@ -2232,7 +2213,7 @@ function NotifyOwnersCard({
       style={{ boxShadow: "0 2px 12px rgba(0,0,0,0.06)" }}>
       {/* Header */}
       <div className="px-[14px] pt-[10px] pb-[8px] border-b border-[rgba(0,0,0,0.06)] bg-[#fafafa]">
-        <p style={{ ...f, fontSize: 11, color: "#686576", lineHeight: 1.5 }}>
+        <p style={{ fontSize: 11, color: "#686576", lineHeight: 1.5 }}>
           Notify <strong style={{ color: "#1f1d25" }}>{resolvedOwners.length} task owner{resolvedOwners.length !== 1 ? "s" : ""}</strong>. How would you like to send?
         </p>
       </div>
@@ -2250,8 +2231,8 @@ function NotifyOwnersCard({
             </svg>
           </div>
           <div className="flex-1 min-w-0">
-            <p style={{ ...f, fontSize: 12, fontWeight: 500, color: "#1f1d25" }}>Send via Email</p>
-            <p style={{ ...f, fontSize: 10.5, color: "#9c99a9" }}>One email to all task owners</p>
+            <p style={{ fontSize: 12, fontWeight: 500, color: "#1f1d25" }}>Send via Email</p>
+            <p style={{ fontSize: 10.5, color: "#9c99a9" }}>One email to all task owners</p>
           </div>
           <ChevronDown size={13} strokeWidth={1.5} style={{ color: "#9c99a9", transform: "rotate(-90deg)", flexShrink: 0 }} />
         </button>
@@ -2268,8 +2249,8 @@ function NotifyOwnersCard({
             </svg>
           </div>
           <div className="flex-1 min-w-0">
-            <p style={{ ...f, fontSize: 12, fontWeight: 500, color: "#1f1d25" }}>Platform Communications</p>
-            <p style={{ ...f, fontSize: 10.5, color: "#9c99a9" }}>In-app notification to all owners</p>
+            <p style={{ fontSize: 12, fontWeight: 500, color: "#1f1d25" }}>Platform Communications</p>
+            <p style={{ fontSize: 10.5, color: "#9c99a9" }}>In-app notification to all owners</p>
           </div>
           <ChevronDown size={13} strokeWidth={1.5} style={{ color: "#9c99a9", transform: "rotate(-90deg)", flexShrink: 0 }} />
         </button>
@@ -2283,8 +2264,8 @@ function NotifyOwnersCard({
               ? <img src={owner.avatar} alt={owner.name} className="w-[14px] h-[14px] rounded-full object-cover shrink-0" />
               : <AvatarInitials initials={owner.initials} size={14} bgColor={owner.color} />
             }
-            <span style={{ ...f, fontSize: 11, color: "#1f1d25" }}>{owner.name.split(" ")[0]}</span>
-            <span style={{ ...f, fontSize: 10, color: "#9c99a9", textTransform: "capitalize" }}>· {section}</span>
+            <span style={{ fontSize: 11, color: "#1f1d25" }}>{owner.name.split(" ")[0]}</span>
+            <span style={{ fontSize: 10, color: "#9c99a9", textTransform: "capitalize" }}>· {section}</span>
           </div>
         ))}
       </div>
@@ -2302,7 +2283,7 @@ interface EmailCardProps {
 }
 
 function EmailProposalCard({ input, projectName, onApply, onDismiss }: EmailCardProps) {
-  const f = { fontFamily: "'Roboto', sans-serif" };
+
   const labelCls = "text-[10px] font-semibold uppercase tracking-[0.06em] text-[#9c99a9] mb-[6px]";
   const hint = (input.recipient_hint ?? "").trim();
 
@@ -2374,7 +2355,7 @@ function EmailProposalCard({ input, projectName, onApply, onDismiss }: EmailCard
 
       {/* Header */}
       <div className="px-[14px] pt-[10px] pb-[8px] border-b border-[rgba(0,0,0,0.06)] bg-[#fafafa]">
-        <p style={{ ...f, fontSize: 11, color: "#686576", lineHeight: 1.5 }}>
+        <p style={{ fontSize: 11, color: "#686576", lineHeight: 1.5 }}>
           Sharing project link for <strong style={{ color: "#1f1d25" }}>{projectName}</strong>
         </p>
       </div>
@@ -2383,7 +2364,7 @@ function EmailProposalCard({ input, projectName, onApply, onDismiss }: EmailCard
 
         {/* ── Recipient section ── */}
         <div>
-          <p className={labelCls} style={f}>Send to</p>
+          <p className={labelCls}>Send to</p>
 
           {/* Mode A: known contact — single row, pre-selected */}
           {knownContact && (
@@ -2391,13 +2372,13 @@ function EmailProposalCard({ input, projectName, onApply, onDismiss }: EmailCard
               style={{ background: "rgba(71,59,171,0.08)", outline: "1.5px solid rgba(71,59,171,0.35)" }}>
               <div className="w-[28px] h-[28px] rounded-full flex items-center justify-center shrink-0"
                 style={{ background: knownContact.group === "constellation" ? "#473bab" : "#0d7a5f" }}>
-                <span style={{ ...f, fontSize: 10, fontWeight: 700, color: "white" }}>
+                <span style={{ fontSize: 10, fontWeight: 700, color: "white" }}>
                   {knownContact.name.split(" ").map((n: string) => n[0]).join("").slice(0, 2)}
                 </span>
               </div>
               <div className="flex-1 min-w-0">
-                <p style={{ ...f, fontSize: 12, fontWeight: 500, color: "#1f1d25" }}>{knownContact.name}</p>
-                <p style={{ ...f, fontSize: 10, color: "#9c99a9" }} className="truncate">{knownContact.email}</p>
+                <p style={{ fontSize: 12, fontWeight: 500, color: "#1f1d25" }}>{knownContact.name}</p>
+                <p style={{ fontSize: 10, color: "#9c99a9" }} className="truncate">{knownContact.email}</p>
               </div>
               <Check size={13} strokeWidth={2.5} className="text-[#473bab] shrink-0" />
             </div>
@@ -2406,7 +2387,7 @@ function EmailProposalCard({ input, projectName, onApply, onDismiss }: EmailCard
           {/* Mode B: unknown recipient — ask for email */}
           {isUnknownRecipient && (
             <div className="flex flex-col gap-[6px]">
-              <p style={{ ...f, fontSize: 11.5, color: "#686576", lineHeight: 1.5 }}>
+              <p style={{ fontSize: 11.5, color: "#686576", lineHeight: 1.5 }}>
                 I don't have <strong style={{ color: "#1f1d25" }}>"{hint}"</strong> in my contacts.
               </p>
               <input
@@ -2415,7 +2396,6 @@ function EmailProposalCard({ input, projectName, onApply, onDismiss }: EmailCard
                 onChange={e => setUnknownEmail(e.target.value)}
                 placeholder="their@email.com"
                 className="w-full px-[10px] py-[7px] rounded-[8px] text-[12px] text-[#1f1d25] border border-[rgba(0,0,0,0.12)] bg-[#fafafb] outline-none focus:border-[#473bab] transition-all"
-                style={f}
               />
             </div>
           )}
@@ -2427,7 +2407,7 @@ function EmailProposalCard({ input, projectName, onApply, onDismiss }: EmailCard
                 const contacts = MOCK_CONTACTS.filter(c => c.group === group.key);
                 return (
                   <div key={group.key}>
-                    <p className={groupLabelCls} style={f}>{group.label}</p>
+                    <p className={groupLabelCls}>{group.label}</p>
                     <div className="flex flex-col gap-[3px] mb-[4px]">
                       {contacts.map(c => {
                         const isSelected = selectedEmails.has(c.email);
@@ -2437,13 +2417,13 @@ function EmailProposalCard({ input, projectName, onApply, onDismiss }: EmailCard
                             className="flex items-center gap-[8px] px-[10px] py-[7px] rounded-[8px] transition-all cursor-pointer text-left w-full"
                             style={{ background: isSelected ? "rgba(71,59,171,0.08)" : "#f5f4f8", outline: isSelected ? "1.5px solid rgba(71,59,171,0.35)" : "1.5px solid transparent" }}>
                             <div className="w-[24px] h-[24px] rounded-full flex items-center justify-center shrink-0" style={{ background: avatarBg }}>
-                              <span style={{ ...f, fontSize: 9, fontWeight: 700, color: "white" }}>
+                              <span style={{ fontSize: 9, fontWeight: 700, color: "white" }}>
                                 {c.name.split(" ").map((n: string) => n[0]).join("").slice(0, 2)}
                               </span>
                             </div>
                             <div className="flex-1 min-w-0">
-                              <p style={{ ...f, fontSize: 12, fontWeight: 500, color: "#1f1d25" }}>{c.name}</p>
-                              <p style={{ ...f, fontSize: 10, color: "#9c99a9" }} className="truncate">{c.email}</p>
+                              <p style={{ fontSize: 12, fontWeight: 500, color: "#1f1d25" }}>{c.name}</p>
+                              <p style={{ fontSize: 10, color: "#9c99a9" }} className="truncate">{c.email}</p>
                             </div>
                             {isSelected && <Check size={12} strokeWidth={2.5} className="text-[#473bab] shrink-0" />}
                           </button>
@@ -2459,22 +2439,22 @@ function EmailProposalCard({ input, projectName, onApply, onDismiss }: EmailCard
 
         {/* Message editor */}
         <div>
-          <p className={labelCls} style={f}>Message</p>
+          <p className={labelCls}>Message</p>
           <textarea ref={textareaRef} value={message} onChange={e => setMessage(e.target.value)}
             rows={1}
             className="w-full px-[10px] py-[8px] rounded-[8px] text-[12px] text-[#1f1d25] border border-[rgba(0,0,0,0.12)] bg-[#fafafb] outline-none focus:border-[#473bab] transition-all resize-none leading-relaxed overflow-hidden"
-            style={{ ...f, minHeight: 36 }} />
+            style={{ minHeight: 36 }} />
         </div>
 
         {/* Actions */}
         <div className="flex items-center gap-[8px] pt-[2px]">
           <button onClick={handleSend} disabled={!canSend}
             className="flex-1 py-[8px] rounded-full text-[13px] font-medium tracking-[0.46px] text-white transition-all cursor-pointer disabled:opacity-40"
-            style={{ background: "linear-gradient(99deg, #473bab 0%, #6356e1 100%)", ...f }}>
+            style={{ background: "linear-gradient(99deg, #473bab 0%, #6356e1 100%)" }}>
             Send email
           </button>
           <button onClick={onDismiss}
-            className="px-[14px] py-[8px] rounded-full text-[13px] text-[#686576] hover:bg-black/5 transition-colors cursor-pointer" style={f}>
+            className="px-[14px] py-[8px] rounded-full text-[13px] text-[#686576] hover:bg-black/5 transition-colors cursor-pointer">
             Cancel
           </button>
         </div>
@@ -2526,8 +2506,7 @@ function SmartProposalCard({ input, context, onApply, onDismiss }: SmartProposal
     >
       {/* Header strip */}
       <div className="px-[14px] pt-[12px] pb-[10px] border-b border-[rgba(0,0,0,0.06)] bg-[#fafafa]">
-        <p className="text-[11px] text-[#686576] leading-[1.5] tracking-[0.17px]"
-          style={{ fontFamily: "'Roboto', sans-serif" }}>
+        <p className="text-[11px] text-[#686576] leading-[1.5] tracking-[0.17px]">
           {input.rationale}
         </p>
       </div>
@@ -2537,12 +2516,11 @@ function SmartProposalCard({ input, context, onApply, onDismiss }: SmartProposal
         {/* Project name */}
         {(input.project_name || context?.projectId === "") && (
           <div>
-            <p className={labelCls} style={{ fontFamily: "'Roboto', sans-serif" }}>Project name</p>
+            <p className={labelCls}>Project name</p>
             <input
               type="text" value={name} onChange={e => setName(e.target.value)}
               placeholder="e.g. Honda Summer Lease 2026"
               className={inputCls}
-              style={{ fontFamily: "'Roboto', sans-serif" }}
             />
           </div>
         )}
@@ -2551,14 +2529,14 @@ function SmartProposalCard({ input, context, onApply, onDismiss }: SmartProposal
         {(startDate || endDate) && (
           <div className="flex gap-[8px]">
             <div className="flex-1">
-              <p className={labelCls} style={{ fontFamily: "'Roboto', sans-serif" }}>Start date</p>
+              <p className={labelCls}>Start date</p>
               <input type="text" value={startDate} onChange={e => setStartDate(e.target.value)}
-                className={inputCls} style={{ fontFamily: "'Roboto', sans-serif" }} />
+                className={inputCls} />
             </div>
             <div className="flex-1">
-              <p className={labelCls} style={{ fontFamily: "'Roboto', sans-serif" }}>End date</p>
+              <p className={labelCls}>End date</p>
               <input type="text" value={endDate} onChange={e => setEndDate(e.target.value)}
-                className={inputCls} style={{ fontFamily: "'Roboto', sans-serif" }} />
+                className={inputCls} />
             </div>
           </div>
         )}
@@ -2566,7 +2544,7 @@ function SmartProposalCard({ input, context, onApply, onDismiss }: SmartProposal
         {/* Proposed offers */}
         <div>
           <div className="flex items-center justify-between mb-[6px]">
-            <p className={labelCls} style={{ fontFamily: "'Roboto', sans-serif" }}>
+            <p className={labelCls}>
               Offers · {offerIds.length} selected
             </p>
           </div>
@@ -2576,13 +2554,11 @@ function SmartProposalCard({ input, context, onApply, onDismiss }: SmartProposal
               return (
                 <div key={id} className="flex items-center gap-[8px] px-[10px] py-[7px] rounded-[8px] bg-[#f5f4f8] group">
                   <div className="flex-1 min-w-0">
-                    <p className="text-[12px] font-medium text-[#1f1d25] truncate"
-                      style={{ fontFamily: "'Roboto', sans-serif" }}>
+                    <p className="text-[12px] font-medium text-[#1f1d25] truncate">
                       {o ? `${o.year} ${o.make} ${o.model} ${o.trim}` : id}
                     </p>
                     {o && (
-                      <p className="text-[10.5px] text-[#686576] mt-[1px]"
-                        style={{ fontFamily: "'Roboto', sans-serif" }}>
+                      <p className="text-[10.5px] text-[#686576] mt-[1px]">
                         {o.offerType} · ${o.monthlyPayment}/mo · PVI {o.pvi} · {o.aging}d aging
                       </p>
                     )}
@@ -2603,7 +2579,6 @@ function SmartProposalCard({ input, context, onApply, onDismiss }: SmartProposal
                   value=""
                   onChange={e => { if (e.target.value) setOfferIds(prev => [...prev, e.target.value]); }}
                   className="w-full px-[10px] py-[6px] rounded-[8px] text-[11px] text-[#473bab] border border-dashed border-[rgba(71,59,171,0.35)] bg-transparent cursor-pointer outline-none appearance-none"
-                  style={{ fontFamily: "'Roboto', sans-serif" }}
                 >
                   <option value="">+ Add another offer…</option>
                   {offers.filter(o => !offerIds.includes(o.id)).map(o => (
@@ -2621,7 +2596,7 @@ function SmartProposalCard({ input, context, onApply, onDismiss }: SmartProposal
         {/* Proposed templates */}
         <div>
           <div className="flex items-center justify-between mb-[6px]">
-            <p className={labelCls} style={{ fontFamily: "'Roboto', sans-serif" }}>
+            <p className={labelCls}>
               Templates · {templateIds.length} selected
             </p>
           </div>
@@ -2631,13 +2606,11 @@ function SmartProposalCard({ input, context, onApply, onDismiss }: SmartProposal
               return (
                 <div key={id} className="flex items-center gap-[8px] px-[10px] py-[7px] rounded-[8px] bg-[#f5f4f8] group">
                   <div className="flex-1 min-w-0">
-                    <p className="text-[12px] font-medium text-[#1f1d25] truncate"
-                      style={{ fontFamily: "'Roboto', sans-serif" }}>
+                    <p className="text-[12px] font-medium text-[#1f1d25] truncate">
                       {t ? t.name : id}
                     </p>
                     {t && (
-                      <p className="text-[10.5px] text-[#686576] mt-[1px]"
-                        style={{ fontFamily: "'Roboto', sans-serif" }}>
+                      <p className="text-[10.5px] text-[#686576] mt-[1px]">
                         {t.format} · {t.width}×{t.height} · {t.brand}
                       </p>
                     )}
@@ -2657,7 +2630,6 @@ function SmartProposalCard({ input, context, onApply, onDismiss }: SmartProposal
                   value=""
                   onChange={e => { if (e.target.value) setTemplateIds(prev => [...prev, e.target.value]); }}
                   className="w-full px-[10px] py-[6px] rounded-[8px] text-[11px] text-[#473bab] border border-dashed border-[rgba(71,59,171,0.35)] bg-transparent cursor-pointer outline-none appearance-none"
-                  style={{ fontFamily: "'Roboto', sans-serif" }}
                 >
                   <option value="">+ Add another template…</option>
                   {templates.filter(t => !templateIds.includes(t.id)).map(t => (
@@ -2678,14 +2650,13 @@ function SmartProposalCard({ input, context, onApply, onDismiss }: SmartProposal
             onClick={handleApply}
             disabled={offerIds.length === 0 && templateIds.length === 0}
             className="flex-1 py-[8px] rounded-full text-[13px] font-medium tracking-[0.46px] text-white transition-all cursor-pointer disabled:opacity-40"
-            style={{ background: "linear-gradient(99deg, #473bab 0%, #6356e1 100%)", fontFamily: "'Roboto', sans-serif" }}
+            style={{ background: "linear-gradient(99deg, #473bab 0%, #6356e1 100%)" }}
           >
             Apply to project
           </button>
           <button
             onClick={onDismiss}
             className="px-[14px] py-[8px] rounded-full text-[13px] text-[#686576] hover:bg-black/5 transition-colors cursor-pointer"
-            style={{ fontFamily: "'Roboto', sans-serif" }}
           >
             Dismiss
           </button>
@@ -2707,7 +2678,6 @@ function AdPreviewCard({ offer, template }: {
   template?: { id: string; name: string; format: string; width: number; height: number; brand: string };
 }) {
   const brandColor = BRAND_COLORS[offer.make] ?? "#473bab";
-  const f = { fontFamily: "'Roboto', sans-serif" };
 
   return (
     <motion.div
@@ -2722,23 +2692,23 @@ function AdPreviewCard({ offer, template }: {
       <div className="absolute top-[5px] right-[5px] z-10 flex items-center gap-[3px] px-[5px] py-[2px] rounded-full"
         style={{ background: "rgba(255,255,255,0.82)", backdropFilter: "blur(4px)" }}>
         <div className="w-[5px] h-[5px] rounded-full" style={{ background: "#9c99a9" }} />
-        <span style={{ ...f, fontSize: 8, fontWeight: 600, color: "#686576", letterSpacing: "0.3px" }}>Draft</span>
+        <span style={{ fontSize: 8, fontWeight: 600, color: "#686576", letterSpacing: "0.3px" }}>Draft</span>
       </div>
 
       {/* Top bar */}
       <div className="absolute top-0 left-0 right-0 flex items-center justify-between px-[7px] py-[5px]"
         style={{ background: "rgba(0,0,0,0.52)" }}>
-        <span style={{ ...f, fontSize: 7.5, fontWeight: 500, color: "rgba(255,255,255,0.82)", letterSpacing: "0.2px" }}>
+        <span style={{ fontSize: 7.5, fontWeight: 500, color: "rgba(255,255,255,0.82)", letterSpacing: "0.2px" }}>
           {offer.make} Dealer
         </span>
-        <span style={{ ...f, fontSize: 6.5, fontWeight: 700, color: "rgba(255,255,255,0.6)", letterSpacing: "1px", textTransform: "uppercase" }}>
+        <span style={{ fontSize: 6.5, fontWeight: 700, color: "rgba(255,255,255,0.6)", letterSpacing: "1px", textTransform: "uppercase" }}>
           {offer.make}
         </span>
       </div>
 
       {/* Car area — stylised placeholder */}
       <div className="absolute inset-0 flex items-center justify-center" style={{ paddingTop: 24, paddingBottom: 58 }}>
-        <span style={{ ...f, fontSize: 34, fontWeight: 900, color: brandColor, opacity: 0.12, letterSpacing: -1, userSelect: "none" }}>
+        <span style={{ fontSize: 34, fontWeight: 900, color: brandColor, opacity: 0.12, letterSpacing: -1, userSelect: "none" }}>
           {offer.make.substring(0, 3).toUpperCase()}
         </span>
         <svg width="88" height="38" viewBox="0 0 88 38" fill="none" className="absolute" style={{ opacity: 0.38 }}>
@@ -2756,23 +2726,23 @@ function AdPreviewCard({ offer, template }: {
       {/* Bottom offer bar */}
       <div className="absolute bottom-0 left-0 right-0 px-[7px] pt-[7px] pb-[7px]"
         style={{ background: "linear-gradient(to top, rgba(0,0,0,0.80) 0%, rgba(0,0,0,0.62) 100%)" }}>
-        <p style={{ ...f, fontSize: 7, fontWeight: 500, color: "rgba(255,255,255,0.65)", letterSpacing: "0.5px", textTransform: "uppercase", marginBottom: 1 }}>
+        <p style={{ fontSize: 7, fontWeight: 500, color: "rgba(255,255,255,0.65)", letterSpacing: "0.5px", textTransform: "uppercase", marginBottom: 1 }}>
           {offer.offerType} · {offer.year} {offer.make} {offer.model}
         </p>
         <div className="flex items-baseline gap-[2px]">
-          <span style={{ ...f, fontSize: 22, fontWeight: 700, color: "white", lineHeight: 1 }}>
+          <span style={{ fontSize: 22, fontWeight: 700, color: "white", lineHeight: 1 }}>
             ${offer.monthlyPayment}
           </span>
-          <span style={{ ...f, fontSize: 8, color: "rgba(255,255,255,0.6)" }}>/mo</span>
+          <span style={{ fontSize: 8, color: "rgba(255,255,255,0.6)" }}>/mo</span>
         </div>
-        <p style={{ ...f, fontSize: 6.5, color: "rgba(255,255,255,0.42)", marginTop: 2 }}>
+        <p style={{ fontSize: 6.5, color: "rgba(255,255,255,0.42)", marginTop: 2 }}>
           {offer.term}mo · {offer.trim}
         </p>
       </div>
 
       {template && (
         <div className="absolute top-[20px] left-[5px]">
-          <span style={{ ...f, fontSize: 7, fontWeight: 600, color: "white", background: "rgba(71,59,171,0.82)", padding: "2px 5px", borderRadius: 4, letterSpacing: "0.3px" }}>
+          <span style={{ fontSize: 7, fontWeight: 600, color: "white", background: "rgba(71,59,171,0.82)", padding: "2px 5px", borderRadius: 4, letterSpacing: "0.3px" }}>
             {template.width}×{template.height}
           </span>
         </div>
@@ -2784,7 +2754,6 @@ function AdPreviewCard({ offer, template }: {
 // ─── Preview Strip ─────────────────────────────────────────────────────────────
 function PreviewStrip({ msg, context }: { msg: PreviewMsg; context: ProjectContextPayload | null }) {
   const [open, setOpen] = useState(true);
-  const f = { fontFamily: "'Roboto', sans-serif" };
 
   const offers    = context?.availableOffers    ?? [];
   const templates = context?.availableTemplates ?? [];
@@ -2798,16 +2767,16 @@ function PreviewStrip({ msg, context }: { msg: PreviewMsg; context: ProjectConte
         <motion.div animate={{ rotate: open ? 0 : -90 }} transition={{ duration: 0.18 }}>
           <ChevronDown size={11} strokeWidth={2} className="text-[#686576]" />
         </motion.div>
-        <span style={{ ...f, fontSize: 11.5, fontWeight: 600, color: "#1f1d25" }}>
+        <span style={{ fontSize: 11.5, fontWeight: 600, color: "#1f1d25" }}>
           Preview ({selectedOffers.length})
         </span>
         {selectedTemplates.length > 0 && (
-          <span style={{ ...f, fontSize: 9.5, color: "#473bab", background: "rgba(71,59,171,0.08)", padding: "1px 7px", borderRadius: 100, fontWeight: 500 }}>
+          <span style={{ fontSize: 9.5, color: "#473bab", background: "rgba(71,59,171,0.08)", padding: "1px 7px", borderRadius: 100, fontWeight: 500 }}>
             {selectedTemplates.length} template{selectedTemplates.length !== 1 ? "s" : ""}
           </span>
         )}
         <div className="flex-1" />
-        <span style={{ ...f, fontSize: 9.5, color: "#9c99a9" }} className="opacity-0 group-hover:opacity-100 transition-opacity">
+        <span style={{ fontSize: 9.5, color: "#9c99a9" }} className="opacity-0 group-hover:opacity-100 transition-opacity">
           Details ↗
         </span>
       </button>
@@ -2860,7 +2829,6 @@ function ParsedOffersCard({
     monthlyPayment: string; term: string; dueAtSigning: string;
   }>>({});
   const selectAllRef = useRef<HTMLInputElement>(null);
-  const f = { fontFamily: "'Roboto', sans-serif" };
 
   const checkedCount = checkedIds.size;
   const allChecked  = checkedCount === input.offers.length;
@@ -2964,10 +2932,10 @@ function ParsedOffersCard({
           <FileText size={14} className="text-[#473bab]" />
         </div>
         <div className="flex-1 min-w-0">
-          <p className="text-[12px] text-[#1f1d25] truncate" style={{ fontFamily: "'Roboto', sans-serif", fontWeight: 500 }}>
+          <p className="text-[12px] text-[#1f1d25] truncate" style={{ fontWeight: 500 }}>
             {input.source}
           </p>
-          <p className="text-[11px] text-[#686576]" style={{ fontFamily: "'Roboto', sans-serif" }}>
+          <p className="text-[11px] text-[#686576]">
             {input.offers.length} offer{input.offers.length === 1 ? "" : "s"} extracted
           </p>
         </div>
@@ -2998,12 +2966,11 @@ function ParsedOffersCard({
               {someChecked && <span className="w-[7px] h-[1.5px] rounded bg-[#473bab]" />}
             </span>
           </span>
-          <span className="text-[11px] text-[#686576] group-hover:text-[#1f1d25] transition-colors"
-            style={{ fontFamily: "'Roboto', sans-serif" }}>
+          <span className="text-[11px] text-[#686576] group-hover:text-[#1f1d25] transition-colors">
             {allChecked ? "Deselect all" : someChecked ? `${checkedCount} selected` : "Select all"}
           </span>
         </label>
-        <span className="ml-auto text-[10px] text-[#9c99a9]" style={{ fontFamily: "'Roboto', sans-serif" }}>
+        <span className="ml-auto text-[10px] text-[#9c99a9]">
           {input.offers.length} total
         </span>
       </div>
@@ -3030,7 +2997,7 @@ function ParsedOffersCard({
                     { key: "term",           label: "Term (mo)",           val: customizations[row.id]?.term           ?? row.term           },
                     { key: "dueAtSigning",   label: "Due at Signing ($)",  val: customizations[row.id]?.dueAtSigning   ?? row.due_at_signing ?? "0" },
                   ].map(({ key, label, val }) => (
-                    <label key={key} style={{ ...f, fontSize: 11 }} className="flex flex-col gap-[3px] text-[#686576]">
+                    <label key={key} style={{ fontSize: 11 }} className="flex flex-col gap-[3px] text-[#686576]">
                       {label}
                       <input
                         type="number"
@@ -3045,7 +3012,6 @@ function ParsedOffersCard({
                           },
                         }))}
                         className="w-[90px] px-[8px] py-[4px] rounded-[6px] border border-[rgba(0,0,0,0.12)] text-[12px] text-[#1f1d25] bg-white outline-none focus:border-[#473bab] focus:ring-1 focus:ring-[rgba(71,59,171,0.15)]"
-                        style={f}
                       />
                     </label>
                   ))}
@@ -3067,7 +3033,7 @@ function ParsedOffersCard({
               ? "bg-[#473bab] hover:bg-[#392e8a] text-white cursor-pointer shadow-sm"
               : "bg-[#473bab] opacity-40 text-white cursor-not-allowed"
           )}
-          style={{ fontFamily: "'Roboto', sans-serif", fontWeight: 500 }}
+          style={{ fontWeight: 500 }}
         >
           {checkedCount === 0
             ? "Select offers to add"
@@ -3081,7 +3047,6 @@ function ParsedOffersCard({
               ? "bg-[rgba(71,59,171,0.08)] border-[rgba(71,59,171,0.3)] text-[#473bab]"
               : "border-[rgba(0,0,0,0.12)] text-[#686576] hover:bg-black/5"
           )}
-          style={{ fontFamily: "'Roboto', sans-serif" }}
         >
           {customizeMode ? "Done" : "Customize"}
         </button>
@@ -3132,7 +3097,7 @@ function CategoryChip({ label, onClick }: { label: string; onClick?: () => void 
     <button onClick={onClick}
       className="relative rounded-full border border-[rgba(99,86,225,0.5)] px-[10px] py-[4px] hover:bg-[rgba(71,59,171,0.06)] transition-colors cursor-pointer">
       <span className="text-[13px] text-[#473bab] tracking-[0.46px] whitespace-nowrap capitalize"
-        style={{ fontFamily: "'Roboto', sans-serif", fontWeight: 500, lineHeight: "22px" }}>
+        style={{ fontWeight: 500, lineHeight: "22px" }}>
         {label}
       </span>
     </button>
@@ -3153,7 +3118,7 @@ export function ProjectAgentPane({ isOpen, onClose, userType, activeUserName }: 
   const [threads,          setThreads]          = useState<AgentThread[]>(() => loadAgentThreads());
   const [knownProjectNames,  setKnownProjectNames]  = useState<string[]>(() => {
     try {
-      const raw = localStorage.getItem("constellation_local_projects");
+      const raw = localStorage.getItem(STORAGE_KEYS.LOCAL_PROJECTS);
       const projects: Array<{ name?: string }> = raw ? JSON.parse(raw) : [];
       return projects.map(p => p.name || "").filter(Boolean);
     } catch { return []; }
@@ -4075,7 +4040,7 @@ export function ProjectAgentPane({ isOpen, onClose, userType, activeUserName }: 
                   </button>
                 </Tooltip.Trigger>
                 <Tooltip.Portal>
-                  <Tooltip.Content sideOffset={5} className="z-[999] px-[8px] py-[4px] rounded-[6px] text-[11px] font-medium text-white bg-[#1f1d25] shadow-md select-none" style={{ fontFamily: "'Roboto', sans-serif" }}>
+                  <Tooltip.Content sideOffset={5} className="z-[999] px-[8px] py-[4px] rounded-[6px] text-[11px] font-medium text-white bg-[#1f1d25] shadow-md select-none">
                     {showHistory ? "Back to conversation" : "Nudge close panel"}
                     <Tooltip.Arrow className="fill-[#1f1d25]" />
                   </Tooltip.Content>
@@ -4083,7 +4048,7 @@ export function ProjectAgentPane({ isOpen, onClose, userType, activeUserName }: 
               </Tooltip.Root>
 
               <span className="ml-0.5 text-[16px] text-[#1f1d25] tracking-[0.15px] whitespace-nowrap shrink-0"
-                style={{ fontFamily: "'Roboto', sans-serif", fontWeight: 500, lineHeight: "1.5" }}>
+                style={{ fontWeight: 500, lineHeight: "1.5" }}>
                 AI Agent Auto
               </span>
               <button aria-label="Select agent" className="p-[5px] rounded-full hover:bg-black/5 transition-colors cursor-pointer shrink-0 ml-[2px]">
@@ -4104,7 +4069,7 @@ export function ProjectAgentPane({ isOpen, onClose, userType, activeUserName }: 
                     </button>
                   </Tooltip.Trigger>
                   <Tooltip.Portal>
-                    <Tooltip.Content sideOffset={5} className="z-[999] px-[8px] py-[4px] rounded-[6px] text-[11px] font-medium text-white bg-[#1f1d25] shadow-md select-none" style={{ fontFamily: "'Roboto', sans-serif" }}>
+                    <Tooltip.Content sideOffset={5} className="z-[999] px-[8px] py-[4px] rounded-[6px] text-[11px] font-medium text-white bg-[#1f1d25] shadow-md select-none">
                       Thread history
                       <Tooltip.Arrow className="fill-[#1f1d25]" />
                     </Tooltip.Content>
@@ -4118,7 +4083,7 @@ export function ProjectAgentPane({ isOpen, onClose, userType, activeUserName }: 
                     </button>
                   </Tooltip.Trigger>
                   <Tooltip.Portal>
-                    <Tooltip.Content sideOffset={5} className="z-[999] px-[8px] py-[4px] rounded-[6px] text-[11px] font-medium text-white bg-[#1f1d25] shadow-md select-none" style={{ fontFamily: "'Roboto', sans-serif" }}>
+                    <Tooltip.Content sideOffset={5} className="z-[999] px-[8px] py-[4px] rounded-[6px] text-[11px] font-medium text-white bg-[#1f1d25] shadow-md select-none">
                       Fullscreen
                       <Tooltip.Arrow className="fill-[#1f1d25]" />
                     </Tooltip.Content>
@@ -4132,7 +4097,7 @@ export function ProjectAgentPane({ isOpen, onClose, userType, activeUserName }: 
                     </button>
                   </Tooltip.Trigger>
                   <Tooltip.Portal>
-                    <Tooltip.Content sideOffset={5} className="z-[999] px-[8px] py-[4px] rounded-[6px] text-[11px] font-medium text-white bg-[#1f1d25] shadow-md select-none" style={{ fontFamily: "'Roboto', sans-serif" }}>
+                    <Tooltip.Content sideOffset={5} className="z-[999] px-[8px] py-[4px] rounded-[6px] text-[11px] font-medium text-white bg-[#1f1d25] shadow-md select-none">
                       Close panel
                       <Tooltip.Arrow className="fill-[#1f1d25]" />
                     </Tooltip.Content>
@@ -4158,7 +4123,6 @@ export function ProjectAgentPane({ isOpen, onClose, userType, activeUserName }: 
                         onChange={e => setHistorySearch(e.target.value)}
                         placeholder="Search conversations…"
                         className="w-full pl-[30px] pr-[10px] py-[7px] rounded-[10px] text-[12px] text-[#1f1d25] border border-[rgba(0,0,0,0.1)] bg-[#fafafb] outline-none focus:border-[#473bab] focus:ring-1 focus:ring-[rgba(71,59,171,0.15)] transition-all"
-                        style={{ fontFamily: "'Roboto', sans-serif" }}
                       />
                     </div>
                     <button
@@ -4179,16 +4143,14 @@ export function ProjectAgentPane({ isOpen, onClose, userType, activeUserName }: 
                       const groups = groupThreadsByDate(filtered);
                       if (groups.length === 0) {
                         return (
-                          <div className="flex items-center justify-center h-[120px] text-[13px] text-[#9c99a9]"
-                            style={{ fontFamily: "'Roboto', sans-serif" }}>
+                          <div className="flex items-center justify-center h-[120px] text-[13px] text-[#9c99a9]">
                             No conversations yet
                           </div>
                         );
                       }
                       return groups.map(({ label, items }) => (
                         <div key={label} className="mb-[16px]">
-                          <p className="text-[10px] font-semibold uppercase tracking-[0.06em] text-[#9c99a9] mb-[6px] px-[2px]"
-                            style={{ fontFamily: "'Roboto', sans-serif" }}>{label}</p>
+                          <p className="text-[10px] font-semibold uppercase tracking-[0.06em] text-[#9c99a9] mb-[6px] px-[2px]">{label}</p>
                           <div className="flex flex-col gap-[2px]">
                             {items.map(thread => (
                               <button
@@ -4200,11 +4162,10 @@ export function ProjectAgentPane({ isOpen, onClose, userType, activeUserName }: 
                                 )}
                               >
                                 <p className="text-[13px] text-[#1f1d25] truncate"
-                                  style={{ fontFamily: "'Roboto', sans-serif", fontWeight: 500 }}>
+                                  style={{ fontWeight: 500 }}>
                                   {thread.title}
                                 </p>
-                                <p className="text-[11px] text-[#9c99a9] mt-[1px]"
-                                  style={{ fontFamily: "'Roboto', sans-serif" }}>
+                                <p className="text-[11px] text-[#9c99a9] mt-[1px]">
                                   {new Date(thread.updatedAt).toLocaleString([], { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}
                                 </p>
                               </button>
@@ -4220,21 +4181,19 @@ export function ProjectAgentPane({ isOpen, onClose, userType, activeUserName }: 
                 <div className="flex flex-col flex-1 min-h-0">
                   <div className="pt-[12px] shrink-0">
                     <p className="text-[20px] tracking-[0.15px] leading-[1.6] opacity-90 mb-[10px]"
-                      style={{ fontFamily: "'Roboto', sans-serif", fontWeight: 700,
+                      style={{ fontWeight: 700,
                         backgroundImage: "linear-gradient(99.7748deg, rgb(71,59,171) 37.41%, rgb(172,171,255) 55.078%)",
                         WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>
                       Welcome, Jorge
                     </p>
-                    <p className="text-[14px] text-[#1f1d25] tracking-[0.15px] leading-[1.5] opacity-90 mb-[10px]"
-                      style={{ fontFamily: "'Roboto', sans-serif" }}>
+                    <p className="text-[14px] text-[#1f1d25] tracking-[0.15px] leading-[1.5] opacity-90 mb-[10px]">
                       {`Hi, I'm your Auto Intelligence Agent, ready to help you build and optimise your advertising projects.`}
                     </p>
                     <div className="flex items-center gap-[6px]">
-                      <p className="text-[14px] text-[#1f1d25] tracking-[0.15px] leading-[1.5] opacity-90 whitespace-nowrap shrink-0"
-                        style={{ fontFamily: "'Roboto', sans-serif" }}>My current focus is</p>
+                      <p className="text-[14px] text-[#1f1d25] tracking-[0.15px] leading-[1.5] opacity-90 whitespace-nowrap shrink-0">My current focus is</p>
                       <button className="flex items-center cursor-pointer">
                         <span className="text-[14px] tracking-[0.15px] leading-[1.5] opacity-90 whitespace-nowrap"
-                          style={{ fontFamily: "'Roboto', sans-serif", fontWeight: 700,
+                          style={{ fontWeight: 700,
                             backgroundImage: "linear-gradient(90deg, #473bab, #acabff)",
                             WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>
                           {focusLabel}
@@ -4307,8 +4266,7 @@ export function ProjectAgentPane({ isOpen, onClose, userType, activeUserName }: 
                           <img src={imgAgentAvatar} alt="AI" className="w-[22px] h-[22px] rounded-full object-cover shrink-0" />
                           <div className="flex items-center gap-[6px]">
                             <ConstellationArcMark arcs={arcState} size={18} />
-                            <span className="text-[12px] text-[#686576] tracking-[0.4px]"
-                              style={{ fontFamily: "'Roboto', sans-serif" }}>{simulatingStream ? "Setting up your project…" : loadingLabel}</span>
+                            <span className="text-[12px] text-[#686576] tracking-[0.4px]">{simulatingStream ? "Setting up your project…" : loadingLabel}</span>
                           </div>
                         </div>
                       )}
@@ -4401,15 +4359,14 @@ function MessageBubble({
         <div className="ml-[40px] bg-[#fafaff] rounded-bl-[12px] rounded-tl-[12px] rounded-tr-[12px] px-[12px] py-[10px] relative">
           <div aria-hidden="true" className="absolute inset-0 rounded-bl-[12px] rounded-tl-[12px] rounded-tr-[12px] border border-[rgba(99,86,225,0.5)] pointer-events-none" />
           {message.text && (
-            <p className="text-[12px] text-[#1f1d25] leading-[1.43] tracking-[0.17px] mb-[6px]"
-              style={{ fontFamily: "'Roboto', sans-serif" }}>{message.text}</p>
+            <p className="text-[12px] text-[#1f1d25] leading-[1.43] tracking-[0.17px] mb-[6px]">{message.text}</p>
           )}
           <div className="flex flex-wrap gap-[6px]">
             {message.files.map((f, i) => (
               <div key={i} className="flex items-center gap-[6px] px-[8px] py-[5px] bg-[rgba(71,59,171,0.06)] border border-[rgba(71,59,171,0.18)] rounded-[8px]">
                 <FileText size={11} className="text-[#473bab] shrink-0" />
                 <span className="text-[11px] text-[#473bab] truncate max-w-[160px]"
-                  style={{ fontFamily: "'Roboto', sans-serif", fontWeight: 500 }}>{f.name}</span>
+                  style={{ fontWeight: 500 }}>{f.name}</span>
               </div>
             ))}
           </div>
@@ -4572,8 +4529,7 @@ function MessageBubble({
       <div className="flex justify-end">
         <div className="ml-[40px] bg-[#fafaff] rounded-bl-[12px] rounded-tl-[12px] rounded-tr-[12px] px-[12px] py-[10px] relative">
           <div aria-hidden="true" className="absolute inset-0 rounded-bl-[12px] rounded-tl-[12px] rounded-tr-[12px] border border-[rgba(99,86,225,0.5)] pointer-events-none" />
-          <p className="text-[12px] text-[#1f1d25] leading-[1.43] tracking-[0.17px]"
-            style={{ fontFamily: "'Roboto', sans-serif" }}>{message.content}</p>
+          <p className="text-[12px] text-[#1f1d25] leading-[1.43] tracking-[0.17px]">{message.content}</p>
         </div>
       </div>
     );
@@ -4595,8 +4551,7 @@ function AssistantBubble({ text, streaming = false, isGeneratePrompt = false }: 
           {hasMarkdown && !streaming
             ? <MarkdownContent text={text} />
             : (
-              <p className="text-[13px] text-[#1f1d25] leading-[1.6] tracking-[0.17px] whitespace-pre-wrap"
-                style={{ fontFamily: "'Roboto', sans-serif" }}>
+              <p className="text-[13px] text-[#1f1d25] leading-[1.6] tracking-[0.17px] whitespace-pre-wrap">
                 {text}
                 {streaming && (
                   <span style={{ display: "inline-block", width: 2, height: 13, background: "#473bab",
@@ -4612,7 +4567,7 @@ function AssistantBubble({ text, streaming = false, isGeneratePrompt = false }: 
           <button
             onClick={() => window.dispatchEvent(new CustomEvent(AGENT_GENERATE_ASSETS_EVENT))}
             className="px-[18px] py-[9px] rounded-full text-[13px] font-medium tracking-[0.46px] text-white cursor-pointer transition-all"
-            style={{ background: "linear-gradient(99deg, #473bab 0%, #6356e1 100%)", fontFamily: "'Roboto', sans-serif" }}
+            style={{ background: "linear-gradient(99deg, #473bab 0%, #6356e1 100%)" }}
           >
             Generate Assets
           </button>

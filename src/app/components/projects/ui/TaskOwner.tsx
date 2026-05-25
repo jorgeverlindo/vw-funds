@@ -101,7 +101,7 @@ export function TaskOwner({
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: 4 }}
               transition={{ duration: 0.15, ease: "easeOut" }}
-              style={{ ...tooltipStyle, fontFamily: "'Roboto', sans-serif" }}
+              style={{ ...tooltipStyle }}
               className="whitespace-nowrap text-[11px] font-medium text-white bg-[#1f1d25] rounded-lg px-2.5 py-1.5 pointer-events-none shadow-md"
             >
               Click to change task owner
@@ -129,8 +129,7 @@ export function TaskOwner({
                 style={dropdownStyle}
                 className="bg-white rounded-xl shadow-xl border border-[rgba(0,0,0,0.1)] py-1 min-w-[192px]"
               >
-                <p className="px-3 pt-1.5 pb-1 text-[11px] font-medium text-[#9C99A9] uppercase tracking-wider"
-                   style={{ fontFamily: "'Roboto', sans-serif" }}>
+                <p className="px-3 pt-1.5 pb-1 text-[11px] font-medium text-[#9C99A9] uppercase tracking-wider">
                   Task Owner
                 </p>
                 {PROJECT_OWNERS.map((o) => (
@@ -138,7 +137,6 @@ export function TaskOwner({
                     key={o.id}
                     onClick={() => { onChange(o.id); setOpen(false); }}
                     className="w-full flex items-center gap-2.5 px-3 py-2 text-[13px] text-[#1f1d25] hover:bg-[#F4F5F6] cursor-pointer transition-colors"
-                    style={{ fontFamily: "'Roboto', sans-serif" }}
                   >
                     {o.avatar ? (
                       <img src={o.avatar} alt={o.name} className="w-5 h-5 rounded-full object-cover shrink-0" />

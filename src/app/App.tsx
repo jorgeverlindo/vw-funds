@@ -8,10 +8,7 @@ import { WorkflowProvider } from './contexts/WorkflowContext';
 import { ComplianceProvider } from './contexts/ComplianceContext';
 import { SnackbarHost } from './components/Snackbar';
 import React, { useState, useEffect } from 'react';
-
-// ─── Password gate ────────────────────────────────────────────────────────────
-const ACCESS_KEY = 'constellation_access';
-const CORRECT_PASSWORD = 'constellation2026';
+import { STORAGE_KEYS, ACCESS_PASSWORD } from './constants/storageKeys';
 
 // Constellation full logo — paths use currentColor so we can tint per theme
 function ConstellationLogo({ color }: { color: string }) {
@@ -39,7 +36,7 @@ function ConstellationLogo({ color }: { color: string }) {
 
 function PasswordGate({ children }: { children: React.ReactNode }) {
   const [unlocked, setUnlocked] = useState(
-    () => localStorage.getItem(ACCESS_KEY) === CORRECT_PASSWORD
+    () => localStorage.getItem(STORAGE_KEYS.ACCESS) === ACCESS_PASSWORD
   );
   const [value, setValue] = useState('');
   const [shake, setShake] = useState(false);
@@ -57,8 +54,8 @@ function PasswordGate({ children }: { children: React.ReactNode }) {
   if (unlocked) return <>{children}</>;
 
   const attempt = () => {
-    if (value === CORRECT_PASSWORD) {
-      localStorage.setItem(ACCESS_KEY, CORRECT_PASSWORD);
+    if (value === ACCESS_PASSWORD) {
+      localStorage.setItem(STORAGE_KEYS.ACCESS, ACCESS_PASSWORD);
       setUnlocked(true);
     } else {
       setShake(true);
@@ -213,7 +210,7 @@ class ErrorBoundary extends React.Component<
           </pre>
           <button
             onClick={() => {
-              localStorage.removeItem('constellation_local_projects');
+              localStorage.removeItem(STORAGE_KEYS.LOCAL_PROJECTS);
               window.location.reload();
             }}
             style={{ marginTop: 16, padding: '8px 16px', background: '#1f1d25', color: '#fff', border: 'none', borderRadius: 8, cursor: 'pointer' }}

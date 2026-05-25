@@ -137,7 +137,6 @@ export function OfferCard({ offer, selected = false, onSelect, onDelete, variant
               lineHeight: "143%",
               letterSpacing: "0.17px",
               color: "rgb(31,29,37)",
-              fontFamily: "'Roboto', sans-serif",
               paddingRight: 4,
             }}>
               {fullName}
@@ -188,8 +187,7 @@ export function OfferCard({ offer, selected = false, onSelect, onDelete, variant
           {/* Subtitle: stock (recommendation) or VIN (regular) */}
           <p style={{
             fontSize: 11, lineHeight: "166%", letterSpacing: "0.4px",
-            color: "rgb(104,101,118)", margin: 0, fontFamily: "'Roboto', sans-serif",
-          }}>
+            color: "rgb(104,101,118)", margin: 0, }}>
             {variant === "recommendation"
               ? `${offer.stock} in stock`
               : offer.vin ?? (offer.stock > 1 ? `${offer.stock} in stock` : null)
@@ -275,8 +273,7 @@ function OfferTypeChip({ label }: { label: string }) {
       background: "rgba(99,86,225,0.10)", color: "#6356E1",
       fontSize: 11, lineHeight: "18px", letterSpacing: "0.16px", fontWeight: 500,
       padding: "1px 6px 1px 4px", borderRadius: 8,
-      fontFamily: "'Roboto', sans-serif",
-    }}>
+      }}>
       {/* checkmark icon */}
       <svg width="12" height="12" viewBox="0 0 12 12" fill="none" style={{ flexShrink: 0 }}>
         <path d="M2 6.5L4.5 9L10 3" stroke="#6356E1" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
@@ -293,8 +290,7 @@ function TagChip({ label }: { label: string }) {
       color: "rgb(104,101,118)",
       background: "rgba(240,242,244,1)",
       padding: "1px 6px", borderRadius: 8, fontWeight: 400,
-      fontFamily: "'Roboto', sans-serif",
-    }}>
+      }}>
       {label}
     </span>
   );
@@ -306,8 +302,7 @@ function PviChip({ value }: { value: number }) {
       fontSize: 11, lineHeight: "18px", letterSpacing: "0.16px",
       color: "#01579b", background: "rgba(2,136,209,0.08)",
       padding: "1px 6px", borderRadius: 8, fontWeight: 400,
-      fontFamily: "'Roboto', sans-serif",
-    }}>
+      }}>
       PVI: <strong style={{ fontWeight: 600 }}>{value}</strong>
     </span>
   );
@@ -320,8 +315,7 @@ function MetricChip({ label, value }: { label: string; value: number }) {
       background: "rgba(2,136,209,0.08)", color: "#01579b",
       fontSize: 11, lineHeight: "18px", letterSpacing: "0.16px", fontWeight: 400,
       padding: "1px 6px", borderRadius: 8,
-      fontFamily: "'Roboto', sans-serif",
-    }}>
+      }}>
       {label}: <strong style={{ fontWeight: 600 }}>{value}</strong>
     </span>
   );
@@ -333,16 +327,14 @@ function FinancialCell({ label, value, infoIcon }: { label: string; value: strin
       <p style={{
         fontSize: 10, lineHeight: "10px", color: "rgb(104,101,118)",
         margin: "0 0 3px 0", display: "flex", alignItems: "center", gap: 2,
-        fontFamily: "'Roboto', sans-serif",
-      }}>
+        }}>
         {label}
         {infoIcon && <Info size={10} color="rgb(184,182,192)" style={{ flexShrink: 0 }} />}
       </p>
       <p style={{
         fontSize: 12, lineHeight: "143%", letterSpacing: "0.17px",
         fontWeight: 600, color: "rgb(31,29,37)", margin: 0,
-        fontFamily: "'Roboto', sans-serif",
-      }}>
+        }}>
         {value}
       </p>
     </div>

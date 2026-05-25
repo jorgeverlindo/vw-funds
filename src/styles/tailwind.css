@@ -2,3 +2,12 @@
 @source '../**/*.{js,ts,jsx,tsx}';
 
 @import 'tw-animate-css';
+
+/* ── Base typography ─────────────────────────────────────────────────────── */
+/* Roboto is the app-wide sans-serif. Setting it here removes the need for   */
+/* the 150+ inline style={{ fontFamily: "'Roboto', sans-serif" }} overrides. */
+@layer base {
+  body {
+    font-family: 'Roboto', sans-serif;
+  }
+}

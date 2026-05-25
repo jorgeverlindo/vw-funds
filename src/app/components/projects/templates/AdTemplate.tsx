@@ -1,6 +1,5 @@
 "use client";
 
-
 import { CSSProperties, ReactNode, useState, useEffect, createContext, useContext } from "react";
 import { zoneConfigs, isKeyMessageTextLayout, isPharmaZoneConfig } from "@projects/lib/template-zone-configs";
 import type { TemplateZoneConfig, SingleProductTextLayout, MultiProductTextLayout, KeyMessageTextLayout } from "@projects/lib/template-zone-configs";
@@ -222,7 +221,6 @@ function CTAButton({ children, style }: { children: ReactNode; style?: CSSProper
       display: "flex",
       alignItems: "center",
       justifyContent: "center",
-      fontFamily: "Roboto, sans-serif",
       fontWeight: 500,
       textTransform: "uppercase" as const,
       letterSpacing: "0.46px",
@@ -309,7 +307,7 @@ function Layout2000x500({ offer, background, cta, blank, cfg }: LayoutProps) {
   const slot = cfg.productSlots[0];
   const tl = cfg.textLayout as SingleProductTextLayout;
   return (
-    <div style={{ position: "relative", width: 2000, height: 500, overflow: "hidden", fontFamily: "Roboto, sans-serif" }}>
+    <div style={{ position: "relative", width: 2000, height: 500, overflow: "hidden" }}>
       {lm !== "ui" && lm !== "car" && <BG image={background.images?.["website-2000x500"]} color={background.color} width={2000} height={500} />}
       {lm !== "ui" && offer && !background.isLifestyle && <CarImage offer={offer} style={{ left: slot.l, top: slot.top, width: slot.w, height: slot.h }} />}
       {lm !== "bg-car" && lm !== "car" && <div style={abs(cfg.logoP.l, cfg.logoP.top)}><PrimaryLogo size={cfg.logoP.size} /></div>}
@@ -326,7 +324,7 @@ function Layout970x250({ offer, background, cta, blank, cfg }: LayoutProps) {
   const slot = cfg.productSlots[0];
   const tl = cfg.textLayout as SingleProductTextLayout;
   return (
-    <div style={{ position: "relative", width: 970, height: 250, overflow: "hidden", fontFamily: "Roboto, sans-serif" }}>
+    <div style={{ position: "relative", width: 970, height: 250, overflow: "hidden" }}>
       {lm !== "ui" && lm !== "car" && <BG image={background.images?.["display-970x250"]} color={background.color} width={970} height={250} />}
       {lm !== "ui" && offer && !background.isLifestyle && <CarImage offer={offer} style={{ left: slot.l, top: slot.top, width: slot.w, height: slot.h }} />}
       {lm !== "bg-car" && lm !== "car" && <div style={abs(cfg.logoP.l, cfg.logoP.top)}><PrimaryLogo size={cfg.logoP.size} /></div>}
@@ -343,7 +341,7 @@ function Layout300x250({ offer, background, cta, blank, cfg }: LayoutProps) {
   const slot = cfg.productSlots[0];
   const tl = cfg.textLayout as SingleProductTextLayout;
   return (
-    <div style={{ position: "relative", width: 300, height: 250, overflow: "hidden", fontFamily: "Roboto, sans-serif" }}>
+    <div style={{ position: "relative", width: 300, height: 250, overflow: "hidden" }}>
       {lm !== "ui" && lm !== "car" && <BG image={background.images?.["display-300x250"]} color={background.color} width={300} height={250} />}
       {lm !== "ui" && offer && !background.isLifestyle && <CarImage offer={offer} style={{ left: slot.l, top: slot.top, width: slot.w, height: slot.h }} />}
       {lm !== "bg-car" && lm !== "car" && <div style={abs(cfg.logoP.l, cfg.logoP.top)}><PrimaryLogo size={cfg.logoP.size} /></div>}
@@ -360,7 +358,7 @@ function Layout1080x1080({ offer, background, cta, blank, cfg }: LayoutProps) {
   const slot = cfg.productSlots[0];
   const tl = cfg.textLayout as SingleProductTextLayout;
   return (
-    <div style={{ position: "relative", width: 1080, height: 1080, overflow: "hidden", fontFamily: "Roboto, sans-serif" }}>
+    <div style={{ position: "relative", width: 1080, height: 1080, overflow: "hidden" }}>
       {lm !== "ui" && lm !== "car" && <BG image={background.images?.["social-1080x1080"]} color={background.color} width={1080} height={1080} />}
       {lm !== "ui" && offer && !background.isLifestyle && <CarImage offer={offer} style={{ left: slot.l, top: slot.top, width: slot.w, height: slot.h }} />}
       {lm !== "bg-car" && lm !== "car" && <div style={abs(cfg.logoP.l, cfg.logoP.top)}><PrimaryLogo size={cfg.logoP.size} /></div>}
@@ -377,7 +375,7 @@ function Layout600x450({ offer, background, cta, blank, cfg }: LayoutProps) {
   const slot = cfg.productSlots[0];
   const tl = cfg.textLayout as SingleProductTextLayout;
   return (
-    <div style={{ position: "relative", width: 600, height: 450, overflow: "hidden", fontFamily: "Roboto, sans-serif" }}>
+    <div style={{ position: "relative", width: 600, height: 450, overflow: "hidden" }}>
       {lm !== "ui" && lm !== "car" && <BG image={background.images?.["website-600x450"]} color={background.color} width={600} height={450} />}
       {lm !== "ui" && offer && !background.isLifestyle && <CarImage offer={offer} style={{ left: slot.l, top: slot.top, width: slot.w, height: slot.h }} />}
       {lm !== "bg-car" && lm !== "car" && <div style={abs(cfg.logoP.l, cfg.logoP.top)}><PrimaryLogo size={cfg.logoP.size} /></div>}
@@ -395,7 +393,7 @@ function Layout600x1067({ offer, background, cta, dealerName, blank, cfg }: Layo
   const slot = cfg.productSlots[0];
   const tl = cfg.textLayout as SingleProductTextLayout;
   return (
-    <div style={{ position: "relative", width: 600, height: 1067, overflow: "hidden", fontFamily: "Roboto, sans-serif" }}>
+    <div style={{ position: "relative", width: 600, height: 1067, overflow: "hidden" }}>
       {lm !== "ui" && lm !== "car" && <BG image={background.images?.["website-600x1067"]} color={background.color} width={600} height={1067} />}
       {lm !== "ui" && o && !background.isLifestyle && <CarImage offer={o} style={{ left: slot.l, top: slot.top, width: slot.w, height: slot.h }} />}
       {lm !== "bg-car" && lm !== "car" && <div style={abs(cfg.logoP.l, cfg.logoP.top)}><PrimaryLogo size={cfg.logoP.size} /></div>}
@@ -445,7 +443,7 @@ function Layout1969x1080_3prod({ offers, background, cta, blank, cfg }: LayoutPr
     offers?.[i]
   );
   return (
-    <div style={{ position: "relative", width: 1969, height: 1080, overflow: "hidden", fontFamily: "Roboto, sans-serif" }}>
+    <div style={{ position: "relative", width: 1969, height: 1080, overflow: "hidden" }}>
       {lm !== "ui" && lm !== "car" && <BG image={bgImage} color={background.color} width={1969} height={1080} />}
       {lm !== "ui" && !background.isLifestyle && cfg.productSlots.map((slot, i) =>
         slotOffers[i] && <CarImage key={i} offer={slotOffers[i]!} style={{ left: slot.l, top: slot.top, width: slot.w, height: slot.h }} />
@@ -496,7 +494,7 @@ function Layout1080x1080_3prod({ offers, background, cta, blank, cfg }: LayoutPr
     offers?.[i]
   );
   return (
-    <div style={{ position: "relative", width: 1080, height: 1080, overflow: "hidden", fontFamily: "Roboto, sans-serif" }}>
+    <div style={{ position: "relative", width: 1080, height: 1080, overflow: "hidden" }}>
       {lm !== "ui" && lm !== "car" && <BG image={bgImage} color={background.color} width={1080} height={1080} />}
       {lm !== "ui" && !background.isLifestyle && cfg.productSlots.map((slot, i) =>
         slotOffers[i] && <CarImage key={i} offer={slotOffers[i]!} style={{ left: slot.l, top: slot.top, width: slot.w, height: slot.h }} />
@@ -557,7 +555,7 @@ function Layout1080x1080_keymsg({ offers, background, cta, blank, cfg, customFie
   const year = customFields?.year ?? "{year}";
 
   return (
-    <div style={{ position: "relative", width: 1080, height: 1080, overflow: "hidden", fontFamily: "Roboto, sans-serif" }}>
+    <div style={{ position: "relative", width: 1080, height: 1080, overflow: "hidden" }}>
       {lm !== "ui" && lm !== "car" && <BG image={bgImage} color={background.color} width={1080} height={1080} />}
       {lm !== "ui" && !background.isLifestyle && cfg.productSlots.map((slot, i) =>
         slotOffers[i] && <CarImage key={i} offer={slotOffers[i]!} style={{ left: slot.l, top: slot.top, width: slot.w, height: slot.h }} />

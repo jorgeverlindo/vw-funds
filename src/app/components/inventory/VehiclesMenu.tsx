@@ -6,7 +6,7 @@
 import { useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { cn } from '../../../lib/utils';
-import type { SyndicationStatus } from '../../../data/inventory/vehicleInventory';
+import type { SyndicationStatus, AIGenerationStatus } from '../../../data/inventory/vehicleInventory';
 
 // ── Asset imports (local SVG icons from Figma export) ─────────────────────────
 import iconSignal  from '../../../assets/icons/Inventory Table/Card & Row/live-full, signal.svg';
@@ -88,11 +88,12 @@ function MenuDivider() {
 interface VehiclesMenuProps {
   anchor: VehiclesMenuAnchor;
   syndicationStatus: SyndicationStatus;
+  aiGenerationStatus: AIGenerationStatus;
   onAction: (action: VehiclesMenuAction) => void;
   onClose: () => void;
 }
 
-export function VehiclesMenu({ anchor, syndicationStatus, onAction, onClose }: VehiclesMenuProps) {
+export function VehiclesMenu({ anchor, syndicationStatus, aiGenerationStatus, onAction, onClose }: VehiclesMenuProps) {
   const menuRef = useRef<HTMLDivElement>(null);
 
   // ── Close on outside click or Escape ──────────────────────────────────────
@@ -159,7 +160,11 @@ export function VehiclesMenu({ anchor, syndicationStatus, onAction, onClose }: V
 
           <MenuItem iconSrc={iconPhotos} label="View Source Images" onClick={handle('viewSourceImages')} />
           <MenuItem iconSrc={iconEye}    label="Go to VDP"          onClick={handle('goToVdp')} />
-          <MenuItem iconSrc={iconPower}  label="Disable AI Image"   onClick={handle('disableAiImage')} />
+          <MenuItem
+            iconSrc={iconPower}
+            label={aiGenerationStatus === 'enabled' ? 'Disable AI Image' : 'Enable AI Image'}
+            onClick={handle('disableAiImage')}
+          />
 
         </div>
       </div>

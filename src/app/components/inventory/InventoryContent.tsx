@@ -22,7 +22,7 @@ import { CommentsButton } from '../comments';
 import { VehicleInventoryGrid } from './VehicleInventoryGrid';
 import { VinDetailContent }     from './VinDetailContent';
 import { VEHICLE_INVENTORY }    from '../../../data/inventory/vehicleInventory';
-import type { SyndicationStatus } from '../../../data/inventory/vehicleInventory';
+import type { SyndicationStatus, AIGenerationStatus } from '../../../data/inventory/vehicleInventory';
 
 // Channel brand logos
 import metaLogo    from '../../../assets/channels/Brand Logo/Meta.svg';
@@ -81,7 +81,8 @@ export function InventoryContent() {
   const [selected,             setSelected]             = useState<Set<string>>(new Set());
   const [activeTab,            setActiveTab]            = useState<'insights' | 'conquest' | 'vehicles'>('vehicles');
   const [selectedVinId,        setSelectedVinId]        = useState<string | null>(null);
-  const [syndicationOverrides, setSyndicationOverrides] = useState<Map<string, SyndicationStatus>>(new Map());
+  const [syndicationOverrides,  setSyndicationOverrides]  = useState<Map<string, SyndicationStatus>>(new Map());
+  const [aiGenerationOverrides, setAiGenerationOverrides] = useState<Map<string, AIGenerationStatus>>(new Map());
 
   // Toggle syndication for a record (overrides the static data)
   const handleSyndicationToggle = useCallback((id: string) => {
@@ -94,7 +95,18 @@ export function InventoryContent() {
     });
   }, []);
 
-  // Filter records by search and apply syndication overrides
+  // Toggle AI generation for a record (overrides the static data)
+  const handleAiGenerationToggle = useCallback((id: string) => {
+    setAiGenerationOverrides(prev => {
+      const base = VEHICLE_INVENTORY.find(r => r.id === id)!.aiGeneration;
+      const current = prev.get(id) ?? base;
+      const next = new Map(prev);
+      next.set(id, current === 'enabled' ? 'disabled' : 'enabled');
+      return next;
+    });
+  }, []);
+
+  // Filter records by search and apply overrides
   const records = VEHICLE_INVENTORY
     .filter(r => {
       if (!search) return true;
@@ -107,10 +119,11 @@ export function InventoryContent() {
         r.exteriorColor.toLowerCase().includes(q)
       );
     })
-    .map(r => syndicationOverrides.has(r.id)
-      ? { ...r, syndication: syndicationOverrides.get(r.id)! }
-      : r
-    );
+    .map(r => ({
+      ...r,
+      ...(syndicationOverrides.has(r.id)  && { syndication:  syndicationOverrides.get(r.id)! }),
+      ...(aiGenerationOverrides.has(r.id) && { aiGeneration: aiGenerationOverrides.get(r.id)! }),
+    }));
 
   const handleToggleRow = (id: string, checked: boolean) => {
     setSelected(prev => {
@@ -344,6 +357,7 @@ export function InventoryContent() {
           onToggleAll={handleToggleAll}
           onVinClick={(id) => setSelectedVinId(id)}
           onSyndicationToggle={handleSyndicationToggle}
+          onAiGenerationToggle={handleAiGenerationToggle}
         />
       ) : (
         /* Placeholder for other tabs */

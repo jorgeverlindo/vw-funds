@@ -338,7 +338,9 @@ interface VehicleInventoryGridProps {
   /** Opens the VIN Detail view for the given record id */
   onVinClick?:           (id: string) => void;
   /** Toggles syndication on/off for the given record id */
-  onSyndicationToggle?:  (id: string) => void;
+  onSyndicationToggle?:    (id: string) => void;
+  /** Toggles AI generation on/off for the given record id */
+  onAiGenerationToggle?:   (id: string) => void;
 }
 
 export function VehicleInventoryGrid({
@@ -348,6 +350,7 @@ export function VehicleInventoryGrid({
   onToggleAll,
   onVinClick,
   onSyndicationToggle,
+  onAiGenerationToggle,
 }: VehicleInventoryGridProps) {
   const allSelected = records.length > 0 && records.every(r => selected.has(r.id));
   const [widths, setWidths] = useState<ColWidths>(DEFAULT_WIDTHS);
@@ -357,14 +360,16 @@ export function VehicleInventoryGrid({
     recordId: string;
     anchor: VehiclesMenuAnchor;
     syndicationStatus: SyndicationStatus;
+    aiGenerationStatus: AIGenerationStatus;
   } | null>(null);
 
   const handleMenuAction = useCallback((action: VehiclesMenuAction) => {
     if (!openMenu) return;
     const { recordId } = openMenu;
-    if (action === 'vinDetails')  onVinClick?.(recordId);
-    if (action === 'syndicate')   onSyndicationToggle?.(recordId);
-  }, [openMenu, onVinClick, onSyndicationToggle]);
+    if (action === 'vinDetails')     onVinClick?.(recordId);
+    if (action === 'syndicate')      onSyndicationToggle?.(recordId);
+    if (action === 'disableAiImage') onAiGenerationToggle?.(recordId);
+  }, [openMenu, onVinClick, onSyndicationToggle, onAiGenerationToggle]);
 
   const setW = (key: keyof ColWidths) => (val: number) =>
     setWidths(prev => ({ ...prev, [key]: val }));
@@ -658,6 +663,7 @@ export function VehicleInventoryGrid({
                               setOpenMenu({
                                 recordId: record.id,
                                 syndicationStatus: record.syndication,
+                                aiGenerationStatus: record.aiGeneration,
                                 anchor: {
                                   top:   rect.bottom + 4,
                                   right: window.innerWidth - rect.right,
@@ -687,6 +693,7 @@ export function VehicleInventoryGrid({
       <VehiclesMenu
         anchor={openMenu.anchor}
         syndicationStatus={openMenu.syndicationStatus}
+        aiGenerationStatus={openMenu.aiGenerationStatus}
         onAction={handleMenuAction}
         onClose={() => setOpenMenu(null)}
       />

@@ -126,13 +126,24 @@ export function InventoryContent() {
   const records = VEHICLE_INVENTORY
     .filter(r => {
       if (!search) return true;
-      const q = search.toLowerCase();
+      const q     = search.toLowerCase();
+      // Strip PT-BR thousand-separator periods and commas so "2.0" matches "2026",
+      // "4.899" matches "4899", etc.
+      const qNum  = q.replace(/[.,]/g, '');
+
       return (
-        r.vin.toLowerCase().includes(q) ||
-        r.make.toLowerCase().includes(q) ||
-        r.model.toLowerCase().includes(q) ||
-        r.trim.toLowerCase().includes(q) ||
-        r.exteriorColor.toLowerCase().includes(q)
+        // Text fields — raw query
+        r.vin.toLowerCase().includes(q)            ||
+        r.make.toLowerCase().includes(q)           ||
+        r.model.toLowerCase().includes(q)          ||
+        r.trim.toLowerCase().includes(q)           ||
+        r.exteriorColor.toLowerCase().includes(q)  ||
+        r.condition.toLowerCase().includes(q)      ||
+        r.vehicleStatus.toLowerCase().includes(q)  ||
+        // Numeric fields — normalised query (strip separators)
+        r.year.toString().includes(qNum)           ||
+        r.price.toString().includes(qNum)          ||
+        r.dol.toString().includes(qNum)
       );
     })
     .map(r => ({

@@ -50,7 +50,7 @@ function MenuItem({ iconSrc, label, onClick }: MenuItemProps) {
     <button
       onClick={onClick}
       className={cn(
-        'group/item w-full flex items-center text-left select-none cursor-default',
+        'group/item w-full flex items-center text-left select-none cursor-pointer',
         'transition-colors duration-100',
         'text-[#1f1d25]',
         'hover:bg-[rgba(0,0,0,0.04)]',

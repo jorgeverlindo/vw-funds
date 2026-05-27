@@ -674,7 +674,7 @@ export function VehicleInventoryGrid({
                                 },
                               });
                             }}
-                            className="w-8 h-8 flex items-center justify-center text-[rgba(17,16,20,0.56)] bg-white hover:bg-[rgba(255,255,255,0.92)] active:bg-[rgba(255,255,255,0.9)] transition-colors"
+                            className="w-8 h-8 flex items-center justify-center text-[rgba(17,16,20,0.56)] bg-white hover:bg-[rgba(255,255,255,0.92)] active:bg-[rgba(255,255,255,0.9)] transition-colors cursor-pointer"
                             style={{ borderRadius: 200 }}
                           >
                             {openMenu?.recordId === record.id

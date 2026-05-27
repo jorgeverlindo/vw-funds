@@ -341,6 +341,8 @@ interface VehicleInventoryGridProps {
   onSyndicationToggle?:    (id: string) => void;
   /** Toggles AI generation on/off for the given record id */
   onAiGenerationToggle?:   (id: string) => void;
+  /** Opens the source images lightbox for the given record id */
+  onViewSourceImages?:     (id: string) => void;
 }
 
 export function VehicleInventoryGrid({
@@ -351,6 +353,7 @@ export function VehicleInventoryGrid({
   onVinClick,
   onSyndicationToggle,
   onAiGenerationToggle,
+  onViewSourceImages,
 }: VehicleInventoryGridProps) {
   const allSelected = records.length > 0 && records.every(r => selected.has(r.id));
   const [widths, setWidths] = useState<ColWidths>(DEFAULT_WIDTHS);
@@ -366,10 +369,11 @@ export function VehicleInventoryGrid({
   const handleMenuAction = useCallback((action: VehiclesMenuAction) => {
     if (!openMenu) return;
     const { recordId } = openMenu;
-    if (action === 'vinDetails')     onVinClick?.(recordId);
-    if (action === 'syndicate')      onSyndicationToggle?.(recordId);
-    if (action === 'disableAiImage') onAiGenerationToggle?.(recordId);
-  }, [openMenu, onVinClick, onSyndicationToggle, onAiGenerationToggle]);
+    if (action === 'vinDetails')        onVinClick?.(recordId);
+    if (action === 'syndicate')         onSyndicationToggle?.(recordId);
+    if (action === 'disableAiImage')    onAiGenerationToggle?.(recordId);
+    if (action === 'viewSourceImages')  onViewSourceImages?.(recordId);
+  }, [openMenu, onVinClick, onSyndicationToggle, onAiGenerationToggle, onViewSourceImages]);
 
   const setW = (key: keyof ColWidths) => (val: number) =>
     setWidths(prev => ({ ...prev, [key]: val }));

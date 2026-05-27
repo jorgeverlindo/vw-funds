@@ -21,8 +21,15 @@ import { BreadcrumbBar } from '../BreadcrumbBar';
 import { CommentsButton } from '../comments';
 import { VehicleInventoryGrid } from './VehicleInventoryGrid';
 import { VinDetailContent }     from './VinDetailContent';
+import { AnglePreviewModal }     from './AnglePreviewModal';
+import { ANGLES }                from './AngleBar';
 import { VEHICLE_INVENTORY }    from '../../../data/inventory/vehicleInventory';
 import type { SyndicationStatus, AIGenerationStatus } from '../../../data/inventory/vehicleInventory';
+import type { AngleKey }         from '../../../data/inventory/types';
+import emptyStateSrc             from '../../../assets/inventory/empty-state.svg';
+
+// Canonical angle key order, aligned with ANGLES in AngleBar (index-safe)
+const ANGLE_KEYS: AngleKey[] = ['34l', 'front', '34r', 'right', 'left', 'rear'];
 
 // Channel brand logos
 import metaLogo    from '../../../assets/channels/Brand Logo/Meta.svg';
@@ -83,6 +90,15 @@ export function InventoryContent() {
   const [selectedVinId,        setSelectedVinId]        = useState<string | null>(null);
   const [syndicationOverrides,  setSyndicationOverrides]  = useState<Map<string, SyndicationStatus>>(new Map());
   const [aiGenerationOverrides, setAiGenerationOverrides] = useState<Map<string, AIGenerationStatus>>(new Map());
+
+  // ── Source Images modal ────────────────────────────────────────────────────
+  const [sourceImagesVinId,    setSourceImagesVinId]    = useState<string | null>(null);
+  const [sourceImagesAngleIdx, setSourceImagesAngleIdx] = useState(0);
+
+  const handleViewSourceImages = useCallback((id: string) => {
+    setSourceImagesAngleIdx(0);
+    setSourceImagesVinId(id);
+  }, []);
 
   // Toggle syndication for a record (overrides the static data)
   const handleSyndicationToggle = useCallback((id: string) => {
@@ -358,6 +374,7 @@ export function InventoryContent() {
           onVinClick={(id) => setSelectedVinId(id)}
           onSyndicationToggle={handleSyndicationToggle}
           onAiGenerationToggle={handleAiGenerationToggle}
+          onViewSourceImages={handleViewSourceImages}
         />
       ) : (
         /* Placeholder for other tabs */
@@ -367,6 +384,33 @@ export function InventoryContent() {
           </span>
         </div>
       )}
+
+      {/* ── Source Images lightbox ─────────────────────────────────────────── */}
+      {(() => {
+        const sourceRecord = sourceImagesVinId
+          ? records.find(r => r.id === sourceImagesVinId) ?? null
+          : null;
+        const vg = sourceRecord?.vehicleGroup ?? null;
+        const angleKey  = ANGLE_KEYS[sourceImagesAngleIdx];
+        const angleLabel = ANGLES[sourceImagesAngleIdx]?.label ?? '';
+        const vehicleName = sourceRecord
+          ? `${sourceRecord.year} ${sourceRecord.make} ${sourceRecord.model}`
+          : '';
+        return (
+          <AnglePreviewModal
+            isOpen={!!sourceImagesVinId}
+            onClose={() => setSourceImagesVinId(null)}
+            angleLabel={angleLabel}
+            vehicleName={vehicleName}
+            generatedSrc={vg?.angles?.[angleKey] ?? null}
+            sourceSrc={vg?.sourceAngles?.[angleKey] ?? null}
+            defaultSrc={emptyStateSrc}
+            defaultTab="source"
+            onPrev={() => setSourceImagesAngleIdx(i => (i - 1 + ANGLE_KEYS.length) % ANGLE_KEYS.length)}
+            onNext={() => setSourceImagesAngleIdx(i => (i + 1) % ANGLE_KEYS.length)}
+          />
+        );
+      })()}
 
     </div>
   );

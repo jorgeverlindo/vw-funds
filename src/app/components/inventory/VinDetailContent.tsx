@@ -322,7 +322,7 @@ export function VinDetailContent({ record, onBack }: VinDetailContentProps) {
                  Breakpoints:
                    ~1100px → right < 744px → ColB wraps under ColA
                    ~800px  → image min-width triggers → right wraps below image  */}
-            <div className="flex flex-wrap gap-[24px] min-w-0" style={{ flex: '1 1 360px', maxWidth: 784 }}>
+            <div className="flex flex-wrap gap-[24px] min-w-0" style={{ flex: '1 1 0%', maxWidth: 784 }}>
 
               {/* Sub-column A — VIN info + Physical attributes */}
               <div className="min-w-0" style={{ flex: '1 1 360px', minWidth: 360 }}>

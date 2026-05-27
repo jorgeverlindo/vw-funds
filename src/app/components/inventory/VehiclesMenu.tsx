@@ -5,21 +5,15 @@
 
 import { useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import {
-  Pencil,
-  Download,
-  Share2,
-  Globe,
-  Info,
-  Sparkles,
-  RefreshCw,
-  Image,
-  ExternalLink,
-  ImageOff,
-  Trash2,
-  type LucideIcon,
-} from 'lucide-react';
 import { cn } from '../../../lib/utils';
+
+// ── Asset imports (local SVG icons from Figma export) ─────────────────────────
+import iconSignal  from '../../../assets/icons/Inventory Table/Card & Row/live-full, signal.svg';
+import iconCar     from '../../../assets/icons/Inventory Table/Card & Row/car.svg';
+import iconPlus    from '../../../assets/icons/Inventory Table/Card & Row/plus-large, add large.svg';
+import iconPhotos  from '../../../assets/icons/Inventory Table/Card & Row/images-2, photos, pictures, shot.svg';
+import iconEye     from '../../../assets/icons/Inventory Table/Card & Row/eye-open, show, see, reveal, look, visible.svg';
+import iconPower   from '../../../assets/icons/Inventory Table/Card & Row/esc, power.svg';
 
 // ── Keyframe animation ────────────────────────────────────────────────────────
 const SLIDE_DOWN_STYLE = `
@@ -31,17 +25,12 @@ const SLIDE_DOWN_STYLE = `
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 export type VehiclesMenuAction =
-  | 'edit'
-  | 'download'
-  | 'share'
   | 'syndicate'
   | 'vinDetails'
   | 'newAiConfig'
-  | 'processAiConfig'
   | 'viewSourceImages'
   | 'goToVdp'
-  | 'disableAiImage'
-  | 'delete';
+  | 'disableAiImage';
 
 export interface VehiclesMenuAnchor {
   top: number;
@@ -50,44 +39,27 @@ export interface VehiclesMenuAnchor {
 
 // ── MenuItem ──────────────────────────────────────────────────────────────────
 interface MenuItemProps {
-  icon: LucideIcon;
+  iconSrc: string;
   label: string;
-  danger?: boolean;
   onClick: () => void;
 }
 
-function MenuItem({ icon: Icon, label, danger = false, onClick }: MenuItemProps) {
+function MenuItem({ iconSrc, label, onClick }: MenuItemProps) {
   return (
     <button
       onClick={onClick}
       className={cn(
-        // layout
         'w-full flex items-center text-left select-none cursor-default',
-        // transition
         'transition-colors duration-100',
-        // default text colour
-        danger ? 'text-[#d32f2f]' : 'text-[#1f1d25]',
-        // hover state
-        danger
-          ? 'hover:bg-[rgba(211,47,47,0.06)]'
-          : 'hover:bg-[rgba(0,0,0,0.04)]',
-        // pressed state
-        danger
-          ? 'active:bg-[rgba(211,47,47,0.12)]'
-          : 'active:bg-[rgba(0,0,0,0.08)]',
+        'text-[#1f1d25]',
+        'hover:bg-[rgba(0,0,0,0.04)]',
+        'active:bg-[rgba(0,0,0,0.08)]',
       )}
       style={{ height: 36, paddingLeft: 0, paddingRight: 16 }}
     >
       {/* Left icon slot — 36px wide, matches Figma */}
-      <span
-        className="flex items-center justify-center shrink-0"
-        style={{ width: 36 }}
-      >
-        <Icon
-          size={18}
-          strokeWidth={1.6}
-          className={danger ? 'text-[#d32f2f]' : 'text-[rgba(17,16,20,0.56)]'}
-        />
+      <span className="flex items-center justify-center shrink-0" style={{ width: 36 }}>
+        <img src={iconSrc} alt="" width={18} height={18} draggable={false} />
       </span>
 
       {/* Label */}
@@ -131,7 +103,6 @@ export function VehiclesMenu({ anchor, onAction, onClose }: VehiclesMenuProps) {
     function handleKeyDown(e: KeyboardEvent) {
       if (e.key === 'Escape') onClose();
     }
-    // Use capture so we catch clicks before any stopPropagation deeper in the tree
     document.addEventListener('pointerdown', handlePointerDown, true);
     document.addEventListener('keydown', handleKeyDown);
     return () => {
@@ -168,31 +139,21 @@ export function VehiclesMenu({ anchor, onAction, onClose }: VehiclesMenuProps) {
             '0 3px 14px  2px rgba(0,0,0,0.12)',
           ].join(', '),
           animation: 'vehiclesMenuIn 450ms ease-out forwards',
-          // Prevent the menu from clipping at viewport edges
           maxHeight: 'calc(100vh - 16px)',
           overflowY: 'auto',
         }}
       >
-        {/* MenuList — 8px vertical padding matching Figma <MenuList> */}
         <div style={{ paddingTop: 8, paddingBottom: 8 }}>
 
-          <MenuItem icon={Pencil}       label="Edit"               onClick={handle('edit')} />
-          <MenuItem icon={Download}     label="Download"           onClick={handle('download')} />
-          <MenuItem icon={Share2}       label="Share"              onClick={handle('share')} />
+          <MenuItem iconSrc={iconSignal} label="Syndicate"          onClick={handle('syndicate')} />
+          <MenuItem iconSrc={iconCar}    label="VIN Details"        onClick={handle('vinDetails')} />
+          <MenuItem iconSrc={iconPlus}   label="New AI Config"      onClick={handle('newAiConfig')} />
 
           <MenuDivider />
 
-          <MenuItem icon={Globe}        label="Syndicate"          onClick={handle('syndicate')} />
-          <MenuItem icon={Info}         label="VIN Details"        onClick={handle('vinDetails')} />
-          <MenuItem icon={Sparkles}     label="New AI Config"      onClick={handle('newAiConfig')} />
-          <MenuItem icon={RefreshCw}    label="Process AI Config"  onClick={handle('processAiConfig')} />
-          <MenuItem icon={Image}        label="View Source Images" onClick={handle('viewSourceImages')} />
-          <MenuItem icon={ExternalLink} label="Go to VDP"          onClick={handle('goToVdp')} />
-          <MenuItem icon={ImageOff}     label="Disable AI Image"   onClick={handle('disableAiImage')} />
-
-          <MenuDivider />
-
-          <MenuItem icon={Trash2}       label="Delete"             onClick={handle('delete')} danger />
+          <MenuItem iconSrc={iconPhotos} label="View Source Images" onClick={handle('viewSourceImages')} />
+          <MenuItem iconSrc={iconEye}    label="Go to VDP"          onClick={handle('goToVdp')} />
+          <MenuItem iconSrc={iconPower}  label="Disable AI Image"   onClick={handle('disableAiImage')} />
 
         </div>
       </div>

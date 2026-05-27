@@ -6,7 +6,8 @@
 import React, { useState, useCallback } from 'react';
 import { MoreVertical } from 'lucide-react';
 import { cn } from '../../../lib/utils';
-import { VehiclesMenu, type VehiclesMenuAnchor, type VehiclesMenuAction } from './VehiclesMenu';
+import { VehiclesMenu, type VehiclesMenuAnchor } from './VehiclesMenu';
+import type { VehiclesMenuAction } from './VehiclesMenu';
 import type {
   VinInventoryRecord,
   AIGenerationStatus,

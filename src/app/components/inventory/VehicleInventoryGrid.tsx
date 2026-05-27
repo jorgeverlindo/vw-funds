@@ -6,8 +6,7 @@
 import React, { useState, useCallback } from 'react';
 import { MoreVertical } from 'lucide-react';
 import { cn } from '../../../lib/utils';
-import { VehiclesMenu, type VehiclesMenuAnchor } from './VehiclesMenu';
-import type { VehiclesMenuAction } from './VehiclesMenu';
+import { VehiclesMenu, type VehiclesMenuAnchor, type VehiclesMenuAction } from './VehiclesMenu';
 import type {
   VinInventoryRecord,
   AIGenerationStatus,
@@ -332,12 +331,14 @@ const DEFAULT_WIDTHS: ColWidths = {
 
 // ─── VehicleInventoryGrid ─────────────────────────────────────────────────────
 interface VehicleInventoryGridProps {
-  records:      VinInventoryRecord[];
-  selected:     Set<string>;
-  onToggleRow:  (id: string, checked: boolean) => void;
-  onToggleAll:  (checked: boolean) => void;
-  /** Called when the user clicks a VIN name — opens the VIN Detail page */
-  onVinClick?:  (id: string) => void;
+  records:               VinInventoryRecord[];
+  selected:              Set<string>;
+  onToggleRow:           (id: string, checked: boolean) => void;
+  onToggleAll:           (checked: boolean) => void;
+  /** Opens the VIN Detail view for the given record id */
+  onVinClick?:           (id: string) => void;
+  /** Toggles syndication on/off for the given record id */
+  onSyndicationToggle?:  (id: string) => void;
 }
 
 export function VehicleInventoryGrid({
@@ -346,6 +347,7 @@ export function VehicleInventoryGrid({
   onToggleRow,
   onToggleAll,
   onVinClick,
+  onSyndicationToggle,
 }: VehicleInventoryGridProps) {
   const allSelected = records.length > 0 && records.every(r => selected.has(r.id));
   const [widths, setWidths] = useState<ColWidths>(DEFAULT_WIDTHS);
@@ -354,11 +356,15 @@ export function VehicleInventoryGrid({
   const [openMenu, setOpenMenu] = useState<{
     recordId: string;
     anchor: VehiclesMenuAnchor;
+    syndicationStatus: SyndicationStatus;
   } | null>(null);
 
-  const handleMenuAction = useCallback((_action: VehiclesMenuAction) => {
-    // TODO: wire each action (open VIN Detail, trigger AI config, etc.)
-  }, []);
+  const handleMenuAction = useCallback((action: VehiclesMenuAction) => {
+    if (!openMenu) return;
+    const { recordId } = openMenu;
+    if (action === 'vinDetails')  onVinClick?.(recordId);
+    if (action === 'syndicate')   onSyndicationToggle?.(recordId);
+  }, [openMenu, onVinClick, onSyndicationToggle]);
 
   const setW = (key: keyof ColWidths) => (val: number) =>
     setWidths(prev => ({ ...prev, [key]: val }));
@@ -651,6 +657,7 @@ export function VehicleInventoryGrid({
                               const rect = (e.currentTarget as HTMLButtonElement).getBoundingClientRect();
                               setOpenMenu({
                                 recordId: record.id,
+                                syndicationStatus: record.syndication,
                                 anchor: {
                                   top:   rect.bottom + 4,
                                   right: window.innerWidth - rect.right,
@@ -679,6 +686,7 @@ export function VehicleInventoryGrid({
     {openMenu && (
       <VehiclesMenu
         anchor={openMenu.anchor}
+        syndicationStatus={openMenu.syndicationStatus}
         onAction={handleMenuAction}
         onClose={() => setOpenMenu(null)}
       />

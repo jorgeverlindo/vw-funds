@@ -5,7 +5,7 @@
 // Structure:
 //   BreadcrumbBar → Page Title → Tabs → Toolbar → VehicleInventoryGrid
 
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { cn } from '../../../lib/utils';
 import {
   Search,
@@ -22,6 +22,7 @@ import { CommentsButton } from '../comments';
 import { VehicleInventoryGrid } from './VehicleInventoryGrid';
 import { VinDetailContent }     from './VinDetailContent';
 import { VEHICLE_INVENTORY }    from '../../../data/inventory/vehicleInventory';
+import type { SyndicationStatus } from '../../../data/inventory/vehicleInventory';
 
 // Channel brand logos
 import metaLogo    from '../../../assets/channels/Brand Logo/Meta.svg';
@@ -76,23 +77,40 @@ interface ChannelIconItem {
 
 // ─── InventoryContent ─────────────────────────────────────────────────────────
 export function InventoryContent() {
-  const [search,        setSearch]        = useState('');
-  const [selected,      setSelected]      = useState<Set<string>>(new Set());
-  const [activeTab,     setActiveTab]     = useState<'insights' | 'conquest' | 'vehicles'>('vehicles');
-  const [selectedVinId, setSelectedVinId] = useState<string | null>(null);
+  const [search,               setSearch]               = useState('');
+  const [selected,             setSelected]             = useState<Set<string>>(new Set());
+  const [activeTab,            setActiveTab]            = useState<'insights' | 'conquest' | 'vehicles'>('vehicles');
+  const [selectedVinId,        setSelectedVinId]        = useState<string | null>(null);
+  const [syndicationOverrides, setSyndicationOverrides] = useState<Map<string, SyndicationStatus>>(new Map());
 
-  // Filter records by search
-  const records = VEHICLE_INVENTORY.filter(r => {
-    if (!search) return true;
-    const q = search.toLowerCase();
-    return (
-      r.vin.toLowerCase().includes(q) ||
-      r.make.toLowerCase().includes(q) ||
-      r.model.toLowerCase().includes(q) ||
-      r.trim.toLowerCase().includes(q) ||
-      r.exteriorColor.toLowerCase().includes(q)
+  // Toggle syndication for a record (overrides the static data)
+  const handleSyndicationToggle = useCallback((id: string) => {
+    setSyndicationOverrides(prev => {
+      const base = VEHICLE_INVENTORY.find(r => r.id === id)!.syndication;
+      const current = prev.get(id) ?? base;
+      const next = new Map(prev);
+      next.set(id, current === 'syndicated' ? 'not-syndicated' : 'syndicated');
+      return next;
+    });
+  }, []);
+
+  // Filter records by search and apply syndication overrides
+  const records = VEHICLE_INVENTORY
+    .filter(r => {
+      if (!search) return true;
+      const q = search.toLowerCase();
+      return (
+        r.vin.toLowerCase().includes(q) ||
+        r.make.toLowerCase().includes(q) ||
+        r.model.toLowerCase().includes(q) ||
+        r.trim.toLowerCase().includes(q) ||
+        r.exteriorColor.toLowerCase().includes(q)
+      );
+    })
+    .map(r => syndicationOverrides.has(r.id)
+      ? { ...r, syndication: syndicationOverrides.get(r.id)! }
+      : r
     );
-  });
 
   const handleToggleRow = (id: string, checked: boolean) => {
     setSelected(prev => {
@@ -325,6 +343,7 @@ export function InventoryContent() {
           onToggleRow={handleToggleRow}
           onToggleAll={handleToggleAll}
           onVinClick={(id) => setSelectedVinId(id)}
+          onSyndicationToggle={handleSyndicationToggle}
         />
       ) : (
         /* Placeholder for other tabs */

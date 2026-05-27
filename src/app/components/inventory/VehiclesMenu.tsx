@@ -6,6 +6,7 @@
 import { useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { cn } from '../../../lib/utils';
+import type { SyndicationStatus } from '../../../data/inventory/vehicleInventory';
 
 // ── Asset imports (local SVG icons from Figma export) ─────────────────────────
 import iconSignal  from '../../../assets/icons/Inventory Table/Card & Row/live-full, signal.svg';
@@ -86,11 +87,12 @@ function MenuDivider() {
 // ── VehiclesMenu (portal) ─────────────────────────────────────────────────────
 interface VehiclesMenuProps {
   anchor: VehiclesMenuAnchor;
+  syndicationStatus: SyndicationStatus;
   onAction: (action: VehiclesMenuAction) => void;
   onClose: () => void;
 }
 
-export function VehiclesMenu({ anchor, onAction, onClose }: VehiclesMenuProps) {
+export function VehiclesMenu({ anchor, syndicationStatus, onAction, onClose }: VehiclesMenuProps) {
   const menuRef = useRef<HTMLDivElement>(null);
 
   // ── Close on outside click or Escape ──────────────────────────────────────
@@ -145,7 +147,11 @@ export function VehiclesMenu({ anchor, onAction, onClose }: VehiclesMenuProps) {
       >
         <div style={{ paddingTop: 8, paddingBottom: 8 }}>
 
-          <MenuItem iconSrc={iconSignal} label="Syndicate"          onClick={handle('syndicate')} />
+          <MenuItem
+            iconSrc={iconSignal}
+            label={syndicationStatus === 'syndicated' ? 'Turn Syndicate Off' : 'Syndicate'}
+            onClick={handle('syndicate')}
+          />
           <MenuItem iconSrc={iconCar}    label="VIN Details"        onClick={handle('vinDetails')} />
           <MenuItem iconSrc={iconPlus}   label="New AI Config"      onClick={handle('newAiConfig')} />
 

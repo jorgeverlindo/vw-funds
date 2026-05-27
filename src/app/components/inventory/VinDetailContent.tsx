@@ -47,19 +47,23 @@ const ANGLES: { key: AngleKey; label: string }[] = [
 ];
 
 // ─── Angle thumbnail ──────────────────────────────────────────────────────────
+// isSource=true  → white bg + object-contain (transparent PNG, show full vehicle)
+// isSource=false → grey bg + object-cover    (generated scene, fill edge-to-edge)
 function AngleThumb({
-  src, label, isActive, isHero, onClick,
+  src, label, isActive, isHero, isSource, onClick,
 }: {
-  src: string | null; label: string; isActive: boolean; isHero: boolean; onClick: () => void;
+  src: string | null; label: string; isActive: boolean; isHero: boolean;
+  isSource: boolean; onClick: () => void;
 }) {
   return (
     <button onClick={onClick} className="flex flex-col items-center gap-[4px] bg-transparent border-none p-0 cursor-pointer">
       <div className={cn(
-        'size-[48px] rounded-[4px] overflow-hidden bg-[#f0f2f4] relative',
+        'size-[48px] rounded-[4px] overflow-hidden relative',
+        'bg-[#f0f2f4]',
         isActive && 'ring-[2px] ring-[#6356e1]',
       )}>
         {src
-          ? <img src={src} alt={label} className="w-full h-full object-cover" />
+          ? <img src={src} alt={label} className={cn('w-full h-full', isSource ? 'object-contain' : 'object-cover')} />
           : <div className="w-full h-full bg-[#e0e0e0]" />
         }
         {isHero && (
@@ -227,16 +231,34 @@ export function VinDetailContent({ record, onBack }: VinDetailContentProps) {
         </div>
       ) : (
         <div className="flex-1 overflow-y-auto min-h-0">
+          {/* Responsive 3-col layout:
+               Wide   → [Image flex-2] [ColA 360px] [ColB 360px]
+               Medium → [Image flex-2] [ColA 360px / ColB below ColA]
+               Narrow → [Image full] / [ColA 360px] [ColB wraps]
+               Mobile → fully stacked                                    */}
           <div className="flex flex-wrap gap-[24px] p-[16px]">
 
-            {/* ── Left: hero + thumbnail strip ──────────────────────────── */}
-            <div className="flex flex-col gap-[12px]" style={{ width: 480 }}>
+            {/* ── Left: hero + thumbnail strip
+                 flex: 1 1 0% — grows equally with right wrapper; takes whatever
+                 space is left after the right block reaches its max (784px).   */}
+            <div className="flex flex-col gap-[12px] min-w-0" style={{ flex: '1 1 0%', minWidth: 280 }}>
 
-              {/* Hero 480×360 */}
-              <div className="relative rounded-[4px] overflow-hidden bg-[#1a1a1a]"
-                style={{ width: 480, height: 360 }}>
+              {/* Hero — fills parent width, 4:3 aspect ratio */}
+              {/* Generated mode: dark bg + object-cover (full scene).       */}
+              {/* Source mode:    grey bg + object-contain (no cropping).    */}
+              <div
+                className={cn(
+                  'relative w-full rounded-[4px] overflow-hidden',
+                  imageMode === 'source' ? 'bg-[#f0f2f4]' : 'bg-[#1a1a1a]',
+                )}
+                style={{ aspectRatio: '4/3' }}
+              >
                 {heroSrc
-                  ? <img src={heroSrc} alt={`${record.make} ${record.model}`} className="w-full h-full object-cover" />
+                  ? <img
+                      src={heroSrc}
+                      alt={`${record.make} ${record.model}`}
+                      className={cn('w-full h-full', imageMode === 'source' ? 'object-contain' : 'object-cover')}
+                    />
                   : (
                     <div className="w-full h-full flex items-center justify-center text-white/30">
                       <svg width="48" height="48" viewBox="0 0 24 24" fill="currentColor">
@@ -286,6 +308,7 @@ export function VinDetailContent({ record, onBack }: VinDetailContentProps) {
                         label={angle.label}
                         isActive={activeAngle === angle.key}
                         isHero={idx === 0}
+                        isSource={imageMode === 'source'}
                         onClick={() => setActiveAngle(angle.key)}
                       />
                     );
@@ -294,11 +317,15 @@ export function VinDetailContent({ record, onBack }: VinDetailContentProps) {
               )}
             </div>
 
-            {/* ── Right: two detail sub-columns ─────────────────────────── */}
-            <div className="flex-1 min-w-0 flex gap-0" style={{ minWidth: 320 }}>
+            {/* ── Right: ColA + ColB — each 360px min.
+                 max-width 784px (360+24+400) caps growth; image takes the rest.
+                 Breakpoints:
+                   ~1100px → right < 744px → ColB wraps under ColA
+                   ~800px  → image min-width triggers → right wraps below image  */}
+            <div className="flex flex-wrap gap-[24px] min-w-0" style={{ flex: '1 1 360px', maxWidth: 784 }}>
 
               {/* Sub-column A — VIN info + Physical attributes */}
-              <div className="flex-1 min-w-0 pr-[24px]">
+              <div className="min-w-0" style={{ flex: '1 1 360px', minWidth: 360 }}>
                 <DetailRow label="VIN">
                   <DetailText primary>{record.vin}</DetailText>
                 </DetailRow>
@@ -356,7 +383,7 @@ export function VinDetailContent({ record, onBack }: VinDetailContentProps) {
               </div>
 
               {/* Sub-column B — Location + Market */}
-              <div className="flex-1 min-w-0">
+              <div className="min-w-0" style={{ flex: '1 1 360px', minWidth: 360 }}>
                 <DetailRow label="State">
                   <DetailText>Texas</DetailText>
                 </DetailRow>

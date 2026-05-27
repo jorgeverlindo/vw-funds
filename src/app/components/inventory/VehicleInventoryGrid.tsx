@@ -223,29 +223,34 @@ export function PriorityScoreChip({ score }: { score: number }) {
   );
 }
 
-// ─── Thumbnail image with dynamic fill normalization ─────────────────────────
-// On load, reads the image's natural dimensions and computes a scale factor so
-// the short dimension always fills the inner clip area — no per-record CSS flags.
-// Works for any aspect ratio: landscape moto, square ATV, portrait shots, etc.
+// ─── Thumbnail image ─────────────────────────────────────────────────────────
+// Two variants:
 //
-// Structure:
-//   outer div  76×76  bg-[#f0f2f4]  p-[8px]  — shows the padding/bg colour
-//   inner div  60×60  overflow-hidden          — clips the scaled image
-//   img        60×60  object-contain           — sized to content area
-//              scale(w/h or h/w)               — zooms in so short side fills box
-function ThumbnailImg({ src, alt }: { src: string; alt: string }) {
+//  cover=true  (AI-generated image WITH background scene):
+//    img fills the full 76×76 cell edge-to-edge — object-cover, no padding.
+//
+//  cover=false (plain vehicle photo — transparent PNG):
+//    outer div  76×76  bg-[#f0f2f4]  p-[8px]  — shows the grey bg + padding
+//    inner div  60×60  overflow-hidden          — clips the scaled image
+//    img        60×60  object-contain + dynamic scale so short side fills box
+//    Scale = (long/short) × 0.80 — normalises any aspect ratio without hard-coding.
+function ThumbnailImg({ src, alt, cover }: { src: string; alt: string; cover?: boolean }) {
   const [scale, setScale] = useState(1);
 
   const handleLoad = useCallback((e: React.SyntheticEvent<HTMLImageElement>) => {
+    if (cover) return;
     const { naturalWidth: w, naturalHeight: h } = e.currentTarget;
     if (!w || !h) return;
-    // The scale needed for the short side to fill the container equals the
-    // image's aspect ratio (long / short). object-contain already fills the
-    // long side; multiplying by the ratio fills the short side too.
-    // × 0.85 pulls back 15% from the full-fill — keeps consistent visual
-    // weight across all aspect ratios without over-cropping landscape shots.
     setScale((Math.max(w, h) / Math.min(w, h)) * 0.80);
-  }, []);
+  }, [cover]);
+
+  if (cover) {
+    return (
+      <div className="size-[76px] overflow-hidden">
+        <img src={src} alt={alt} className="w-full h-full object-cover" />
+      </div>
+    );
+  }
 
   return (
     <div className="size-[76px] bg-[#f0f2f4] flex items-center justify-center p-[8px]">
@@ -495,6 +500,7 @@ export function VehicleInventoryGrid({
                           : record.thumbnail
                       }
                       alt={`${record.make} ${record.model}`}
+                      cover={!!(record.aiConfigApplied && record.vehicleGroup?.angles?.['34l'])}
                     />
                     {record.aiConfigApplied && <AIConfigBadge />}
                   </div>

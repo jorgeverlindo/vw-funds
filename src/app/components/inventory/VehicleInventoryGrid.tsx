@@ -6,6 +6,7 @@
 import React, { useState, useCallback } from 'react';
 import { MoreVertical } from 'lucide-react';
 import { cn } from '../../../lib/utils';
+import { VehiclesMenu, type VehiclesMenuAnchor, type VehiclesMenuAction } from './VehiclesMenu';
 import type {
   VinInventoryRecord,
   AIGenerationStatus,
@@ -348,6 +349,16 @@ export function VehicleInventoryGrid({
   const allSelected = records.length > 0 && records.every(r => selected.has(r.id));
   const [widths, setWidths] = useState<ColWidths>(DEFAULT_WIDTHS);
 
+  // ── Kebab menu state ───────────────────────────────────────────────────────
+  const [openMenu, setOpenMenu] = useState<{
+    recordId: string;
+    anchor: VehiclesMenuAnchor;
+  } | null>(null);
+
+  const handleMenuAction = useCallback((_action: VehiclesMenuAction) => {
+    // TODO: wire each action (open VIN Detail, trigger AI config, etc.)
+  }, []);
+
   const setW = (key: keyof ColWidths) => (val: number) =>
     setWidths(prev => ({ ...prev, [key]: val }));
 
@@ -378,6 +389,7 @@ export function VehicleInventoryGrid({
   );
 
   return (
+    <>
     <div className="flex-1 overflow-y-auto overflow-x-auto min-h-0">
       <table
         className="border-collapse"
@@ -633,7 +645,17 @@ export function VehicleInventoryGrid({
                           style={{ backgroundColor: hoverBg }}
                         >
                           <button
-                            onClick={e => e.stopPropagation()}
+                            onClick={e => {
+                              e.stopPropagation();
+                              const rect = (e.currentTarget as HTMLButtonElement).getBoundingClientRect();
+                              setOpenMenu({
+                                recordId: record.id,
+                                anchor: {
+                                  top:   rect.bottom + 4,
+                                  right: window.innerWidth - rect.right,
+                                },
+                              });
+                            }}
                             className="w-8 h-8 flex items-center justify-center text-[rgba(17,16,20,0.56)] bg-white hover:bg-[rgba(255,255,255,0.92)] active:bg-[rgba(255,255,255,0.9)] transition-colors"
                             style={{ borderRadius: 200 }}
                           >
@@ -651,5 +673,15 @@ export function VehicleInventoryGrid({
         </tbody>
       </table>
     </div>
+
+    {/* Kebab menu portal — renders above everything, anchored to the clicked button */}
+    {openMenu && (
+      <VehiclesMenu
+        anchor={openMenu.anchor}
+        onAction={handleMenuAction}
+        onClose={() => setOpenMenu(null)}
+      />
+    )}
+    </>
   );
 }

@@ -4,7 +4,7 @@
 // AI-config badge on thumbnail, and drag-to-resize column headers.
 
 import React, { useState, useCallback } from 'react';
-import { MoreVertical } from 'lucide-react';
+import { MoreVertical, X } from 'lucide-react';
 import { cn } from '../../../lib/utils';
 import { VehiclesMenu, type VehiclesMenuAnchor, type VehiclesMenuAction } from './VehiclesMenu';
 import type {
@@ -677,7 +677,10 @@ export function VehicleInventoryGrid({
                             className="w-8 h-8 flex items-center justify-center text-[rgba(17,16,20,0.56)] bg-white hover:bg-[rgba(255,255,255,0.92)] active:bg-[rgba(255,255,255,0.9)] transition-colors"
                             style={{ borderRadius: 200 }}
                           >
-                            <MoreVertical size={16} />
+                            {openMenu?.recordId === record.id
+                              ? <X size={16} />
+                              : <MoreVertical size={16} />
+                            }
                           </button>
                         </div>
                       </div>

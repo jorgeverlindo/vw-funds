@@ -50,7 +50,7 @@ function MenuItem({ iconSrc, label, onClick }: MenuItemProps) {
     <button
       onClick={onClick}
       className={cn(
-        'w-full flex items-center text-left select-none cursor-default',
+        'group/item w-full flex items-center text-left select-none cursor-default',
         'transition-colors duration-100',
         'text-[#1f1d25]',
         'hover:bg-[rgba(0,0,0,0.04)]',
@@ -60,7 +60,14 @@ function MenuItem({ iconSrc, label, onClick }: MenuItemProps) {
     >
       {/* Left icon slot — 36px wide, matches Figma */}
       <span className="flex items-center justify-center shrink-0" style={{ width: 36 }}>
-        <img src={iconSrc} alt="" width={18} height={18} draggable={false} />
+        <img
+          src={iconSrc}
+          alt=""
+          width={18}
+          height={18}
+          draggable={false}
+          className="transition-all duration-75 group-active/item:brightness-0 group-active/item:opacity-70 group-active/item:scale-90"
+        />
       </span>
 
       {/* Label */}

@@ -449,6 +449,9 @@ export function VehicleInventoryGrid({
               </div>
             </th>
 
+            {/* Sticky kebab column — zero-width, no label */}
+            <th className="sticky right-0 z-[11] bg-white p-0" style={{ width: 0, minWidth: 0 }} />
+
           </tr>
         </thead>
 
@@ -602,23 +605,44 @@ export function VehicleInventoryGrid({
                   </div>
                 </td>
 
-                {/* Priority Score chip + hover kebab */}
-                <td className="relative px-4" style={w('priorityScore')}>
+                {/* Priority Score chip */}
+                <td className="px-4" style={w('priorityScore')}>
                   <div className={cn(isDisabled && 'opacity-50')}>
                     <PriorityScoreChip score={record.priorityScore} />
                   </div>
-                  <button
-                    onClick={e => e.stopPropagation()}
-                    className={cn(
-                      'absolute right-2 top-1/2 -translate-y-1/2',
-                      'invisible group-hover:visible',
-                      'w-8 h-8 rounded flex items-center justify-center',
-                      'bg-white text-[rgba(17,16,20,0.56)] hover:bg-[rgba(17,16,20,0.06)] transition-colors',
-                    )}
-                  >
-                    <MoreVertical size={16} />
-                  </button>
                 </td>
+
+                {/* Sticky kebab overlay — sticks to right edge of the visible pane */}
+                {(() => {
+                  const hoverBg = isSelected
+                    ? 'rgba(99,86,225,0.12)'
+                    : isDisabled
+                      ? 'rgba(31,29,37,0.06)'
+                      : 'rgba(31,29,37,0.04)';
+                  return (
+                    <td className="sticky right-0 z-[2] p-0 border-0" style={{ width: 0, minWidth: 0 }}>
+                      <div className="invisible group-hover:visible absolute right-0 top-0 bottom-0 flex items-center pointer-events-none">
+                        {/* Gradient fade */}
+                        <div
+                          className="h-full w-[80px] flex-none"
+                          style={{ background: `linear-gradient(to right, transparent, ${hoverBg})` }}
+                        />
+                        {/* Solid bg + kebab button */}
+                        <div
+                          className="h-full flex items-center pr-2 flex-none pointer-events-auto"
+                          style={{ backgroundColor: hoverBg }}
+                        >
+                          <button
+                            onClick={e => e.stopPropagation()}
+                            className="w-8 h-8 rounded flex items-center justify-center text-[rgba(17,16,20,0.56)] hover:bg-[rgba(17,16,20,0.08)] transition-colors"
+                          >
+                            <MoreVertical size={16} />
+                          </button>
+                        </div>
+                      </div>
+                    </td>
+                  );
+                })()}
 
               </tr>
             );

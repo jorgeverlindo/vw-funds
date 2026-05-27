@@ -10,6 +10,7 @@ import vwLogoDealer from '../../assets/logos/JackDanielsVW.png'; // [FV] new Jac
 import vwLogoOEM from '../../assets/logos/VW-Logo.jpg'; // [FV] new VW OEM mark
 import vwLogoEmich from '../../assets/logos/Emich.png'; // [FV] Emich Volkswagen mark
 import constellationLogo from '../../assets/logos/Projects + Website Campaigns/Brand Logo/Constellation.png'; // [FV] Agency view
+import rideNowLogo from '../../assets/logos/RideNow.png'; // [FV] Ride Now
 
 interface NavItemProps {
   icon: React.ReactNode;
@@ -124,7 +125,9 @@ export function AppSidebar({
   const getIconColor = (_route: string) => '#ACABFF';
 
   // Client + role → correct logo PNG
-  const clientLogo = client.clientId === 'audi' ? (
+  const clientLogo = client.clientId === 'ride-now' ? (
+    <ClientLogoImg src={rideNowLogo} alt="Ride Now" noPadding />
+  ) : client.clientId === 'audi' ? (
     userType === 'oem'
       ? <ClientLogoImg src={audiLogoOEM}    alt="Audi" />
       : <ClientLogoImg src={audiLogoPacific} alt="Audi Pacific" />

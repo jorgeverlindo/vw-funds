@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { ArrowLeft, Search } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import audiLogoOEM from '../../assets/logos/Audi.png';
+import rideNowLogo from '../../assets/logos/RideNow.png';
 
 // ─── Logos ─────────────────────────────────────────────────────────────────
 
@@ -58,6 +59,7 @@ interface ClientEntry {
 const RECENT_CLIENTS: ClientEntry[] = [
   { id: 'audi', name: 'Audi', active: true },
   { id: 'vw',   name: 'Volkswagen', active: true },
+  { id: 'ride-now', name: 'Ride Now', active: true },
 ];
 
 const ALL_CLIENTS: ClientEntry[] = [
@@ -87,7 +89,9 @@ function ClientRow({
   const isSelected = entry.id === currentClientId;
 
   const logo =
-    entry.id === 'vw' ? (
+    entry.id === 'ride-now' ? (
+      <img src={rideNowLogo} alt="Ride Now" width={32} height={32} style={{ borderRadius: 4, objectFit: 'cover', display: 'block' }} />
+    ) : entry.id === 'vw' ? (
       <VWLogo size={32} />
     ) : entry.id === 'audi' ? (
       <AudiLogo size={32} />

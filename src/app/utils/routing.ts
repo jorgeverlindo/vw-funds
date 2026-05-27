@@ -17,8 +17,12 @@ export const TAB_SLUGS: Record<string, string> = {
   'guidelines':     'Guidelines',
   'web-monitoring': 'Web-Monitoring',
   // App sections — treated as top-level tab slugs for URL routing
-  'projects':       'Projects',
-  'portal':         'Portal',
+  'projects':        'Projects',
+  'portal':          'Portal',
+  // App sections — treated as top-level tab slugs for URL routing
+  'inventory':        'Inventory',
+  // Client settings — Ride Now only
+  'client-settings': 'Client-Settings',
 };
 
 export const SLUG_TO_TAB: Record<string, string> = Object.fromEntries(
@@ -28,9 +32,11 @@ export const SLUG_TO_TAB: Record<string, string> = Object.fromEntries(
 export function buildUrl(role: UserType, clientId: string, tabId: string): string {
   const slug = TAB_SLUGS[tabId] ?? tabId;
   if (role === 'oem') {
-    return clientId === 'vw' ? `/OEM/${slug}` : `/Audi/OEM/${slug}`;
+    if (clientId === 'vw')       return `/OEM/${slug}`;
+    if (clientId === 'ride-now') return `/Ride-Now/OEM/${slug}`;
+    return `/Audi/OEM/${slug}`;
   }
-  const brand = clientId === 'audi' ? 'Audi' : 'Volkswagen';
+  const brand = clientId === 'audi' ? 'Audi' : clientId === 'ride-now' ? 'Ride-Now' : 'Volkswagen';
   if (role === 'dealer-singular') return `/${brand}/dealership-singular/${slug}`;
   if (role === 'dealer-emich')    return `/${brand}/dealership-emich/${slug}`; // [FV]
   return `/${brand}/dealership/${slug}`;

@@ -40,6 +40,8 @@ import type { Claim } from './components/ClaimsPanel';
 import type { PreApproval } from './components/FundsPreApprovalsContent';
 import { CommentsProvider, CommentsSidePanel, CommentsButton } from './components/comments';
 import type { NotifItem } from './components/comments/types';
+import { ClientSettingsContent } from './components/client-settings/ClientSettingsContent';
+import { InventoryContent } from './components/inventory/InventoryContent';
 
 const DEALER_TABS = [
   { id: 'overview', label: 'Overview' },
@@ -90,7 +92,7 @@ export default function AppContent() {
     : _initPath.includes('/dealership/') ? 'dealer' : 'oem';
   const _initTab = SLUG_TO_TAB[routeParams.tab ?? ''] ?? 'overview';
   // Derive initial section: 'projects' | 'portal' → that section; anything else → 'campaigns'
-  const _initSection = (_initTab === 'projects' || _initTab === 'portal') ? _initTab : 'campaigns';
+  const _initSection = (_initTab === 'projects' || _initTab === 'portal' || _initTab === 'inventory') ? _initTab : 'campaigns';
 
   const [activeAppSection, setActiveAppSection] = useState(_initSection); // 'campaigns' | 'portal' | 'projects'
   const [activeTab, setActiveTab] = useState(_initSection === 'campaigns' ? _initTab : 'overview');
@@ -98,6 +100,10 @@ export default function AppContent() {
   const [dateRange, setDateRange] = useState<DateRange | undefined>(defaultDateRange);
   const [clientSwitcherOpen, setClientSwitcherOpen] = useState(false);
   const [libraryOpen, setLibraryOpen] = useState(false);
+  // If the URL already has /Client-Settings on mount (e.g. direct link or refresh), restore settings section
+  const [settingsSection, setSettingsSection] = useState<string | null>(
+    _initTab === 'client-settings' && client.clientId === 'ride-now' ? 'global-ai-configs' : null,
+  );
 
   // [FV] compliance context — all infraction/solution/notification state
   const {
@@ -212,6 +218,14 @@ export default function AppContent() {
   const [selectedClaimId, setSelectedClaimId] = useState<string | null>(null);
   const selectedClaim = useSelectedClaim(selectedClaimId);
 
+  const handleSettingsClick = useCallback((section: string) => {
+    if (client.clientId === 'ride-now') {
+      const targetSection = section === 'client-settings' ? 'global-ai-configs' : section;
+      setSettingsSection(targetSection);
+      navigate(buildUrl(userType, client.clientId, 'client-settings'), { replace: true });
+    }
+  }, [client.clientId, userType, navigate]);
+
   // Create Claim handler — called by PreApprovalPanel dealer CTA
   // Uses the current claim ID so it works after archiveAndReset cycles
   const handleCreateClaim = useCallback(() => {
@@ -288,7 +302,8 @@ export default function AppContent() {
   // Handle Navigation from Sidebar — also updates the URL
   const handleNavigate = (route: string) => {
     setActiveAppSection(route);
-    if (route === 'projects' || route === 'portal') {
+    setSettingsSection(null); // leave Client Settings when navigating elsewhere
+    if (route === 'projects' || route === 'portal' || route === 'inventory') {
       navigate(buildUrl(userType, client.clientId, route), { replace: true });
     } else {
       // 'campaigns' → restore the current active tab URL
@@ -323,10 +338,12 @@ export default function AppContent() {
       : path.includes('/dealership/') ? 'dealer' : 'oem';
     const tabId = SLUG_TO_TAB[routeParams.tab ?? ''] ?? 'overview';
     const brandParam = routeParams.brand?.toLowerCase();
-    const brandId = brandParam === 'audi' ? 'audi' : 'vw';
+    const brandId = brandParam === 'audi' ? 'audi'
+      : brandParam === 'ride-now' ? 'ride-now'
+      : 'vw';
     setUserType(role);
     // Detect app section from slug ('projects' | 'portal' → section; anything else → campaigns tab)
-    if (tabId === 'projects' || tabId === 'portal') {
+    if (tabId === 'projects' || tabId === 'portal' || tabId === 'inventory') {
       setActiveAppSection(tabId);
     } else {
       setActiveAppSection('campaigns');
@@ -564,6 +581,7 @@ export default function AppContent() {
           window.dispatchEvent(new CustomEvent('comment-mark-read', { detail: { id } }));
         }}
         onCommentNotifNavigate={handleCommentNotifNavigate}
+        onSettingsClick={handleSettingsClick}
       />
 
       {/* Main Layout Container - Fixed offsets for sidebar/navbar */}
@@ -573,11 +591,26 @@ export default function AppContent() {
         'oem':             'jenny-eckhart',
         'dealer-singular': 'zak-flaten',
       } as Record<string, string>)[userType] ?? 'jorge-verlindo'}>
-      <main className="ml-[72px] mt-[32px] h-[calc(100vh-48px)] flex p-6 gap-6 overflow-hidden mr-[0px] mb-[0px]">
-        
+      <main className="ml-[72px] mt-[32px] h-[calc(100vh-48px)] flex p-6 gap-6 overflow-hidden mr-[0px] mb-[0px] relative">
+
+        {/* ── Client Settings (Ride Now) — fills the whole main flex row ── */}
+        {settingsSection && client.clientId === 'ride-now' ? (
+          <>
+            <ClientSettingsContent initialSection={settingsSection} />
+            {/* Agent + Comments panes are pervasive — available on every screen */}
+            <AgentPane
+              isOpen={isAgentPaneOpen}
+              onClose={() => setIsAgentPaneOpen(false)}
+            />
+            <CommentsSidePanel />
+          </>
+        ) : (
+        <>
+
         {/* Main Content Pane */}
         <MainPane className="flex-1 flex flex-col min-w-0 bg-white">
-          
+          <>
+
           {/* CAMPAIGNS (FUNDS) SECTION */}
           {activeAppSection === 'campaigns' && (
             <>
@@ -729,6 +762,13 @@ export default function AppContent() {
              </div>
           )}
 
+          {/* INVENTORY SECTION — RideNow only */}
+          {activeAppSection === 'inventory' && client.clientId === 'ride-now' && (
+            <InventoryContent />
+          )}
+
+          </> {/* end of normal sections */}
+
         </MainPane>
 
         {/* Right Pane - Side Panel (Only for Campaigns currently) */}
@@ -863,6 +903,9 @@ export default function AppContent() {
         {/* Comments panel — same slot as agent pane */}
         <CommentsSidePanel />
 
+        </> /* end of normal (non-settings) branch */
+        )} {/* end settingsSection ternary */}
+
       </main>
       </CommentsProvider>
 
@@ -895,6 +938,7 @@ export default function AppContent() {
           onClose={() => setIsWebMonitoringModalOpen(false)}
         />
       )}
+
     </div>
   );
 }

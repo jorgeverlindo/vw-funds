@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import svgPaths from '@/imports/svg-kh2cdc4deu';
 import imgAvatar from 'figma:asset/f0494d5017440bdc302141d9ab01c7c81e4a339a.png';
@@ -11,6 +11,9 @@ import { LanguageToggleButton } from './LanguageToggleButton';
 import { useTranslation } from '../contexts/LanguageContext';
 import { useWorkflow } from '../contexts/WorkflowContext';
 import { useCompliance, getDealerIdentity } from '../contexts/ComplianceContext';
+import { useClient } from '../contexts/ClientContext';
+import rideNowLogo from '../../assets/logos/RideNow.png';
+import { SettingsMenu } from './client-settings/SettingsMenu';
 import type { WCMItem } from './WebMonitoringContent';
 
 // ─── Nav Tooltip ──────────────────────────────────────────────────────────────
@@ -77,6 +80,7 @@ interface TopNavBarProps {
   commentUnreadCount?: number;
   onMarkCommentNotifRead?: (id: string) => void;
   onCommentNotifNavigate?: (notif: CommentNotifItem) => void;
+  onSettingsClick?: (section: string) => void;
 }
 
 export function TopNavBar({
@@ -98,9 +102,11 @@ export function TopNavBar({
   commentUnreadCount = 0,
   onMarkCommentNotifRead,
   onCommentNotifNavigate,
+  onSettingsClick,
 }: TopNavBarProps) {
   const { t } = useTranslation();
   const { oemUnreadCount, dealerUnreadCount } = useWorkflow();
+  const { client } = useClient();
   const dealerIdentity = getDealerIdentity(userType);
   const currentUserName = dealerIdentity.userName;
 
@@ -130,6 +136,25 @@ export function TopNavBar({
   const dealerSubmittedUnread    = isDealer ? getDealerSubmittedUnread(currentUserName)               : 0;
   const dealerCaseUpdateNotifs   = isDealer ? getDealerCaseUpdateNotifs(dealerIdentity.dealership)   : undefined;
   const dealerCaseUpdateUnread   = isDealer ? getDealerCaseUpdateUnread(dealerIdentity.dealership)   : 0;
+
+  // Settings menu state
+  const [settingsMenuOpen, setSettingsMenuOpen] = useState(false);
+  // Ref covers the entire wrapper div (gear button + popover panel) so that
+  // the capture-phase mousedown listener does NOT close the menu when a menu
+  // item is clicked (menu items are children of the wrapper, not the button).
+  const settingsWrapperRef = useRef<HTMLDivElement>(null);
+
+  // Close settings menu on outside click
+  const handleSettingsOutsideClick = useCallback((e: MouseEvent) => {
+    if (settingsWrapperRef.current && settingsWrapperRef.current.contains(e.target as Node)) return;
+    setSettingsMenuOpen(false);
+  }, []);
+
+  useEffect(() => {
+    if (!settingsMenuOpen) return;
+    document.addEventListener('mousedown', handleSettingsOutsideClick, true);
+    return () => document.removeEventListener('mousedown', handleSettingsOutsideClick, true);
+  }, [settingsMenuOpen, handleSettingsOutsideClick]);
 
   // Badge total: workflow unread + compliance notifs + comment notifs
   const badgeCount = userType === 'oem'
@@ -316,19 +341,41 @@ export function TopNavBar({
         </div>
 
         {/* Settings Icon */}
-        <NavTooltip label="Settings">
-          <button className="p-1.5 rounded-full hover:bg-black/5 transition-colors cursor-pointer group">
-            <div className="size-5">
-              <svg className="block size-full" fill="none" viewBox="0 0 20 20">
-                <path d={svgPaths.p3f764900} stroke="#111014" strokeLinejoin="round" strokeOpacity="0.56" strokeWidth="1.5" />
-                <path d={svgPaths.p32a6a700} stroke="#111014" strokeLinejoin="round" strokeOpacity="0.56" strokeWidth="1.5" />
-              </svg>
-            </div>
-          </button>
-        </NavTooltip>
+        <div className="relative" ref={settingsWrapperRef}>
+          <NavTooltip label="Settings">
+            <button
+              className={cn(
+                "p-1.5 rounded-full hover:bg-black/5 transition-colors cursor-pointer group",
+                settingsMenuOpen && "bg-black/5"
+              )}
+              onClick={() => setSettingsMenuOpen(prev => !prev)}
+            >
+              <div className="size-5">
+                <svg className="block size-full" fill="none" viewBox="0 0 20 20">
+                  <path d={svgPaths.p3f764900} stroke="#111014" strokeLinejoin="round" strokeOpacity="0.56" strokeWidth="1.5" />
+                  <path d={svgPaths.p32a6a700} stroke="#111014" strokeLinejoin="round" strokeOpacity="0.56" strokeWidth="1.5" />
+                </svg>
+              </div>
+            </button>
+          </NavTooltip>
+          {/* Settings popover */}
+          <SettingsMenu
+            isOpen={settingsMenuOpen}
+            onClose={() => setSettingsMenuOpen(false)}
+            onNavigate={(route) => {
+              if (route === 'client-settings') {
+                onSettingsClick?.('client-settings');
+              }
+              setSettingsMenuOpen(false);
+            }}
+            className="absolute right-0 top-full mt-1 z-[9999] min-w-[200px]"
+          />
+        </div>
 
         {/* Avatar */}
-        {userType === 'oem' ? (
+        {client.clientId === 'ride-now' ? (
+          <img src={rideNowLogo} alt="Ride Now" className="size-8 rounded-full ml-2 cursor-pointer object-cover" />
+        ) : userType === 'oem' ? (
           <AvatarInitials
             initials="OR"
             size={32}

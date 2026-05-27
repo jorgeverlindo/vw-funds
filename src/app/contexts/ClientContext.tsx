@@ -2,8 +2,9 @@ import { createContext, useContext, useState, ReactNode } from 'react';
 import { ClientConfig } from '../../data/types/client';
 import { vwConfig } from '../../data/clients/vw/client.config';
 import { audiConfig } from '../../data/clients/audi/client.config';
+import { rideNowConfig } from '../../data/clients/ride-now/client.config';
 
-const CLIENTS: Record<string, ClientConfig> = { vw: vwConfig, audi: audiConfig };
+const CLIENTS: Record<string, ClientConfig> = { vw: vwConfig, audi: audiConfig, 'ride-now': rideNowConfig };
 
 interface ClientContextValue {
   client: ClientConfig;

@@ -6,7 +6,7 @@
 //   Left  480px : hero image (480×360) + angle thumbnail strip (48px each)
 //   Right flex-1: two sub-columns of detail rows side by side
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { cn } from '../../../lib/utils';
 import type { VinInventoryRecord } from '../../../data/inventory/vehicleInventory';
 import { AI_CONFIGS } from '../../../data/inventory/aiConfigs';
@@ -116,6 +116,16 @@ export function VinDetailContent({ record, onBack }: VinDetailContentProps) {
   const [activeAngle, setActiveAngle] = useState<AngleKey>('34l');
   const [imageMode,   setImageMode]   = useState<'generated' | 'source'>('generated');
   const [activeTab,   setActiveTab]   = useState<'details' | 'generated' | 'source'>('details');
+
+  // ── Responsive breakpoint: below 1200px → 50/50 split ──────────────────────
+  const [narrow, setNarrow] = useState(() =>
+    typeof window !== 'undefined' && window.innerWidth < 1200
+  );
+  useEffect(() => {
+    const handler = () => setNarrow(window.innerWidth < 1200);
+    window.addEventListener('resize', handler);
+    return () => window.removeEventListener('resize', handler);
+  }, []);
 
   // ── AI config lookup ────────────────────────────────────────────────────────
   const aiConfig = record.aiConfigId ? AI_CONFIGS.find(c => c.id === record.aiConfigId) : null;
@@ -239,9 +249,9 @@ export function VinDetailContent({ record, onBack }: VinDetailContentProps) {
           <div className="flex flex-wrap gap-[24px] p-[16px]">
 
             {/* ── Left: hero + thumbnail strip
-                 flex: 1 1 0% — grows equally with right wrapper; takes whatever
-                 space is left after the right block reaches its max (784px).   */}
-            <div className="flex flex-col gap-[12px] min-w-0" style={{ flex: '1 1 0%', minWidth: 280 }}>
+                 ≥1200px: flex 1 1 0% — takes space left after right block (max 784px)
+                 <1200px: flex 1 1 0% equally — 50/50 split with right block       */}
+            <div className="flex flex-col gap-[12px] min-w-[280px]" style={{ flex: '1 1 0%' }}>
 
               {/* Hero — fills parent width, 4:3 aspect ratio */}
               {/* Generated mode: dark bg + object-cover (full scene).       */}
@@ -318,11 +328,15 @@ export function VinDetailContent({ record, onBack }: VinDetailContentProps) {
             </div>
 
             {/* ── Right: ColA + ColB — each 360px min.
-                 max-width 784px (360+24+400) caps growth; image takes the rest.
-                 Breakpoints:
-                   ~1100px → right < 744px → ColB wraps under ColA
-                   ~800px  → image min-width triggers → right wraps below image  */}
-            <div className="flex flex-wrap gap-[24px] min-w-0" style={{ flex: '1 1 0%', maxWidth: 784 }}>
+                 ≥1200px: flex 1 1 360px + max-width 784px → image takes the rest
+                 <1200px: flex 1 1 0% → equal 50/50 with image; ColB stacked under ColA */}
+            <div
+              className="flex flex-wrap gap-[24px] min-w-0"
+              style={narrow
+                ? { flex: '1 1 0%' }
+                : { flex: '1 1 360px', maxWidth: 784 }
+              }
+            >
 
               {/* Sub-column A — VIN info + Physical attributes */}
               <div className="min-w-0" style={{ flex: '1 1 360px', minWidth: 360 }}>

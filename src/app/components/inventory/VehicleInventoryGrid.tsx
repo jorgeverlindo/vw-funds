@@ -634,7 +634,8 @@ export function VehicleInventoryGrid({
                         >
                           <button
                             onClick={e => e.stopPropagation()}
-                            className="w-8 h-8 rounded flex items-center justify-center text-[rgba(17,16,20,0.56)] hover:bg-[rgba(17,16,20,0.08)] transition-colors"
+                            className="w-8 h-8 flex items-center justify-center text-[rgba(17,16,20,0.56)] bg-white hover:bg-[rgba(17,16,20,0.08)] transition-colors"
+                            style={{ borderRadius: 200 }}
                           >
                             <MoreVertical size={16} />
                           </button>

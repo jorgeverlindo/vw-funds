@@ -6,6 +6,7 @@
 //   BreadcrumbBar → Page Title → Tabs → Toolbar → VehicleInventoryGrid
 
 import React, { useState, useCallback } from 'react';
+import { AnimatePresence, motion } from 'motion/react';
 import { cn } from '../../../lib/utils';
 import {
   Search,
@@ -14,13 +15,16 @@ import {
   BarChart2,
   Columns2,
 } from 'lucide-react';
-import changeViewIcon  from '../../../assets/icons/ChangeView_.svg';
+import { VehicleCardGrid }       from './VehicleCardGrid';
+import { VehicleCardList }       from './VehicleCardList';
+import { VehicleTableCondensed } from './VehicleTableCondensed';
 import filtersIcon     from '../../../assets/icons/Filters.svg';
 import chainLinkIcon   from '../../../assets/icons/Yamaha VIN List/Card & Row/Main Pane Header 2.0/chain-link-3,url.svg';
 import { BreadcrumbBar } from '../BreadcrumbBar';
 import { CommentsButton } from '../comments';
 import { VehicleInventoryGrid } from './VehicleInventoryGrid';
 import { VinDetailContent }     from './VinDetailContent';
+import { useClient }            from '../../contexts/ClientContext';
 import { AnglePreviewModal }     from './AnglePreviewModal';
 import { ANGLES }                from './AngleBar';
 import { VEHICLE_INVENTORY }    from '../../../data/inventory/vehicleInventory';
@@ -43,6 +47,7 @@ import fluencyLogo    from '../../../assets/logos/channels/Yamaha VIN List/fluen
 const CAPTION = "font-['Roboto',sans-serif] font-normal text-[11px] leading-[1.66] tracking-[0.4px]";
 
 // ─── Toolbar icon button ──────────────────────────────────────────────────────
+// ─── Toolbar icon button — with slide-up tooltip ──────────────────────────
 function ToolbarIconBtn({
   children,
   title,
@@ -54,21 +59,49 @@ function ToolbarIconBtn({
   active?: boolean;
   onClick?: () => void;
 }) {
+  const [hovered, setHovered] = useState(false);
   return (
-    <button
-      onClick={onClick}
-      title={title}
-      className={[
-        'p-[5px] rounded-[100px] flex items-center justify-center transition-colors shrink-0',
-        active
-          ? 'text-[#473bab] bg-[rgba(71,59,171,0.08)]'
-          : 'text-[rgba(17,16,20,0.56)] hover:bg-[rgba(17,16,20,0.04)]',
-      ].join(' ')}
+    <div
+      className="relative flex items-center justify-center"
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
     >
-      <span className="size-[20px] flex items-center justify-center">
-        {children}
-      </span>
-    </button>
+      {title && (
+        <div
+          className="absolute bottom-full left-1/2 z-50 pointer-events-none"
+          style={{
+            marginBottom: 6,
+            transform: `translateX(-50%) translateY(${hovered ? '0px' : '6px'})`,
+            opacity: hovered ? 1 : 0,
+            transition: 'opacity 200ms ease, transform 200ms ease',
+          }}
+        >
+          <div
+            className="bg-[#1f1d25]/90 backdrop-blur-[2px] text-white rounded-[6px] px-[10px] py-[5px] whitespace-nowrap"
+            style={{ fontFamily: "'Roboto', sans-serif", fontSize: 11, fontWeight: 500, lineHeight: 1.5, letterSpacing: '0.15px', boxShadow: '0 2px 8px rgba(0,0,0,0.28)' }}
+          >
+            {title}
+          </div>
+          <div
+            className="absolute left-1/2 -translate-x-1/2 w-0 h-0"
+            style={{ top: '100%', borderLeft: '4px solid transparent', borderRight: '4px solid transparent', borderTop: '4px solid rgba(31,29,37,0.9)' }}
+          />
+        </div>
+      )}
+      <button
+        onClick={onClick}
+        className={[
+          'p-[5px] rounded-[100px] flex items-center justify-center transition-colors shrink-0',
+          active
+            ? 'text-[#473bab] bg-[rgba(71,59,171,0.08)]'
+            : 'text-[rgba(17,16,20,0.56)] hover:bg-[rgba(17,16,20,0.04)]',
+        ].join(' ')}
+      >
+        <span className="size-[20px] flex items-center justify-center">
+          {children}
+        </span>
+      </button>
+    </div>
   );
 }
 
@@ -82,8 +115,68 @@ interface ChannelIconItem {
   icon:     React.ReactNode;
 }
 
+// ─── View-mode cycle icons ────────────────────────────────────────────────────
+// Each icon represents the NEXT view in the cycle (what clicking will switch to).
+// Paths taken directly from the project SVG assets so colour follows currentColor.
+
+/** 3×2 grid of square tiles — represents Card Vertical (vertical-cards) */
+const IconCardVertical = () => (
+  <svg width="20" height="20" viewBox="0 0 30 30" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path
+      d="M16.67 8C17.2223 8 17.67 8.44772 17.67 9V13.5C17.67 14.0523 17.2223 14.5 16.67 14.5H13.33C12.7777 14.5 12.33 14.0523 12.33 13.5V9C12.33 8.44772 12.7777 8 13.33 8H16.67ZM18.67 13.5C18.67 14.0523 19.1177 14.5 19.67 14.5H23C23.5523 14.5 24 14.0523 24 13.5V9C24 8.44772 23.5523 8 23 8H19.67C19.1177 8 18.67 8.44772 18.67 9V13.5ZM16.67 22C17.2223 22 17.67 21.5523 17.67 21V16.5C17.67 15.9477 17.2223 15.5 16.67 15.5H13.33C12.7777 15.5 12.33 15.9477 12.33 16.5V21C12.33 21.5523 12.7777 22 13.33 22H16.67ZM19.67 15.5C19.1177 15.5 18.67 15.9477 18.67 16.5V21C18.67 21.5523 19.1177 22 19.67 22H23C23.5523 22 24 21.5523 24 21V16.5C24 15.9477 23.5523 15.5 23 15.5H19.67ZM11.33 16.5C11.33 15.9477 10.8823 15.5 10.33 15.5H7C6.44771 15.5 6 15.9477 6 16.5V21C6 21.5523 6.44772 22 7 22H10.33C10.8823 22 11.33 21.5523 11.33 21V16.5ZM10.33 14.5C10.8823 14.5 11.33 14.0523 11.33 13.5V9C11.33 8.44772 10.8823 8 10.33 8H7C6.44771 8 6 8.44772 6 9V13.5C6 14.0523 6.44772 14.5 7 14.5H10.33Z"
+      fill="currentColor"
+    />
+  </svg>
+);
+
+/** 2×3 grid of landscape rects — represents Card Horizontal (horizontal-cards) */
+const IconCardHorizontal = () => (
+  <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <rect x="10.8335" y="13.3335" width="5.83333" height="3.33333" rx="1" fill="currentColor"/>
+    <rect x="3.3335"  y="13.3335" width="5.83333" height="3.33333" rx="1" fill="currentColor"/>
+    <rect x="10.8335" y="8.3335"  width="5.83333" height="3.33333" rx="1" fill="currentColor"/>
+    <rect x="3.3335"  y="8.3335"  width="5.83333" height="3.33333" rx="1" fill="currentColor"/>
+    <rect x="10.8335" y="3.3335"  width="5.83333" height="3.33333" rx="1" fill="currentColor"/>
+    <rect x="3.3335"  y="3.3335"  width="5.83333" height="3.33333" rx="1" fill="currentColor"/>
+  </svg>
+);
+
+/** 3 full-width rounded bars — represents Table (condensed-table) */
+const IconTableLarge = () => (
+  <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M2.5 4.16683C2.5 3.70659 2.8731 3.3335 3.33333 3.3335H16.6667C17.1269 3.3335 17.5 3.70659 17.5 4.16683V5.8335C17.5 6.29373 17.1269 6.66683 16.6667 6.66683H3.33333C2.8731 6.66683 2.5 6.29373 2.5 5.8335V4.16683Z" fill="currentColor"/>
+    <path d="M2.5 9.16683C2.5 8.70659 2.8731 8.3335 3.33333 8.3335H16.6667C17.1269 8.3335 17.5 8.70659 17.5 9.16683V10.8335C17.5 11.2937 17.1269 11.6668 16.6667 11.6668H3.33333C2.8731 11.6668 2.5 11.2937 2.5 10.8335V9.16683Z" fill="currentColor"/>
+    <path d="M2.5 14.1668C2.5 13.7066 2.8731 13.3335 3.33333 13.3335H16.6667C17.1269 13.3335 17.5 13.7066 17.5 14.1668V15.8335C17.5 16.2937 17.1269 16.6668 16.6667 16.6668H3.33333C2.8731 16.6668 2.5 16.2937 2.5 15.8335V14.1668Z" fill="currentColor"/>
+  </svg>
+);
+
+/** 4 thin full-width lines — represents Dense Table / back to Data Grid */
+const IconTableSmall = () => (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M5 15H19C19.55 15 20 14.55 20 14C20 13.45 19.55 13 19 13H5C4.45 13 4 13.45 4 14C4 14.55 4.45 15 5 15ZM5 19H19C19.55 19 20 18.55 20 18C20 17.45 19.55 17 19 17H5C4.45 17 4 17.45 4 18C4 18.55 4.45 19 5 19ZM5 11H19C19.55 11 20 10.55 20 10C20 9.45 19.55 9 19 9H5C4.45 9 4 9.45 4 10C4 10.55 4.45 11 5 11ZM4 6C4 6.55 4.45 7 5 7H19C19.55 7 20 6.55 20 6C20 5.45 19.55 5 19 5H5C4.45 5 4 5.45 4 6Z" fill="currentColor"/>
+  </svg>
+);
+
 // ─── InventoryContent ─────────────────────────────────────────────────────────
 export function InventoryContent() {
+  const { client } = useClient();
+  // ── View mode — cycles on each click ──────────────────────────────────────
+  type ViewMode = 'data-grid' | 'vertical-cards' | 'horizontal-cards' | 'condensed-table';
+  // label = name of the NEXT view (tooltip says where you'll go)
+  // NextIcon = icon that represents the next view in the cycle
+  const VIEW_MODES: { id: ViewMode; label: string; NextIcon: React.FC }[] = [
+    { id: 'data-grid',        label: 'Card Vertical',   NextIcon: IconCardVertical   },
+    { id: 'vertical-cards',   label: 'Card Horizontal', NextIcon: IconCardHorizontal },
+    { id: 'horizontal-cards', label: 'Table View',      NextIcon: IconTableLarge     },
+    { id: 'condensed-table',  label: 'Data Grid',       NextIcon: IconTableSmall     },
+  ];
+  const [viewMode, setViewMode] = useState<ViewMode>('data-grid');
+  const cycleView = useCallback(() => {
+    setViewMode(prev => {
+      const idx = VIEW_MODES.findIndex(m => m.id === prev);
+      return VIEW_MODES[(idx + 1) % VIEW_MODES.length].id;
+    });
+  }, []);
   const [search,               setSearch]               = useState('');
   const [selected,             setSelected]             = useState<Set<string>>(new Set());
   const [activeTab,            setActiveTab]            = useState<'insights' | 'conquest' | 'vehicles'>('vehicles');
@@ -216,7 +309,11 @@ export function InventoryContent() {
     const record = VEHICLE_INVENTORY.find(r => r.id === selectedVinId);
     if (record) {
       return (
-        <VinDetailContent record={record} onBack={() => setSelectedVinId(null)} />
+        <VinDetailContent
+          record={record}
+          onBack={() => setSelectedVinId(null)}
+          variant={client.clientId === 'ride-now' ? 'sport' : 'auto'}
+        />
       );
     }
   }
@@ -369,30 +466,79 @@ export function InventoryContent() {
           <ToolbarIconBtn title="Charts">
             <BarChart2 size={18} />
           </ToolbarIconBtn>
-          <ToolbarIconBtn title="Change view">
-            <img src={changeViewIcon} alt="Change view" className="size-[20px]" />
-          </ToolbarIconBtn>
+          {(() => {
+            // Icon always shows the NEXT view (where clicking will take you)
+            const curIdx  = VIEW_MODES.findIndex(m => m.id === viewMode);
+            const nextMode = VIEW_MODES[(curIdx + 1) % VIEW_MODES.length];
+            return (
+              <ToolbarIconBtn
+                title={nextMode.label}
+                active={viewMode !== 'data-grid'}
+                onClick={cycleView}
+              >
+                <nextMode.NextIcon />
+              </ToolbarIconBtn>
+            );
+          })()}
         </div>
       </div>
 
-      {/* ── Data grid ───────────────────────────────────────────────────── */}
-      {activeTab === 'vehicles' ? (
-        <VehicleInventoryGrid
-          records={records}
-          selected={selected}
-          onToggleRow={handleToggleRow}
-          onToggleAll={handleToggleAll}
-          onVinClick={(id) => setSelectedVinId(id)}
-          onSyndicationToggle={handleSyndicationToggle}
-          onAiGenerationToggle={handleAiGenerationToggle}
-          onViewSourceImages={handleViewSourceImages}
-        />
-      ) : (
-        /* Placeholder for other tabs */
+      {/* ── View area ───────────────────────────────────────────────────── */}
+      {activeTab !== 'vehicles' ? (
         <div className="flex-1 flex items-center justify-center text-[rgba(17,16,20,0.38)]">
           <span className="font-['Roboto',sans-serif] text-[14px]">
             {activeTab === 'insights' ? 'On-Brand Insights coming soon' : 'Conquest Insights coming soon'}
           </span>
+        </div>
+      ) : (
+        <div className="flex-1 min-h-0 relative overflow-hidden">
+          <AnimatePresence mode="sync" initial={false}>
+            {viewMode === 'data-grid' && (
+              <motion.div key="data-grid" className="absolute inset-0 flex flex-col" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.15 }}>
+                <VehicleInventoryGrid
+                  records={records}
+                  selected={selected}
+                  onToggleRow={handleToggleRow}
+                  onToggleAll={handleToggleAll}
+                  onVinClick={(id) => setSelectedVinId(id)}
+                  onSyndicationToggle={handleSyndicationToggle}
+                  onAiGenerationToggle={handleAiGenerationToggle}
+                  onViewSourceImages={handleViewSourceImages}
+                />
+              </motion.div>
+            )}
+            {viewMode === 'vertical-cards' && (
+              <motion.div key="vertical-cards" className="absolute inset-0 flex flex-col" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.15 }}>
+                <VehicleCardGrid
+                  records={records}
+                  selected={selected}
+                  onToggleRow={handleToggleRow}
+                  onVinClick={(id) => setSelectedVinId(id)}
+                />
+              </motion.div>
+            )}
+            {viewMode === 'horizontal-cards' && (
+              <motion.div key="horizontal-cards" className="absolute inset-0 flex flex-col" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.15 }}>
+                <VehicleCardList
+                  records={records}
+                  selected={selected}
+                  onToggleRow={handleToggleRow}
+                  onVinClick={(id) => setSelectedVinId(id)}
+                />
+              </motion.div>
+            )}
+            {viewMode === 'condensed-table' && (
+              <motion.div key="condensed-table" className="absolute inset-0 flex flex-col" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.15 }}>
+                <VehicleTableCondensed
+                  records={records}
+                  selected={selected}
+                  onToggleRow={handleToggleRow}
+                  onToggleAll={handleToggleAll}
+                  onVinClick={(id) => setSelectedVinId(id)}
+                />
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
       )}
 

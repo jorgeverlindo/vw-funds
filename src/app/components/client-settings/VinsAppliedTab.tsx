@@ -12,21 +12,16 @@ import { createPortal } from 'react-dom';
 import { Plus, X, ChevronDown } from 'lucide-react';
 import { getVinField, filterVins } from '../../../data/inventory/vins';
 import type { VinFilters, VinRecord } from '../../../data/inventory/types';
+import { VEHICLE_INVENTORY } from '../../../data/inventory/vehicleInventory';
 import { cn } from '../../../lib/utils';
-import vehicleRaptor700r  from '../../../assets/inventory/vehicles/vehicle-raptor-700r.png';
-import vehicleYfz450r     from '../../../assets/inventory/vehicles/vehicle-yfz450r.png';
-import vehicleGrizzly700  from '../../../assets/inventory/vehicles/vehicle-grizzly-700.png';
-import vehicleKodiak450   from '../../../assets/inventory/vehicles/vehicle-kodiak-450.png';
 
-// ─── Vehicle thumbnail map ────────────────────────────────────────────────────
-const VEHICLE_IMAGES: Record<string, string> = {
-  'Raptor 700R':    vehicleRaptor700r,
-  'YFZ450R':        vehicleYfz450r,
-  'Grizzly 700':    vehicleGrizzly700,
-  'Kodiak 450':     vehicleKodiak450,
-  'Raptor 110':     vehicleRaptor700r,
-  'Wolverine RMAX': vehicleGrizzly700,
-};
+// ─── VIN → thumbnail lookup (sourced directly from VEHICLE_INVENTORY) ────────
+// Using the real inventory as the single source of truth means this tab always
+// shows the correct image for every VIN — jellybean PNGs, AI-generated angles,
+// or static thumbnails — without any manual mapping to maintain.
+const VIN_THUMBNAILS: Record<string, string> = Object.fromEntries(
+  VEHICLE_INVENTORY.map(r => [r.vin, r.thumbnail]),
+);
 
 // ─── Shared styles ────────────────────────────────────────────────────────────
 const LABEL =
@@ -304,20 +299,12 @@ const getTrims  = (f: VinFilters): string[] => f.trims  ?? [];
 const getColors = (f: VinFilters): string[] => f.colors ?? [];
 
 // ─── VehicleThumb ─────────────────────────────────────────────────────────────
-function VehicleThumb({ model }: { model?: string }) {
-  const img = model ? VEHICLE_IMAGES[model] : null;
+function VehicleThumb({ vin }: { vin?: string }) {
+  const img = vin ? VIN_THUMBNAILS[vin] : undefined;
+  if (!img) return <div className="w-[48px] h-[36px] shrink-0" />;
   return (
     <div className="w-[48px] h-[36px] rounded-[4px] bg-[#f3f3f5] border border-[rgba(0,0,0,0.08)] shrink-0 overflow-hidden flex items-center justify-center">
-      {img ? (
-        <img src={img} alt={model} className="w-full h-full object-contain" />
-      ) : (
-        <svg viewBox="0 0 24 16" fill="none" className="w-full h-full text-[#9c99a9]">
-          <path d="M3 10l2-4h14l2 4v3H3v-3z" stroke="currentColor" strokeWidth="1"
-            fill="currentColor" fillOpacity="0.15" />
-          <circle cx="7" cy="13" r="1.5" stroke="currentColor" strokeWidth="1" />
-          <circle cx="17" cy="13" r="1.5" stroke="currentColor" strokeWidth="1" />
-        </svg>
-      )}
+      <img src={img} alt="" className="w-full h-full object-contain" />
     </div>
   );
 }
@@ -355,7 +342,7 @@ function VinRow({
       </div>
 
       {/* Thumbnail */}
-      <VehicleThumb model={record.model} />
+      <VehicleThumb vin={record.vin} />
 
       {/* VIN */}
       <span

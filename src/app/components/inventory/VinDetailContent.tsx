@@ -14,6 +14,7 @@ import type { AngleKey } from '../../../data/inventory/types';
 import { BreadcrumbBar }  from '../BreadcrumbBar';
 import { CommentsButton } from '../comments';
 import { PriceToMarketChip, PriorityScoreChip } from './VehicleInventoryGrid';
+import { AngleStripVin } from './AngleStripVin';
 
 // ─── Typography ────────────────────────────────────────────────────────────────
 const BODY1   = "font-['Roboto',sans-serif] font-normal text-[14px] leading-[1.5] tracking-[0.15px]";
@@ -36,48 +37,7 @@ function LeftPaneIcon() {
   );
 }
 
-// ─── Angle config ─────────────────────────────────────────────────────────────
-const ANGLES: { key: AngleKey; label: string }[] = [
-  { key: '34l',   label: '3/4 L'  },
-  { key: 'front', label: 'Front'  },
-  { key: '34r',   label: '3/4 R'  },
-  { key: 'right', label: 'Right'  },
-  { key: 'rear',  label: 'Rear'   },
-  { key: 'left',  label: 'Left'   },
-];
-
-// ─── Angle thumbnail ──────────────────────────────────────────────────────────
-// isSource=true  → white bg + object-contain (transparent PNG, show full vehicle)
-// isSource=false → grey bg + object-cover    (generated scene, fill edge-to-edge)
-function AngleThumb({
-  src, label, isActive, isHero, isSource, onClick,
-}: {
-  src: string | null; label: string; isActive: boolean; isHero: boolean;
-  isSource: boolean; onClick: () => void;
-}) {
-  return (
-    <button onClick={onClick} className="flex flex-col items-center gap-[4px] bg-transparent border-none p-0 cursor-pointer">
-      <div className={cn(
-        'size-[48px] rounded-[4px] overflow-hidden relative',
-        'bg-[#f0f2f4]',
-        isActive && 'ring-[2px] ring-[#6356e1]',
-      )}>
-        {src
-          ? <img src={src} alt={label} className={cn('w-full h-full', isSource ? 'object-contain' : 'object-cover')} />
-          : <div className="w-full h-full bg-[#e0e0e0]" />
-        }
-        {isHero && (
-          <span className="absolute bottom-[2px] left-[2px] size-[16px] bg-white rounded-full flex items-center justify-center shadow-sm">
-            <svg width="10" height="10" viewBox="0 0 24 24" fill="#473bab">
-              <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
-            </svg>
-          </span>
-        )}
-      </div>
-      <span className={cn(CAPTION, 'text-[#1f1d25]')}>{label}</span>
-    </button>
-  );
-}
+// AngleKey type imported — no local angle config needed (handled by AngleStripVin)
 
 // ─── Detail row ───────────────────────────────────────────────────────────────
 function DetailRow({
@@ -106,13 +66,35 @@ function DetailText({ children, primary }: { children: React.ReactNode; primary?
   );
 }
 
+// ─── Transit chip ─────────────────────────────────────────────────────────────
+function TransitChip({ inTransit }: { inTransit: boolean }) {
+  return (
+    <span
+      className={cn(
+        "inline-flex items-center gap-[5px] px-[8px] h-[22px] rounded-[11px] text-[12px] font-['Roboto'] font-medium tracking-[0.15px]",
+        inTransit
+          ? 'bg-[#e8f5e9] text-[#1b5e20]'
+          : 'bg-[rgba(17,16,20,0.06)] text-[rgba(17,16,20,0.6)]',
+      )}
+    >
+      <span
+        className="inline-block size-[6px] rounded-full shrink-0"
+        style={{ background: inTransit ? '#388e3c' : 'rgba(17,16,20,0.38)' }}
+      />
+      {inTransit ? 'In Transit' : 'Not In Transit'}
+    </span>
+  );
+}
+
 // ─── VinDetailContent ─────────────────────────────────────────────────────────
 interface VinDetailContentProps {
   record: VinInventoryRecord;
   onBack: () => void;
+  /** 'auto' = full detail view (default). 'sport' = compact listing layout matching export screenshot. */
+  variant?: 'auto' | 'sport';
 }
 
-export function VinDetailContent({ record, onBack }: VinDetailContentProps) {
+export function VinDetailContent({ record, onBack, variant = 'auto' }: VinDetailContentProps) {
   const [activeAngle, setActiveAngle] = useState<AngleKey>('34l');
   const [imageMode,   setImageMode]   = useState<'generated' | 'source'>('generated');
   const [activeTab,   setActiveTab]   = useState<'details' | 'generated' | 'source'>('details');
@@ -148,6 +130,8 @@ export function VinDetailContent({ record, onBack }: VinDetailContentProps) {
   const drivetrain = record.model.toLowerCase().includes('tw200') ? 'Chain Drive' : 'Chain Drive';
   const fuelType   = 'Gasoline';
   const bodyType   = record.model.toLowerCase().includes('tw200') ? 'Motorcycle' : 'Sport ATV';
+  const msrp       = Math.round(record.price * 1.098);
+  const inTransit  = record.vehicleStatus?.toLowerCase().includes('transit') ?? false;
 
   const vehicleLabel = `${record.vin} – ${record.year} ${record.make} ${record.model} ${record.trim}`;
 
@@ -232,8 +216,138 @@ export function VinDetailContent({ record, onBack }: VinDetailContentProps) {
       {/* Divider under tabs */}
       <div className="flex-none h-px bg-[rgba(0,0,0,0.12)]" />
 
-      {/* ── Body ─────────────────────────────────────────────────────────── */}
-      {activeTab !== 'details' ? (
+      {/* ── Sport variant body ───────────────────────────────────────────── */}
+      {variant === 'sport' ? (
+        <div className="flex-1 overflow-y-auto min-h-0">
+          <div className="flex flex-wrap gap-[24px] p-[16px]">
+
+            {/* ── Left: hero image + angle strip (same as auto) ── */}
+            <div className="flex flex-col gap-[12px] min-w-[280px]" style={{ flex: '1 1 0%' }}>
+              <div
+                className={cn(
+                  'relative w-full rounded-[4px] overflow-hidden',
+                  imageMode === 'source' ? 'bg-[#f0f2f4]' : 'bg-[#1a1a1a]',
+                )}
+                style={{ aspectRatio: '4/3' }}
+              >
+                {heroSrc
+                  ? <img
+                      src={heroSrc}
+                      alt={`${record.make} ${record.model}`}
+                      className={cn('w-full h-full', imageMode === 'source' ? 'object-contain' : 'object-cover')}
+                    />
+                  : (
+                    <div className="w-full h-full flex items-center justify-center text-white/30">
+                      <svg width="48" height="48" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/>
+                      </svg>
+                    </div>
+                  )
+                }
+                {vg && (
+                  <div className="absolute top-[9px] left-[8px] flex gap-[4px]">
+                    <button
+                      onClick={() => setImageMode('generated')}
+                      className={cn(
+                        "h-[24px] px-[8px] rounded-[8px] text-[11px] font-['Roboto'] font-normal tracking-[0.16px] border-none cursor-pointer transition-colors",
+                        imageMode === 'generated' ? 'bg-[#dddce0] text-[#1f1d25]' : 'bg-[rgba(244,245,246,0.80)] text-[#9c99a9]',
+                      )}
+                    >
+                      Generated
+                    </button>
+                    {hasSource && (
+                      <button
+                        onClick={() => setImageMode('source')}
+                        className={cn(
+                          "h-[24px] px-[8px] rounded-[8px] text-[11px] font-['Roboto'] font-normal tracking-[0.16px] border-none cursor-pointer transition-colors",
+                          imageMode === 'source' ? 'bg-[#dddce0] text-[#1f1d25]' : 'bg-[rgba(244,245,246,0.80)] text-[#9c99a9]',
+                        )}
+                      >
+                        Source
+                      </button>
+                    )}
+                  </div>
+                )}
+              </div>
+              {vg && (
+                <AngleStripVin
+                  angles={vg.angles}
+                  sourceAngles={vg.sourceAngles}
+                  vehicleName={`${record.year} ${record.make} ${record.model} ${record.trim}`}
+                  showSource={imageMode === 'source'}
+                  activeKey={activeAngle}
+                  onActiveChange={setActiveAngle}
+                />
+              )}
+            </div>
+
+            {/* ── Right: data columns ── */}
+            <div
+              className="flex flex-wrap min-w-0"
+              style={{
+                ...(narrow ? { flex: '1 1 0%' } : { flex: '1 1 360px', maxWidth: 784 }),
+                columnGap: 24,
+                rowGap: 0,
+              }}
+            >
+
+            {/* ColA: VIN · Config Used · VDP Link · Stock Number · Condition · Year · Make · Model · Exterior Color */}
+            <div className="min-w-0" style={{ flex: '1 1 360px', minWidth: 360 }}>
+              <DetailRow label="VIN">
+                <DetailText primary>{record.vin}</DetailText>
+              </DetailRow>
+              {aiConfig && (
+                <DetailRow label="Config Used">
+                  <DetailText primary>{aiConfig.name}</DetailText>
+                </DetailRow>
+              )}
+              <DetailRow label="VDP Link">
+                <a
+                  href={vdpLink}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className={cn(BODY1, 'text-[#473bab] hover:underline truncate block')}
+                >
+                  {vdpLink}
+                </a>
+              </DetailRow>
+              <DetailRow label="Stock nº">
+                <DetailText>{stockNo}</DetailText>
+              </DetailRow>
+              <DetailRow label="Condition">
+                <DetailText>{record.condition}</DetailText>
+              </DetailRow>
+              <DetailRow label="Year">
+                <DetailText>{record.year}</DetailText>
+              </DetailRow>
+              <DetailRow label="Make">
+                <DetailText>{record.make}</DetailText>
+              </DetailRow>
+              <DetailRow label="Model">
+                <DetailText>{record.model}</DetailText>
+              </DetailRow>
+              <DetailRow label="Exterior Color">
+                <DetailText>{record.exteriorColor}</DetailText>
+              </DetailRow>
+            </div>
+
+            {/* ColB: Price · MSRP · Transit */}
+            <div className="min-w-0" style={{ flex: '1 1 360px', minWidth: 360 }}>
+              <DetailRow label="Price">
+                <DetailText>${record.price.toLocaleString()}</DetailText>
+              </DetailRow>
+              <DetailRow label="MSRP">
+                <DetailText>${msrp.toLocaleString()}</DetailText>
+              </DetailRow>
+              <DetailRow label="Transit" noBorder>
+                <TransitChip inTransit={inTransit} />
+              </DetailRow>
+            </div>
+
+            </div>{/* end right data columns */}
+          </div>
+        </div>
+      ) : activeTab !== 'details' ? (
         <div className="flex-1 flex items-center justify-center text-[rgba(17,16,20,0.38)]">
           <span className="font-['Roboto',sans-serif] text-[14px]">
             {activeTab === 'generated' ? 'Generated Images coming soon' : 'Source Images coming soon'}
@@ -304,26 +418,16 @@ export function VinDetailContent({ record, onBack }: VinDetailContentProps) {
                 )}
               </div>
 
-              {/* Angle thumbnail strip */}
+              {/* Angle thumbnail strip — 64×64 variant with drag, rover, modal */}
               {vg && (
-                <div className="flex flex-wrap gap-[8px]">
-                  {ANGLES.map((angle, idx) => {
-                    const src = imageMode === 'source'
-                      ? (vg.sourceAngles?.[angle.key] ?? null)
-                      : (vg.angles[angle.key] ?? null);
-                    return (
-                      <AngleThumb
-                        key={angle.key}
-                        src={src}
-                        label={angle.label}
-                        isActive={activeAngle === angle.key}
-                        isHero={idx === 0}
-                        isSource={imageMode === 'source'}
-                        onClick={() => setActiveAngle(angle.key)}
-                      />
-                    );
-                  })}
-                </div>
+                <AngleStripVin
+                  angles={vg.angles}
+                  sourceAngles={vg.sourceAngles}
+                  vehicleName={`${record.year} ${record.make} ${record.model} ${record.trim}`}
+                  showSource={imageMode === 'source'}
+                  activeKey={activeAngle}
+                  onActiveChange={setActiveAngle}
+                />
               )}
             </div>
 

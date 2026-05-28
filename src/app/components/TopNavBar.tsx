@@ -13,6 +13,7 @@ import { useWorkflow } from '../contexts/WorkflowContext';
 import { useCompliance, getDealerIdentity } from '../contexts/ComplianceContext';
 import { useClient } from '../contexts/ClientContext';
 import rideNowLogo from '../../assets/logos/RideNow.png';
+import imgRachelHui from '../../assets/avatars/rachel-hui.jpg';
 import { SettingsMenu } from './client-settings/SettingsMenu';
 import type { WCMItem } from './WebMonitoringContent';
 
@@ -374,7 +375,9 @@ export function TopNavBar({
 
         {/* Avatar */}
         {client.clientId === 'ride-now' ? (
-          <img src={rideNowLogo} alt="Ride Now" className="size-8 rounded-full ml-2 cursor-pointer object-cover" />
+          <div className="size-8 rounded-full overflow-hidden ml-2 cursor-pointer">
+            <img src={imgRachelHui} alt="Rachel Hui" className="size-full object-cover" />
+          </div>
         ) : userType === 'oem' ? (
           <AvatarInitials
             initials="OR"

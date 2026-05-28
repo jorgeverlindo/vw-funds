@@ -18,7 +18,8 @@ import { AvatarInitials } from "../ui/AvatarInitials";
 import { ChannelChip } from "../ui/ChannelChip";
 
 // ─── Avatar photo imports (from VW Data Grid) ─────────────────────────────────
-import imgZakFlaten from "figma:asset/48ea8970f6d4b2ca434cf82051473b99fc39b3d9.png";
+import imgZakFlaten  from "figma:asset/48ea8970f6d4b2ca434cf82051473b99fc39b3d9.png";
+import imgRachelHui  from "../../../assets/avatars/rachel-hui.jpg";
 
 // ─── Channel icon imports ─────────────────────────────────────────────────────
 import imgGoogle from "../../../assets/channels/google.png";
@@ -56,7 +57,7 @@ export const PROJECT_OWNERS = [
   { id: "jenny-park",      name: "Jenny Park",      email: "jenny.park@helloconstellation.com",      initials: "JP", color: "#7c3aed", avatar: null },
   { id: "sonya-koh",       name: "Sonya Koh",       email: "sonya.koh@helloconstellation.com",       initials: "SK", color: "#db2777", avatar: null },
   { id: "zak-flaten",      name: "Zak Flaten",      email: "zak.flaten@helloconstellation.com",      initials: "ZF", color: "#059669", avatar: imgZakFlaten },
-  { id: "rachel-hui",      name: "Rachel Hui",      email: "rachel.hui@helloconstellation.com",      initials: "RH", color: "#d97706", avatar: null },
+  { id: "rachel-hui",      name: "Rachel Hui",      email: "rachel.hui@helloconstellation.com",      initials: "RH", color: "#d97706", avatar: imgRachelHui },
   { id: "mike-henderson",  name: "Mike Henderson",  email: "mike.henderson@hondaofanywhere.com",     initials: "MH", color: "#dc2626", avatar: null },
   { id: "sarah-collins",   name: "Sarah Collins",   email: "sarah.collins@hondaofanywhere.com",      initials: "SC", color: "#0891b2", avatar: null },
   { id: "james-whitaker",  name: "James Whitaker",  email: "james.whitaker@hondaofanywhere.com",     initials: "JW", color: "#65a30d", avatar: null },

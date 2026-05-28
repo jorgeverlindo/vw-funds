@@ -166,6 +166,7 @@ export function VehicleTableCondensed({ records, selected, onToggleRow, onToggle
                 <td style={{ width: THUMB_W, minWidth: THUMB_W }}>
                   <motion.div
                     layoutId={`thumb-${record.id}`}
+                    transition={{ type: 'spring', stiffness: 300, damping: 30 }}
                     className={cn(
                       'relative overflow-hidden bg-[#f0f2f4] flex items-center justify-center',
                       isDisabled && 'opacity-50',
@@ -194,6 +195,7 @@ export function VehicleTableCondensed({ records, selected, onToggleRow, onToggle
                 <td className="px-[16px]" style={{ width: VIN_W, minWidth: VIN_W }}>
                   <motion.button
                     layoutId={`vin-${record.id}`}
+                    transition={{ type: 'spring', stiffness: 300, damping: 30 }}
                     onClick={e => { e.stopPropagation(); onVinClick(record.id); }}
                     className={cn(VIN_STYLE, 'truncate block max-w-full bg-transparent border-none p-0 text-left', isDisabled && 'opacity-50')}
                   >
@@ -205,6 +207,7 @@ export function VehicleTableCondensed({ records, selected, onToggleRow, onToggle
                 <td className="px-[16px]" style={{ width: CONDITION_W, minWidth: CONDITION_W }}>
                   <motion.span
                     layoutId={`subtitle-${record.id}`}
+                    transition={{ type: 'spring', stiffness: 300, damping: 30 }}
                     className={cn(CELL, 'whitespace-nowrap', isDisabled && 'opacity-50')}
                   >
                     {record.condition}

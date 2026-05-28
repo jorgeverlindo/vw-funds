@@ -2,11 +2,12 @@
 // Horizontal card list view — 3-col grid, thumbnail left, info right.
 // Figma: CP-12009 node 3975-2248310
 //
-// NOTE: No per-item motion wrappers — the parent AnimatePresence container
-// handles enter/exit. Per-item stagger was causing the "loads a new view"
-// glitch where cards appeared one-by-one during the crossfade.
+// layoutId on thumb / vin / subtitle mirrors VehicleCardGrid, VehicleInventoryGrid
+// and VehicleTableCondensed so Framer Motion performs a shared-element morph
+// when switching views.
 
 import { useState } from 'react';
+import { motion } from 'motion/react';
 import { MoreVertical } from 'lucide-react';
 import { cn } from '../../../lib/utils';
 import type { VinInventoryRecord } from '../../../data/inventory/vehicleInventory';
@@ -15,6 +16,9 @@ import { PriceToMarketChip, PriorityScoreChip } from './VehicleInventoryGrid';
 const CAPTION = "font-['Roboto',sans-serif] font-normal text-[11px] leading-[1.66] tracking-[0.4px]";
 const BODY2   = "font-['Roboto',sans-serif] font-medium text-[13px] leading-[1.43] tracking-[0.17px]";
 const BODY1   = "font-['Roboto',sans-serif] font-normal text-[13px] leading-[1.43] tracking-[0.17px]";
+
+// Spring used for all layout morphs — consistent across all four views
+const LAYOUT_SPRING = { type: 'spring', stiffness: 300, damping: 30 } as const;
 
 interface Props {
   records: VinInventoryRecord[];
@@ -46,8 +50,10 @@ function HorizontalCard({
       onMouseLeave={() => setHovered(false)}
       onClick={onClick}
     >
-      {/* Left: thumbnail */}
-      <div
+      {/* Left: thumbnail — layoutId matches all other views */}
+      <motion.div
+        layoutId={`thumb-${record.id}`}
+        transition={LAYOUT_SPRING}
         className="relative shrink-0 bg-[#f0f2f4]"
         style={{ width: 160, minHeight: 120 }}
       >
@@ -108,21 +114,29 @@ function HorizontalCard({
             Asset Details
           </button>
         </div>
-      </div>
+      </motion.div>
 
       {/* Right: info */}
       <div className="flex-1 min-w-0 flex flex-col justify-between p-[12px] gap-[6px]">
         <div className="flex items-start justify-between gap-[6px]">
           <div className="min-w-0 flex-1">
-            <p
+            {/* VIN — layoutId matches all other views */}
+            <motion.p
+              layoutId={`vin-${record.id}`}
+              transition={LAYOUT_SPRING}
               className={cn(BODY2, 'text-[#473bab] truncate hover:underline')}
               onClick={e => { e.stopPropagation(); onClick(); }}
             >
               {record.vin}
-            </p>
-            <p className={cn(CAPTION, 'text-[rgba(17,16,20,0.56)] truncate mt-[2px]')}>
+            </motion.p>
+            {/* Condition — layoutId matches all other views */}
+            <motion.p
+              layoutId={`subtitle-${record.id}`}
+              transition={LAYOUT_SPRING}
+              className={cn(CAPTION, 'text-[rgba(17,16,20,0.56)] truncate mt-[2px]')}
+            >
               {record.condition} | {record.year} {record.make} {record.model}
-            </p>
+            </motion.p>
           </div>
           <button
             onClick={e => e.stopPropagation()}

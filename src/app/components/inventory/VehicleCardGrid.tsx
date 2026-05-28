@@ -2,16 +2,21 @@
 // Vertical card grid — 5 columns, square image with 12px radius + border,
 // footer below. Anatomy from Figma CP-12009 node 3975-2215165.
 //
-// NOTE: No per-item motion wrappers — the parent AnimatePresence container
-// handles enter/exit. Per-item stagger was causing the "loads a new view"
-// glitch where cards appeared one-by-one during the crossfade.
+// layoutId on thumb / vin / subtitle mirrors VehicleCardList, VehicleInventoryGrid
+// and VehicleTableCondensed so Framer Motion performs a shared-element morph
+// when switching views — thumbnails, VINs and condition text fly to their new
+// positions instead of disappearing and reappearing.
 
+import { motion } from 'motion/react';
 import { Check, MoreVertical, MessageSquare } from 'lucide-react';
 import { cn } from '../../../lib/utils';
 import type { VinInventoryRecord } from '../../../data/inventory/vehicleInventory';
 
 const CAPTION = "font-['Roboto',sans-serif] font-normal text-[11px] leading-[1.66] tracking-[0.4px]";
 const BODY2   = "font-['Roboto',sans-serif] font-normal text-[12px] leading-[1.43] tracking-[0.17px]";
+
+// Spring used for all layout morphs — consistent across all four views
+const LAYOUT_SPRING = { type: 'spring', stiffness: 300, damping: 30 } as const;
 
 interface Props {
   records: VinInventoryRecord[];
@@ -35,8 +40,10 @@ function VerticalCard({
       className="group relative flex flex-col cursor-pointer select-none"
       onClick={onClick}
     >
-      {/* ── Image block — square, 12px radius, 1px border ── */}
-      <div
+      {/* ── Image block — layoutId matches tables so thumbnail morphs on view switch ── */}
+      <motion.div
+        layoutId={`thumb-${record.id}`}
+        transition={LAYOUT_SPRING}
         className={cn(
           'relative w-full overflow-hidden rounded-[12px] border border-[#e7e7e9] bg-[#f0f2f4] shrink-0',
           !aiEnabled && 'opacity-60',
@@ -116,17 +123,27 @@ function VerticalCard({
         >
           Asset Details
         </button>
-      </div>
+      </motion.div>
 
       {/* ── Footer ── */}
       <div className="pt-[8px] pb-[12px]">
-        <p className={cn(BODY2, 'text-[#1f1d25] truncate font-medium')}>
+        {/* VIN — layoutId matches tables */}
+        <motion.p
+          layoutId={`vin-${record.id}`}
+          transition={LAYOUT_SPRING}
+          className={cn(BODY2, 'text-[#1f1d25] truncate font-medium')}
+        >
           {record.vin}
-        </p>
+        </motion.p>
         <div className="flex items-center justify-between gap-[4px] mt-[2px]">
-          <p className={cn(CAPTION, 'text-[#686576] truncate flex-1 min-w-0')}>
+          {/* Condition — layoutId matches tables */}
+          <motion.p
+            layoutId={`subtitle-${record.id}`}
+            transition={LAYOUT_SPRING}
+            className={cn(CAPTION, 'text-[#686576] truncate flex-1 min-w-0')}
+          >
             {record.condition} | {record.year} {record.make}
-          </p>
+          </motion.p>
           <button
             onClick={e => e.stopPropagation()}
             className="shrink-0 p-[3px] rounded-full hover:bg-[rgba(17,16,20,0.04)] text-[rgba(17,16,20,0.38)] transition-colors opacity-0 group-hover:opacity-100"

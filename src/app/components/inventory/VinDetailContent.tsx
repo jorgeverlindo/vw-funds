@@ -226,7 +226,7 @@ export function VinDetailContent({ record, onBack, variant = 'auto' }: VinDetail
               <div
                 className={cn(
                   'relative w-full rounded-[4px] overflow-hidden',
-                  heroSrc && imageMode !== 'source' ? 'bg-[#1a1a1a]' : 'bg-[#f0f2f4]',
+                  vg && heroSrc && imageMode !== 'source' ? 'bg-[#1a1a1a]' : 'bg-[#f0f2f4]',
                 )}
                 style={{ aspectRatio: '4/3' }}
               >
@@ -368,12 +368,12 @@ export function VinDetailContent({ record, onBack, variant = 'auto' }: VinDetail
             <div className="flex flex-col gap-[12px] min-w-[280px]" style={{ flex: '1 1 0%' }}>
 
               {/* Hero — fills parent width, 4:3 aspect ratio */}
-              {/* Generated mode + image present: dark bg + object-cover.    */}
-              {/* No image or source mode: gray bg + object-contain.         */}
+              {/* AI-generated mode + image present: dark bg + object-cover. */}
+              {/* No vg (plain thumbnail), no image, or source mode: gray.   */}
               <div
                 className={cn(
                   'relative w-full rounded-[4px] overflow-hidden',
-                  heroSrc && imageMode !== 'source' ? 'bg-[#1a1a1a]' : 'bg-[#f0f2f4]',
+                  vg && heroSrc && imageMode !== 'source' ? 'bg-[#1a1a1a]' : 'bg-[#f0f2f4]',
                 )}
                 style={{ aspectRatio: '4/3' }}
               >

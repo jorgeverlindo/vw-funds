@@ -16,7 +16,7 @@ export interface CommentUser {
 
 // ── Entity reference (card attached to a comment) ─────────────────────────────
 
-export type EntityType = "offer" | "template" | "background" | "preview";
+export type EntityType = "offer" | "template" | "background" | "preview" | "vehicle";
 
 export interface EntityRef {
   id:    string;

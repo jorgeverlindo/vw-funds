@@ -344,6 +344,8 @@ interface VehicleInventoryGridProps {
   onAiGenerationToggle?:   (id: string) => void;
   /** Opens the source images lightbox for the given record id */
   onViewSourceImages?:     (id: string) => void;
+  /** Opens the comments panel with the vehicle attached */
+  onAttachComment?:        (id: string) => void;
 }
 
 export function VehicleInventoryGrid({
@@ -355,6 +357,7 @@ export function VehicleInventoryGrid({
   onSyndicationToggle,
   onAiGenerationToggle,
   onViewSourceImages,
+  onAttachComment,
 }: VehicleInventoryGridProps) {
   const allSelected = records.length > 0 && records.every(r => selected.has(r.id));
   const [widths, setWidths] = useState<ColWidths>(DEFAULT_WIDTHS);
@@ -374,7 +377,8 @@ export function VehicleInventoryGrid({
     if (action === 'syndicate')         onSyndicationToggle?.(recordId);
     if (action === 'disableAiImage')    onAiGenerationToggle?.(recordId);
     if (action === 'viewSourceImages')  onViewSourceImages?.(recordId);
-  }, [openMenu, onVinClick, onSyndicationToggle, onAiGenerationToggle, onViewSourceImages]);
+    if (action === 'attachComment')     onAttachComment?.(recordId);
+  }, [openMenu, onVinClick, onSyndicationToggle, onAiGenerationToggle, onViewSourceImages, onAttachComment]);
 
   const setW = (key: keyof ColWidths) => (val: number) =>
     setWidths(prev => ({ ...prev, [key]: val }));
@@ -537,7 +541,7 @@ export function VehicleInventoryGrid({
                       alt={`${record.make} ${record.model}`}
                       cover={!!(record.aiConfigApplied && record.vehicleGroup?.angles?.['34l'])}
                     />
-                    {record.aiConfigApplied && <AIConfigBadge />}
+                    {record.aiGeneration === 'enabled' && <AIConfigBadge />}
                   </motion.div>
                 </td>
 

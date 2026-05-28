@@ -3,7 +3,7 @@
 // Mirrors Figma node 10899:97654 — 220px wide, Material shadow, 8px list padding.
 // Mounts via React portal so it floats above sticky columns and scrollable panes.
 
-import { useEffect, useRef } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { cn } from '../../../lib/utils';
 import type { SyndicationStatus, AIGenerationStatus } from '../../../data/inventory/vehicleInventory';
@@ -31,7 +31,8 @@ export type VehiclesMenuAction =
   | 'newAiConfig'
   | 'viewSourceImages'
   | 'goToVdp'
-  | 'disableAiImage';
+  | 'disableAiImage'
+  | 'attachComment';
 
 export interface VehiclesMenuAnchor {
   top: number;
@@ -40,12 +41,13 @@ export interface VehiclesMenuAnchor {
 
 // ── MenuItem ──────────────────────────────────────────────────────────────────
 interface MenuItemProps {
-  iconSrc: string;
+  iconSrc?: string;
+  iconNode?: React.ReactNode;
   label: string;
   onClick: () => void;
 }
 
-function MenuItem({ iconSrc, label, onClick }: MenuItemProps) {
+function MenuItem({ iconSrc, iconNode, label, onClick }: MenuItemProps) {
   return (
     <button
       onClick={onClick}
@@ -60,14 +62,17 @@ function MenuItem({ iconSrc, label, onClick }: MenuItemProps) {
     >
       {/* Left icon slot — 36px wide, matches Figma */}
       <span className="flex items-center justify-center shrink-0" style={{ width: 36 }}>
-        <img
-          src={iconSrc}
-          alt=""
-          width={18}
-          height={18}
-          draggable={false}
-          className="transition-all duration-75 group-active/item:brightness-0 group-active/item:opacity-70 group-active/item:scale-90"
-        />
+        {iconSrc
+          ? <img
+              src={iconSrc}
+              alt=""
+              width={18}
+              height={18}
+              draggable={false}
+              className="transition-all duration-75 group-active/item:brightness-0 group-active/item:opacity-70 group-active/item:scale-90"
+            />
+          : iconNode
+        }
       </span>
 
       {/* Label */}
@@ -171,6 +176,18 @@ export function VehiclesMenu({ anchor, syndicationStatus, aiGenerationStatus, on
             iconSrc={iconPower}
             label={aiGenerationStatus === 'enabled' ? 'Disable AI Image' : 'Enable AI Image'}
             onClick={handle('disableAiImage')}
+          />
+
+          <MenuDivider />
+
+          <MenuItem
+            iconNode={
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="rgba(17,16,20,0.56)">
+                <path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/>
+              </svg>
+            }
+            label="Attach as a comment"
+            onClick={handle('attachComment')}
           />
 
         </div>

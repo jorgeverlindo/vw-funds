@@ -91,6 +91,7 @@ export function CommentsSidePanel() {
     template: "Template",
     background: "Background",
     preview: "Preview",
+    vehicle: "VIN",
   };
 
   const totalCount = comments.reduce((sum, c) => sum + 1 + c.replies.length, 0);

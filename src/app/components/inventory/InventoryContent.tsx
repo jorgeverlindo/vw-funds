@@ -21,7 +21,7 @@ import { VehicleTableCondensed } from './VehicleTableCondensed';
 import filtersIcon     from '../../../assets/icons/Filters.svg';
 import chainLinkIcon   from '../../../assets/icons/Yamaha VIN List/Card & Row/Main Pane Header 2.0/chain-link-3,url.svg';
 import { BreadcrumbBar } from '../BreadcrumbBar';
-import { CommentsButton } from '../comments';
+import { CommentsButton, useComments } from '../comments';
 import { VehicleInventoryGrid } from './VehicleInventoryGrid';
 import { VinDetailContent }     from './VinDetailContent';
 import { useClient }            from '../../contexts/ClientContext';
@@ -203,6 +203,18 @@ export function InventoryContent() {
       return next;
     });
   }, []);
+
+  // Open comments panel with the vehicle attached as entity reference
+  const commentsCtx = useComments();
+  const handleAttachComment = useCallback((id: string) => {
+    const record = VEHICLE_INVENTORY.find(r => r.id === id);
+    if (!record || !commentsCtx) return;
+    commentsCtx.openPanelForEntity({
+      id:    record.vin,
+      label: `${record.year} ${record.make} ${record.model} ${record.trim} — ${record.vin}`,
+      type:  'vehicle',
+    });
+  }, [commentsCtx]);
 
   // Toggle AI generation for a record (overrides the static data)
   const handleAiGenerationToggle = useCallback((id: string) => {
@@ -508,6 +520,7 @@ export function InventoryContent() {
                   onSyndicationToggle={handleSyndicationToggle}
                   onAiGenerationToggle={handleAiGenerationToggle}
                   onViewSourceImages={handleViewSourceImages}
+                  onAttachComment={handleAttachComment}
                 />
               </motion.div>
             )}
@@ -528,6 +541,7 @@ export function InventoryContent() {
                   onSyndicationToggle={handleSyndicationToggle}
                   onAiGenerationToggle={handleAiGenerationToggle}
                   onViewSourceImages={handleViewSourceImages}
+                  onAttachComment={handleAttachComment}
                 />
               </motion.div>
             )}
@@ -548,6 +562,7 @@ export function InventoryContent() {
                   onSyndicationToggle={handleSyndicationToggle}
                   onAiGenerationToggle={handleAiGenerationToggle}
                   onViewSourceImages={handleViewSourceImages}
+                  onAttachComment={handleAttachComment}
                 />
               </motion.div>
             )}
@@ -569,6 +584,7 @@ export function InventoryContent() {
                   onSyndicationToggle={handleSyndicationToggle}
                   onAiGenerationToggle={handleAiGenerationToggle}
                   onViewSourceImages={handleViewSourceImages}
+                  onAttachComment={handleAttachComment}
                 />
               </motion.div>
             )}

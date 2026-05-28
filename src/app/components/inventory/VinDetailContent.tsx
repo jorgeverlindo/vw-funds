@@ -226,7 +226,7 @@ export function VinDetailContent({ record, onBack, variant = 'auto' }: VinDetail
               <div
                 className={cn(
                   'relative w-full rounded-[4px] overflow-hidden',
-                  imageMode === 'source' ? 'bg-[#f0f2f4]' : 'bg-[#1a1a1a]',
+                  heroSrc && imageMode !== 'source' ? 'bg-[#1a1a1a]' : 'bg-[#f0f2f4]',
                 )}
                 style={{ aspectRatio: '4/3' }}
               >
@@ -237,7 +237,7 @@ export function VinDetailContent({ record, onBack, variant = 'auto' }: VinDetail
                       className={cn('w-full h-full', imageMode === 'source' ? 'object-contain' : 'object-cover')}
                     />
                   : (
-                    <div className="w-full h-full flex items-center justify-center text-white/30">
+                    <div className="w-full h-full flex items-center justify-center text-[rgba(17,16,20,0.2)]">
                       <svg width="48" height="48" viewBox="0 0 24 24" fill="currentColor">
                         <path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/>
                       </svg>
@@ -368,12 +368,12 @@ export function VinDetailContent({ record, onBack, variant = 'auto' }: VinDetail
             <div className="flex flex-col gap-[12px] min-w-[280px]" style={{ flex: '1 1 0%' }}>
 
               {/* Hero — fills parent width, 4:3 aspect ratio */}
-              {/* Generated mode: dark bg + object-cover (full scene).       */}
-              {/* Source mode:    grey bg + object-contain (no cropping).    */}
+              {/* Generated mode + image present: dark bg + object-cover.    */}
+              {/* No image or source mode: gray bg + object-contain.         */}
               <div
                 className={cn(
                   'relative w-full rounded-[4px] overflow-hidden',
-                  imageMode === 'source' ? 'bg-[#f0f2f4]' : 'bg-[#1a1a1a]',
+                  heroSrc && imageMode !== 'source' ? 'bg-[#1a1a1a]' : 'bg-[#f0f2f4]',
                 )}
                 style={{ aspectRatio: '4/3' }}
               >
@@ -384,7 +384,7 @@ export function VinDetailContent({ record, onBack, variant = 'auto' }: VinDetail
                       className={cn('w-full h-full', imageMode === 'source' ? 'object-contain' : 'object-cover')}
                     />
                   : (
-                    <div className="w-full h-full flex items-center justify-center text-white/30">
+                    <div className="w-full h-full flex items-center justify-center text-[rgba(17,16,20,0.2)]">
                       <svg width="48" height="48" viewBox="0 0 24 24" fill="currentColor">
                         <path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/>
                       </svg>

@@ -55,11 +55,12 @@ interface Props {
   onSyndicationToggle?: (id: string) => void;
   onAiGenerationToggle?: (id: string) => void;
   onViewSourceImages?: (id: string) => void;
+  onAttachComment?: (id: string) => void;
 }
 
 export function VehicleTableCondensed({
   records, selected, onToggleRow, onToggleAll, onVinClick,
-  onSyndicationToggle, onAiGenerationToggle, onViewSourceImages,
+  onSyndicationToggle, onAiGenerationToggle, onViewSourceImages, onAttachComment,
 }: Props) {
   const allSelected  = records.length > 0 && records.every(r => selected.has(r.id));
   const someSelected = !allSelected && records.some(r => selected.has(r.id));
@@ -79,7 +80,8 @@ export function VehicleTableCondensed({
     if (action === 'syndicate')         onSyndicationToggle?.(recordId);
     if (action === 'disableAiImage')    onAiGenerationToggle?.(recordId);
     if (action === 'viewSourceImages')  onViewSourceImages?.(recordId);
-  }, [openMenu, onVinClick, onSyndicationToggle, onAiGenerationToggle, onViewSourceImages]);
+    if (action === 'attachComment')     onAttachComment?.(recordId);
+  }, [openMenu, onVinClick, onSyndicationToggle, onAiGenerationToggle, onViewSourceImages, onAttachComment]);
 
   const totalW =
     EXPAND_W + CHECKBOX_W + THUMB_W + VIN_W + CONDITION_W +

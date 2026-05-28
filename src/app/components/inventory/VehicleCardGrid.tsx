@@ -53,11 +53,17 @@ function VerticalCard({
         )}
         style={{ aspectRatio: '1 / 1' }}
       >
-        {record.thumbnail ? (
+        {record.thumbnail || (record.aiConfigApplied && record.vehicleGroup?.angles?.['34l']) ? (
           <img
-            src={record.thumbnail}
+            src={
+              record.aiConfigApplied && record.vehicleGroup?.angles?.['34l']
+                ? record.vehicleGroup.angles['34l'] as string
+                : record.thumbnail!
+            }
             alt={`${record.make} ${record.model}`}
-            className="w-full h-full object-contain transition-transform duration-500 group-hover:scale-105"
+            className={`w-full h-full transition-transform duration-500 group-hover:scale-105 ${
+              record.aiConfigApplied && record.vehicleGroup?.angles?.['34l'] ? 'object-cover' : 'object-contain'
+            }`}
           />
         ) : (
           <div className="w-full h-full flex items-center justify-center text-[rgba(17,16,20,0.2)]">

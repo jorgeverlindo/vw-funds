@@ -56,11 +56,17 @@ function HorizontalCard({
         className="relative shrink-0 bg-[#f0f2f4]"
         style={{ width: 160, minHeight: 120 }}
       >
-        {record.thumbnail ? (
+        {record.thumbnail || (record.aiConfigApplied && record.vehicleGroup?.angles?.['34l']) ? (
           <img
-            src={record.thumbnail}
+            src={
+              record.aiConfigApplied && record.vehicleGroup?.angles?.['34l']
+                ? record.vehicleGroup.angles['34l'] as string
+                : record.thumbnail!
+            }
             alt={`${record.make} ${record.model}`}
-            className="absolute inset-0 w-full h-full object-contain"
+            className={`absolute inset-0 w-full h-full ${
+              record.aiConfigApplied && record.vehicleGroup?.angles?.['34l'] ? 'object-cover' : 'object-contain'
+            }`}
           />
         ) : (
           <div className="absolute inset-0 flex items-center justify-center text-[rgba(17,16,20,0.2)]">

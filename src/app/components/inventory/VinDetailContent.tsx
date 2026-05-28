@@ -99,12 +99,20 @@ export function VinDetailContent({ record, onBack, variant = 'auto' }: VinDetail
   const [imageMode,   setImageMode]   = useState<'generated' | 'source'>('generated');
   const [activeTab,   setActiveTab]   = useState<'details' | 'generated' | 'source'>('details');
 
-  // ── Responsive breakpoint: below 1200px → 50/50 split ──────────────────────
+  // ── Responsive breakpoints ──────────────────────────────────────────────────
+  // narrow (<1200px): image + data side by side at 50/50
+  // mobile (<768px):  fully stacked — image → ColA → ColB
   const [narrow, setNarrow] = useState(() =>
     typeof window !== 'undefined' && window.innerWidth < 1200
   );
+  const [mobile, setMobile] = useState(() =>
+    typeof window !== 'undefined' && window.innerWidth < 768
+  );
   useEffect(() => {
-    const handler = () => setNarrow(window.innerWidth < 1200);
+    const handler = () => {
+      setNarrow(window.innerWidth < 1200);
+      setMobile(window.innerWidth < 768);
+    };
     window.addEventListener('resize', handler);
     return () => window.removeEventListener('resize', handler);
   }, []);
@@ -222,7 +230,7 @@ export function VinDetailContent({ record, onBack, variant = 'auto' }: VinDetail
           <div className="flex flex-wrap gap-[24px] p-[16px]">
 
             {/* ── Left: hero image + angle strip (same as auto) ── */}
-            <div className="flex flex-col gap-[12px] min-w-[280px]" style={{ flex: '1 1 0%' }}>
+            <div className="flex flex-col gap-[12px]" style={mobile ? { flex: '1 1 100%' } : { flex: '1 1 0%', minWidth: 280 }}>
               <div
                 className={cn(
                   'relative w-full rounded-[4px] overflow-hidden',
@@ -285,14 +293,14 @@ export function VinDetailContent({ record, onBack, variant = 'auto' }: VinDetail
             <div
               className="flex flex-wrap min-w-0"
               style={{
-                ...(narrow ? { flex: '1 1 0%' } : { flex: '1 1 360px', maxWidth: 760 }),
+                ...(mobile ? { flex: '1 1 100%' } : narrow ? { flex: '1 1 0%' } : { flex: '1 1 338px', maxWidth: 740 }),
                 columnGap: 24,
                 rowGap: 0,
               }}
             >
 
             {/* ColA: VIN · Config Used · VDP Link · Stock Number · Condition · Year · Make · Model · Exterior Color */}
-            <div className="min-w-0" style={{ flex: '1 1 348px', minWidth: 348 }}>
+            <div className="min-w-0" style={mobile ? { flex: '1 1 100%', minWidth: 0 } : { flex: '1 1 338px', minWidth: 338 }}>
               <DetailRow label="VIN">
                 <DetailText primary>{record.vin}</DetailText>
               </DetailRow>
@@ -332,7 +340,7 @@ export function VinDetailContent({ record, onBack, variant = 'auto' }: VinDetail
             </div>
 
             {/* ColB: Price · MSRP · Transit */}
-            <div className="min-w-0" style={{ flex: '1 1 348px', minWidth: 348 }}>
+            <div className="min-w-0" style={mobile ? { flex: '1 1 100%', minWidth: 0 } : { flex: '1 1 338px', minWidth: 338 }}>
               <DetailRow label="Price">
                 <DetailText>${record.price.toLocaleString()}</DetailText>
               </DetailRow>
@@ -365,7 +373,7 @@ export function VinDetailContent({ record, onBack, variant = 'auto' }: VinDetail
             {/* ── Left: hero + thumbnail strip
                  ≥1200px: flex 1 1 0% — takes space left after right block (max 784px)
                  <1200px: flex 1 1 0% equally — 50/50 split with right block       */}
-            <div className="flex flex-col gap-[12px] min-w-[280px]" style={{ flex: '1 1 0%' }}>
+            <div className="flex flex-col gap-[12px]" style={mobile ? { flex: '1 1 100%' } : { flex: '1 1 0%', minWidth: 280 }}>
 
               {/* Hero — fills parent width, 4:3 aspect ratio */}
               {/* AI-generated mode + image present: dark bg + object-cover. */}
@@ -436,14 +444,16 @@ export function VinDetailContent({ record, onBack, variant = 'auto' }: VinDetail
                  <1200px: flex 1 1 0% → equal 50/50 with image; ColB stacked under ColA */}
             <div
               className="flex flex-wrap gap-[24px] min-w-0"
-              style={narrow
-                ? { flex: '1 1 0%' }
-                : { flex: '1 1 360px', maxWidth: 760 }
+              style={mobile
+                ? { flex: '1 1 100%' }
+                : narrow
+                  ? { flex: '1 1 0%' }
+                  : { flex: '1 1 338px', maxWidth: 740 }
               }
             >
 
               {/* Sub-column A — VIN info + Physical attributes */}
-              <div className="min-w-0" style={{ flex: '1 1 348px', minWidth: 348 }}>
+              <div className="min-w-0" style={mobile ? { flex: '1 1 100%', minWidth: 0 } : { flex: '1 1 338px', minWidth: 338 }}>
                 <DetailRow label="VIN">
                   <DetailText primary>{record.vin}</DetailText>
                 </DetailRow>
@@ -501,7 +511,7 @@ export function VinDetailContent({ record, onBack, variant = 'auto' }: VinDetail
               </div>
 
               {/* Sub-column B — Location + Market */}
-              <div className="min-w-0" style={{ flex: '1 1 348px', minWidth: 348 }}>
+              <div className="min-w-0" style={mobile ? { flex: '1 1 100%', minWidth: 0 } : { flex: '1 1 338px', minWidth: 338 }}>
                 <DetailRow label="State">
                   <DetailText>Texas</DetailText>
                 </DetailRow>

@@ -2,12 +2,10 @@
 // Vertical card grid — 5 columns, square image with 12px radius + border,
 // footer below. Anatomy from Figma CP-12009 node 3975-2215165.
 //
-// motion layoutId wrappers on thumb / vin / subtitle / card-container mirror
-// the IDs used in VehicleCardList and VehicleInventoryGrid so that:
-//   • Table Large → Card Vertical: thumbnail, VIN, and subtitle morphs into place
-//   • Card Vertical ↔ Card Horizontal: full card morphs (existing animation)
+// NOTE: No per-item motion wrappers — the parent AnimatePresence container
+// handles enter/exit. Per-item stagger was causing the "loads a new view"
+// glitch where cards appeared one-by-one during the crossfade.
 
-import { motion } from 'motion/react';
 import { Check, MoreVertical, MessageSquare } from 'lucide-react';
 import { cn } from '../../../lib/utils';
 import type { VinInventoryRecord } from '../../../data/inventory/vehicleInventory';
@@ -23,30 +21,22 @@ interface Props {
 }
 
 function VerticalCard({
-  record, isSelected, onToggle, onClick, index,
+  record, isSelected, onToggle, onClick,
 }: {
   record: VinInventoryRecord;
   isSelected: boolean;
   onToggle: (c: boolean) => void;
   onClick: () => void;
-  index: number;
 }) {
   const aiEnabled = record.aiGeneration === 'enabled';
 
   return (
-    <motion.div
-      layoutId={`card-${record.id}`}
-      layout
-      initial={{ opacity: 0, y: 8 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0 }}
-      transition={{ duration: 0.18, delay: Math.min(index * 0.012, 0.28) }}
+    <div
       className="group relative flex flex-col cursor-pointer select-none"
       onClick={onClick}
     >
       {/* ── Image block — square, 12px radius, 1px border ── */}
-      <motion.div
-        layoutId={`thumb-${record.id}`}
+      <div
         className={cn(
           'relative w-full overflow-hidden rounded-[12px] border border-[#e7e7e9] bg-[#f0f2f4] shrink-0',
           !aiEnabled && 'opacity-60',
@@ -126,23 +116,17 @@ function VerticalCard({
         >
           Asset Details
         </button>
-      </motion.div>
+      </div>
 
       {/* ── Footer ── */}
       <div className="pt-[8px] pb-[12px]">
-        <motion.p
-          layoutId={`vin-${record.id}`}
-          className={cn(BODY2, 'text-[#1f1d25] truncate font-medium')}
-        >
+        <p className={cn(BODY2, 'text-[#1f1d25] truncate font-medium')}>
           {record.vin}
-        </motion.p>
+        </p>
         <div className="flex items-center justify-between gap-[4px] mt-[2px]">
-          <motion.p
-            layoutId={`subtitle-${record.id}`}
-            className={cn(CAPTION, 'text-[#686576] truncate flex-1 min-w-0')}
-          >
+          <p className={cn(CAPTION, 'text-[#686576] truncate flex-1 min-w-0')}>
             {record.condition} | {record.year} {record.make}
-          </motion.p>
+          </p>
           <button
             onClick={e => e.stopPropagation()}
             className="shrink-0 p-[3px] rounded-full hover:bg-[rgba(17,16,20,0.04)] text-[rgba(17,16,20,0.38)] transition-colors opacity-0 group-hover:opacity-100"
@@ -151,7 +135,7 @@ function VerticalCard({
           </button>
         </div>
       </div>
-    </motion.div>
+    </div>
   );
 }
 
@@ -167,14 +151,13 @@ export function VehicleCardGrid({ records, selected, onToggleRow, onVinClick }: 
           rowGap: 20,
         }}
       >
-        {records.map((record, index) => (
+        {records.map((record) => (
           <VerticalCard
             key={record.id}
             record={record}
             isSelected={selected.has(record.id)}
             onToggle={checked => onToggleRow(record.id, checked)}
             onClick={() => onVinClick(record.id)}
-            index={index}
           />
         ))}
       </div>

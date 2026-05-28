@@ -1,9 +1,12 @@
 // ─── VehicleCardList ──────────────────────────────────────────────────────────
 // Horizontal card list view — 3-col grid, thumbnail left, info right.
 // Figma: CP-12009 node 3975-2248310
+//
+// NOTE: No per-item motion wrappers — the parent AnimatePresence container
+// handles enter/exit. Per-item stagger was causing the "loads a new view"
+// glitch where cards appeared one-by-one during the crossfade.
 
 import { useState } from 'react';
-import { motion } from 'motion/react';
 import { MoreVertical } from 'lucide-react';
 import { cn } from '../../../lib/utils';
 import type { VinInventoryRecord } from '../../../data/inventory/vehicleInventory';
@@ -21,25 +24,18 @@ interface Props {
 }
 
 function HorizontalCard({
-  record, isSelected, onToggle, onClick, index,
+  record, isSelected, onToggle, onClick,
 }: {
   record: VinInventoryRecord;
   isSelected: boolean;
   onToggle: (c: boolean) => void;
   onClick: () => void;
-  index: number;
 }) {
   const [hovered, setHovered] = useState(false);
   const aiEnabled = record.aiGeneration === 'enabled';
 
   return (
-    <motion.div
-      layoutId={`card-${record.id}`}
-      layout
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0 }}
-      transition={{ duration: 0.18, delay: Math.min(index * 0.012, 0.3) }}
+    <div
       className={cn(
         'flex rounded-[12px] border overflow-hidden bg-white cursor-pointer select-none',
         'transition-shadow duration-150',
@@ -51,8 +47,7 @@ function HorizontalCard({
       onClick={onClick}
     >
       {/* Left: thumbnail */}
-      <motion.div
-        layoutId={`thumb-${record.id}`}
+      <div
         className="relative shrink-0 bg-[#f0f2f4]"
         style={{ width: 160, minHeight: 120 }}
       >
@@ -113,25 +108,21 @@ function HorizontalCard({
             Asset Details
           </button>
         </div>
-      </motion.div>
+      </div>
 
       {/* Right: info */}
       <div className="flex-1 min-w-0 flex flex-col justify-between p-[12px] gap-[6px]">
         <div className="flex items-start justify-between gap-[6px]">
           <div className="min-w-0 flex-1">
-            <motion.p
-              layoutId={`vin-${record.id}`}
+            <p
               className={cn(BODY2, 'text-[#473bab] truncate hover:underline')}
               onClick={e => { e.stopPropagation(); onClick(); }}
             >
               {record.vin}
-            </motion.p>
-            <motion.p
-              layoutId={`subtitle-${record.id}`}
-              className={cn(CAPTION, 'text-[rgba(17,16,20,0.56)] truncate mt-[2px]')}
-            >
+            </p>
+            <p className={cn(CAPTION, 'text-[rgba(17,16,20,0.56)] truncate mt-[2px]')}>
               {record.condition} | {record.year} {record.make} {record.model}
-            </motion.p>
+            </p>
           </div>
           <button
             onClick={e => e.stopPropagation()}
@@ -150,7 +141,7 @@ function HorizontalCard({
           <PriorityScoreChip score={record.priorityScore} />
         </div>
       </div>
-    </motion.div>
+    </div>
   );
 }
 
@@ -161,14 +152,13 @@ export function VehicleCardList({ records, selected, onToggleRow, onVinClick }: 
         className="grid gap-[16px]"
         style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))' }}
       >
-        {records.map((record, index) => (
+        {records.map((record) => (
           <HorizontalCard
             key={record.id}
             record={record}
             isSelected={selected.has(record.id)}
             onToggle={checked => onToggleRow(record.id, checked)}
             onClick={() => onVinClick(record.id)}
-            index={index}
           />
         ))}
       </div>

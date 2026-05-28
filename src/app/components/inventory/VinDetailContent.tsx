@@ -6,7 +6,8 @@
 //   Left  480px : hero image (480×360) + angle thumbnail strip (48px each)
 //   Right flex-1: two sub-columns of detail rows side by side
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useContext, createContext } from 'react';
+import copyIconSrc from '../../../assets/icons/VIN Details/square-behind-square-6, layers, copy 6, pages.svg';
 import { cn } from '../../../lib/utils';
 import type { VinInventoryRecord } from '../../../data/inventory/vehicleInventory';
 import { AI_CONFIGS } from '../../../data/inventory/aiConfigs';
@@ -20,6 +21,9 @@ import { AngleStripVin } from './AngleStripVin';
 const BODY1   = "font-['Roboto',sans-serif] font-normal text-[14px] leading-[1.5] tracking-[0.15px]";
 const CAPTION = "font-['Roboto',sans-serif] font-normal text-[11px] leading-[1.66] tracking-[0.4px]";
 const SUB2    = "font-['Roboto',sans-serif] font-medium text-[14px] leading-[1.57] tracking-[0.1px]";
+
+// ─── Copy-notify context (avoids threading onCopy through every DetailRow) ────
+const CopyNotifyCtx = createContext<() => void>(() => {});
 
 // ─── Left-pane icon — cropped viewBox (same as ProjectsModule) ───────────────
 function LeftPaneIcon() {
@@ -41,19 +45,96 @@ function LeftPaneIcon() {
 
 // ─── Detail row ───────────────────────────────────────────────────────────────
 function DetailRow({
-  label, children, noBorder,
+  label, children, noBorder, copyValue, tooltip,
 }: {
-  label: string; children: React.ReactNode; noBorder?: boolean;
+  label: string;
+  children: React.ReactNode;
+  noBorder?: boolean;
+  /** Plain string written to clipboard on click. Shows copy button on hover. */
+  copyValue?: string;
+  /** Full-text tooltip shown above the value when row is hovered (for truncated URLs etc). */
+  tooltip?: string;
 }) {
+  const notify   = useContext(CopyNotifyCtx);
+  const [hovered,     setHovered]     = useState(false);
+  const [showCopyTip, setShowCopyTip] = useState(false);
+
+  const handleCopy = () => {
+    if (!copyValue) return;
+    navigator.clipboard.writeText(copyValue).then(() => notify());
+  };
+
   return (
-    <div className={cn(
-      'flex items-center gap-[8px] py-[8px]',
-      !noBorder && 'border-b border-[rgba(0,0,0,0.12)]',
-    )}>
+    <div
+      className={cn(
+        'relative flex items-center gap-[8px] py-[8px]',
+        !noBorder && 'border-b border-[rgba(0,0,0,0.12)]',
+      )}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => { setHovered(false); setShowCopyTip(false); }}
+    >
       <span className={cn(CAPTION, 'text-[rgba(0,0,0,0.6)]')} style={{ width: 72, minWidth: 72 }}>
         {label}
       </span>
-      <div className="flex-1 min-w-0">{children}</div>
+
+      {/* Value + optional full-URL tooltip */}
+      <div className="relative flex-1 min-w-0">
+        {children}
+        {tooltip && hovered && (
+          <div className="absolute bottom-full left-0 z-50 mb-[6px] pointer-events-none" style={{ maxWidth: 340 }}>
+            <div
+              className="bg-[#1f1d25]/90 backdrop-blur-[2px] text-white rounded-[6px] px-[10px] py-[6px] break-all"
+              style={{ fontFamily: "'Roboto', sans-serif", fontSize: 11, lineHeight: 1.6, boxShadow: '0 2px 8px rgba(0,0,0,0.28)' }}
+            >
+              {tooltip}
+            </div>
+            <div
+              className="absolute left-[10px] w-0 h-0"
+              style={{ top: '100%', borderLeft: '4px solid transparent', borderRight: '4px solid transparent', borderTop: '4px solid rgba(31,29,37,0.9)' }}
+            />
+          </div>
+        )}
+      </div>
+
+      {/* Copy button — gradient overlay, visible on row hover */}
+      {copyValue && (
+        <div
+          className="absolute inset-y-0 right-0 flex items-center transition-opacity duration-150"
+          style={{
+            opacity: hovered ? 1 : 0,
+            pointerEvents: hovered ? 'auto' : 'none',
+            background: 'linear-gradient(to right, transparent, white 36%)',
+            paddingLeft: 36,
+            paddingRight: 2,
+          }}
+        >
+          <div className="relative">
+            {/* "Copy Value" tooltip */}
+            {showCopyTip && (
+              <div className="absolute bottom-full right-0 z-50 mb-[6px] pointer-events-none whitespace-nowrap">
+                <div
+                  className="bg-[#1f1d25]/90 backdrop-blur-[2px] text-white rounded-[6px] px-[10px] py-[5px]"
+                  style={{ fontFamily: "'Roboto', sans-serif", fontSize: 11, fontWeight: 500, boxShadow: '0 2px 8px rgba(0,0,0,0.28)' }}
+                >
+                  Copy Value
+                </div>
+                <div
+                  className="absolute right-[8px] w-0 h-0"
+                  style={{ top: '100%', borderLeft: '4px solid transparent', borderRight: '4px solid transparent', borderTop: '4px solid rgba(31,29,37,0.9)' }}
+                />
+              </div>
+            )}
+            <button
+              onClick={handleCopy}
+              onMouseEnter={() => setShowCopyTip(true)}
+              onMouseLeave={() => setShowCopyTip(false)}
+              className="flex items-center justify-center w-[28px] h-[28px] rounded-full hover:bg-[rgba(17,16,20,0.06)] transition-colors cursor-pointer"
+            >
+              <img src={copyIconSrc} alt="Copy" className="w-[16px] h-[16px]" />
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -117,6 +198,15 @@ export function VinDetailContent({ record, onBack, variant = 'auto' }: VinDetail
     return () => window.removeEventListener('resize', handler);
   }, []);
 
+  // ── Copy-to-clipboard snackbar ─────────────────────────────────────────────
+  const [snackVisible, setSnackVisible] = useState(false);
+  const snackTimer = useRef<ReturnType<typeof setTimeout>>();
+  const triggerSnack = useCallback(() => {
+    setSnackVisible(true);
+    clearTimeout(snackTimer.current);
+    snackTimer.current = setTimeout(() => setSnackVisible(false), 2500);
+  }, []);
+
   // ── AI config lookup ────────────────────────────────────────────────────────
   const aiConfig = record.aiConfigId ? AI_CONFIGS.find(c => c.id === record.aiConfigId) : null;
   const vg       = record.vehicleGroup ?? null;
@@ -150,6 +240,7 @@ export function VinDetailContent({ record, onBack, variant = 'auto' }: VinDetail
   ];
 
   return (
+    <CopyNotifyCtx.Provider value={triggerSnack}>
     <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
 
       {/* ── Sticky header ────────────────────────────────────────────────── */}
@@ -301,15 +392,15 @@ export function VinDetailContent({ record, onBack, variant = 'auto' }: VinDetail
 
             {/* ColA: VIN · Config Used · VDP Link · Stock Number · Condition · Year · Make · Model · Exterior Color */}
             <div className="min-w-0" style={mobile ? { flex: '1 1 100%', minWidth: 0 } : { flex: '1 1 338px', minWidth: 338 }}>
-              <DetailRow label="VIN">
+              <DetailRow label="VIN" copyValue={record.vin}>
                 <DetailText primary>{record.vin}</DetailText>
               </DetailRow>
               {aiConfig && (
-                <DetailRow label="Config Used">
+                <DetailRow label="Config Used" copyValue={aiConfig.name}>
                   <DetailText primary>{aiConfig.name}</DetailText>
                 </DetailRow>
               )}
-              <DetailRow label="VDP Link">
+              <DetailRow label="VDP Link" copyValue={vdpLink} tooltip={vdpLink}>
                 <a
                   href={vdpLink}
                   target="_blank"
@@ -319,35 +410,35 @@ export function VinDetailContent({ record, onBack, variant = 'auto' }: VinDetail
                   {vdpLink}
                 </a>
               </DetailRow>
-              <DetailRow label="Stock nº">
+              <DetailRow label="Stock nº" copyValue={stockNo}>
                 <DetailText>{stockNo}</DetailText>
               </DetailRow>
-              <DetailRow label="Condition">
+              <DetailRow label="Condition" copyValue={record.condition}>
                 <DetailText>{record.condition}</DetailText>
               </DetailRow>
-              <DetailRow label="Year">
+              <DetailRow label="Year" copyValue={String(record.year)}>
                 <DetailText>{record.year}</DetailText>
               </DetailRow>
-              <DetailRow label="Make">
+              <DetailRow label="Make" copyValue={record.make}>
                 <DetailText>{record.make}</DetailText>
               </DetailRow>
-              <DetailRow label="Model">
+              <DetailRow label="Model" copyValue={record.model}>
                 <DetailText>{record.model}</DetailText>
               </DetailRow>
-              <DetailRow label="Exterior Color">
+              <DetailRow label="Exterior Color" copyValue={record.exteriorColor}>
                 <DetailText>{record.exteriorColor}</DetailText>
               </DetailRow>
             </div>
 
             {/* ColB: Price · MSRP · Transit */}
             <div className="min-w-0" style={mobile ? { flex: '1 1 100%', minWidth: 0 } : { flex: '1 1 338px', minWidth: 338 }}>
-              <DetailRow label="Price">
+              <DetailRow label="Price" copyValue={`$${record.price.toLocaleString()}`}>
                 <DetailText>${record.price.toLocaleString()}</DetailText>
               </DetailRow>
-              <DetailRow label="MSRP">
+              <DetailRow label="MSRP" copyValue={`$${msrp.toLocaleString()}`}>
                 <DetailText>${msrp.toLocaleString()}</DetailText>
               </DetailRow>
-              <DetailRow label="Transit" noBorder>
+              <DetailRow label="Transit" noBorder copyValue={inTransit ? 'In Transit' : 'Not In Transit'}>
                 <TransitChip inTransit={inTransit} />
               </DetailRow>
             </div>
@@ -454,98 +545,98 @@ export function VinDetailContent({ record, onBack, variant = 'auto' }: VinDetail
 
               {/* Sub-column A — VIN info + Physical attributes */}
               <div className="min-w-0" style={mobile ? { flex: '1 1 100%', minWidth: 0 } : { flex: '1 1 338px', minWidth: 338 }}>
-                <DetailRow label="VIN">
+                <DetailRow label="VIN" copyValue={record.vin}>
                   <DetailText primary>{record.vin}</DetailText>
                 </DetailRow>
                 {aiConfig && (
-                  <DetailRow label="Config Used">
+                  <DetailRow label="Config Used" copyValue={aiConfig.name}>
                     <DetailText primary>{aiConfig.name}</DetailText>
                   </DetailRow>
                 )}
-                <DetailRow label="Stock nº">
+                <DetailRow label="Stock nº" copyValue={stockNo}>
                   <DetailText>{stockNo}</DetailText>
                 </DetailRow>
-                <DetailRow label="Hash">
+                <DetailRow label="Hash" copyValue={hash}>
                   <DetailText>{hash}</DetailText>
                 </DetailRow>
-                <DetailRow label="VDP Link">
+                <DetailRow label="VDP Link" copyValue={vdpLink} tooltip={vdpLink}>
                   <a href={vdpLink} target="_blank" rel="noopener noreferrer"
                     className={cn(BODY1, 'text-[#473bab] hover:underline truncate block')}>
                     {vdpLink}
                   </a>
                 </DetailRow>
-                <DetailRow label="Mileage">
+                <DetailRow label="Mileage" copyValue={`${mileage.toLocaleString()} mi`}>
                   <DetailText>{mileage.toLocaleString()} mi</DetailText>
                 </DetailRow>
-                <DetailRow label="Condition">
+                <DetailRow label="Condition" copyValue={record.condition}>
                   <DetailText>{record.condition}</DetailText>
                 </DetailRow>
 
                 {/* Divider between groups */}
                 <div className="h-[8px]" />
 
-                <DetailRow label="Year">
+                <DetailRow label="Year" copyValue={String(record.year)}>
                   <DetailText>{record.year}</DetailText>
                 </DetailRow>
-                <DetailRow label="Make">
+                <DetailRow label="Make" copyValue={record.make}>
                   <DetailText>{record.make}</DetailText>
                 </DetailRow>
-                <DetailRow label="Model">
+                <DetailRow label="Model" copyValue={record.model}>
                   <DetailText>{record.model}</DetailText>
                 </DetailRow>
-                <DetailRow label="Trim">
+                <DetailRow label="Trim" copyValue={record.trim}>
                   <DetailText>{record.trim}</DetailText>
                 </DetailRow>
-                <DetailRow label="Drivetrain">
+                <DetailRow label="Drivetrain" copyValue={drivetrain}>
                   <DetailText>{drivetrain}</DetailText>
                 </DetailRow>
-                <DetailRow label="Color">
+                <DetailRow label="Color" copyValue={record.exteriorColor}>
                   <DetailText>{record.exteriorColor}</DetailText>
                 </DetailRow>
-                <DetailRow label="Fuel Type">
+                <DetailRow label="Fuel Type" copyValue={fuelType}>
                   <DetailText>{fuelType}</DetailText>
                 </DetailRow>
-                <DetailRow label="Body Type" noBorder>
+                <DetailRow label="Body Type" noBorder copyValue={bodyType}>
                   <DetailText>{bodyType}</DetailText>
                 </DetailRow>
               </div>
 
               {/* Sub-column B — Location + Market */}
               <div className="min-w-0" style={mobile ? { flex: '1 1 100%', minWidth: 0 } : { flex: '1 1 338px', minWidth: 338 }}>
-                <DetailRow label="State">
+                <DetailRow label="State" copyValue="Texas">
                   <DetailText>Texas</DetailText>
                 </DetailRow>
-                <DetailRow label="City">
+                <DetailRow label="City" copyValue="Hudson Oaks">
                   <DetailText>Hudson Oaks</DetailText>
                 </DetailRow>
-                <DetailRow label="Street">
+                <DetailRow label="Street" copyValue="3202 E Interstate Hwy 20">
                   <DetailText>3202 E Interstate Hwy 20</DetailText>
                 </DetailRow>
-                <DetailRow label="Zip">
+                <DetailRow label="Zip" copyValue="76087">
                   <DetailText>76087</DetailText>
                 </DetailRow>
 
                 <div className="h-[8px]" />
 
-                <DetailRow label="Dealer">
+                <DetailRow label="Dealer" copyValue="Authorized Dealer">
                   <DetailText>Authorized Dealer</DetailText>
                 </DetailRow>
-                <DetailRow label="Price">
+                <DetailRow label="Price" copyValue={`$${record.price.toLocaleString()}`}>
                   <DetailText>${record.price.toLocaleString()}</DetailText>
                 </DetailRow>
-                <DetailRow label="Days on Lot">
+                <DetailRow label="Days on Lot" copyValue={`${record.dol} days`}>
                   <DetailText>{record.dol} days</DetailText>
                 </DetailRow>
-                <DetailRow label="Days to Sell">
+                <DetailRow label="Days to Sell" copyValue="30">
                   <DetailText>30</DetailText>
                 </DetailRow>
-                <DetailRow label="Price to Mkt">
+                <DetailRow label="Price to Mkt" copyValue={String(record.priceToMarket)}>
                   <PriceToMarketChip value={record.priceToMarket} />
                 </DetailRow>
-                <DetailRow label="Priority">
+                <DetailRow label="Priority" copyValue={String(record.priorityScore)}>
                   <PriorityScoreChip score={record.priorityScore} />
                 </DetailRow>
-                <DetailRow label="Status" noBorder>
+                <DetailRow label="Status" noBorder copyValue={record.vehicleStatus}>
                   <DetailText>{record.vehicleStatus}</DetailText>
                 </DetailRow>
               </div>
@@ -555,5 +646,23 @@ export function VinDetailContent({ record, onBack, variant = 'auto' }: VinDetail
         </div>
       )}
     </div>
+
+      {/* ── Snackbar: Copied to Clipboard ──────────────────────────────────── */}
+      <div
+        className="fixed bottom-[24px] left-1/2 z-[9999] flex items-center gap-[8px] bg-[#1f1d25] text-white px-[16px] h-[40px] rounded-[8px] shadow-[0_4px_16px_rgba(0,0,0,0.28)] transition-all duration-300 pointer-events-none"
+        style={{
+          transform: `translateX(-50%) translateY(${snackVisible ? '0px' : '12px'})`,
+          opacity: snackVisible ? 1 : 0,
+        }}
+      >
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+          <polyline points="20 6 9 17 4 12"/>
+        </svg>
+        <span style={{ fontFamily: "'Roboto', sans-serif", fontSize: 13, fontWeight: 500, letterSpacing: '0.15px' }}>
+          Copied to Clipboard
+        </span>
+      </div>
+
+    </CopyNotifyCtx.Provider>
   );
 }

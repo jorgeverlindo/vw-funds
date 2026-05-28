@@ -1,21 +1,21 @@
 // ─── VehicleCardGrid ──────────────────────────────────────────────────────────
 // Vertical card grid — 5 columns, square image with 12px radius + border,
 // footer below. Anatomy from Figma CP-12009 node 3975-2215165.
-//
-// layoutId on thumb / vin / subtitle mirrors VehicleCardList, VehicleInventoryGrid
-// and VehicleTableCondensed so Framer Motion performs a shared-element morph
-// when switching views — thumbnails, VINs and condition text fly to their new
-// positions instead of disappearing and reappearing.
 
+import { useState, useCallback } from 'react';
 import { motion } from 'motion/react';
-import { Check, MoreVertical, MessageSquare } from 'lucide-react';
+import { Check, MoreVertical, MessageSquare, X } from 'lucide-react';
 import { cn } from '../../../lib/utils';
-import type { VinInventoryRecord } from '../../../data/inventory/vehicleInventory';
+import type {
+  VinInventoryRecord,
+  SyndicationStatus,
+  AIGenerationStatus,
+} from '../../../data/inventory/vehicleInventory';
+import { VehiclesMenu, type VehiclesMenuAnchor, type VehiclesMenuAction } from './VehiclesMenu';
 
 const CAPTION = "font-['Roboto',sans-serif] font-normal text-[11px] leading-[1.66] tracking-[0.4px]";
 const BODY2   = "font-['Roboto',sans-serif] font-normal text-[12px] leading-[1.43] tracking-[0.17px]";
 
-// Spring used for all layout morphs — consistent across all four views
 const LAYOUT_SPRING = { type: 'spring', stiffness: 300, damping: 30 } as const;
 
 interface Props {
@@ -23,15 +23,20 @@ interface Props {
   selected: Set<string>;
   onToggleRow: (id: string, checked: boolean) => void;
   onVinClick: (id: string) => void;
+  onSyndicationToggle?: (id: string) => void;
+  onAiGenerationToggle?: (id: string) => void;
+  onViewSourceImages?: (id: string) => void;
 }
 
 function VerticalCard({
-  record, isSelected, onToggle, onClick,
+  record, isSelected, onToggle, onClick, onKebabClick, isMenuOpen,
 }: {
   record: VinInventoryRecord;
   isSelected: boolean;
   onToggle: (c: boolean) => void;
   onClick: () => void;
+  onKebabClick: (e: React.MouseEvent<HTMLButtonElement>) => void;
+  isMenuOpen: boolean;
 }) {
   const aiEnabled = record.aiGeneration === 'enabled';
 
@@ -40,7 +45,7 @@ function VerticalCard({
       className="group relative flex flex-col cursor-pointer select-none"
       onClick={onClick}
     >
-      {/* ── Image block — layoutId matches tables so thumbnail morphs on view switch ── */}
+      {/* ── Image block ── */}
       <motion.div
         layoutId={`thumb-${record.id}`}
         transition={LAYOUT_SPRING}
@@ -70,7 +75,7 @@ function VerticalCard({
           </div>
         )}
 
-        {/* Checkbox — PortalCard style: fades in on hover, always visible when selected */}
+        {/* Checkbox */}
         <div
           className={cn(
             'absolute top-[8px] left-[8px] z-10 transition-opacity duration-200',
@@ -95,30 +100,22 @@ function VerticalCard({
           </div>
         )}
 
-        {/* AI angles comment indicator */}
+        {/* AI angles indicator */}
         {record.vehicleGroup && (
           <div className="absolute bottom-[8px] left-[8px] z-10 size-[22px] flex items-center justify-center bg-white/80 rounded-full shadow-sm">
             <MessageSquare size={10} className="text-[rgba(17,16,20,0.56)]" />
           </div>
         )}
 
-        {/* Asset Details — Figma: bg-[#473bab], white text, pill, bottom-right 9px */}
+        {/* Asset Details button */}
         <button
           onClick={e => { e.stopPropagation(); onClick(); }}
           className="absolute bottom-[9px] right-[9px] z-10 flex items-center gap-[4px] opacity-0 group-hover:opacity-100 transition-opacity duration-150"
           style={{
-            backgroundColor: '#473bab',
-            color: 'white',
-            borderRadius: 100,
-            paddingLeft: 10,
-            paddingRight: 10,
-            paddingTop: 4,
-            paddingBottom: 4,
-            fontFamily: "'Roboto', sans-serif",
-            fontSize: 12,
-            fontWeight: 500,
-            letterSpacing: '0.46px',
-            lineHeight: '22px',
+            backgroundColor: '#473bab', color: 'white', borderRadius: 100,
+            paddingLeft: 10, paddingRight: 10, paddingTop: 4, paddingBottom: 4,
+            fontFamily: "'Roboto', sans-serif", fontSize: 12, fontWeight: 500,
+            letterSpacing: '0.46px', lineHeight: '22px',
           }}
         >
           Asset Details
@@ -127,7 +124,6 @@ function VerticalCard({
 
       {/* ── Footer ── */}
       <div className="pt-[8px] pb-[12px]">
-        {/* VIN — layoutId matches tables */}
         <motion.p
           layoutId={`vin-${record.id}`}
           transition={LAYOUT_SPRING}
@@ -135,20 +131,21 @@ function VerticalCard({
         >
           {record.vin}
         </motion.p>
-        <div className="flex items-center justify-between gap-[4px] mt-[2px]">
-          {/* Condition — layoutId matches tables */}
+        <div className="flex items-start justify-between gap-[4px] mt-[2px]">
+          {/* Condition · Year · Make · Model · Trim · Color */}
           <motion.p
             layoutId={`subtitle-${record.id}`}
             transition={LAYOUT_SPRING}
-            className={cn(CAPTION, 'text-[#686576] truncate flex-1 min-w-0')}
+            className={cn(CAPTION, 'text-[#686576] flex-1 min-w-0 leading-[1.5]')}
           >
-            {record.condition} | {record.year} {record.make}
+            {record.condition} · {record.year} · {record.make} · {record.model} · {record.trim} · {record.exteriorColor}
           </motion.p>
+          {/* Kebab button — visible on hover */}
           <button
-            onClick={e => e.stopPropagation()}
-            className="shrink-0 p-[3px] rounded-full hover:bg-[rgba(17,16,20,0.04)] text-[rgba(17,16,20,0.38)] transition-colors opacity-0 group-hover:opacity-100"
+            onClick={onKebabClick}
+            className="shrink-0 p-[3px] rounded-full hover:bg-[rgba(17,16,20,0.08)] text-[rgba(17,16,20,0.38)] transition-colors opacity-0 group-hover:opacity-100 mt-[1px]"
           >
-            <MoreVertical size={13} />
+            {isMenuOpen ? <X size={13} /> : <MoreVertical size={13} />}
           </button>
         </div>
       </div>
@@ -156,28 +153,74 @@ function VerticalCard({
   );
 }
 
-export function VehicleCardGrid({ records, selected, onToggleRow, onVinClick }: Props) {
+export function VehicleCardGrid({
+  records, selected, onToggleRow, onVinClick,
+  onSyndicationToggle, onAiGenerationToggle, onViewSourceImages,
+}: Props) {
+  const [openMenu, setOpenMenu] = useState<{
+    recordId: string;
+    anchor: VehiclesMenuAnchor;
+    syndicationStatus: SyndicationStatus;
+    aiGenerationStatus: AIGenerationStatus;
+  } | null>(null);
+
+  const handleMenuAction = useCallback((action: VehiclesMenuAction) => {
+    if (!openMenu) return;
+    const { recordId } = openMenu;
+    if (action === 'vinDetails')        onVinClick(recordId);
+    if (action === 'syndicate')         onSyndicationToggle?.(recordId);
+    if (action === 'disableAiImage')    onAiGenerationToggle?.(recordId);
+    if (action === 'viewSourceImages')  onViewSourceImages?.(recordId);
+  }, [openMenu, onVinClick, onSyndicationToggle, onAiGenerationToggle, onViewSourceImages]);
+
   return (
-    <div className="flex-1 overflow-y-auto min-h-0 p-[16px]">
-      {/* 5 columns, 12px column gap, 20px row gap — matches Figma CP-12009 */}
-      <div
-        className="grid"
-        style={{
-          gridTemplateColumns: 'repeat(5, minmax(0, 1fr))',
-          columnGap: 12,
-          rowGap: 20,
-        }}
-      >
-        {records.map((record) => (
-          <VerticalCard
-            key={record.id}
-            record={record}
-            isSelected={selected.has(record.id)}
-            onToggle={checked => onToggleRow(record.id, checked)}
-            onClick={() => onVinClick(record.id)}
-          />
-        ))}
+    <>
+      <div className="flex-1 overflow-y-auto min-h-0 p-[16px]">
+        <div
+          className="grid"
+          style={{
+            gridTemplateColumns: 'repeat(5, minmax(0, 1fr))',
+            columnGap: 12,
+            rowGap: 20,
+          }}
+        >
+          {records.map((record) => (
+            <VerticalCard
+              key={record.id}
+              record={record}
+              isSelected={selected.has(record.id)}
+              onToggle={checked => onToggleRow(record.id, checked)}
+              onClick={() => onVinClick(record.id)}
+              isMenuOpen={openMenu?.recordId === record.id}
+              onKebabClick={e => {
+                e.stopPropagation();
+                const rect = e.currentTarget.getBoundingClientRect();
+                setOpenMenu(prev =>
+                  prev?.recordId === record.id ? null : {
+                    recordId: record.id,
+                    syndicationStatus: record.syndication,
+                    aiGenerationStatus: record.aiGeneration,
+                    anchor: {
+                      top:   rect.bottom + 8,
+                      right: window.innerWidth - rect.right,
+                    },
+                  }
+                );
+              }}
+            />
+          ))}
+        </div>
       </div>
-    </div>
+
+      {openMenu && (
+        <VehiclesMenu
+          anchor={openMenu.anchor}
+          syndicationStatus={openMenu.syndicationStatus}
+          aiGenerationStatus={openMenu.aiGenerationStatus}
+          onAction={handleMenuAction}
+          onClose={() => setOpenMenu(null)}
+        />
+      )}
+    </>
   );
 }

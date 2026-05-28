@@ -525,6 +525,9 @@ export function InventoryContent() {
                   selected={selected}
                   onToggleRow={handleToggleRow}
                   onVinClick={(id) => setSelectedVinId(id)}
+                  onSyndicationToggle={handleSyndicationToggle}
+                  onAiGenerationToggle={handleAiGenerationToggle}
+                  onViewSourceImages={handleViewSourceImages}
                 />
               </motion.div>
             )}
@@ -542,6 +545,9 @@ export function InventoryContent() {
                   selected={selected}
                   onToggleRow={handleToggleRow}
                   onVinClick={(id) => setSelectedVinId(id)}
+                  onSyndicationToggle={handleSyndicationToggle}
+                  onAiGenerationToggle={handleAiGenerationToggle}
+                  onViewSourceImages={handleViewSourceImages}
                 />
               </motion.div>
             )}
@@ -560,6 +566,9 @@ export function InventoryContent() {
                   onToggleRow={handleToggleRow}
                   onToggleAll={handleToggleAll}
                   onVinClick={(id) => setSelectedVinId(id)}
+                  onSyndicationToggle={handleSyndicationToggle}
+                  onAiGenerationToggle={handleAiGenerationToggle}
+                  onViewSourceImages={handleViewSourceImages}
                 />
               </motion.div>
             )}

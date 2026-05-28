@@ -2,10 +2,17 @@
 // Table Small — dense rows at 52px height, 38×38px thumbnail, px-[16px] cells.
 // Spacing from Figma node 3975-2248310. Includes Exterior Color column.
 
+import { useState, useCallback } from 'react';
 import { motion } from 'motion/react';
+import { MoreVertical, X } from 'lucide-react';
 import { cn } from '../../../lib/utils';
-import type { VinInventoryRecord } from '../../../data/inventory/vehicleInventory';
+import type {
+  VinInventoryRecord,
+  SyndicationStatus,
+  AIGenerationStatus,
+} from '../../../data/inventory/vehicleInventory';
 import { AIGenerationChip, SyndicationChip, PriceToMarketChip, PriorityScoreChip } from './VehicleInventoryGrid';
+import { VehiclesMenu, type VehiclesMenuAnchor, type VehiclesMenuAction } from './VehiclesMenu';
 
 const CAPTION     = "font-['Roboto',sans-serif] font-normal text-[11px] leading-[1.66] tracking-[0.4px]";
 const HEADER_LABEL = "font-['Roboto',sans-serif] font-medium text-[14px] leading-[24px] tracking-[0.17px] text-[#1f1d25] whitespace-nowrap";
@@ -45,17 +52,41 @@ interface Props {
   onToggleRow: (id: string, checked: boolean) => void;
   onToggleAll: (checked: boolean) => void;
   onVinClick: (id: string) => void;
+  onSyndicationToggle?: (id: string) => void;
+  onAiGenerationToggle?: (id: string) => void;
+  onViewSourceImages?: (id: string) => void;
 }
 
-export function VehicleTableCondensed({ records, selected, onToggleRow, onToggleAll, onVinClick }: Props) {
+export function VehicleTableCondensed({
+  records, selected, onToggleRow, onToggleAll, onVinClick,
+  onSyndicationToggle, onAiGenerationToggle, onViewSourceImages,
+}: Props) {
   const allSelected  = records.length > 0 && records.every(r => selected.has(r.id));
   const someSelected = !allSelected && records.some(r => selected.has(r.id));
+
+  // ── Kebab menu state ─────────────────────────────────────────────────────
+  const [openMenu, setOpenMenu] = useState<{
+    recordId: string;
+    anchor: VehiclesMenuAnchor;
+    syndicationStatus: SyndicationStatus;
+    aiGenerationStatus: AIGenerationStatus;
+  } | null>(null);
+
+  const handleMenuAction = useCallback((action: VehiclesMenuAction) => {
+    if (!openMenu) return;
+    const { recordId } = openMenu;
+    if (action === 'vinDetails')        onVinClick(recordId);
+    if (action === 'syndicate')         onSyndicationToggle?.(recordId);
+    if (action === 'disableAiImage')    onAiGenerationToggle?.(recordId);
+    if (action === 'viewSourceImages')  onViewSourceImages?.(recordId);
+  }, [openMenu, onVinClick, onSyndicationToggle, onAiGenerationToggle, onViewSourceImages]);
 
   const totalW =
     EXPAND_W + CHECKBOX_W + THUMB_W + VIN_W + CONDITION_W +
     EXTRA_COLS.reduce((s, c) => s + c.width, 0);
 
   return (
+    <>
     <div className="flex-1 overflow-auto min-h-0">
       <table
         className="border-collapse"
@@ -116,6 +147,9 @@ export function VehicleTableCondensed({ records, selected, onToggleRow, onToggle
                 </div>
               </th>
             ))}
+
+            {/* Sticky kebab column — zero-width, no label */}
+            <th className="sticky right-0 z-[11] bg-white p-0" style={{ width: 0, minWidth: 0 }} />
 
           </tr>
         </thead>
@@ -280,11 +314,67 @@ export function VehicleTableCondensed({ records, selected, onToggleRow, onToggle
                   </div>
                 </td>
 
+                {/* Sticky kebab overlay — identical to Table Large */}
+                {(() => {
+                  const hoverBg = isSelected
+                    ? 'rgba(99,86,225,0.12)'
+                    : isDisabled
+                      ? 'rgba(31,29,37,0.06)'
+                      : 'rgba(31,29,37,0.04)';
+                  return (
+                    <td className="sticky right-0 z-[2] p-0 border-0" style={{ width: 0, minWidth: 0 }}>
+                      <div className="invisible group-hover:visible absolute right-0 top-0 bottom-0 flex items-center pointer-events-none">
+                        <div
+                          className="h-full w-[80px] flex-none"
+                          style={{ background: `linear-gradient(to right, transparent, ${hoverBg})` }}
+                        />
+                        <div
+                          className="h-full flex items-center pr-2 flex-none pointer-events-auto"
+                          style={{ backgroundColor: hoverBg }}
+                        >
+                          <button
+                            onClick={e => {
+                              e.stopPropagation();
+                              const rect = e.currentTarget.getBoundingClientRect();
+                              setOpenMenu(prev =>
+                                prev?.recordId === record.id ? null : {
+                                  recordId: record.id,
+                                  syndicationStatus: record.syndication,
+                                  aiGenerationStatus: record.aiGeneration,
+                                  anchor: {
+                                    top:   rect.bottom + 8,
+                                    right: window.innerWidth - rect.right,
+                                  },
+                                }
+                              );
+                            }}
+                            className="w-8 h-8 flex items-center justify-center text-[rgba(17,16,20,0.56)] bg-white hover:bg-[rgba(255,255,255,0.92)] active:bg-[rgba(255,255,255,0.9)] transition-colors cursor-pointer"
+                            style={{ borderRadius: 200 }}
+                          >
+                            {openMenu?.recordId === record.id ? <X size={16} /> : <MoreVertical size={16} />}
+                          </button>
+                        </div>
+                      </div>
+                    </td>
+                  );
+                })()}
+
               </motion.tr>
             );
           })}
         </tbody>
       </table>
     </div>
+
+    {openMenu && (
+      <VehiclesMenu
+        anchor={openMenu.anchor}
+        syndicationStatus={openMenu.syndicationStatus}
+        aiGenerationStatus={openMenu.aiGenerationStatus}
+        onAction={handleMenuAction}
+        onClose={() => setOpenMenu(null)}
+      />
+    )}
+    </>
   );
 }

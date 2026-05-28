@@ -1,23 +1,23 @@
 // ─── VehicleCardList ──────────────────────────────────────────────────────────
 // Horizontal card list view — 3-col grid, thumbnail left, info right.
 // Figma: CP-12009 node 3975-2248310
-//
-// layoutId on thumb / vin / subtitle mirrors VehicleCardGrid, VehicleInventoryGrid
-// and VehicleTableCondensed so Framer Motion performs a shared-element morph
-// when switching views.
 
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { motion } from 'motion/react';
-import { MoreVertical } from 'lucide-react';
+import { MoreVertical, X } from 'lucide-react';
 import { cn } from '../../../lib/utils';
-import type { VinInventoryRecord } from '../../../data/inventory/vehicleInventory';
+import type {
+  VinInventoryRecord,
+  SyndicationStatus,
+  AIGenerationStatus,
+} from '../../../data/inventory/vehicleInventory';
 import { PriceToMarketChip, PriorityScoreChip } from './VehicleInventoryGrid';
+import { VehiclesMenu, type VehiclesMenuAnchor, type VehiclesMenuAction } from './VehiclesMenu';
 
 const CAPTION = "font-['Roboto',sans-serif] font-normal text-[11px] leading-[1.66] tracking-[0.4px]";
 const BODY2   = "font-['Roboto',sans-serif] font-medium text-[13px] leading-[1.43] tracking-[0.17px]";
 const BODY1   = "font-['Roboto',sans-serif] font-normal text-[13px] leading-[1.43] tracking-[0.17px]";
 
-// Spring used for all layout morphs — consistent across all four views
 const LAYOUT_SPRING = { type: 'spring', stiffness: 300, damping: 30 } as const;
 
 interface Props {
@@ -25,15 +25,20 @@ interface Props {
   selected: Set<string>;
   onToggleRow: (id: string, checked: boolean) => void;
   onVinClick: (id: string) => void;
+  onSyndicationToggle?: (id: string) => void;
+  onAiGenerationToggle?: (id: string) => void;
+  onViewSourceImages?: (id: string) => void;
 }
 
 function HorizontalCard({
-  record, isSelected, onToggle, onClick,
+  record, isSelected, onToggle, onClick, onKebabClick, isMenuOpen,
 }: {
   record: VinInventoryRecord;
   isSelected: boolean;
   onToggle: (c: boolean) => void;
   onClick: () => void;
+  onKebabClick: (e: React.MouseEvent<HTMLButtonElement>) => void;
+  isMenuOpen: boolean;
 }) {
   const [hovered, setHovered] = useState(false);
   const aiEnabled = record.aiGeneration === 'enabled';
@@ -50,7 +55,7 @@ function HorizontalCard({
       onMouseLeave={() => setHovered(false)}
       onClick={onClick}
     >
-      {/* Left: thumbnail — layoutId matches all other views */}
+      {/* Left: thumbnail */}
       <motion.div
         layoutId={`thumb-${record.id}`}
         transition={LAYOUT_SPRING}
@@ -120,7 +125,6 @@ function HorizontalCard({
       <div className="flex-1 min-w-0 flex flex-col justify-between p-[12px] gap-[6px]">
         <div className="flex items-start justify-between gap-[6px]">
           <div className="min-w-0 flex-1">
-            {/* VIN — layoutId matches all other views */}
             <motion.p
               layoutId={`vin-${record.id}`}
               transition={LAYOUT_SPRING}
@@ -129,7 +133,6 @@ function HorizontalCard({
             >
               {record.vin}
             </motion.p>
-            {/* Condition — layoutId matches all other views */}
             <motion.p
               layoutId={`subtitle-${record.id}`}
               transition={LAYOUT_SPRING}
@@ -139,10 +142,10 @@ function HorizontalCard({
             </motion.p>
           </div>
           <button
-            onClick={e => e.stopPropagation()}
-            className="shrink-0 p-[2px] rounded-full hover:bg-[rgba(17,16,20,0.04)] text-[rgba(17,16,20,0.38)] transition-colors"
+            onClick={onKebabClick}
+            className="shrink-0 p-[2px] rounded-full hover:bg-[rgba(17,16,20,0.08)] text-[rgba(17,16,20,0.38)] transition-colors"
           >
-            <MoreVertical size={14} />
+            {isMenuOpen ? <X size={14} /> : <MoreVertical size={14} />}
           </button>
         </div>
 
@@ -159,23 +162,70 @@ function HorizontalCard({
   );
 }
 
-export function VehicleCardList({ records, selected, onToggleRow, onVinClick }: Props) {
+export function VehicleCardList({
+  records, selected, onToggleRow, onVinClick,
+  onSyndicationToggle, onAiGenerationToggle, onViewSourceImages,
+}: Props) {
+  const [openMenu, setOpenMenu] = useState<{
+    recordId: string;
+    anchor: VehiclesMenuAnchor;
+    syndicationStatus: SyndicationStatus;
+    aiGenerationStatus: AIGenerationStatus;
+  } | null>(null);
+
+  const handleMenuAction = useCallback((action: VehiclesMenuAction) => {
+    if (!openMenu) return;
+    const { recordId } = openMenu;
+    if (action === 'vinDetails')        onVinClick(recordId);
+    if (action === 'syndicate')         onSyndicationToggle?.(recordId);
+    if (action === 'disableAiImage')    onAiGenerationToggle?.(recordId);
+    if (action === 'viewSourceImages')  onViewSourceImages?.(recordId);
+  }, [openMenu, onVinClick, onSyndicationToggle, onAiGenerationToggle, onViewSourceImages]);
+
   return (
-    <div className="flex-1 overflow-y-auto min-h-0 p-[16px]">
-      <div
-        className="grid gap-[16px]"
-        style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))' }}
-      >
-        {records.map((record) => (
-          <HorizontalCard
-            key={record.id}
-            record={record}
-            isSelected={selected.has(record.id)}
-            onToggle={checked => onToggleRow(record.id, checked)}
-            onClick={() => onVinClick(record.id)}
-          />
-        ))}
+    <>
+      <div className="flex-1 overflow-y-auto min-h-0 p-[16px]">
+        <div
+          className="grid gap-[16px]"
+          style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))' }}
+        >
+          {records.map((record) => (
+            <HorizontalCard
+              key={record.id}
+              record={record}
+              isSelected={selected.has(record.id)}
+              onToggle={checked => onToggleRow(record.id, checked)}
+              onClick={() => onVinClick(record.id)}
+              isMenuOpen={openMenu?.recordId === record.id}
+              onKebabClick={e => {
+                e.stopPropagation();
+                const rect = e.currentTarget.getBoundingClientRect();
+                setOpenMenu(prev =>
+                  prev?.recordId === record.id ? null : {
+                    recordId: record.id,
+                    syndicationStatus: record.syndication,
+                    aiGenerationStatus: record.aiGeneration,
+                    anchor: {
+                      top:   rect.bottom + 8,
+                      right: window.innerWidth - rect.right,
+                    },
+                  }
+                );
+              }}
+            />
+          ))}
+        </div>
       </div>
-    </div>
+
+      {openMenu && (
+        <VehiclesMenu
+          anchor={openMenu.anchor}
+          syndicationStatus={openMenu.syndicationStatus}
+          aiGenerationStatus={openMenu.aiGenerationStatus}
+          onAction={handleMenuAction}
+          onClose={() => setOpenMenu(null)}
+        />
+      )}
+    </>
   );
 }

@@ -16,7 +16,7 @@ import { VehiclesMenu, type VehiclesMenuAnchor, type VehiclesMenuAction } from '
 const CAPTION = "font-['Roboto',sans-serif] font-normal text-[11px] leading-[1.66] tracking-[0.4px]";
 const BODY2   = "font-['Roboto',sans-serif] font-normal text-[12px] leading-[1.43] tracking-[0.17px]";
 
-const LAYOUT_SPRING = { type: 'spring', stiffness: 300, damping: 30 } as const;
+const LAYOUT_SPRING = { type: 'tween', ease: 'easeOut', duration: 0.4 } as const;
 
 interface Props {
   records: VinInventoryRecord[];

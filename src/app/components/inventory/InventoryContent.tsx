@@ -509,7 +509,7 @@ export function InventoryContent() {
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
-                transition={{ duration: 0.2 }}
+                transition={{ duration: 0.4, ease: 'easeOut' }}
               >
                 <VehicleInventoryGrid
                   records={records}
@@ -531,7 +531,7 @@ export function InventoryContent() {
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
-                transition={{ duration: 0.2 }}
+                transition={{ duration: 0.4, ease: 'easeOut' }}
               >
                 <VehicleCardGrid
                   records={records}
@@ -552,7 +552,7 @@ export function InventoryContent() {
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
-                transition={{ duration: 0.2 }}
+                transition={{ duration: 0.4, ease: 'easeOut' }}
               >
                 <VehicleCardList
                   records={records}
@@ -573,7 +573,7 @@ export function InventoryContent() {
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
-                transition={{ duration: 0.2 }}
+                transition={{ duration: 0.4, ease: 'easeOut' }}
               >
                 <VehicleTableCondensed
                   records={records}

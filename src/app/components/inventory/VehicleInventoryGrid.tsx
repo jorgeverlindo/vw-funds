@@ -529,7 +529,7 @@ export function VehicleInventoryGrid({
                 <td style={w('thumbnail')}>
                   <motion.div
                     layoutId={`thumb-${record.id}`}
-                    transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+                    transition={{ type: 'tween', ease: 'easeOut', duration: 0.4 }}
                     className={cn('relative size-[76px]', isDisabled && 'opacity-50')}
                   >
                     <ThumbnailImg
@@ -550,7 +550,7 @@ export function VehicleInventoryGrid({
                   <div className={cn(isDisabled && 'opacity-50')}>
                     <motion.button
                       layoutId={`vin-${record.id}`}
-                      transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+                      transition={{ type: 'tween', ease: 'easeOut', duration: 0.4 }}
                       onClick={() => onVinClick?.(record.id)}
                       className={cn(
                         BODY2,
@@ -567,7 +567,7 @@ export function VehicleInventoryGrid({
                 <td className="px-4" style={w('condition')}>
                   <motion.p
                     layoutId={`subtitle-${record.id}`}
-                    transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+                    transition={{ type: 'tween', ease: 'easeOut', duration: 0.4 }}
                     className={cn(BODY2, 'text-[#1f1d25] whitespace-nowrap', isDisabled && 'opacity-50')}
                   >
                     {record.condition}

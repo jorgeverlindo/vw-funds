@@ -73,7 +73,7 @@ function HeaderDivider({
 
 // ─── AI Generation Chip ───────────────────────────────────────────────────────
 // Enabled → green; Disabled → muted gray (from Figma component "Status")
-function AIGenerationChip({ status }: { status: AIGenerationStatus }) {
+export function AIGenerationChip({ status }: { status: AIGenerationStatus }) {
   if (status === 'enabled') {
     return (
       <span className="inline-flex items-center gap-[4px] rounded-[8px] pl-[6px] pr-[8px] py-[3px] bg-[rgb(232,245,233)] whitespace-nowrap select-none">
@@ -100,7 +100,7 @@ function AIGenerationChip({ status }: { status: AIGenerationStatus }) {
 
 // ─── Syndication Chip ─────────────────────────────────────────────────────────
 // Icon: live-full, signal.svg — concentric arcs + center dot
-function SyndicationChip({ status }: { status: SyndicationStatus }) {
+export function SyndicationChip({ status }: { status: SyndicationStatus }) {
   const fill = status === 'syndicated' ? '#6356E1' : '#686576';
   const icon = (
     <svg width="14" height="14" viewBox="0 0 14 14" fill="none" className="shrink-0">

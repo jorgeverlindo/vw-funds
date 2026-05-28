@@ -1,14 +1,43 @@
 // ─── VehicleTableCondensed ────────────────────────────────────────────────────
-// Condensed table view — 36px rows, sticky header, all key fields.
+// Table Small — dense rows at 52px height, 38×38px thumbnail, px-[16px] cells.
+// Spacing from Figma node 3975-2248310. Includes Exterior Color column.
 
 import { motion } from 'motion/react';
 import { cn } from '../../../lib/utils';
 import type { VinInventoryRecord } from '../../../data/inventory/vehicleInventory';
-import { PriceToMarketChip, PriorityScoreChip } from './VehicleInventoryGrid';
+import { AIGenerationChip, SyndicationChip, PriceToMarketChip, PriorityScoreChip } from './VehicleInventoryGrid';
 
-const CAPTION = "font-['Roboto',sans-serif] font-normal text-[11px] leading-[1.66] tracking-[0.4px]";
-const BODY2   = "font-['Roboto',sans-serif] font-medium text-[12px] leading-[1.43] tracking-[0.17px]";
-const CELL    = "font-['Roboto',sans-serif] font-normal text-[12px] leading-[1.43] tracking-[0.17px] text-[#1f1d25]";
+const CAPTION     = "font-['Roboto',sans-serif] font-normal text-[11px] leading-[1.66] tracking-[0.4px]";
+const HEADER_LABEL = "font-['Roboto',sans-serif] font-medium text-[14px] leading-[24px] tracking-[0.17px] text-[#1f1d25] whitespace-nowrap";
+const CELL        = "font-['Roboto',sans-serif] font-normal text-[12px] leading-[1.43] tracking-[0.17px] text-[#1f1d25]";
+const VIN_STYLE   = "font-['Roboto',sans-serif] font-normal text-[12px] leading-[1.43] tracking-[0.17px] text-[#473bab] hover:underline cursor-pointer";
+
+// Row height and thumbnail size (Figma spec)
+const ROW_H  = 52;
+const THUMB  = 38;
+
+// Column definitions — widths from Figma node 3975-2248310
+const EXTRA_COLS: { key: string; label: string; width: number }[] = [
+  { key: 'year',           label: 'Year',           width: 124 },
+  { key: 'make',           label: 'Make',           width: 124 },
+  { key: 'model',          label: 'Model',          width: 124 },
+  { key: 'trim',           label: 'Trim',           width: 80  },
+  { key: 'price',          label: 'Price',          width: 120 },
+  { key: 'aiGeneration',   label: 'AI Generation',  width: 140 },
+  { key: 'syndication',    label: 'Syndication',    width: 136 },
+  { key: 'exteriorColor',  label: 'Exterior Color', width: 144 },
+  { key: 'vehicleStatus',  label: 'Vehicle Status', width: 156 },
+  { key: 'dol',            label: 'DOL',            width: 120 },
+  { key: 'priceToMarket',  label: 'Price to Market',width: 176 },
+  { key: 'priorityScore',  label: 'Priority Score', width: 160 },
+];
+
+// Fixed-width columns before the extra block
+const EXPAND_W   = 24;
+const CHECKBOX_W = 42;
+const THUMB_W    = THUMB;       // 38px
+const VIN_W      = 190;         // min 180, max 300 — fixed at 190 to match Table Large
+const CONDITION_W = 90;         // min 75, max 200
 
 interface Props {
   records: VinInventoryRecord[];
@@ -18,54 +47,85 @@ interface Props {
   onVinClick: (id: string) => void;
 }
 
-const COLS: { key: string; label: string; width: number }[] = [
-  { key: 'vin',          label: 'VIN',           width: 180 },
-  { key: 'condition',    label: 'Condition',      width: 80  },
-  { key: 'year',         label: 'Year',           width: 60  },
-  { key: 'make',         label: 'Make',           width: 90  },
-  { key: 'model',        label: 'Model',          width: 110 },
-  { key: 'trim',         label: 'Trim',           width: 120 },
-  { key: 'price',        label: 'Price',          width: 90  },
-  { key: 'dol',          label: 'DOL',            width: 60  },
-  { key: 'aiGeneration', label: 'AI Gen',         width: 100 },
-  { key: 'syndication',  label: 'Syndication',    width: 110 },
-  { key: 'priceToMkt',   label: 'Price to Mkt',   width: 130 },
-  { key: 'priority',     label: 'Priority',       width: 100 },
-  { key: 'status',       label: 'Status',         width: 120 },
-];
-
 export function VehicleTableCondensed({ records, selected, onToggleRow, onToggleAll, onVinClick }: Props) {
   const allSelected  = records.length > 0 && records.every(r => selected.has(r.id));
   const someSelected = !allSelected && records.some(r => selected.has(r.id));
 
+  const totalW =
+    EXPAND_W + CHECKBOX_W + THUMB_W + VIN_W + CONDITION_W +
+    EXTRA_COLS.reduce((s, c) => s + c.width, 0);
+
   return (
     <div className="flex-1 overflow-auto min-h-0">
-      <table className="border-collapse w-full" style={{ minWidth: 42 + COLS.reduce((s, c) => s + c.width, 0) }}>
-        <thead className="sticky top-0 z-10 bg-white">
-          <tr className="border-b border-[rgba(0,0,0,0.12)]">
-            <th className="w-[42px] px-[12px] h-[36px] text-left" style={{ minWidth: 42 }}>
-              <input
-                type="checkbox"
-                checked={allSelected}
-                ref={el => { if (el) el.indeterminate = someSelected; }}
-                onChange={e => onToggleAll(e.target.checked)}
-                className="size-[14px] rounded accent-[#473bab] cursor-pointer"
-              />
+      <table
+        className="border-collapse"
+        style={{ tableLayout: 'fixed', width: 'max-content', minWidth: totalW }}
+      >
+        {/* ── Sticky header ── */}
+        <thead className="sticky top-0 z-10 bg-white border-b border-[rgba(0,0,0,0.12)]">
+          <tr style={{ height: ROW_H }}>
+
+            {/* Expand spacer */}
+            <th style={{ width: EXPAND_W, minWidth: EXPAND_W }} />
+
+            {/* Checkbox */}
+            <th style={{ width: CHECKBOX_W, minWidth: CHECKBOX_W }} className="px-[1px]">
+              <div className="p-[9px]">
+                <input
+                  type="checkbox"
+                  checked={allSelected}
+                  ref={el => { if (el) el.indeterminate = someSelected; }}
+                  onChange={e => onToggleAll(e.target.checked)}
+                  className="w-[14px] h-[14px] accent-[#473bab] cursor-pointer"
+                />
+              </div>
             </th>
-            {COLS.map(col => (
+
+            {/* Thumbnail — invisible placeholder per Figma (like Table Large) */}
+            <th style={{ width: THUMB_W, minWidth: THUMB_W, opacity: 0 }} />
+
+            {/* VIN */}
+            <th
+              className="text-left p-0"
+              style={{ width: VIN_W, minWidth: VIN_W }}
+            >
+              <div className="flex items-center h-full pl-[16px] pr-[16px] py-[16px]">
+                <span className={HEADER_LABEL}>VIN</span>
+              </div>
+            </th>
+
+            {/* Condition */}
+            <th
+              className="text-left p-0"
+              style={{ width: CONDITION_W, minWidth: CONDITION_W }}
+            >
+              <div className="flex items-center h-full pl-[16px] pr-[16px] py-[16px]">
+                <span className={HEADER_LABEL}>Condition</span>
+              </div>
+            </th>
+
+            {/* Extra columns */}
+            {EXTRA_COLS.map(col => (
               <th
                 key={col.key}
-                className={cn(CAPTION, 'h-[36px] px-[8px] text-left text-[rgba(17,16,20,0.6)] font-medium whitespace-nowrap')}
+                className="text-left p-0"
                 style={{ width: col.width, minWidth: col.width }}
               >
-                {col.label}
+                <div className="flex items-center h-full pl-[16px] pr-[16px] py-[16px]">
+                  <span className={HEADER_LABEL}>{col.label}</span>
+                </div>
               </th>
             ))}
+
           </tr>
         </thead>
+
+        {/* ── Body ── */}
         <tbody>
           {records.map((record, index) => {
             const isSelected = selected.has(record.id);
+            const isDisabled = record.aiGeneration === 'disabled';
+
             return (
               <motion.tr
                 key={record.id}
@@ -73,76 +133,143 @@ export function VehicleTableCondensed({ records, selected, onToggleRow, onToggle
                 animate={{ opacity: 1 }}
                 transition={{ duration: 0.12, delay: Math.min(index * 0.008, 0.25) }}
                 className={cn(
-                  'border-b border-[rgba(0,0,0,0.06)] cursor-pointer transition-colors',
-                  isSelected ? 'bg-[rgba(71,59,171,0.04)]' : 'hover:bg-[rgba(17,16,20,0.02)]',
+                  'group border-b border-[rgba(0,0,0,0.12)] cursor-pointer transition-colors',
+                  isDisabled && !isSelected
+                    ? 'bg-[rgba(31,29,37,0.04)] hover:bg-[rgba(31,29,37,0.06)]'
+                    : isSelected
+                      ? 'bg-[rgba(99,86,225,0.08)] hover:bg-[rgba(99,86,225,0.12)]'
+                      : 'bg-white hover:bg-[rgba(31,29,37,0.04)]',
                 )}
+                style={{ height: ROW_H }}
                 onClick={() => onVinClick(record.id)}
               >
-                <td className="w-[42px] px-[12px] h-[36px]" onClick={e => e.stopPropagation()}>
-                  <input
-                    type="checkbox"
-                    checked={isSelected}
-                    onChange={e => onToggleRow(record.id, e.target.checked)}
-                    className="size-[14px] rounded accent-[#473bab] cursor-pointer"
-                  />
+                {/* Expand spacer */}
+                <td style={{ width: EXPAND_W, minWidth: EXPAND_W }} />
+
+                {/* Checkbox */}
+                <td
+                  style={{ width: CHECKBOX_W, minWidth: CHECKBOX_W }}
+                  className="px-[1px]"
+                  onClick={e => e.stopPropagation()}
+                >
+                  <div className="p-[9px]">
+                    <input
+                      type="checkbox"
+                      checked={isSelected}
+                      onChange={e => onToggleRow(record.id, e.target.checked)}
+                      className="w-[14px] h-[14px] accent-[#473bab] cursor-pointer"
+                    />
+                  </div>
                 </td>
-                <td className="px-[8px] h-[36px]" style={{ width: 180 }}>
-                  <span className={cn(BODY2, 'text-[#473bab] hover:underline truncate block max-w-[160px]')}>
+
+                {/* Thumbnail — 38×38px, bg-[#f0f2f4] */}
+                <td style={{ width: THUMB_W, minWidth: THUMB_W }}>
+                  <div
+                    className={cn(
+                      'relative overflow-hidden bg-[#f0f2f4] flex items-center justify-center',
+                      isDisabled && 'opacity-50',
+                    )}
+                    style={{ width: THUMB, height: THUMB }}
+                  >
+                    {record.thumbnail ? (
+                      <img
+                        src={
+                          record.aiConfigApplied && record.vehicleGroup?.angles?.['34l']
+                            ? record.vehicleGroup.angles['34l'] as string
+                            : record.thumbnail
+                        }
+                        alt={`${record.make} ${record.model}`}
+                        className="w-full h-full object-contain"
+                      />
+                    ) : (
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="rgba(17,16,20,0.2)">
+                        <path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/>
+                      </svg>
+                    )}
+                  </div>
+                </td>
+
+                {/* VIN */}
+                <td className="px-[16px]" style={{ width: VIN_W, minWidth: VIN_W }}>
+                  <button
+                    onClick={e => { e.stopPropagation(); onVinClick(record.id); }}
+                    className={cn(VIN_STYLE, 'truncate block max-w-full bg-transparent border-none p-0 text-left', isDisabled && 'opacity-50')}
+                  >
                     {record.vin}
+                  </button>
+                </td>
+
+                {/* Condition */}
+                <td className="px-[16px]" style={{ width: CONDITION_W, minWidth: CONDITION_W }}>
+                  <span className={cn(CELL, 'whitespace-nowrap', isDisabled && 'opacity-50')}>{record.condition}</span>
+                </td>
+
+                {/* Year */}
+                <td className="px-[16px]" style={{ width: 124 }}>
+                  <span className={cn(CELL, isDisabled && 'opacity-50')}>{record.year}</span>
+                </td>
+
+                {/* Make */}
+                <td className="px-[16px]" style={{ width: 124 }}>
+                  <span className={cn(CELL, 'truncate block', isDisabled && 'opacity-50')}>{record.make}</span>
+                </td>
+
+                {/* Model */}
+                <td className="px-[16px]" style={{ width: 124 }}>
+                  <span className={cn(CELL, 'truncate block', isDisabled && 'opacity-50')}>{record.model}</span>
+                </td>
+
+                {/* Trim */}
+                <td className="px-[16px]" style={{ width: 80 }}>
+                  <span className={cn(CELL, 'truncate block', isDisabled && 'opacity-50')}>{record.trim}</span>
+                </td>
+
+                {/* Price */}
+                <td className="px-[16px]" style={{ width: 120 }}>
+                  <span className={cn(CELL, 'whitespace-nowrap', isDisabled && 'opacity-50')}>
+                    ${record.price.toLocaleString()}
                   </span>
                 </td>
-                <td className="px-[8px] h-[36px]" style={{ width: 80 }}>
-                  <span className={cn(CELL, 'whitespace-nowrap')}>{record.condition}</span>
+
+                {/* AI Generation — use same chip as Table Large */}
+                <td className="px-[16px]" style={{ width: 140 }}>
+                  <AIGenerationChip status={record.aiGeneration} />
                 </td>
-                <td className="px-[8px] h-[36px]" style={{ width: 60 }}>
-                  <span className={CELL}>{record.year}</span>
+
+                {/* Syndication — use same chip as Table Large */}
+                <td className="px-[16px]" style={{ width: 136 }}>
+                  <SyndicationChip status={record.syndication} />
                 </td>
-                <td className="px-[8px] h-[36px]" style={{ width: 90 }}>
-                  <span className={cn(CELL, 'truncate block max-w-[80px]')}>{record.make}</span>
+
+                {/* Exterior Color */}
+                <td className="px-[16px]" style={{ width: 144 }}>
+                  <span className={cn(CELL, 'truncate block', isDisabled && 'opacity-50')}>{record.exteriorColor}</span>
                 </td>
-                <td className="px-[8px] h-[36px]" style={{ width: 110 }}>
-                  <span className={cn(CELL, 'truncate block max-w-[100px]')}>{record.model}</span>
+
+                {/* Vehicle Status */}
+                <td className="px-[16px]" style={{ width: 156 }}>
+                  <span className={cn(CELL, 'truncate block', isDisabled && 'opacity-50')}>{record.vehicleStatus}</span>
                 </td>
-                <td className="px-[8px] h-[36px]" style={{ width: 120 }}>
-                  <span className={cn(CELL, 'truncate block max-w-[110px]')}>{record.trim}</span>
+
+                {/* DOL */}
+                <td className="px-[16px]" style={{ width: 120 }}>
+                  <span className={cn(CELL, isDisabled && 'opacity-50')}>{record.dol}</span>
                 </td>
-                <td className="px-[8px] h-[36px]" style={{ width: 90 }}>
-                  <span className={cn(CELL, 'whitespace-nowrap')}>${record.price.toLocaleString()}</span>
+
+                {/* Price to Market */}
+                <td className="px-[16px]" style={{ width: 176 }}>
+                  <div className={cn(isDisabled && 'opacity-50')}>
+                    <PriceToMarketChip value={record.priceToMarket} />
+                  </div>
                 </td>
-                <td className="px-[8px] h-[36px]" style={{ width: 60 }}>
-                  <span className={CELL}>{record.dol}</span>
+
+                {/* Priority Score */}
+                <td className="px-[16px]" style={{ width: 160 }}>
+                  <div className={cn(isDisabled && 'opacity-50')}>
+                    <PriorityScoreChip score={record.priorityScore} />
+                  </div>
                 </td>
-                <td className="px-[8px] h-[36px]" style={{ width: 100 }}>
-                  <span className={cn(
-                    CAPTION,
-                    'px-[6px] h-[18px] rounded-full inline-flex items-center whitespace-nowrap',
-                    record.aiGeneration === 'enabled'
-                      ? 'bg-[#e8f5e9] text-[#2e7d32]'
-                      : 'bg-[rgba(17,16,20,0.06)] text-[rgba(17,16,20,0.56)]',
-                  )}>
-                    {record.aiGeneration === 'enabled' ? 'Enabled' : 'Disabled'}
-                  </span>
-                </td>
-                <td className="px-[8px] h-[36px]" style={{ width: 110 }}>
-                  <span className={cn(
-                    CAPTION,
-                    'px-[6px] h-[18px] rounded-full inline-flex items-center whitespace-nowrap',
-                    record.syndication === 'syndicated'
-                      ? 'bg-[rgba(71,59,171,0.08)] text-[#473bab]'
-                      : 'bg-[rgba(17,16,20,0.06)] text-[rgba(17,16,20,0.56)]',
-                  )}>
-                    {record.syndication === 'syndicated' ? 'Syndicated' : 'Not Syndicated'}
-                  </span>
-                </td>
-                <td className="px-[8px] h-[36px]" style={{ width: 130 }}>
-                  <PriceToMarketChip value={record.priceToMarket} />
-                </td>
-                <td className="px-[8px] h-[36px]" style={{ width: 100 }}>
-                  <PriorityScoreChip score={record.priorityScore} />
-                </td>
-                <td className="px-[8px] h-[36px]" style={{ width: 120 }}>
-                  <span className={cn(CELL, 'truncate block max-w-[110px]')}>{record.vehicleStatus}</span>
-                </td>
+
               </motion.tr>
             );
           })}

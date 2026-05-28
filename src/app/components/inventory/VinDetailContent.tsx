@@ -47,10 +47,10 @@ function DetailRow({
 }) {
   return (
     <div className={cn(
-      'flex items-start gap-[20px] py-[8px]',
+      'flex items-start gap-[8px] py-[8px]',
       !noBorder && 'border-b border-[rgba(0,0,0,0.12)]',
     )}>
-      <span className={cn(CAPTION, 'text-[rgba(0,0,0,0.6)]')} style={{ width: 64, minWidth: 64 }}>
+      <span className={cn(CAPTION, 'text-[rgba(0,0,0,0.6)]')} style={{ width: 72, minWidth: 72 }}>
         {label}
       </span>
       <div className="flex-1 min-w-0">{children}</div>

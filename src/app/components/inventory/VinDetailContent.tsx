@@ -43,6 +43,18 @@ function LeftPaneIcon() {
 
 // AngleKey type imported — no local angle config needed (handled by AngleStripVin)
 
+// ─── Clipboard fallback (works on HTTP / old browsers) ────────────────────────
+function execCopy(text: string) {
+  const ta = document.createElement('textarea');
+  ta.value = text;
+  ta.style.cssText = 'position:fixed;top:0;left:0;opacity:0;pointer-events:none';
+  document.body.appendChild(ta);
+  ta.focus();
+  ta.select();
+  try { document.execCommand('copy'); } catch (_) { /* noop */ }
+  document.body.removeChild(ta);
+}
+
 // ─── Detail row ───────────────────────────────────────────────────────────────
 function DetailRow({
   label, children, noBorder, copyValue, tooltip,
@@ -61,7 +73,13 @@ function DetailRow({
 
   const handleCopy = () => {
     if (!copyValue) return;
-    navigator.clipboard.writeText(copyValue).then(() => notify());
+    // Trigger snackbar immediately — don't wait on the async API
+    notify();
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(copyValue).catch(() => execCopy(copyValue));
+    } else {
+      execCopy(copyValue);
+    }
   };
 
   return (

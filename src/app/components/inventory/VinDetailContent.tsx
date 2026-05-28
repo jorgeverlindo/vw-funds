@@ -6,8 +6,9 @@
 //   Left  480px : hero image (480×360) + angle thumbnail strip (48px each)
 //   Right flex-1: two sub-columns of detail rows side by side
 
-import React, { useState, useEffect, useRef, useCallback, useContext, createContext } from 'react';
+import React, { useState, useEffect } from 'react';
 import copyIconSrc from '../../../assets/icons/VIN Details/square-behind-square-6, layers, copy 6, pages.svg';
+import { emitSnackbar } from '../Snackbar';
 import { cn } from '../../../lib/utils';
 import type { VinInventoryRecord } from '../../../data/inventory/vehicleInventory';
 import { AI_CONFIGS } from '../../../data/inventory/aiConfigs';
@@ -21,9 +22,6 @@ import { AngleStripVin } from './AngleStripVin';
 const BODY1   = "font-['Roboto',sans-serif] font-normal text-[14px] leading-[1.5] tracking-[0.15px]";
 const CAPTION = "font-['Roboto',sans-serif] font-normal text-[11px] leading-[1.66] tracking-[0.4px]";
 const SUB2    = "font-['Roboto',sans-serif] font-medium text-[14px] leading-[1.57] tracking-[0.1px]";
-
-// ─── Copy-notify context (avoids threading onCopy through every DetailRow) ────
-const CopyNotifyCtx = createContext<() => void>(() => {});
 
 // ─── Left-pane icon — cropped viewBox (same as ProjectsModule) ───────────────
 function LeftPaneIcon() {
@@ -67,14 +65,12 @@ function DetailRow({
   /** Full-text tooltip shown above the value when row is hovered (for truncated URLs etc). */
   tooltip?: string;
 }) {
-  const notify   = useContext(CopyNotifyCtx);
   const [hovered,     setHovered]     = useState(false);
   const [showCopyTip, setShowCopyTip] = useState(false);
 
   const handleCopy = () => {
     if (!copyValue) return;
-    // Trigger snackbar immediately — don't wait on the async API
-    notify();
+    emitSnackbar('Copied to Clipboard');
     if (navigator.clipboard) {
       navigator.clipboard.writeText(copyValue).catch(() => execCopy(copyValue));
     } else {
@@ -216,15 +212,6 @@ export function VinDetailContent({ record, onBack, variant = 'auto' }: VinDetail
     return () => window.removeEventListener('resize', handler);
   }, []);
 
-  // ── Copy-to-clipboard snackbar ─────────────────────────────────────────────
-  const [snackVisible, setSnackVisible] = useState(false);
-  const snackTimer = useRef<ReturnType<typeof setTimeout>>();
-  const triggerSnack = useCallback(() => {
-    setSnackVisible(true);
-    clearTimeout(snackTimer.current);
-    snackTimer.current = setTimeout(() => setSnackVisible(false), 2500);
-  }, []);
-
   // ── AI config lookup ────────────────────────────────────────────────────────
   const aiConfig = record.aiConfigId ? AI_CONFIGS.find(c => c.id === record.aiConfigId) : null;
   const vg       = record.vehicleGroup ?? null;
@@ -258,7 +245,6 @@ export function VinDetailContent({ record, onBack, variant = 'auto' }: VinDetail
   ];
 
   return (
-    <CopyNotifyCtx.Provider value={triggerSnack}>
     <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
 
       {/* ── Sticky header ────────────────────────────────────────────────── */}
@@ -665,22 +651,5 @@ export function VinDetailContent({ record, onBack, variant = 'auto' }: VinDetail
       )}
     </div>
 
-      {/* ── Snackbar: Copied to Clipboard ──────────────────────────────────── */}
-      <div
-        className="fixed bottom-[24px] left-1/2 z-[9999] flex items-center gap-[8px] bg-[#1f1d25] text-white px-[16px] h-[40px] rounded-[8px] shadow-[0_4px_16px_rgba(0,0,0,0.28)] transition-all duration-300 pointer-events-none"
-        style={{
-          transform: `translateX(-50%) translateY(${snackVisible ? '0px' : '12px'})`,
-          opacity: snackVisible ? 1 : 0,
-        }}
-      >
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-          <polyline points="20 6 9 17 4 12"/>
-        </svg>
-        <span style={{ fontFamily: "'Roboto', sans-serif", fontSize: 13, fontWeight: 500, letterSpacing: '0.15px' }}>
-          Copied to Clipboard
-        </span>
-      </div>
-
-    </CopyNotifyCtx.Provider>
   );
 }

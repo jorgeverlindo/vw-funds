@@ -47,7 +47,7 @@ function DetailRow({
 }) {
   return (
     <div className={cn(
-      'flex items-start gap-[8px] py-[8px]',
+      'flex items-center gap-[8px] py-[8px]',
       !noBorder && 'border-b border-[rgba(0,0,0,0.12)]',
     )}>
       <span className={cn(CAPTION, 'text-[rgba(0,0,0,0.6)]')} style={{ width: 72, minWidth: 72 }}>
@@ -285,14 +285,14 @@ export function VinDetailContent({ record, onBack, variant = 'auto' }: VinDetail
             <div
               className="flex flex-wrap min-w-0"
               style={{
-                ...(narrow ? { flex: '1 1 0%' } : { flex: '1 1 360px', maxWidth: 784 }),
+                ...(narrow ? { flex: '1 1 0%' } : { flex: '1 1 360px', maxWidth: 760 }),
                 columnGap: 24,
                 rowGap: 0,
               }}
             >
 
             {/* ColA: VIN · Config Used · VDP Link · Stock Number · Condition · Year · Make · Model · Exterior Color */}
-            <div className="min-w-0" style={{ flex: '1 1 360px', minWidth: 360 }}>
+            <div className="min-w-0" style={{ flex: '1 1 348px', minWidth: 348 }}>
               <DetailRow label="VIN">
                 <DetailText primary>{record.vin}</DetailText>
               </DetailRow>
@@ -332,7 +332,7 @@ export function VinDetailContent({ record, onBack, variant = 'auto' }: VinDetail
             </div>
 
             {/* ColB: Price · MSRP · Transit */}
-            <div className="min-w-0" style={{ flex: '1 1 360px', minWidth: 360 }}>
+            <div className="min-w-0" style={{ flex: '1 1 348px', minWidth: 348 }}>
               <DetailRow label="Price">
                 <DetailText>${record.price.toLocaleString()}</DetailText>
               </DetailRow>
@@ -438,12 +438,12 @@ export function VinDetailContent({ record, onBack, variant = 'auto' }: VinDetail
               className="flex flex-wrap gap-[24px] min-w-0"
               style={narrow
                 ? { flex: '1 1 0%' }
-                : { flex: '1 1 360px', maxWidth: 784 }
+                : { flex: '1 1 360px', maxWidth: 760 }
               }
             >
 
               {/* Sub-column A — VIN info + Physical attributes */}
-              <div className="min-w-0" style={{ flex: '1 1 360px', minWidth: 360 }}>
+              <div className="min-w-0" style={{ flex: '1 1 348px', minWidth: 348 }}>
                 <DetailRow label="VIN">
                   <DetailText primary>{record.vin}</DetailText>
                 </DetailRow>
@@ -501,7 +501,7 @@ export function VinDetailContent({ record, onBack, variant = 'auto' }: VinDetail
               </div>
 
               {/* Sub-column B — Location + Market */}
-              <div className="min-w-0" style={{ flex: '1 1 360px', minWidth: 360 }}>
+              <div className="min-w-0" style={{ flex: '1 1 348px', minWidth: 348 }}>
                 <DetailRow label="State">
                   <DetailText>Texas</DetailText>
                 </DetailRow>

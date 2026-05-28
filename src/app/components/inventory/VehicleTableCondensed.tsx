@@ -162,9 +162,10 @@ export function VehicleTableCondensed({ records, selected, onToggleRow, onToggle
                   </div>
                 </td>
 
-                {/* Thumbnail — 38×38px, bg-[#f0f2f4] */}
+                {/* Thumbnail — 38×38px, shares layoutId with Table Large so it morphs on transition */}
                 <td style={{ width: THUMB_W, minWidth: THUMB_W }}>
-                  <div
+                  <motion.div
+                    layoutId={`thumb-${record.id}`}
                     className={cn(
                       'relative overflow-hidden bg-[#f0f2f4] flex items-center justify-center',
                       isDisabled && 'opacity-50',
@@ -186,22 +187,28 @@ export function VehicleTableCondensed({ records, selected, onToggleRow, onToggle
                         <path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/>
                       </svg>
                     )}
-                  </div>
+                  </motion.div>
                 </td>
 
-                {/* VIN */}
+                {/* VIN — shares layoutId so it slides to its new column position */}
                 <td className="px-[16px]" style={{ width: VIN_W, minWidth: VIN_W }}>
-                  <button
+                  <motion.button
+                    layoutId={`vin-${record.id}`}
                     onClick={e => { e.stopPropagation(); onVinClick(record.id); }}
                     className={cn(VIN_STYLE, 'truncate block max-w-full bg-transparent border-none p-0 text-left', isDisabled && 'opacity-50')}
                   >
                     {record.vin}
-                  </button>
+                  </motion.button>
                 </td>
 
-                {/* Condition */}
+                {/* Condition — shares layoutId with subtitle in card views */}
                 <td className="px-[16px]" style={{ width: CONDITION_W, minWidth: CONDITION_W }}>
-                  <span className={cn(CELL, 'whitespace-nowrap', isDisabled && 'opacity-50')}>{record.condition}</span>
+                  <motion.span
+                    layoutId={`subtitle-${record.id}`}
+                    className={cn(CELL, 'whitespace-nowrap', isDisabled && 'opacity-50')}
+                  >
+                    {record.condition}
+                  </motion.span>
                 </td>
 
                 {/* Year */}

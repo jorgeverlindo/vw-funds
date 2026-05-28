@@ -6,7 +6,7 @@
 //   BreadcrumbBar → Page Title → Tabs → Toolbar → VehicleInventoryGrid
 
 import React, { useState, useCallback } from 'react';
-import { AnimatePresence, motion } from 'motion/react';
+import { AnimatePresence, motion, LayoutGroup } from 'motion/react';
 import { cn } from '../../../lib/utils';
 import {
   Search,
@@ -490,10 +490,18 @@ export function InventoryContent() {
           </span>
         </div>
       ) : (
+        <LayoutGroup id="inventory-views">
         <div className="flex-1 min-h-0 relative overflow-hidden">
           <AnimatePresence mode="sync" initial={false}>
             {viewMode === 'table-large' && (
-              <motion.div key="table-large" className="absolute inset-0 flex flex-col" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.15 }}>
+              <motion.div
+                key="table-large"
+                className="absolute inset-0 flex flex-col"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.25, ease: 'easeInOut' }}
+              >
                 <VehicleInventoryGrid
                   records={records}
                   selected={selected}
@@ -507,7 +515,14 @@ export function InventoryContent() {
               </motion.div>
             )}
             {viewMode === 'vertical-cards' && (
-              <motion.div key="vertical-cards" className="absolute inset-0 flex flex-col" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.15 }}>
+              <motion.div
+                key="vertical-cards"
+                className="absolute inset-0 flex flex-col"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.18, ease: 'easeInOut' }}
+              >
                 <VehicleCardGrid
                   records={records}
                   selected={selected}
@@ -517,7 +532,14 @@ export function InventoryContent() {
               </motion.div>
             )}
             {viewMode === 'horizontal-cards' && (
-              <motion.div key="horizontal-cards" className="absolute inset-0 flex flex-col" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.15 }}>
+              <motion.div
+                key="horizontal-cards"
+                className="absolute inset-0 flex flex-col"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.18, ease: 'easeInOut' }}
+              >
                 <VehicleCardList
                   records={records}
                   selected={selected}
@@ -527,7 +549,14 @@ export function InventoryContent() {
               </motion.div>
             )}
             {viewMode === 'table-small' && (
-              <motion.div key="table-small" className="absolute inset-0 flex flex-col" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.15 }}>
+              <motion.div
+                key="table-small"
+                className="absolute inset-0 flex flex-col"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.25, ease: 'easeInOut' }}
+              >
                 <VehicleTableCondensed
                   records={records}
                   selected={selected}
@@ -539,6 +568,7 @@ export function InventoryContent() {
             )}
           </AnimatePresence>
         </div>
+        </LayoutGroup>
       )}
 
       {/* ── Source Images lightbox ─────────────────────────────────────────── */}

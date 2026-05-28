@@ -467,15 +467,12 @@ export function InventoryContent() {
             <BarChart2 size={18} />
           </ToolbarIconBtn>
           {(() => {
-            // Icon always shows the NEXT view (where clicking will take you)
-            const curIdx  = VIEW_MODES.findIndex(m => m.id === viewMode);
-            const nextMode = VIEW_MODES[(curIdx + 1) % VIEW_MODES.length];
+            // Each mode carries its own NextIcon + label pointing to the next destination.
+            // Use the CURRENT mode's data — not nextMode's.
+            const cur = VIEW_MODES.find(m => m.id === viewMode)!;
             return (
-              <ToolbarIconBtn
-                title={nextMode.label}
-                onClick={cycleView}
-              >
-                <nextMode.NextIcon />
+              <ToolbarIconBtn title={cur.label} onClick={cycleView}>
+                <cur.NextIcon />
               </ToolbarIconBtn>
             );
           })()}

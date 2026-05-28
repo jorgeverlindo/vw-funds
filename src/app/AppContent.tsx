@@ -585,12 +585,16 @@ export default function AppContent() {
       />
 
       {/* Main Layout Container - Fixed offsets for sidebar/navbar */}
-      <CommentsProvider contextId={commentsContextId} contextName={commentsContextName} currentUserId={({
-        'dealer':          'mallory-manning',
-        'dealer-emich':    'katelyn-gray',
-        'oem':             'jenny-eckhart',
-        'dealer-singular': 'zak-flaten',
-      } as Record<string, string>)[userType] ?? 'jorge-verlindo'}>
+      <CommentsProvider contextId={commentsContextId} contextName={commentsContextName} currentUserId={
+        client.clientId === 'ride-now'
+          ? 'rachel-hui'
+          : (({
+              'dealer':          'mallory-manning',
+              'dealer-emich':    'katelyn-gray',
+              'oem':             'jenny-eckhart',
+              'dealer-singular': 'zak-flaten',
+            } as Record<string, string>)[userType] ?? 'jorge-verlindo')
+      }>
       <main className="ml-[72px] mt-[32px] h-[calc(100vh-48px)] flex p-6 gap-6 overflow-hidden mr-[0px] mb-[0px] relative">
 
         {/* ── Client Settings (Ride Now) — fills the whole main flex row ── */}

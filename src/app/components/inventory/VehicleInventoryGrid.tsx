@@ -4,6 +4,7 @@
 // AI-config badge on thumbnail, and drag-to-resize column headers.
 
 import React, { useState, useCallback } from 'react';
+import { motion } from 'motion/react';
 import { MoreVertical, X } from 'lucide-react';
 import { cn } from '../../../lib/utils';
 import { VehiclesMenu, type VehiclesMenuAnchor, type VehiclesMenuAction } from './VehiclesMenu';
@@ -520,10 +521,12 @@ export function VehicleInventoryGrid({
                 </td>
 
                 {/* Thumbnail — 76×76; opacity-50 if disabled */}
-                {/* When AI config applied + vehicleGroup has angles → show hero (generated image with bg) */}
-                {/* Outer div: positioning context (no overflow clip so badge can overflow) */}
+                {/* motion.div carries layoutId so the thumbnail morphs to the card image when switching views */}
                 <td style={w('thumbnail')}>
-                  <div className={cn('relative size-[76px]', isDisabled && 'opacity-50')}>
+                  <motion.div
+                    layoutId={`thumb-${record.id}`}
+                    className={cn('relative size-[76px]', isDisabled && 'opacity-50')}
+                  >
                     <ThumbnailImg
                       src={
                         record.aiConfigApplied && record.vehicleGroup?.angles?.['34l']
@@ -534,13 +537,14 @@ export function VehicleInventoryGrid({
                       cover={!!(record.aiConfigApplied && record.vehicleGroup?.angles?.['34l'])}
                     />
                     {record.aiConfigApplied && <AIConfigBadge />}
-                  </div>
+                  </motion.div>
                 </td>
 
                 {/* VIN — always primary purple, always clickable → opens VIN Detail page */}
                 <td className="px-4" style={w('vin')}>
                   <div className={cn(isDisabled && 'opacity-50')}>
-                    <button
+                    <motion.button
+                      layoutId={`vin-${record.id}`}
                       onClick={() => onVinClick?.(record.id)}
                       className={cn(
                         BODY2,
@@ -549,15 +553,18 @@ export function VehicleInventoryGrid({
                       )}
                     >
                       {record.vin}
-                    </button>
+                    </motion.button>
                   </div>
                 </td>
 
-                {/* Condition */}
+                {/* Condition — shares layoutId with card subtitle so it morphs during view transition */}
                 <td className="px-4" style={w('condition')}>
-                  <p className={cn(BODY2, 'text-[#1f1d25] whitespace-nowrap', isDisabled && 'opacity-50')}>
+                  <motion.p
+                    layoutId={`subtitle-${record.id}`}
+                    className={cn(BODY2, 'text-[#1f1d25] whitespace-nowrap', isDisabled && 'opacity-50')}
+                  >
                     {record.condition}
-                  </p>
+                  </motion.p>
                 </td>
 
                 {/* Year */}

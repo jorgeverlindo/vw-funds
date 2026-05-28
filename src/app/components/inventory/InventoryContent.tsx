@@ -119,7 +119,7 @@ interface ChannelIconItem {
 // Each icon represents the NEXT view in the cycle (what clicking will switch to).
 // Paths taken directly from the project SVG assets so colour follows currentColor.
 
-/** 3×2 grid of square tiles — represents Card Vertical (vertical-cards) */
+/** 3×2 grid of square tiles — cards-vertical.svg — represents Card Vertical (vertical-cards) */
 const IconCardVertical = () => (
   <svg width="20" height="20" viewBox="0 0 30 30" fill="none" xmlns="http://www.w3.org/2000/svg">
     <path
@@ -141,7 +141,7 @@ const IconCardHorizontal = () => (
   </svg>
 );
 
-/** 3 full-width rounded bars — represents Table (condensed-table) */
+/** 3 full-width rounded bars — View mode icon.svg — represents Table Large */
 const IconTableLarge = () => (
   <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
     <path d="M2.5 4.16683C2.5 3.70659 2.8731 3.3335 3.33333 3.3335H16.6667C17.1269 3.3335 17.5 3.70659 17.5 4.16683V5.8335C17.5 6.29373 17.1269 6.66683 16.6667 6.66683H3.33333C2.8731 6.66683 2.5 6.29373 2.5 5.8335V4.16683Z" fill="currentColor"/>
@@ -161,16 +161,16 @@ const IconTableSmall = () => (
 export function InventoryContent() {
   const { client } = useClient();
   // ── View mode — cycles on each click ──────────────────────────────────────
-  type ViewMode = 'data-grid' | 'vertical-cards' | 'horizontal-cards' | 'condensed-table';
-  // label = name of the NEXT view (tooltip says where you'll go)
-  // NextIcon = icon that represents the next view in the cycle
+  // Cycle order: Table Large → Card Vertical → Card Horizontal → Table Small → Table Large
+  // The button icon always shows the NEXT view (where clicking takes you).
+  type ViewMode = 'table-large' | 'vertical-cards' | 'horizontal-cards' | 'table-small';
   const VIEW_MODES: { id: ViewMode; label: string; NextIcon: React.FC }[] = [
-    { id: 'data-grid',        label: 'Card Vertical',   NextIcon: IconCardVertical   },
-    { id: 'vertical-cards',   label: 'Card Horizontal', NextIcon: IconCardHorizontal },
-    { id: 'horizontal-cards', label: 'Table View',      NextIcon: IconTableLarge     },
-    { id: 'condensed-table',  label: 'Data Grid',       NextIcon: IconTableSmall     },
+    { id: 'table-large',      label: 'Card Vertical',   NextIcon: IconCardVertical   }, // cards-vertical.svg
+    { id: 'vertical-cards',   label: 'Card Horizontal', NextIcon: IconCardHorizontal }, // Yamaha card-list icon
+    { id: 'horizontal-cards', label: 'Table Small',     NextIcon: IconTableSmall     }, // 4-line dense icon
+    { id: 'table-small',      label: 'Table Large',     NextIcon: IconTableLarge     }, // 3-bar wide icon
   ];
-  const [viewMode, setViewMode] = useState<ViewMode>('data-grid');
+  const [viewMode, setViewMode] = useState<ViewMode>('table-large');
   const cycleView = useCallback(() => {
     setViewMode(prev => {
       const idx = VIEW_MODES.findIndex(m => m.id === prev);
@@ -473,7 +473,6 @@ export function InventoryContent() {
             return (
               <ToolbarIconBtn
                 title={nextMode.label}
-                active={viewMode !== 'data-grid'}
                 onClick={cycleView}
               >
                 <nextMode.NextIcon />
@@ -493,8 +492,8 @@ export function InventoryContent() {
       ) : (
         <div className="flex-1 min-h-0 relative overflow-hidden">
           <AnimatePresence mode="sync" initial={false}>
-            {viewMode === 'data-grid' && (
-              <motion.div key="data-grid" className="absolute inset-0 flex flex-col" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.15 }}>
+            {viewMode === 'table-large' && (
+              <motion.div key="table-large" className="absolute inset-0 flex flex-col" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.15 }}>
                 <VehicleInventoryGrid
                   records={records}
                   selected={selected}
@@ -527,8 +526,8 @@ export function InventoryContent() {
                 />
               </motion.div>
             )}
-            {viewMode === 'condensed-table' && (
-              <motion.div key="condensed-table" className="absolute inset-0 flex flex-col" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.15 }}>
+            {viewMode === 'table-small' && (
+              <motion.div key="table-small" className="absolute inset-0 flex flex-col" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.15 }}>
                 <VehicleTableCondensed
                   records={records}
                   selected={selected}

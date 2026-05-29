@@ -53,10 +53,9 @@ export interface VinInventoryRecord {
 }
 
 // ─── Jellybean thumbnail helper ───────────────────────────────────────────────
-// Images live in public/inventory/jellybeans/<model>/<uuid>.png
-// Vite serves public/ at root, so the path is just the URL string.
+// Images are hosted on Cloudinary under vw-funds/public/inventory/jellybeans/
 function jb(model: string, uuid: string): string {
-  return `/inventory/jellybeans/${model}/jellybean-${uuid}.png`;
+  return `https://res.cloudinary.com/dvq75cqna/image/upload/vw-funds/public/inventory/jellybeans/${model}/jellybean-${uuid}.png`;
 }
 
 export const VEHICLE_INVENTORY: VinInventoryRecord[] = [

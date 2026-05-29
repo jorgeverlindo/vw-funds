@@ -797,7 +797,7 @@ export default function AppContent() {
 
           {/* INVENTORY SECTION — RideNow only */}
           {activeAppSection === 'inventory' && client.clientId === 'ride-now' && (
-            <InventoryContent />
+            <InventoryContent isAgentPaneOpen={isAgentPaneOpen} />
           )}
 
           </> {/* end of normal sections */}

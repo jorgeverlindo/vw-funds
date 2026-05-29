@@ -156,8 +156,13 @@ const IconTableSmall = () => (
 );
 
 // ─── InventoryContent ─────────────────────────────────────────────────────────
-export function InventoryContent() {
+export function InventoryContent({ isAgentPaneOpen = false }: { isAgentPaneOpen?: boolean }) {
   const { client } = useClient();
+  const { isPanelOpen } = useComments();
+  // Hide channel labels when either side panel (comments or agent) is open —
+  // they overlap the narrow toolbar in that layout.
+  const hideChannelLabels = isPanelOpen || isAgentPaneOpen;
+
   // ── View mode — cycles on each click ──────────────────────────────────────
   // Cycle order: Table Large → Card Vertical → Card Horizontal → Table Small → Table Large
   // The button icon always shows the NEXT view (where clicking takes you).
@@ -447,7 +452,7 @@ export function InventoryContent() {
                 {/* Label — hidden below lg to avoid wrapping on narrower screens */}
                 <span className={cn(
                   CAPTION,
-                  'hidden min-[1260px]:inline',
+                  hideChannelLabels ? 'hidden' : 'hidden min-[1260px]:inline',
                   ch.enabled ? 'text-[#1f1d25]' : 'text-[#9c99a9]',
                 )}>
                   {ch.label}

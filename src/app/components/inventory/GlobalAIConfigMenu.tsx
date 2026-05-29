@@ -12,7 +12,7 @@ import { cn } from '../../../lib/utils';
 const iconPower    = 'https://res.cloudinary.com/dvq75cqna/image/upload/v1780071154/vw-funds/icons/Inventory_Table/Card___Row/esc__power.svg';
 const iconTrash    = 'https://res.cloudinary.com/dvq75cqna/image/upload/v1780074746/vw-funds/icons/Inventory_Table/Card___Row/trash.svg';
 const iconPencil   = 'https://res.cloudinary.com/dvq75cqna/image/upload/v1780074748/vw-funds/icons/Inventory_Table/Card___Row/pencil__edit__write.svg';
-const iconDuplicate = 'https://res.cloudinary.com/dvq75cqna/image/upload/v1780071162/vw-funds/icons/Inventory_Table/Card___Row/plus-large__add_large.svg';
+const iconDuplicate = 'https://res.cloudinary.com/dvq75cqna/image/upload/v1780074904/vw-funds/icons/Inventory_Table/Card___Row/square-behind-square-3__copy.svg';
 
 // ── Keyframe animation (identical to VehiclesMenu) ────────────────────────────
 const SLIDE_DOWN_STYLE = `

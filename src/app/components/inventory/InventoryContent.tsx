@@ -432,14 +432,14 @@ export function InventoryContent() {
           />
         </div>
 
-        {/* Channel icons wrapper */}
+        {/* Channel icons wrapper — fill #f4f5f6, radius 12, px-4, gap-12 (from Figma hug wrapper) */}
         <div className="flex items-center px-[8px] py-[12px]">
-          <div className="flex gap-[12px] items-center px-[4px] bg-white rounded-[12px]">
+          <div className="flex gap-[12px] items-center px-[4px] rounded-[12px]" style={{ background: '#f4f5f6' }}>
             {CHANNELS.map(ch => (
               <div key={ch.id} className="relative flex gap-[2px] items-center">
                 {/* Error badge */}
                 {ch.hasError && (
-                  <span className="absolute top-[-1px] right-[24px] size-[8px] bg-[#d2323f] rounded-full z-[1]" />
+                  <span className="absolute top-[-1px] right-0 lg:right-[24px] size-[8px] bg-[#d2323f] rounded-full z-[1]" />
                 )}
                 <span className={[
                   'flex items-center justify-center shrink-0',
@@ -447,8 +447,10 @@ export function InventoryContent() {
                 ].join(' ')}>
                   {ch.icon}
                 </span>
+                {/* Label — hidden below lg to avoid wrapping on narrower screens */}
                 <span className={cn(
                   CAPTION,
+                  'hidden lg:inline',
                   ch.enabled ? 'text-[#1f1d25]' : 'text-[#9c99a9]',
                 )}>
                   {ch.label}

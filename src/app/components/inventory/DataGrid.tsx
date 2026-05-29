@@ -381,44 +381,61 @@ export function DataGrid({ records, selected, onToggleRow, onToggleAll, onRowCli
                     <StatusChip variant={record.status === 'Active' ? 'check' : 'pause'} />
                   </td>
 
-                  {/* Creation Date — text + hover kebab */}
-                  <td className="relative px-4" style={w('createdAt')}>
+                  {/* Creation Date */}
+                  <td className="px-4" style={w('createdAt')}>
                     <p className={cn(BODY2, 'text-[#1f1d25] whitespace-nowrap')}>
                       {record.createdAt}
                     </p>
-                    {/* Kebab overlays on hover with white bg so text stays readable.
-                        Stays visible while its menu is open (openMenu?.recordId === record.id). */}
-                    <button
-                      onClick={e => {
-                        e.stopPropagation();
-                        if (openMenu?.recordId === record.id) {
-                          setOpenMenu(null);
-                        } else {
-                          const rect = e.currentTarget.getBoundingClientRect();
-                          setOpenMenu({
-                            recordId: record.id,
-                            anchor: {
-                              top: rect.bottom + 4,
-                              right: window.innerWidth - rect.right,
-                            },
-                          });
-                        }
-                      }}
-                      className={cn(
-                        'absolute right-2 top-1/2 -translate-y-1/2',
-                        openMenu?.recordId === record.id
-                          ? 'visible bg-[rgba(17,16,20,0.08)]'
-                          : 'invisible group-hover:visible bg-white',
-                        'w-8 h-8 rounded flex items-center justify-center',
-                        'text-[rgba(17,16,20,0.56)] hover:bg-[rgba(17,16,20,0.06)] transition-colors',
-                      )}
-                    >
-                      {openMenu?.recordId === record.id
-                        ? <X size={16} />
-                        : <MoreVertical size={16} />
-                      }
-                    </button>
                   </td>
+
+                  {/* Sticky kebab — zero-width td sticks to right edge, identical to VehicleInventoryGrid */}
+                  {(() => {
+                    const hoverBg = isSelected
+                      ? 'rgba(99,86,225,0.12)'
+                      : 'rgba(31,29,37,0.04)';
+                    const menuOpen = openMenu?.recordId === record.id;
+                    return (
+                      <td className="sticky right-0 z-[2] p-0 border-0" style={{ width: 0, minWidth: 0 }}>
+                        <div className={cn(
+                          'absolute right-0 top-0 bottom-0 flex items-center pointer-events-none',
+                          menuOpen ? 'visible' : 'invisible group-hover:visible',
+                        )}>
+                          {/* Gradient fade */}
+                          <div
+                            className="h-full w-[80px] flex-none"
+                            style={{ background: `linear-gradient(to right, transparent, ${hoverBg})` }}
+                          />
+                          {/* Solid bg + kebab button */}
+                          <div
+                            className="h-full flex items-center pr-2 flex-none pointer-events-auto"
+                            style={{ backgroundColor: hoverBg }}
+                          >
+                            <button
+                              onClick={e => {
+                                e.stopPropagation();
+                                if (menuOpen) {
+                                  setOpenMenu(null);
+                                } else {
+                                  const rect = e.currentTarget.getBoundingClientRect();
+                                  setOpenMenu({
+                                    recordId: record.id,
+                                    anchor: {
+                                      top:   rect.bottom + 4,
+                                      right: window.innerWidth - rect.right,
+                                    },
+                                  });
+                                }
+                              }}
+                              className="w-8 h-8 flex items-center justify-center text-[rgba(17,16,20,0.56)] bg-white hover:bg-[rgba(255,255,255,0.92)] active:bg-[rgba(255,255,255,0.9)] transition-colors cursor-pointer"
+                              style={{ borderRadius: 200 }}
+                            >
+                              {menuOpen ? <X size={16} /> : <MoreVertical size={16} />}
+                            </button>
+                          </div>
+                        </div>
+                      </td>
+                    );
+                  })()}
                 </tr>
 
                 {/* ── Expansion row — animated via grid-template-rows ── */}

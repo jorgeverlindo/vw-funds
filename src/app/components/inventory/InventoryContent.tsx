@@ -436,7 +436,7 @@ export function InventoryContent() {
         <div className="flex-1" />
 
         {/* Channel icons wrapper — fill #f4f5f6, radius 12, p-8 all sides, gap-12 */}
-        <div className="flex gap-[12px] items-center p-[8px] rounded-[12px]" style={{ background: '#f4f5f6' }}>
+        <div className="flex gap-[12px] items-center px-[8px] py-[6px] rounded-[12px]" style={{ background: '#f4f5f6' }}>
             {CHANNELS.map(ch => (
               <div key={ch.id} className="relative flex gap-[2px] items-center">
                 {/* Error badge */}

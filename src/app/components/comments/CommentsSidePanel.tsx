@@ -113,6 +113,15 @@ export function CommentsSidePanel() {
   return (
     <AnimatePresence>
       {isPanelOpen && (
+        /* Outer: animates width so MainPane (flex-1) expands/shrinks in concert */
+        <motion.div
+          key="comments-panel-wrapper"
+          initial={{ width: 0 }}
+          animate={{ width: 400 }}
+          exit={{ width: 0 }}
+          transition={{ duration: 0.45, ease: [0.0, 0.0, 0.2, 1] }}
+          className="flex-none h-full overflow-hidden"
+        >
         <motion.aside
           key="comments-panel"
           initial={{ x: "100%", opacity: 0 }}
@@ -222,6 +231,7 @@ export function CommentsSidePanel() {
             />
           </div>
         </motion.aside>
+        </motion.div>
       )}
     </AnimatePresence>
   );

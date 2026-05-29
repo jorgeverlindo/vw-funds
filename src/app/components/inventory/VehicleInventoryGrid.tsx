@@ -7,6 +7,7 @@ import React, { useState, useCallback } from 'react';
 import { motion } from 'motion/react';
 import { MoreVertical, X } from 'lucide-react';
 import { cn } from '../../../lib/utils';
+import { emitSnackbar } from '../Snackbar';
 import { VehiclesMenu, type VehiclesMenuAnchor, type VehiclesMenuAction } from './VehiclesMenu';
 import type {
   VinInventoryRecord,
@@ -372,12 +373,18 @@ export function VehicleInventoryGrid({
 
   const handleMenuAction = useCallback((action: VehiclesMenuAction) => {
     if (!openMenu) return;
-    const { recordId } = openMenu;
-    if (action === 'vinDetails')        onVinClick?.(recordId);
-    if (action === 'syndicate')         onSyndicationToggle?.(recordId);
-    if (action === 'disableAiImage')    onAiGenerationToggle?.(recordId);
-    if (action === 'viewSourceImages')  onViewSourceImages?.(recordId);
-    if (action === 'attachComment')     onAttachComment?.(recordId);
+    const { recordId, syndicationStatus, aiGenerationStatus } = openMenu;
+    if (action === 'vinDetails')       { onVinClick?.(recordId); }
+    if (action === 'syndicate')        {
+      onSyndicationToggle?.(recordId);
+      emitSnackbar(syndicationStatus === 'syndicated' ? 'Syndication disabled' : 'Syndication enabled');
+    }
+    if (action === 'disableAiImage')   {
+      onAiGenerationToggle?.(recordId);
+      emitSnackbar(aiGenerationStatus === 'enabled' ? 'AI Image disabled' : 'AI Image enabled');
+    }
+    if (action === 'viewSourceImages') { onViewSourceImages?.(recordId); }
+    if (action === 'attachComment')    { onAttachComment?.(recordId); }
   }, [openMenu, onVinClick, onSyndicationToggle, onAiGenerationToggle, onViewSourceImages, onAttachComment]);
 
   const setW = (key: keyof ColWidths) => (val: number) =>

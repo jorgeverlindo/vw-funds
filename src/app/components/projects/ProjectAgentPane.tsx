@@ -2905,9 +2905,15 @@ export function ProjectAgentPane({ isOpen, onClose, userType, activeUserName }: 
   return (
     <AnimatePresence>
       {isOpen && (
+        /* Outer: animates width so MainPane (flex-1) expands/shrinks in concert */
+        <motion.div key="project-agent-pane-wrapper"
+          initial={{ width: 0 }} animate={{ width: 400 }} exit={{ width: 0 }}
+          transition={{ duration: 0.45, ease: [0.0, 0.0, 0.2, 1] }}
+          className="flex-none h-full overflow-hidden"
+        >
         <motion.div key="project-agent-pane"
           initial={{ x: "100%", opacity: 0 }} animate={{ x: 0, opacity: 1 }} exit={{ x: "100%", opacity: 0 }}
-          transition={{ duration: 0.3, ease: [0.25, 0.1, 0.25, 1] }}
+          transition={{ duration: 0.45, ease: [0.0, 0.0, 0.2, 1] }}
           style={{ willChange: "transform" }}
           className="flex-none h-full w-[400px] overflow-hidden bg-white rounded-2xl shadow-sm border border-[rgba(0,0,0,0.04)]"
         >
@@ -3174,6 +3180,7 @@ export function ProjectAgentPane({ isOpen, onClose, userType, activeUserName }: 
               )}
             </div>
           </div>
+        </motion.div>
         </motion.div>
       )}
     </AnimatePresence>

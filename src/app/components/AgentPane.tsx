@@ -1101,9 +1101,13 @@ export function AgentPane({ isOpen, onClose, accountName }: AgentPaneProps) {
   return (
     <AnimatePresence>
       {isOpen && (
+        <motion.div key="agent-pane-wrapper"
+          initial={{ width: 0 }} animate={{ width: 400 }} exit={{ width: 0 }}
+          transition={{ duration: 0.45, ease: [0.0, 0.0, 0.2, 1] }}
+          className="flex-none h-full overflow-hidden">
         <motion.div key="agent-pane"
           initial={{ x: '100%', opacity: 0 }} animate={{ x: 0, opacity: 1 }} exit={{ x: '100%', opacity: 0 }}
-          transition={{ duration: 0.3, ease: [0.25, 0.1, 0.25, 1] }}
+          transition={{ duration: 0.45, ease: [0.0, 0.0, 0.2, 1] }}
           className="flex-none h-full w-[400px] overflow-hidden bg-white rounded-2xl shadow-sm border border-[rgba(0,0,0,0.04)]"
           style={{ willChange: 'transform' }}>
           <div className="flex flex-col h-full pt-[12px] px-[16px]">
@@ -1178,6 +1182,7 @@ export function AgentPane({ isOpen, onClose, accountName }: AgentPaneProps) {
               </AnimatePresence>
             </div>
           </div>
+        </motion.div>
         </motion.div>
       )}
     </AnimatePresence>

@@ -444,48 +444,64 @@ export default function AppContent() {
     setPendingCommentNav({ contextId: targetCtxId, commentId: notif.targetCommentId });
 
     // contextId format:
-    //   "section-tab"  → a tab inside a top-level section (campaigns, portal, …)
+    //   "section-tab"   → a tab inside a top-level section (campaigns, portal, inventory…)
     //   "projects-main" → projects list with no project open
-    //   anything else  → a specific project ID
+    //   anything else   → a specific project UUID
     //
-    // To add a new section: add its name to SECTION_TABS and ensure CommentsButton
-    // is placed in its main-pane header (see CommentsButton convention in memory).
+    // SECTION_TABS: maps section name → default tab slug used when tabPart is absent.
+    // For sections without sub-tabs (inventory, portal) the value equals the section name
+    // so buildUrl receives the right slug.
+    // To add a new section: add it here and ensure CommentsButton lives in its header.
     const SECTION_TABS: Record<string, string> = {
-      campaigns: 'overview',  // default tab when none specified
-      portal:    'portal',    // portal has no sub-tabs; navigate to the portal slug
+      campaigns: 'overview',   // default campaigns tab when none specified
+      portal:    'portal',     // portal has no sub-tabs
+      inventory: 'inventory',  // inventory has no sub-tabs
     };
+
     const dashIdx = targetCtxId.indexOf('-');
     const sectionKey = dashIdx !== -1 ? targetCtxId.slice(0, dashIdx) : '';
     const tabPart    = dashIdx !== -1 ? targetCtxId.slice(dashIdx + 1) : '';
 
     if (sectionKey in SECTION_TABS) {
-      // Section-based context (e.g. campaigns-overview, portal-main)
+      // Section-based context — navigate to the right page and sync activeTab so that
+      // commentsContextId ("section-tab") matches pendingCommentNav.contextId exactly.
       const tab = (tabPart && tabPart !== 'main') ? tabPart : SECTION_TABS[sectionKey];
+
       setActiveAppSection(sectionKey);
-      if (sectionKey === 'campaigns') setActiveTab(tab);
-      navigate(buildUrl(userType, client.clientId, tab), { replace: true });
+      setActiveTab(tab); // always sync so the commentsContextId effect produces the right key
+
+      // For campaigns each tab has its own URL slug; for other sections the section IS the slug.
+      const navSlug = sectionKey === 'campaigns' ? tab : sectionKey;
+      navigate(buildUrl(userType, client.clientId, navSlug), { replace: true });
     } else if (targetCtxId === 'projects-main') {
       setActiveAppSection('projects');
       navigate(buildUrl(userType, client.clientId, 'projects'), { replace: true });
     } else {
-      // Specific project ID
+      // Specific project UUID — open Projects section and request that project
       setActiveAppSection('projects');
       setNotifOpenProjectId(targetCtxId);
       navigate(buildUrl(userType, client.clientId, 'projects'), { replace: true });
     }
   }, [userType, client.clientId, navigate]);
 
-  // Fire comment-open-to event once the context matches the pending navigation
+  // Fire comment-open-to once the commentsContextId matches the pending navigation.
+  // We retry with increasing delays to survive any mounting/rendering lag in the
+  // destination page's CommentsProvider.
   useEffect(() => {
     if (!pendingCommentNav) return;
     if (commentsContextId !== pendingCommentNav.contextId) return;
-    const t = setTimeout(() => {
-      window.dispatchEvent(new CustomEvent('comment-open-to', {
-        detail: { contextId: pendingCommentNav.contextId, commentId: pendingCommentNav.commentId }
-      }));
-      setPendingCommentNav(null);
-    }, 300);
-    return () => clearTimeout(t);
+
+    const delays = [200, 600, 1200]; // ms — retry up to 3 times
+    const timers: ReturnType<typeof setTimeout>[] = [];
+    delays.forEach((delay, i) => {
+      timers.push(setTimeout(() => {
+        window.dispatchEvent(new CustomEvent('comment-open-to', {
+          detail: { contextId: pendingCommentNav.contextId, commentId: pendingCommentNav.commentId }
+        }));
+        if (i === delays.length - 1) setPendingCommentNav(null);
+      }, delay));
+    });
+    return () => timers.forEach(clearTimeout);
   }, [commentsContextId, pendingCommentNav]);
 
   const selectedWCMItem = useMemo(() => {

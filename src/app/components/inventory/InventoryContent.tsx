@@ -438,16 +438,13 @@ export function InventoryContent() {
         {/* Channel icons wrapper — fill #f4f5f6, radius 12, p-8 all sides, gap-12 */}
         <div className="flex gap-[12px] items-center px-[8px] py-[6px] rounded-[12px]" style={{ background: '#f4f5f6' }}>
             {CHANNELS.map(ch => (
-              <div key={ch.id} className="relative flex gap-[2px] items-center">
-                {/* Error badge */}
-                {ch.hasError && (
-                  <span className="absolute top-[-1px] right-0 lg:right-[24px] size-[8px] bg-[#d2323f] rounded-full z-[1]" />
-                )}
-                <span className={[
-                  'flex items-center justify-center shrink-0',
-                  !ch.enabled && 'opacity-40',
-                ].join(' ')}>
+              <div key={ch.id} className="flex gap-[2px] items-center">
+                {/* Icon wrapper — badge anchored here so it moves with the icon */}
+                <span className="relative flex items-center justify-center shrink-0" style={{ opacity: !ch.enabled ? 0.4 : 1 }}>
                   {ch.icon}
+                  {ch.hasError && (
+                    <span className="absolute top-[-2px] right-[-2px] size-[8px] bg-[#d2323f] rounded-full z-[1]" />
+                  )}
                 </span>
                 {/* Label — hidden below lg to avoid wrapping on narrower screens */}
                 <span className={cn(

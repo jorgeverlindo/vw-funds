@@ -14,9 +14,7 @@ import { WorkflowHistoryTimeline } from './WorkflowHistoryTimeline';
 import type { WorkflowEvent } from '../contexts/WorkflowContext';
 
 // Jack Daniels VW thumbnail — from RpWebMonitoring Figma component
-import imgScreenshot from 'figma:asset/474e8b063908875e688d0c1396b3726c6afa9ce4.png';
-
-// ─── Shared helpers ───────────────────────────────────────────────────────────
+const imgScreenshot = 'https://res.cloudinary.com/dvq75cqna/image/upload/v1780071062/vw-funds/474e8b063908875e688d0c1396b3726c6afa9ce4.png';
 
 // [FV] strip protocol + leading www. for the chrome bar URL display
 export function stripUrlForChrome(url: string): string {

@@ -9,13 +9,12 @@ import { cn } from '../../../lib/utils';
 import type { SyndicationStatus, AIGenerationStatus } from '../../../data/inventory/vehicleInventory';
 
 // ── Asset imports (local SVG icons from Figma export) ─────────────────────────
-import iconSignal  from '../../../assets/icons/Inventory Table/Card & Row/live-full, signal.svg';
-import iconCar     from '../../../assets/icons/Inventory Table/Card & Row/car.svg';
-import iconPlus    from '../../../assets/icons/Inventory Table/Card & Row/plus-large, add large.svg';
-import iconPhotos  from '../../../assets/icons/Inventory Table/Card & Row/images-2, photos, pictures, shot.svg';
-import iconEye     from '../../../assets/icons/Inventory Table/Card & Row/eye-open, show, see, reveal, look, visible.svg';
-import iconPower   from '../../../assets/icons/Inventory Table/Card & Row/esc, power.svg';
-
+const iconSignal = 'https://res.cloudinary.com/dvq75cqna/image/upload/v1780071160/vw-funds/icons/Inventory_Table/Card___Row/live-full__signal.svg';
+const iconCar = 'https://res.cloudinary.com/dvq75cqna/image/upload/v1780071152/vw-funds/icons/Inventory_Table/Card___Row/car.svg';
+const iconPlus = 'https://res.cloudinary.com/dvq75cqna/image/upload/v1780071162/vw-funds/icons/Inventory_Table/Card___Row/plus-large__add_large.svg';
+const iconPhotos = 'https://res.cloudinary.com/dvq75cqna/image/upload/v1780071158/vw-funds/icons/Inventory_Table/Card___Row/images-2__photos__pictures__shot.svg';
+const iconEye = 'https://res.cloudinary.com/dvq75cqna/image/upload/v1780071156/vw-funds/icons/Inventory_Table/Card___Row/eye-open__show__see__reveal__look__visible.svg';
+const iconPower = 'https://res.cloudinary.com/dvq75cqna/image/upload/v1780071154/vw-funds/icons/Inventory_Table/Card___Row/esc__power.svg';
 // ── Keyframe animation ────────────────────────────────────────────────────────
 const SLIDE_DOWN_STYLE = `
 @keyframes vehiclesMenuIn {

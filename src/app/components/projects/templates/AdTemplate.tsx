@@ -21,8 +21,8 @@ interface AdTemplateCtxValue {
   eventLogoSrc: string | null;
 }
 
-const FALLBACK_PRIMARY = "/brand-kits/honda/primary-square-positive.png";
-const FALLBACK_EVENT   = "/brand-kits/honda/event-square-positive.png";
+const FALLBACK_PRIMARY = "https://res.cloudinary.com/dvq75cqna/image/upload/v1780071648/vw-funds/public/brand-kits/honda/primary-square-positive.png";
+const FALLBACK_EVENT   = "https://res.cloudinary.com/dvq75cqna/image/upload/v1780071647/vw-funds/public/brand-kits/honda/event-square-positive.png";
 
 const AdTemplateCtx = createContext<AdTemplateCtxValue>({
   forExport: false,

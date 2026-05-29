@@ -18,8 +18,8 @@ import {
 import { VehicleCardGrid }       from './VehicleCardGrid';
 import { VehicleCardList }       from './VehicleCardList';
 import { VehicleTableCondensed } from './VehicleTableCondensed';
-import filtersIcon     from '../../../assets/icons/Filters.svg';
-import chainLinkIcon   from '../../../assets/icons/Yamaha VIN List/Card & Row/Main Pane Header 2.0/chain-link-3,url.svg';
+const filtersIcon = 'https://res.cloudinary.com/dvq75cqna/image/upload/v1780071149/vw-funds/icons/Filters.svg';
+const chainLinkIcon = 'https://res.cloudinary.com/dvq75cqna/image/upload/v1780071178/vw-funds/icons/Yamaha_VIN_List/Card___Row/Main_Pane_Header_2_0/chain-link-3_url.svg';
 import { BreadcrumbBar } from '../BreadcrumbBar';
 import { CommentsButton, useComments } from '../comments';
 import { VehicleInventoryGrid } from './VehicleInventoryGrid';
@@ -30,19 +30,17 @@ import { ANGLES }                from './AngleBar';
 import { VEHICLE_INVENTORY }    from '../../../data/inventory/vehicleInventory';
 import type { SyndicationStatus, AIGenerationStatus } from '../../../data/inventory/vehicleInventory';
 import type { AngleKey }         from '../../../data/inventory/types';
-import emptyStateSrc             from '../../../assets/inventory/empty-state.svg';
-
+const emptyStateSrc = 'https://res.cloudinary.com/dvq75cqna/image/upload/v1780071197/vw-funds/inventory/empty-state.svg';
 // Canonical angle key order, aligned with ANGLES in AngleBar (index-safe)
 const ANGLE_KEYS: AngleKey[] = ['34l', 'front', '34r', 'right', 'left', 'rear'];
 
 // Channel brand logos
-import metaLogo    from '../../../assets/channels/Brand Logo/Meta.svg';
-import googleLogo  from '../../../assets/channels/google.png';
-import vinIqLogo   from '../../../assets/logos/channels/Yamaha VIN List/VinIQ.svg';
-import aiEnabledLogo  from '../../../assets/logos/channels/Yamaha VIN List/AI_enabled.svg';
-import optymizrLogo   from '../../../assets/logos/channels/Yamaha VIN List/Optymizr.png';
-import fluencyLogo    from '../../../assets/logos/channels/Yamaha VIN List/fluency.png';
-
+const metaLogo = 'https://res.cloudinary.com/dvq75cqna/image/upload/v1780071126/vw-funds/channels/Brand_Logo/Meta.svg';
+const googleLogo = 'https://res.cloudinary.com/dvq75cqna/image/upload/v1780071130/vw-funds/channels/google.png';
+const vinIqLogo = 'https://res.cloudinary.com/dvq75cqna/image/upload/v1780071287/vw-funds/logos/channels/Yamaha_VIN_List/VinIQ.svg';
+const aiEnabledLogo = 'https://res.cloudinary.com/dvq75cqna/image/upload/v1780071281/vw-funds/logos/channels/Yamaha_VIN_List/AI_enabled.svg';
+const optymizrLogo = 'https://res.cloudinary.com/dvq75cqna/image/upload/v1780071286/vw-funds/logos/channels/Yamaha_VIN_List/Optymizr.png';
+const fluencyLogo = 'https://res.cloudinary.com/dvq75cqna/image/upload/v1780071289/vw-funds/logos/channels/Yamaha_VIN_List/fluency.png';
 // ─── Typography ───────────────────────────────────────────────────────────────
 const CAPTION = "font-['Roboto',sans-serif] font-normal text-[11px] leading-[1.66] tracking-[0.4px]";
 

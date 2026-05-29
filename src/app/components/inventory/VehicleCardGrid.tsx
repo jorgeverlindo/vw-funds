@@ -6,7 +6,7 @@ import { useState, useCallback } from 'react';
 import { motion } from 'motion/react';
 import { Check, MoreVertical, X } from 'lucide-react';
 import { cn } from '../../../lib/utils';
-import iconEye from '../../../assets/icons/Inventory Table/Card & Row/eye-open, show, see, reveal, look, visible.svg';
+const iconEye = 'https://res.cloudinary.com/dvq75cqna/image/upload/v1780071156/vw-funds/icons/Inventory_Table/Card___Row/eye-open__show__see__reveal__look__visible.svg';
 import type {
   VinInventoryRecord,
   SyndicationStatus,

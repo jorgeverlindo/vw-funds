@@ -9,10 +9,8 @@ import { OnboardingBubble } from './OnboardingBubble';
 import { PreviewControlsZoom } from './PreviewControlsZoom';
 import { BeforeAfter } from './BeforeAfter';
 
-import imgEnhanced from "figma:asset/f925b175d9f45ba629bdedc9c27563c3216090ba.png";
-import imgNextAd from "figma:asset/dcd4a062f63eda60d1f2ae0b47f935693f998f44.png";
-
-// SVG Paths
+const imgEnhanced = 'https://res.cloudinary.com/dvq75cqna/image/upload/v1780071143/vw-funds/f925b175d9f45ba629bdedc9c27563c3216090ba.jpg';
+const imgNextAd = 'https://res.cloudinary.com/dvq75cqna/image/upload/v1780071132/vw-funds/dcd4a062f63eda60d1f2ae0b47f935693f998f44.jpg';
 const ICONS = {
   folderUpload: {
     path: "M33.2491 43.6984H39.4833C41.7787 43.6984 43.6395 41.639 43.6395 39.0986V20.6993C43.6395 18.1588 41.7787 16.0994 39.4833 16.0994H26.049C25.3542 16.0994 24.7053 15.7151 24.3199 15.0753L22.0145 11.248C21.2437 9.96831 19.946 9.19967 18.5564 9.19967H10.3903C8.09498 9.19967 6.23421 11.2591 6.23421 13.7995V39.0986C6.23421 41.639 8.09498 43.6984 10.3903 43.6984H16.6246M24.9368 43.6984V29.8989M24.9368 29.8989L30.132 35.6487M24.9368 29.8989L19.7417 35.6487",

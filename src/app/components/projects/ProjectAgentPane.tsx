@@ -16,7 +16,7 @@ import {
   DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem,
 } from "../ui/dropdown-menu";
 import * as Tooltip from "@radix-ui/react-tooltip";
-import imgAgentAvatar from "figma:asset/a66b3945941bddb97efa53207e606703467e02b3.png";
+const imgAgentAvatar = 'https://res.cloudinary.com/dvq75cqna/image/upload/v1780071107/vw-funds/a66b3945941bddb97efa53207e606703467e02b3.png';
 import { AvatarInitials } from "../ui/AvatarInitials";
 import { PROJECT_OWNERS, PLATFORM_OPTIONS } from "./CreateProjectDialog";
 import { ChannelChip } from "../ui/ChannelChip";
@@ -87,21 +87,21 @@ export interface CustomOffer {
 // All keywords in an entry must match (AND). More keywords = higher priority win.
 const CAR_IMAGE_CATALOG: Array<{ keywords: string[]; path: string }> = [
   // BMW
-  { keywords: ["m5", "touring"],       path: "/cars/M5 Touring.png" },
-  { keywords: ["x5", "m60i"],          path: "/cars/X5 M60i.png" },
-  { keywords: ["x5", "competition"],   path: "/cars/X5 - Competition.png" },
-  { keywords: ["x2"],                  path: "/cars/X2.png" },
-  { keywords: ["x5"],                  path: "/cars/X5 M60i.png" },
-  { keywords: ["x6"],                  path: "/cars/X6.png" },
+  { keywords: ["m5", "touring"],       path: "https://res.cloudinary.com/dvq75cqna/image/upload/v1780071658/vw-funds/public/cars/M5_Touring.png" },
+  { keywords: ["x5", "m60i"],          path: "https://res.cloudinary.com/dvq75cqna/image/upload/v1780071667/vw-funds/public/cars/X5_M60i.png" },
+  { keywords: ["x5", "competition"],   path: "https://res.cloudinary.com/dvq75cqna/image/upload/v1780071665/vw-funds/public/cars/X5_-_Competition.png" },
+  { keywords: ["x2"],                  path: "https://res.cloudinary.com/dvq75cqna/image/upload/v1780071664/vw-funds/public/cars/X2.png" },
+  { keywords: ["x5"],                  path: "https://res.cloudinary.com/dvq75cqna/image/upload/v1780071667/vw-funds/public/cars/X5_M60i.png" },
+  { keywords: ["x6"],                  path: "https://res.cloudinary.com/dvq75cqna/image/upload/v1780071668/vw-funds/public/cars/X6.png" },
   // Honda
-  { keywords: ["cr-v"],                path: "/cars/CR-V.png" },
-  { keywords: ["civic"],               path: "/cars/Civic.png" },
-  { keywords: ["hr-v"],                path: "/cars/HR-V.png" },
-  { keywords: ["odyssey"],             path: "/cars/Odyssey.png" },
+  { keywords: ["cr-v"],                path: "https://res.cloudinary.com/dvq75cqna/image/upload/v1780071654/vw-funds/public/cars/CR-V.png" },
+  { keywords: ["civic"],               path: "https://res.cloudinary.com/dvq75cqna/image/upload/v1780071656/vw-funds/public/cars/Civic.png" },
+  { keywords: ["hr-v"],                path: "https://res.cloudinary.com/dvq75cqna/image/upload/v1780071657/vw-funds/public/cars/HR-V.png" },
+  { keywords: ["odyssey"],             path: "https://res.cloudinary.com/dvq75cqna/image/upload/v1780071663/vw-funds/public/cars/Odyssey.png" },
   // Mercedes-Benz
-  { keywords: ["glc"],                 path: "/cars/Mercedes GLC.png" },
-  { keywords: ["gls"],                 path: "/cars/Mercedes GLS.png" },
-  { keywords: ["mercedes"],            path: "/cars/Mercedes C.png" },
+  { keywords: ["glc"],                 path: "https://res.cloudinary.com/dvq75cqna/image/upload/v1780071661/vw-funds/public/cars/Mercedes_GLC.png" },
+  { keywords: ["gls"],                 path: "https://res.cloudinary.com/dvq75cqna/image/upload/v1780071662/vw-funds/public/cars/Mercedes_GLS.png" },
+  { keywords: ["mercedes"],            path: "https://res.cloudinary.com/dvq75cqna/image/upload/v1780071660/vw-funds/public/cars/Mercedes_C.png" },
 ];
 
 export function resolveCarImage(make: string, model: string, trim: string): string {
@@ -563,20 +563,20 @@ function BrandProposalCard({ input, projectName, onApply, onDismiss, proactive }
 
 // ─── Backgrounds Proposal Card ─────────────────────────────────────────────────
 const SCENE_BACKGROUNDS = [
-  { id: "dirt-road",                  name: "Dirt Road",               thumbnail: "/backgrounds/Dirt-Road-HO_251027_1_Display_300x250 1.png" },
-  { id: "gold-flare",                 name: "Gold Flare",              thumbnail: "/backgrounds/Gold-Flare-HO_251027_3_Display_300x250 1.png" },
-  { id: "purple-city",                name: "Purple City",             thumbnail: "/backgrounds/Purple-City-HO_251229_D_Keeler_Display_300x250 1.png" },
-  { id: "snow-house",                 name: "Snow House",              thumbnail: "/backgrounds/Snow-House-HO_251120_2_Display_300x250 1.png" },
-  { id: "ballon-festival",            name: "Balloon Festival",        thumbnail: "/backgrounds/Ballon%20Festival/1777265296524_9d7c8327.jpg" },
-  { id: "beach-sunset",               name: "Beach Sunset",            thumbnail: "/backgrounds/Beach%20Sunset/BM_250724_2_DISPLAY_300x250.jpg" },
-  { id: "desert-day",                 name: "Desert Day",              thumbnail: "/backgrounds/Desert%20Day/tmp_b9mipxq_1080x1080_1774762572901_300x250_1774892650125.jpg" },
-  { id: "desert-pyramid-night-sky",   name: "Desert Pyramid Night",    thumbnail: "/backgrounds/Desert%20Pyramid%20Night%20Sky/1777056196506_131012de.jpg" },
-  { id: "docks-midday",               name: "Docks Midday",            thumbnail: "/backgrounds/Docks%20Midday/BM_250515_1_SOCIAL_1080x1080_300x250_1774892650098.jpg" },
-  { id: "field-with-mountain",        name: "Field With Mountain",     thumbnail: "/backgrounds/Field%20With%20Mountain/1777014100078_094e3bd4.jpg" },
-  { id: "forest-lodge",               name: "Forest Lodge",            thumbnail: "/backgrounds/Forest%20Lodge/1777217113411_a7cf6a69.jpg" },
-  { id: "frozen-lake-night",          name: "Frozen Lake Night",       thumbnail: "/backgrounds/Frozen%20Lake%20Night/1777303348542_7657d84b.jpg" },
-  { id: "ice-lab",                    name: "Ice Lab",                 thumbnail: "/backgrounds/Ice%20Lab/1777123961113_36260ab2.jpg" },
-  { id: "stadium-night",              name: "Stadium Night",           thumbnail: "/backgrounds/Stadium%20Night/BM_250825_1C_Display_300x250.jpg" },
+  { id: "dirt-road",                  name: "Dirt Road",               thumbnail: "https://res.cloudinary.com/dvq75cqna/image/upload/v1780071536/vw-funds/public/backgrounds/Dirt-Road-HO_251027_1_Display_300x250_1.png" },
+  { id: "gold-flare",                 name: "Gold Flare",              thumbnail: "https://res.cloudinary.com/dvq75cqna/image/upload/v1780071581/vw-funds/public/backgrounds/Gold-Flare-HO_251027_3_Display_300x250_1.png" },
+  { id: "purple-city",                name: "Purple City",             thumbnail: "https://res.cloudinary.com/dvq75cqna/image/upload/v1780071599/vw-funds/public/backgrounds/Purple-City-HO_251229_D_Keeler_Display_300x250_1.png" },
+  { id: "snow-house",                 name: "Snow House",              thumbnail: "https://res.cloudinary.com/dvq75cqna/image/upload/v1780071611/vw-funds/public/backgrounds/Snow-House-HO_251120_2_Display_300x250_1.png" },
+  { id: "ballon-festival",            name: "Balloon Festival",        thumbnail: "https://res.cloudinary.com/dvq75cqna/image/upload/v1780071509/vw-funds/public/backgrounds/Ballon_Festival/1777265296524_9d7c8327.jpg" },
+  { id: "beach-sunset",               name: "Beach Sunset",            thumbnail: "https://res.cloudinary.com/dvq75cqna/image/upload/v1780071515/vw-funds/public/backgrounds/Beach_Sunset/BM_250724_2_DISPLAY_300x250.jpg" },
+  { id: "desert-day",                 name: "Desert Day",              thumbnail: "https://res.cloudinary.com/dvq75cqna/image/upload/v1780071522/vw-funds/public/backgrounds/Desert_Day/tmp_b9mipxq_1080x1080_1774762572901_300x250_1774892650125.jpg" },
+  { id: "desert-pyramid-night-sky",   name: "Desert Pyramid Night",    thumbnail: "https://res.cloudinary.com/dvq75cqna/image/upload/v1780071533/vw-funds/public/backgrounds/Desert_Pyramid_Night_Sky/1777056196506_131012de.jpg" },
+  { id: "docks-midday",               name: "Docks Midday",            thumbnail: "https://res.cloudinary.com/dvq75cqna/image/upload/v1780071549/vw-funds/public/backgrounds/Docks_Midday/BM_250515_1_SOCIAL_1080x1080_300x250_1774892650098.jpg" },
+  { id: "field-with-mountain",        name: "Field With Mountain",     thumbnail: "https://res.cloudinary.com/dvq75cqna/image/upload/v1780071563/vw-funds/public/backgrounds/Field_With_Mountain/1777014100078_094e3bd4.jpg" },
+  { id: "forest-lodge",               name: "Forest Lodge",            thumbnail: "https://res.cloudinary.com/dvq75cqna/image/upload/v1780071569/vw-funds/public/backgrounds/Forest_Lodge/1777217113411_a7cf6a69.jpg" },
+  { id: "frozen-lake-night",          name: "Frozen Lake Night",       thumbnail: "https://res.cloudinary.com/dvq75cqna/image/upload/v1780071579/vw-funds/public/backgrounds/Frozen_Lake_Night/1777303348542_7657d84b.jpg" },
+  { id: "ice-lab",                    name: "Ice Lab",                 thumbnail: "https://res.cloudinary.com/dvq75cqna/image/upload/v1780071589/vw-funds/public/backgrounds/Ice_Lab/1777123961113_36260ab2.jpg" },
+  { id: "stadium-night",              name: "Stadium Night",           thumbnail: "https://res.cloudinary.com/dvq75cqna/image/upload/v1780071628/vw-funds/public/backgrounds/Stadium_Night/BM_250825_1C_Display_300x250.jpg" },
 ];
 
 interface BackgroundsCardProps {

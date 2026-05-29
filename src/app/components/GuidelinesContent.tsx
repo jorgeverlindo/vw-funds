@@ -2,19 +2,16 @@ import { useTranslation } from '../contexts/LanguageContext';
 import { useClient } from '../contexts/ClientContext';
 
 // VW card images — Figma assets
-import imgCoop   from 'figma:asset/85a0c71df6a4fdf6c8713a2ec4063036ceb6ee23.png';
-import imgBrand  from 'figma:asset/c24d45a1c65f1ce9c23d8dafd2787f4fa397aa92.png';
-import imgJetta  from 'figma:asset/c45369b25447b6fa84f02227e98c3db81b9de3da.png';
-import imgTiguan from 'figma:asset/4a61db968612064253430d01cb62b28422ad7a74.png';
-import imgApril  from 'figma:asset/990a5c560985c278f9d761d79cebaff821f02f52.png';
-
-// Audi card images
-import imgAudiCoop     from '../../assets/audi_images/Guidelines Card.png';
-import imgAudiBrand    from '../../assets/audi_images/Guidelines Card-1.png';
-import imgAudiA7       from '../../assets/audi_images/Guidelines Card-2.png';
-import imgAudiQ5       from '../../assets/audi_images/Guidelines Card-3.png';
-import imgAudiApril    from '../../assets/audi_images/Guidelines Card-4.png';
-
+const imgCoop = 'https://res.cloudinary.com/dvq75cqna/image/upload/v1780071092/vw-funds/85a0c71df6a4fdf6c8713a2ec4063036ceb6ee23.png';
+const imgBrand = 'https://res.cloudinary.com/dvq75cqna/image/upload/v1780071122/vw-funds/c24d45a1c65f1ce9c23d8dafd2787f4fa397aa92.png';
+const imgJetta = 'https://res.cloudinary.com/dvq75cqna/image/upload/v1780071123/vw-funds/c45369b25447b6fa84f02227e98c3db81b9de3da.png';
+const imgTiguan = 'https://res.cloudinary.com/dvq75cqna/image/upload/v1780071069/vw-funds/4a61db968612064253430d01cb62b28422ad7a74.png';
+const imgApril = 'https://res.cloudinary.com/dvq75cqna/image/upload/v1780071097/vw-funds/990a5c560985c278f9d761d79cebaff821f02f52.png';
+const imgAudiCoop = 'https://res.cloudinary.com/dvq75cqna/image/upload/v1780071118/vw-funds/audi_images/Guidelines_Card.png';
+const imgAudiBrand = 'https://res.cloudinary.com/dvq75cqna/image/upload/v1780071114/vw-funds/audi_images/Guidelines_Card-1.png';
+const imgAudiA7 = 'https://res.cloudinary.com/dvq75cqna/image/upload/v1780071115/vw-funds/audi_images/Guidelines_Card-2.png';
+const imgAudiQ5 = 'https://res.cloudinary.com/dvq75cqna/image/upload/v1780071115/vw-funds/audi_images/Guidelines_Card-3.png';
+const imgAudiApril = 'https://res.cloudinary.com/dvq75cqna/image/upload/v1780071117/vw-funds/audi_images/Guidelines_Card-4.png';
 // ─── Per-client card configs ──────────────────────────────────────────────────
 
 interface CardConfig {

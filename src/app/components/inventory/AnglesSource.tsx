@@ -20,12 +20,12 @@ import { AnglePreviewModal } from './AnglePreviewModal';
 //   angle-34-r.png    → 3/4 right ATV     (labelled "3/4 R") ✓
 //   angle-34-rear.png → 3/4 rear ATV      (labelled "Left"  — best available)
 //   angle-front.png   → empty landscape   → not used as angle default
-import angle34L    from '../../../assets/inventory/angles/angle-34-l.png';
-import angleFront  from '../../../assets/inventory/angles/angle-right.png';    // front-facing ATV
-import angle34R    from '../../../assets/inventory/angles/angle-34-r.png';
-import angleRight  from '../../../assets/inventory/angles/angle-left.png';     // right-side ATV
-import angleRear   from '../../../assets/inventory/angles/angle-rear.png';
-import angleLeft   from '../../../assets/inventory/angles/angle-34-rear.png';  // best available for Left
+const angle34L = 'https://res.cloudinary.com/dvq75cqna/image/upload/v1780071184/vw-funds/inventory/angles/angle-34-l.png';
+const angleFront = 'https://res.cloudinary.com/dvq75cqna/image/upload/v1780071191/vw-funds/inventory/angles/angle-right.png';
+const angle34R = 'https://res.cloudinary.com/dvq75cqna/image/upload/v1780071186/vw-funds/inventory/angles/angle-34-r.png';
+const angleRight = 'https://res.cloudinary.com/dvq75cqna/image/upload/v1780071189/vw-funds/inventory/angles/angle-left.png';
+const angleRear = 'https://res.cloudinary.com/dvq75cqna/image/upload/v1780071190/vw-funds/inventory/angles/angle-rear.png';
+const angleLeft = 'https://res.cloudinary.com/dvq75cqna/image/upload/v1780071187/vw-funds/inventory/angles/angle-34-rear.png';
 
 interface AngleConfig {
   key: AngleKey;

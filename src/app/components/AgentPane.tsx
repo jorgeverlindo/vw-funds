@@ -7,13 +7,11 @@ import svgR from '../../imports/svg-99t21k2j3x';
 import svgQ from '../../imports/svg-qohtj05ash';
 import svgE from '../../imports/svg-e444od4nhe';
 // TASK 2.2 — 4 unique vehicle images, one per card, no stacking
-import imgVehicle1 from 'figma:asset/b062b96e6c0a044fa24546ded146f5685102040c.png'; // Card 1: ID.4
-import imgVehicle2 from 'figma:asset/f925b175d9f45ba629bdedc9c27563c3216090ba.png'; // Card 2: Atlas
-import imgVehicle3 from 'figma:asset/dcd4a062f63eda60d1f2ae0b47f935693f998f44.png'; // Card 3: Tiguan
-import imgVehicle4 from 'figma:asset/5b760d55d2388a38009c20fbc7474decb0d7b3fe.png'; // Card 4: Jetta
-import imgAgentAvatar from 'figma:asset/a66b3945941bddb97efa53207e606703467e02b3.png';
-
-// ─── Types ────────────────────────────────────────────────────────────────────
+const imgVehicle1 = 'https://res.cloudinary.com/dvq75cqna/image/upload/v1780071120/vw-funds/b062b96e6c0a044fa24546ded146f5685102040c.png';
+const imgVehicle2 = 'https://res.cloudinary.com/dvq75cqna/image/upload/v1780071143/vw-funds/f925b175d9f45ba629bdedc9c27563c3216090ba.jpg';
+const imgVehicle3 = 'https://res.cloudinary.com/dvq75cqna/image/upload/v1780071132/vw-funds/dcd4a062f63eda60d1f2ae0b47f935693f998f44.jpg';
+const imgVehicle4 = 'https://res.cloudinary.com/dvq75cqna/image/upload/v1780071075/vw-funds/5b760d55d2388a38009c20fbc7474decb0d7b3fe.jpg';
+const imgAgentAvatar = 'https://res.cloudinary.com/dvq75cqna/image/upload/v1780071107/vw-funds/a66b3945941bddb97efa53207e606703467e02b3.png';
 type PaneState = 'null' | 'loading' | 'response';
 type AttachmentEntry = { file: File; url: string };
 

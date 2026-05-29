@@ -16,13 +16,12 @@ import type { AngleKey, VehicleGroup } from '../../../data/inventory/types';
 import { AnglePreviewModal } from './AnglePreviewModal';
 
 // ─── Default angle placeholder images (same mapping as AnglesSource) ──────────
-import angle34L   from '../../../assets/inventory/angles/angle-34-l.png';
-import angleFront from '../../../assets/inventory/angles/angle-right.png';
-import angle34R   from '../../../assets/inventory/angles/angle-34-r.png';
-import angleRight from '../../../assets/inventory/angles/angle-left.png';
-import angleRear  from '../../../assets/inventory/angles/angle-rear.png';
-import angleLeft  from '../../../assets/inventory/angles/angle-34-rear.png';
-
+const angle34L = 'https://res.cloudinary.com/dvq75cqna/image/upload/v1780071184/vw-funds/inventory/angles/angle-34-l.png';
+const angleFront = 'https://res.cloudinary.com/dvq75cqna/image/upload/v1780071191/vw-funds/inventory/angles/angle-right.png';
+const angle34R = 'https://res.cloudinary.com/dvq75cqna/image/upload/v1780071186/vw-funds/inventory/angles/angle-34-r.png';
+const angleRight = 'https://res.cloudinary.com/dvq75cqna/image/upload/v1780071189/vw-funds/inventory/angles/angle-left.png';
+const angleRear = 'https://res.cloudinary.com/dvq75cqna/image/upload/v1780071190/vw-funds/inventory/angles/angle-rear.png';
+const angleLeft = 'https://res.cloudinary.com/dvq75cqna/image/upload/v1780071187/vw-funds/inventory/angles/angle-34-rear.png';
 // ─── Card geometry ─────────────────────────────────────────────────────────────
 const CARD_W    = 64;
 const CARD_GAP  = 16;

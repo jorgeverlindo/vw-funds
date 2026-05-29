@@ -7,7 +7,7 @@
 //   Right flex-1: two sub-columns of detail rows side by side
 
 import React, { useState, useEffect } from 'react';
-import copyIconSrc from '../../../assets/icons/VIN Details/square-behind-square-6, layers, copy 6, pages.svg';
+const copyIconSrc = 'https://res.cloudinary.com/dvq75cqna/image/upload/v1780071168/vw-funds/icons/VIN_Details/square-behind-square-6__layers__copy_6__pages.svg';
 import { emitSnackbar } from '../Snackbar';
 import { cn } from '../../../lib/utils';
 import type { VinInventoryRecord } from '../../../data/inventory/vehicleInventory';

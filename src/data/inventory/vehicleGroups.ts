@@ -6,30 +6,26 @@
 
 import type { VehicleGroup } from './types';
 
-import vehicleRaptor  from '../../assets/inventory/vehicles/vehicle-raptor-700r.png';
-import vehicleGrizzly from '../../assets/inventory/vehicles/vehicle-grizzly-700.png';
-import vehicleKodiak  from '../../assets/inventory/vehicles/vehicle-kodiak-450.png';
-import vehicleYfz     from '../../assets/inventory/vehicles/vehicle-yfz450r.png';
-
+const vehicleRaptor = 'https://res.cloudinary.com/dvq75cqna/image/upload/v1780071266/vw-funds/inventory/vehicles/vehicle-raptor-700r.png';
+const vehicleGrizzly = 'https://res.cloudinary.com/dvq75cqna/image/upload/v1780071264/vw-funds/inventory/vehicles/vehicle-grizzly-700.png';
+const vehicleKodiak = 'https://res.cloudinary.com/dvq75cqna/image/upload/v1780071265/vw-funds/inventory/vehicles/vehicle-kodiak-450.png';
+const vehicleYfz = 'https://res.cloudinary.com/dvq75cqna/image/upload/v1780071267/vw-funds/inventory/vehicles/vehicle-yfz450r.png';
 // ─── Config 2 / vg2-1 — TW200T moto: generated (urban background) ────────────
-import motoFront from '../../assets/inventory/vehicles/Moto/tmprv4lhply.jpeg';
-import motoRear  from '../../assets/inventory/vehicles/Moto/tmp1ts9anhr.jpeg';
-import moto34R   from '../../assets/inventory/vehicles/Moto/tmpkdcwhe7g.jpeg';
-import motoRight from '../../assets/inventory/vehicles/Moto/tmp4xdrgwjh.jpeg';
-import moto34L   from '../../assets/inventory/vehicles/Moto/tmpwi0rykgt.jpeg';
-import motoLeft  from '../../assets/inventory/vehicles/Moto/tmpyi8d77_m.jpeg';
-
+const motoFront = 'https://res.cloudinary.com/dvq75cqna/image/upload/v1780071260/vw-funds/inventory/vehicles/Moto/tmprv4lhply.jpg';
+const motoRear = 'https://res.cloudinary.com/dvq75cqna/image/upload/v1780071257/vw-funds/inventory/vehicles/Moto/tmp1ts9anhr.jpg';
+const moto34R = 'https://res.cloudinary.com/dvq75cqna/image/upload/v1780071259/vw-funds/inventory/vehicles/Moto/tmpkdcwhe7g.jpg';
+const motoRight = 'https://res.cloudinary.com/dvq75cqna/image/upload/v1780071258/vw-funds/inventory/vehicles/Moto/tmp4xdrgwjh.jpg';
+const moto34L = 'https://res.cloudinary.com/dvq75cqna/image/upload/v1780071261/vw-funds/inventory/vehicles/Moto/tmpwi0rykgt.jpg';
+const motoLeft = 'https://res.cloudinary.com/dvq75cqna/image/upload/v1780071263/vw-funds/inventory/vehicles/Moto/tmpyi8d77_m.jpg';
 // ─── Config 2 / vg2-1 — TW200T moto: source cutouts (no background) ──────────
-import motoSrc34L   from '../../assets/inventory/vehicles/Moto/11_2026_TW200T2_MLNM4_US_06_YY_11_RGB 1 3_4 L.png';
-import motoSrcFront from '../../assets/inventory/vehicles/Moto/11_2026_TW200T2_MLNM4_US_01_YY_07_RGB - Front.png';
-import motoSrc34R   from '../../assets/inventory/vehicles/Moto/11_2026_TW200T2_MLNM4_US_04_YY_09_RGB 1 3_4 R.png';
-import motoSrcRight from '../../assets/inventory/vehicles/Moto/11_2026_TW200T2_MLNM4_US_03_YY_08_RGB 1 - Right.png';
-import motoSrcRear  from '../../assets/inventory/vehicles/Moto/11_2026_TW200T2_MLNM4_US_05_YY_10_RGB 1 Rear.png';
-import motoSrcLeft  from '../../assets/inventory/vehicles/Moto/11_2026_TW200T2_MLNM4_US_07_YY_12_RGB 1 Left.png';
-
+const motoSrc34L = 'https://res.cloudinary.com/dvq75cqna/image/upload/v1780071254/vw-funds/inventory/vehicles/Moto/11_2026_TW200T2_MLNM4_US_06_YY_11_RGB_1_3_4_L.png';
+const motoSrcFront = 'https://res.cloudinary.com/dvq75cqna/image/upload/v1780071249/vw-funds/inventory/vehicles/Moto/11_2026_TW200T2_MLNM4_US_01_YY_07_RGB_-_Front.png';
+const motoSrc34R = 'https://res.cloudinary.com/dvq75cqna/image/upload/v1780071252/vw-funds/inventory/vehicles/Moto/11_2026_TW200T2_MLNM4_US_04_YY_09_RGB_1_3_4_R.png';
+const motoSrcRight = 'https://res.cloudinary.com/dvq75cqna/image/upload/v1780071251/vw-funds/inventory/vehicles/Moto/11_2026_TW200T2_MLNM4_US_03_YY_08_RGB_1_-_Right.png';
+const motoSrcRear = 'https://res.cloudinary.com/dvq75cqna/image/upload/v1780071253/vw-funds/inventory/vehicles/Moto/11_2026_TW200T2_MLNM4_US_05_YY_10_RGB_1_Rear.png';
+const motoSrcLeft = 'https://res.cloudinary.com/dvq75cqna/image/upload/v1780071254/vw-funds/inventory/vehicles/Moto/11_2026_TW200T2_MLNM4_US_07_YY_12_RGB_1_Left.png';
 // Thumbnail: use the 3/4 L cutout (no background) — clean for small sizes
-import motoThumb from '../../assets/inventory/vehicles/Moto/11_2026_TW200T2_MLNM4_US_06_YY_11_RGB 1 3_4 L.png';
-
+const motoThumb = 'https://res.cloudinary.com/dvq75cqna/image/upload/v1780071254/vw-funds/inventory/vehicles/Moto/11_2026_TW200T2_MLNM4_US_06_YY_11_RGB_1_3_4_L.png';
 // Convenience: all-null angles record
 const NULL_ANGLES: Record<string, null> = {
   '34l': null,

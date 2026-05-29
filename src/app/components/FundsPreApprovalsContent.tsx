@@ -12,14 +12,12 @@ import { ImageWithFallback } from './figma/ImageWithFallback';
 import { StatusChip } from './StatusChip';
 
 // People portraits — Figma source of truth
-import imgFabioVeloso from 'figma:asset/175d81a7864ae50d37ddf9a160e546af1d2a8ee8.png';
-import imgZakFlaten from 'figma:asset/48ea8970f6d4b2ca434cf82051473b99fc39b3d9.png';
-import imgJennyEckart from 'figma:asset/d484fabc75bc7296e02313bb481ed79708e6e083.png';
-import imgRyanLedger from 'figma:asset/770d9bb001df989daf31ad74015dfc377b65a73d.png';
-import imgGarrySchwietert from 'figma:asset/547c86f89f339b487e6c680775e87c8222c8c564.png';
-import imgMalloryManning from 'figma:asset/f0494d5017440bdc302141d9ab01c7c81e4a339a.png';
-
-// --- Types ---
+const imgFabioVeloso = 'https://res.cloudinary.com/dvq75cqna/image/upload/v1780071054/vw-funds/175d81a7864ae50d37ddf9a160e546af1d2a8ee8.png';
+const imgZakFlaten = 'https://res.cloudinary.com/dvq75cqna/image/upload/v1780071066/vw-funds/48ea8970f6d4b2ca434cf82051473b99fc39b3d9.png';
+const imgJennyEckart = 'https://res.cloudinary.com/dvq75cqna/image/upload/v1780071131/vw-funds/d484fabc75bc7296e02313bb481ed79708e6e083.png';
+const imgRyanLedger = 'https://res.cloudinary.com/dvq75cqna/image/upload/v1780071088/vw-funds/770d9bb001df989daf31ad74015dfc377b65a73d.png';
+const imgGarrySchwietert = 'https://res.cloudinary.com/dvq75cqna/image/upload/v1780071072/vw-funds/547c86f89f339b487e6c680775e87c8222c8c564.png';
+const imgMalloryManning = 'https://res.cloudinary.com/dvq75cqna/image/upload/v1780071138/vw-funds/f0494d5017440bdc302141d9ab01c7c81e4a339a.png';
 export interface PreApproval {
   id: string;
   title?: string;

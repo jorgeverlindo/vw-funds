@@ -13,15 +13,15 @@ import { StatusChip } from '../StatusChip';
 import { FilterSelect } from '../FilterSelect';
 
 // Assets
-import imgTiguan from "figma:asset/974b27e56590a74d3b517b836efbfb505eb10a20.png";
-import imgAtlas from "figma:asset/5b760d55d2388a38009c20fbc7474decb0d7b3fe.png";
-import imgMeta from "figma:asset/e67775d65913cad5ff67c8c775bb9fcaee7b8d74.png";
-import imgDynamic from "figma:asset/dcd4a062f63eda60d1f2ae0b47f935693f998f44.png";
-import imgAsset1 from "figma:asset/5dc24ae6f6828e22eaa3e6548f18373b4b398b01.png";
-import imgAsset2 from "figma:asset/f925b175d9f45ba629bdedc9c27563c3216090ba.png";
-import imgAsset3 from "figma:asset/dcd4a062f63eda60d1f2ae0b47f935693f998f44.png";
-import imgAsset4 from "figma:asset/5b760d55d2388a38009c20fbc7474decb0d7b3fe.png";
-import imgAsset5 from "figma:asset/974b27e56590a74d3b517b836efbfb505eb10a20.png";
+const imgTiguan = 'https://res.cloudinary.com/dvq75cqna/image/upload/v1780071096/vw-funds/974b27e56590a74d3b517b836efbfb505eb10a20.png';
+const imgAtlas = 'https://res.cloudinary.com/dvq75cqna/image/upload/v1780071075/vw-funds/5b760d55d2388a38009c20fbc7474decb0d7b3fe.jpg';
+const imgMeta = 'https://res.cloudinary.com/dvq75cqna/image/upload/v1780071136/vw-funds/e67775d65913cad5ff67c8c775bb9fcaee7b8d74.png';
+const imgDynamic = 'https://res.cloudinary.com/dvq75cqna/image/upload/v1780071132/vw-funds/dcd4a062f63eda60d1f2ae0b47f935693f998f44.jpg';
+const imgAsset1 = 'https://res.cloudinary.com/dvq75cqna/image/upload/v1780071079/vw-funds/5dc24ae6f6828e22eaa3e6548f18373b4b398b01.jpg';
+const imgAsset2 = 'https://res.cloudinary.com/dvq75cqna/image/upload/v1780071143/vw-funds/f925b175d9f45ba629bdedc9c27563c3216090ba.jpg';
+const imgAsset3 = 'https://res.cloudinary.com/dvq75cqna/image/upload/v1780071132/vw-funds/dcd4a062f63eda60d1f2ae0b47f935693f998f44.jpg';
+const imgAsset4 = 'https://res.cloudinary.com/dvq75cqna/image/upload/v1780071075/vw-funds/5b760d55d2388a38009c20fbc7474decb0d7b3fe.jpg';
+const imgAsset5 = 'https://res.cloudinary.com/dvq75cqna/image/upload/v1780071096/vw-funds/974b27e56590a74d3b517b836efbfb505eb10a20.png';
 
 import svgPathsPlanner from '../../../imports/svg-1e0o7zpcna';
 import svgPathsView from '../../../imports/svg-rfznq86uvs';

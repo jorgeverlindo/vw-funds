@@ -7,12 +7,11 @@
 // vin-06 – vin-55  → Yamaha 2025/2026 lineup from jellybean export CSV
 //                    thumbnails served from /inventory/jellybeans/<model>/
 
-import raptorThumb  from '../../assets/inventory/vehicles/vehicle-raptor-700r.png';
-import grizzlyThumb from '../../assets/inventory/vehicles/vehicle-grizzly-700.png';
-import kodiakThumb  from '../../assets/inventory/vehicles/Kodiak 450/72_2025_YFM45KPHSF_DNYS1_US_06_YY_11_RGB 1.png';
-import yfzThumb     from '../../assets/inventory/vehicles/vehicle-yfz450r.png';
-import motoThumb    from '../../assets/inventory/vehicles/Moto/11_2026_TW200T2_MLNM4_US_03_YY_08_RGB 1 - Right.png';
-
+const raptorThumb = 'https://res.cloudinary.com/dvq75cqna/image/upload/v1780071266/vw-funds/inventory/vehicles/vehicle-raptor-700r.png';
+const grizzlyThumb = 'https://res.cloudinary.com/dvq75cqna/image/upload/v1780071264/vw-funds/inventory/vehicles/vehicle-grizzly-700.png';
+const kodiakThumb = 'https://res.cloudinary.com/dvq75cqna/image/upload/v1780071246/vw-funds/inventory/vehicles/Kodiak_450/72_2025_YFM45KPHSF_DNYS1_US_06_YY_11_RGB_1.png';
+const yfzThumb = 'https://res.cloudinary.com/dvq75cqna/image/upload/v1780071267/vw-funds/inventory/vehicles/vehicle-yfz450r.png';
+const motoThumb = 'https://res.cloudinary.com/dvq75cqna/image/upload/v1780071251/vw-funds/inventory/vehicles/Moto/11_2026_TW200T2_MLNM4_US_03_YY_08_RGB_1_-_Right.png';
 import type { VehicleGroup } from './types';
 import { BLUE_VEHICLE_GROUP }  from './blueVehicle';
 import { VEHICLE_GROUPS_2 }    from './vehicleGroups';

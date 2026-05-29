@@ -1,7 +1,7 @@
 import { ChevronDown, Search, Filter, Trash2, MoreVertical, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import imgAvatarMaiteEspinoHelloconstellationCom from "figma:asset/9d29793ede36f16f96173ad4142b4b20f0ce143c.png";
-import imgImage5 from "figma:asset/5c481f2179514558d72678b54e35d31616ec1847.png";
+const imgAvatarMaiteEspinoHelloconstellationCom = 'https://res.cloudinary.com/dvq75cqna/image/upload/v1780071098/vw-funds/9d29793ede36f16f96173ad4142b4b20f0ce143c.png';
+const imgImage5 = 'https://res.cloudinary.com/dvq75cqna/image/upload/v1780071077/vw-funds/5c481f2179514558d72678b54e35d31616ec1847.png';
 import svgPaths from '@/imports/svg-ivfty4ek16.ts';
 
 interface ProjectsHeaderProps {

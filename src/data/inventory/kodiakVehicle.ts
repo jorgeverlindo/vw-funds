@@ -17,14 +17,14 @@
 import type { VehicleGroup } from './types';
 
 // Source cutout images (PNG, neutral/white background) — one per angle
-import src34L   from '../../assets/inventory/vehicles/Kodiak 450/72_2025_YFM45KPHSF_DNYS1_US_06_YY_11_RGB 1.png'; // 3/4 Left
-import srcFront from '../../assets/inventory/vehicles/Kodiak 450/72_2025_YFM45KPHSF_DNYS1_US_01_YY_07_RGB 1.png'; // Front
-import src34R   from '../../assets/inventory/vehicles/Kodiak 450/72_2025_YFM45KPHSF_DNYS1_US_04_YY_09_RGB 1.png'; // 3/4 Right
+const src34L = 'https://res.cloudinary.com/dvq75cqna/image/upload/v1780071246/vw-funds/inventory/vehicles/Kodiak_450/72_2025_YFM45KPHSF_DNYS1_US_06_YY_11_RGB_1.png';
+const srcFront = 'https://res.cloudinary.com/dvq75cqna/image/upload/v1780071240/vw-funds/inventory/vehicles/Kodiak_450/72_2025_YFM45KPHSF_DNYS1_US_01_YY_07_RGB_1.png';
+const src34R = 'https://res.cloudinary.com/dvq75cqna/image/upload/v1780071243/vw-funds/inventory/vehicles/Kodiak_450/72_2025_YFM45KPHSF_DNYS1_US_04_YY_09_RGB_1.png';
 // Convention: "Right" chip = vehicle heading right = LEFT panel visible = Yamaha _03_
 //             "Left"  chip = vehicle heading left  = RIGHT panel visible = Yamaha _07_
-import srcRight from '../../assets/inventory/vehicles/Kodiak 450/72_2025_YFM45KPHSF_DNYS1_US_03_YY_08_RGB 1.png'; // Right chip → vehicle faces right (Yamaha _03_)
-import srcLeft  from '../../assets/inventory/vehicles/Kodiak 450/72_2025_YFM45KPHSF_DNYS1_US_07_YY_12_RGB 1.png'; // Left  chip → vehicle faces left  (Yamaha _07_)
-import srcRear  from '../../assets/inventory/vehicles/Kodiak 450/72_2025_YFM45KPHSF_DNYS1_US_05_YY_10_RGB 1.png'; // Rear
+const srcRight = 'https://res.cloudinary.com/dvq75cqna/image/upload/v1780071242/vw-funds/inventory/vehicles/Kodiak_450/72_2025_YFM45KPHSF_DNYS1_US_03_YY_08_RGB_1.png';
+const srcLeft = 'https://res.cloudinary.com/dvq75cqna/image/upload/v1780071248/vw-funds/inventory/vehicles/Kodiak_450/72_2025_YFM45KPHSF_DNYS1_US_07_YY_12_RGB_1.png';
+const srcRear = 'https://res.cloudinary.com/dvq75cqna/image/upload/v1780071245/vw-funds/inventory/vehicles/Kodiak_450/72_2025_YFM45KPHSF_DNYS1_US_05_YY_10_RGB_1.png';
 
 /**
  * Source cutout images ordered [34l, front, 34r, right, left, rear].

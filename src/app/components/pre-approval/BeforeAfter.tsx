@@ -3,10 +3,9 @@ import { motion, AnimatePresence } from "motion/react";
 import svgPaths from "@/imports/svg-xcn0jfelp2";
 import { cn } from "@/lib/utils";
 
-import imgOriginal1 from "figma:asset/6c90c9a4d0d01ef433bdc2c63e4e4788a218a046.png";
-import imgEnhanced1 from "figma:asset/f925b175d9f45ba629bdedc9c27563c3216090ba.png";
-// Next ad images - using provided asset dcd4a... for both for now or finding another
-import imgNextAd from "figma:asset/dcd4a062f63eda60d1f2ae0b47f935693f998f44.png";
+const imgOriginal1 = 'https://res.cloudinary.com/dvq75cqna/image/upload/v1780071086/vw-funds/6c90c9a4d0d01ef433bdc2c63e4e4788a218a046.png';
+const imgEnhanced1 = 'https://res.cloudinary.com/dvq75cqna/image/upload/v1780071143/vw-funds/f925b175d9f45ba629bdedc9c27563c3216090ba.jpg';
+const imgNextAd = 'https://res.cloudinary.com/dvq75cqna/image/upload/v1780071132/vw-funds/dcd4a062f63eda60d1f2ae0b47f935693f998f44.jpg';
 
 import { InteractiveAnnotation } from "./InteractiveAnnotation";
 

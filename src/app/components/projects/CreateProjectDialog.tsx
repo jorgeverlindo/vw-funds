@@ -18,14 +18,12 @@ import { AvatarInitials } from "../ui/AvatarInitials";
 import { ChannelChip } from "../ui/ChannelChip";
 
 // ─── Avatar photo imports (from VW Data Grid) ─────────────────────────────────
-import imgZakFlaten  from "figma:asset/48ea8970f6d4b2ca434cf82051473b99fc39b3d9.png";
-import imgRachelHui  from "../../../assets/avatars/rachel-hui.jpg";
-
+const imgZakFlaten = 'https://res.cloudinary.com/dvq75cqna/image/upload/v1780071066/vw-funds/48ea8970f6d4b2ca434cf82051473b99fc39b3d9.png';
+const imgRachelHui = 'https://res.cloudinary.com/dvq75cqna/image/upload/v1780071119/vw-funds/avatars/rachel-hui.png';
 // ─── Channel icon imports ─────────────────────────────────────────────────────
-import imgGoogle from "../../../assets/channels/google.png";
-import imgMeta   from "../../../assets/channels/Brand Logo/Meta.svg";
-import imgWebsite from "../../../assets/channels/_website_.svg";
-
+const imgGoogle = 'https://res.cloudinary.com/dvq75cqna/image/upload/v1780071130/vw-funds/channels/google.png';
+const imgMeta = 'https://res.cloudinary.com/dvq75cqna/image/upload/v1780071126/vw-funds/channels/Brand_Logo/Meta.svg';
+const imgWebsite = 'https://res.cloudinary.com/dvq75cqna/image/upload/v1780071128/vw-funds/channels/_website_.svg';
 // ─── Shared data ───────────────────────────────────────────────────────────────
 
 export const ACCOUNTS = [

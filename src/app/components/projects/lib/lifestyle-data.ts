@@ -93,8 +93,8 @@ export const lifestyleImages: BackgroundCollection[] = [
     sizes: 1,
     folder: "Lifestyle Images",
     color: "#6b7a8d",
-    thumbnail: "/backgrounds/2000x500-CRV-Trailsport.png",
-    images: { "website-2000x500": "/backgrounds/2000x500-CRV-Trailsport.png" },
+    thumbnail: "https://res.cloudinary.com/dvq75cqna/image/upload/v1780071501/vw-funds/public/backgrounds/2000x500-CRV-Trailsport.png",
+    images: { "website-2000x500": "https://res.cloudinary.com/dvq75cqna/image/upload/v1780071501/vw-funds/public/backgrounds/2000x500-CRV-Trailsport.png" },
   },
   {
     id: "lifestyle-crv-trailsport-600x450",
@@ -105,8 +105,8 @@ export const lifestyleImages: BackgroundCollection[] = [
     sizes: 1,
     folder: "Lifestyle Images",
     color: "#6b7a8d",
-    thumbnail: "/backgrounds/600x450-CRV-Trailsport.png",
-    images: { "website-600x450": "/backgrounds/600x450-CRV-Trailsport.png" },
+    thumbnail: "https://res.cloudinary.com/dvq75cqna/image/upload/v1780071503/vw-funds/public/backgrounds/600x450-CRV-Trailsport.png",
+    images: { "website-600x450": "https://res.cloudinary.com/dvq75cqna/image/upload/v1780071503/vw-funds/public/backgrounds/600x450-CRV-Trailsport.png" },
   },
 
   // ── CR-V LX ──
@@ -119,8 +119,8 @@ export const lifestyleImages: BackgroundCollection[] = [
     sizes: 1,
     folder: "Lifestyle Images",
     color: "#6b7a8d",
-    thumbnail: "/backgrounds/300x250-CRV-LX.png",
-    images: { "display-300x250": "/backgrounds/300x250-CRV-LX.png" },
+    thumbnail: "https://res.cloudinary.com/dvq75cqna/image/upload/v1780071502/vw-funds/public/backgrounds/300x250-CRV-LX.png",
+    images: { "display-300x250": "https://res.cloudinary.com/dvq75cqna/image/upload/v1780071502/vw-funds/public/backgrounds/300x250-CRV-LX.png" },
   },
 
   // ── Civic ──
@@ -133,8 +133,8 @@ export const lifestyleImages: BackgroundCollection[] = [
     sizes: 1,
     folder: "Lifestyle Images",
     color: "#5a6a7a",
-    thumbnail: "/backgrounds/600x450-Civic.png",
-    images: { "website-600x450": "/backgrounds/600x450-Civic.png" },
+    thumbnail: "https://res.cloudinary.com/dvq75cqna/image/upload/v1780071504/vw-funds/public/backgrounds/600x450-Civic.png",
+    images: { "website-600x450": "https://res.cloudinary.com/dvq75cqna/image/upload/v1780071504/vw-funds/public/backgrounds/600x450-Civic.png" },
   },
 
   // ── CR-V TrailSport + HR-V + CR-V LX (multi-vehicle, 3-up template) ──
@@ -147,8 +147,8 @@ export const lifestyleImages: BackgroundCollection[] = [
     sizes: 1,
     folder: "Lifestyle Images",
     color: "#6b7a8d",
-    thumbnail: "/backgrounds/1969x1080-CRV-Trailsport-HRV-CRV-LX.png",
-    images: { "website-1969x1080-3prod": "/backgrounds/1969x1080-CRV-Trailsport-HRV-CRV-LX.png" },
+    thumbnail: "https://res.cloudinary.com/dvq75cqna/image/upload/v1780071500/vw-funds/public/backgrounds/1969x1080-CRV-Trailsport-HRV-CRV-LX.png",
+    images: { "website-1969x1080-3prod": "https://res.cloudinary.com/dvq75cqna/image/upload/v1780071500/vw-funds/public/backgrounds/1969x1080-CRV-Trailsport-HRV-CRV-LX.png" },
   },
 
   // ── HR-V ──
@@ -161,8 +161,8 @@ export const lifestyleImages: BackgroundCollection[] = [
     sizes: 1,
     folder: "Lifestyle Images",
     color: "#7a8a6b",
-    thumbnail: "/backgrounds/600x450-HRV-1.png",
-    images: { "website-600x450": "/backgrounds/600x450-HRV-1.png" },
+    thumbnail: "https://res.cloudinary.com/dvq75cqna/image/upload/v1780071505/vw-funds/public/backgrounds/600x450-HRV-1.png",
+    images: { "website-600x450": "https://res.cloudinary.com/dvq75cqna/image/upload/v1780071505/vw-funds/public/backgrounds/600x450-HRV-1.png" },
   },
   {
     id: "lifestyle-hrv-600x450-2",
@@ -173,8 +173,8 @@ export const lifestyleImages: BackgroundCollection[] = [
     sizes: 1,
     folder: "Lifestyle Images",
     color: "#7a8a6b",
-    thumbnail: "/backgrounds/600x450-HRV-2.png",
-    images: { "website-600x450": "/backgrounds/600x450-HRV-2.png" },
+    thumbnail: "https://res.cloudinary.com/dvq75cqna/image/upload/v1780071506/vw-funds/public/backgrounds/600x450-HRV-2.png",
+    images: { "website-600x450": "https://res.cloudinary.com/dvq75cqna/image/upload/v1780071506/vw-funds/public/backgrounds/600x450-HRV-2.png" },
   },
   {
     id: "lifestyle-hrv-600x450-3",
@@ -185,8 +185,8 @@ export const lifestyleImages: BackgroundCollection[] = [
     sizes: 1,
     folder: "Lifestyle Images",
     color: "#7a8a6b",
-    thumbnail: "/backgrounds/600x450-HRV-3.png",
-    images: { "website-600x450": "/backgrounds/600x450-HRV-3.png" },
+    thumbnail: "https://res.cloudinary.com/dvq75cqna/image/upload/v1780071507/vw-funds/public/backgrounds/600x450-HRV-3.png",
+    images: { "website-600x450": "https://res.cloudinary.com/dvq75cqna/image/upload/v1780071507/vw-funds/public/backgrounds/600x450-HRV-3.png" },
   },
   {
     id: "lifestyle-hrv-600x450-4",
@@ -197,7 +197,7 @@ export const lifestyleImages: BackgroundCollection[] = [
     sizes: 1,
     folder: "Lifestyle Images",
     color: "#7a8a6b",
-    thumbnail: "/backgrounds/600x450-HRV-4.png",
-    images: { "website-600x450": "/backgrounds/600x450-HRV-4.png" },
+    thumbnail: "https://res.cloudinary.com/dvq75cqna/image/upload/v1780071508/vw-funds/public/backgrounds/600x450-HRV-4.png",
+    images: { "website-600x450": "https://res.cloudinary.com/dvq75cqna/image/upload/v1780071508/vw-funds/public/backgrounds/600x450-HRV-4.png" },
   },
 ];

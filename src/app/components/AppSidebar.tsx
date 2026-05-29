@@ -1,16 +1,16 @@
 import React from 'react';
 import { motion } from 'motion/react';
 import svgPaths from '@/imports/svg-kh2cdc4deu';
-import imgBrandLogo from 'figma:asset/92831320399bbc5ee6848b8f47ee2c2fdc72780d.png';
+const imgBrandLogo = 'https://res.cloudinary.com/dvq75cqna/image/upload/v1780071093/vw-funds/92831320399bbc5ee6848b8f47ee2c2fdc72780d.png';
 import { useTranslation } from '../contexts/LanguageContext';
 import { useClient } from '../contexts/ClientContext';
-import audiLogoOEM from '../../assets/logos/Audi.png';
-import audiLogoPacific from '../../assets/logos/Audi-Pacific.png';
-import vwLogoDealer from '../../assets/logos/JackDanielsVW.png'; // [FV] new Jack Daniels mark
-import vwLogoOEM from '../../assets/logos/VW-Logo.jpg'; // [FV] new VW OEM mark
-import vwLogoEmich from '../../assets/logos/Emich.png'; // [FV] Emich Volkswagen mark
-import constellationLogo from '../../assets/logos/Projects + Website Campaigns/Brand Logo/Constellation.png'; // [FV] Agency view
-import rideNowLogo from '../../assets/logos/RideNow.png'; // [FV] Ride Now
+const audiLogoOEM = 'https://res.cloudinary.com/dvq75cqna/image/upload/v1780071269/vw-funds/logos/Audi.png';
+const audiLogoPacific = 'https://res.cloudinary.com/dvq75cqna/image/upload/v1780071269/vw-funds/logos/Audi-Pacific.png';
+const vwLogoDealer = 'https://res.cloudinary.com/dvq75cqna/image/upload/v1780071276/vw-funds/logos/JackDanielsVW.png';
+const vwLogoOEM = 'https://res.cloudinary.com/dvq75cqna/image/upload/v1780071278/vw-funds/logos/VW-Logo.jpg';
+const vwLogoEmich = 'https://res.cloudinary.com/dvq75cqna/image/upload/v1780071272/vw-funds/logos/Emich.png';
+const constellationLogo = 'https://res.cloudinary.com/dvq75cqna/image/upload/v1780071277/vw-funds/logos/Projects___Website_Campaigns/Brand_Logo/Constellation.png';
+const rideNowLogo = 'https://res.cloudinary.com/dvq75cqna/image/upload/v1780071277/vw-funds/logos/RideNow.png';
 
 interface NavItemProps {
   icon: React.ReactNode;

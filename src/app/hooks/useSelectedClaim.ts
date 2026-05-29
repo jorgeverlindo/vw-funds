@@ -11,7 +11,7 @@ import { useMemo } from 'react';
 import { useWorkflow, WORKFLOW_DEALER, WORKFLOW_CAMPAIGN } from '../contexts/WorkflowContext';
 import { CLAIMS_MOCK_DATA } from '../components/FundsClaimsContent';
 import type { Claim } from '../components/ClaimsPanel';
-import imgMalloryManning from 'figma:asset/f0494d5017440bdc302141d9ab01c7c81e4a339a.png';
+const imgMalloryManning = 'https://res.cloudinary.com/dvq75cqna/image/upload/v1780071138/vw-funds/f0494d5017440bdc302141d9ab01c7c81e4a339a.png';
 
 export function useSelectedClaim(selectedId: string | null): Claim | null | undefined {
   const { workflow } = useWorkflow();

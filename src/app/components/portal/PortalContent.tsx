@@ -4,14 +4,14 @@ import { PortalHeader } from './PortalHeader';
 import { PortalPreApprovalDrawer } from './PortalPreApprovalDrawer';
 
 // Mock Assets
-import imgCardImage from "figma:asset/5b760d55d2388a38009c20fbc7474decb0d7b3fe.png";
-import imgCardImage1 from "figma:asset/f925b175d9f45ba629bdedc9c27563c3216090ba.png";
-import imgCardImage2 from "figma:asset/dcd4a062f63eda60d1f2ae0b47f935693f998f44.png";
-import imgCardImage3 from "figma:asset/5eea4d176adc209f09fc2413a05a7c2e774e3435.png";
-import imgCardImage4 from "figma:asset/96b55a391e69153cce3364990bde189c536e6e6a.png";
-import imgCardImage5 from "figma:asset/e1a3a291c3dea7272c982b7cd90b97e9d310f2d2.png";
-import imgCardImage6 from "figma:asset/e67775d65913cad5ff67c8c775bb9fcaee7b8d74.png";
-import imgCardImage7 from "figma:asset/804a9d226f2fde3e441fc252051a11745dfbb986.png";
+const imgCardImage = 'https://res.cloudinary.com/dvq75cqna/image/upload/v1780071075/vw-funds/5b760d55d2388a38009c20fbc7474decb0d7b3fe.jpg';
+const imgCardImage1 = 'https://res.cloudinary.com/dvq75cqna/image/upload/v1780071143/vw-funds/f925b175d9f45ba629bdedc9c27563c3216090ba.jpg';
+const imgCardImage2 = 'https://res.cloudinary.com/dvq75cqna/image/upload/v1780071132/vw-funds/dcd4a062f63eda60d1f2ae0b47f935693f998f44.jpg';
+const imgCardImage3 = 'https://res.cloudinary.com/dvq75cqna/image/upload/v1780071082/vw-funds/5eea4d176adc209f09fc2413a05a7c2e774e3435.png';
+const imgCardImage4 = 'https://res.cloudinary.com/dvq75cqna/image/upload/v1780071094/vw-funds/96b55a391e69153cce3364990bde189c536e6e6a.png';
+const imgCardImage5 = 'https://res.cloudinary.com/dvq75cqna/image/upload/v1780071134/vw-funds/e1a3a291c3dea7272c982b7cd90b97e9d310f2d2.png';
+const imgCardImage6 = 'https://res.cloudinary.com/dvq75cqna/image/upload/v1780071136/vw-funds/e67775d65913cad5ff67c8c775bb9fcaee7b8d74.png';
+const imgCardImage7 = 'https://res.cloudinary.com/dvq75cqna/image/upload/v1780071090/vw-funds/804a9d226f2fde3e441fc252051a11745dfbb986.png';
 
 const MOCK_ITEMS: PortalItem[] = [
   { 

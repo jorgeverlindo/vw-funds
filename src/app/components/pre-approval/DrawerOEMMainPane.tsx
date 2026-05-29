@@ -7,11 +7,9 @@ import { OnboardingBubbleOEM } from './OnboardingBubbleOEM';
 import { PreviewControlsZoom } from './PreviewControlsZoom';
 
 // Import Portal Images
-import imgCardImage from "figma:asset/5b760d55d2388a38009c20fbc7474decb0d7b3fe.png";
-import imgCardImage1 from "figma:asset/f925b175d9f45ba629bdedc9c27563c3216090ba.png";
-import imgCardImage2 from "figma:asset/dcd4a062f63eda60d1f2ae0b47f935693f998f44.png";
-
-// Reusing OEM Annotations
+const imgCardImage = 'https://res.cloudinary.com/dvq75cqna/image/upload/v1780071075/vw-funds/5b760d55d2388a38009c20fbc7474decb0d7b3fe.jpg';
+const imgCardImage1 = 'https://res.cloudinary.com/dvq75cqna/image/upload/v1780071143/vw-funds/f925b175d9f45ba629bdedc9c27563c3216090ba.jpg';
+const imgCardImage2 = 'https://res.cloudinary.com/dvq75cqna/image/upload/v1780071132/vw-funds/dcd4a062f63eda60d1f2ae0b47f935693f998f44.jpg';
 const OEM_ANNOTATIONS: AnnotationItem[] = [
   {
     id: '1',

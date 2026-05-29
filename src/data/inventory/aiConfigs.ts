@@ -1,10 +1,9 @@
-import bg8    from '../../assets/inventory/backgrounds/image 8.jpg';
-import bg14   from '../../assets/inventory/vehicles/Moto/genai-generic-3.png';  // config 2 thumbnail
-import bg15   from '../../assets/inventory/backgrounds/image 15.jpg';
-import bg16   from '../../assets/inventory/backgrounds/image 16.jpg';
-import bg171  from '../../assets/inventory/backgrounds/image 17-1.jpg';
-import bg17   from '../../assets/inventory/backgrounds/image 17.jpg';
-
+const bg8 = 'https://res.cloudinary.com/dvq75cqna/image/upload/v1780071197/vw-funds/inventory/backgrounds/image_8.jpg';
+const bg14 = 'https://res.cloudinary.com/dvq75cqna/image/upload/v1780071256/vw-funds/inventory/vehicles/Moto/genai-generic-3.png';
+const bg15 = 'https://res.cloudinary.com/dvq75cqna/image/upload/v1780071193/vw-funds/inventory/backgrounds/image_15.jpg';
+const bg16 = 'https://res.cloudinary.com/dvq75cqna/image/upload/v1780071194/vw-funds/inventory/backgrounds/image_16.jpg';
+const bg171 = 'https://res.cloudinary.com/dvq75cqna/image/upload/v1780071195/vw-funds/inventory/backgrounds/image_17-1.jpg';
+const bg17 = 'https://res.cloudinary.com/dvq75cqna/image/upload/v1780071196/vw-funds/inventory/backgrounds/image_17.jpg';
 import {
   VEHICLE_GROUPS_1,
   VEHICLE_GROUPS_2,

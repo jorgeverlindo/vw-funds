@@ -118,7 +118,7 @@ export function OfferCard({ offer, selected = false, onSelect, onDelete, variant
               />
             ) : (
               <img
-                src="/car-silhouette.png"
+                src="https://res.cloudinary.com/dvq75cqna/image/upload/v1780071654/vw-funds/public/car-silhouette.png"
                 alt="vehicle"
                 style={{ width: 69, height: 69, objectFit: "contain", opacity: 0.72 }}
               />

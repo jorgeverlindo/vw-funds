@@ -1,8 +1,8 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import svgPaths from '@/imports/svg-kh2cdc4deu';
-import imgAvatar from 'figma:asset/f0494d5017440bdc302141d9ab01c7c81e4a339a.png';
-import imgEmichAvatar from '../../assets/Emich_Avatar.jpeg';
+const imgAvatar = 'https://res.cloudinary.com/dvq75cqna/image/upload/v1780071138/vw-funds/f0494d5017440bdc302141d9ab01c7c81e4a339a.png';
+const imgEmichAvatar = 'https://res.cloudinary.com/dvq75cqna/image/upload/v1780071106/vw-funds/Emich_Avatar.jpg';
 import { NotificationOverlay } from './notifications/NotificationOverlay';
 import { NotificationOverlayOEM } from './notifications/NotificationOverlayOEM';
 import { AvatarInitials } from './ui/AvatarInitials';
@@ -12,8 +12,8 @@ import { useTranslation } from '../contexts/LanguageContext';
 import { useWorkflow } from '../contexts/WorkflowContext';
 import { useCompliance, getDealerIdentity } from '../contexts/ComplianceContext';
 import { useClient } from '../contexts/ClientContext';
-import rideNowLogo from '../../assets/logos/RideNow.png';
-import imgRachelHui from '../../assets/avatars/rachel-hui.jpg';
+const rideNowLogo = 'https://res.cloudinary.com/dvq75cqna/image/upload/v1780071277/vw-funds/logos/RideNow.png';
+const imgRachelHui = 'https://res.cloudinary.com/dvq75cqna/image/upload/v1780071119/vw-funds/avatars/rachel-hui.png';
 import { SettingsMenu } from './client-settings/SettingsMenu';
 import type { WCMItem } from './WebMonitoringContent';
 

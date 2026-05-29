@@ -11,37 +11,37 @@ export const generatedBackgroundCollections: BackgroundCollection[] = [
     "sizes": 5,
     "folder": "Background Collections",
     "color": "#f5a623",
-    "thumbnail": "/backgrounds/Ballon%20Festival/1777265338392_8a884e62.jpg",
+    "thumbnail": "https://res.cloudinary.com/dvq75cqna/image/upload/v1780071511/vw-funds/public/backgrounds/Ballon_Festival/1777265338392_8a884e62.jpg",
     "images": {
-      "social-1080x1080": "/backgrounds/Ballon%20Festival/1777265296524_9d7c8327.jpg",
-      "website-2000x500": "/backgrounds/Ballon%20Festival/1777265334438_2dc05934.jpg",
-      "display-300x250": "/backgrounds/Ballon%20Festival/1777265338392_8a884e62.jpg"
+      "social-1080x1080": "https://res.cloudinary.com/dvq75cqna/image/upload/v1780071509/vw-funds/public/backgrounds/Ballon_Festival/1777265296524_9d7c8327.jpg",
+      "website-2000x500": "https://res.cloudinary.com/dvq75cqna/image/upload/v1780071510/vw-funds/public/backgrounds/Ballon_Festival/1777265334438_2dc05934.jpg",
+      "display-300x250": "https://res.cloudinary.com/dvq75cqna/image/upload/v1780071511/vw-funds/public/backgrounds/Ballon_Festival/1777265338392_8a884e62.jpg"
     },
     "dimensions": [
       {
         "width": 1080,
         "height": 1080,
-        "url": "/backgrounds/Ballon%20Festival/1777265296524_9d7c8327.jpg"
+        "url": "https://res.cloudinary.com/dvq75cqna/image/upload/v1780071509/vw-funds/public/backgrounds/Ballon_Festival/1777265296524_9d7c8327.jpg"
       },
       {
         "width": 2000,
         "height": 500,
-        "url": "/backgrounds/Ballon%20Festival/1777265334438_2dc05934.jpg"
+        "url": "https://res.cloudinary.com/dvq75cqna/image/upload/v1780071510/vw-funds/public/backgrounds/Ballon_Festival/1777265334438_2dc05934.jpg"
       },
       {
         "width": 300,
         "height": 250,
-        "url": "/backgrounds/Ballon%20Festival/1777265338392_8a884e62.jpg"
+        "url": "https://res.cloudinary.com/dvq75cqna/image/upload/v1780071511/vw-funds/public/backgrounds/Ballon_Festival/1777265338392_8a884e62.jpg"
       },
       {
         "width": 1080,
         "height": 1920,
-        "url": "/backgrounds/Ballon%20Festival/1777265339543_67a0469a.jpg"
+        "url": "https://res.cloudinary.com/dvq75cqna/image/upload/v1780071512/vw-funds/public/backgrounds/Ballon_Festival/1777265339543_67a0469a.jpg"
       },
       {
         "width": 1920,
         "height": 1080,
-        "url": "/backgrounds/Ballon%20Festival/1777265339547_3890c769.jpg"
+        "url": "https://res.cloudinary.com/dvq75cqna/image/upload/v1780071513/vw-funds/public/backgrounds/Ballon_Festival/1777265339547_3890c769.jpg"
       }
     ]
   },
@@ -52,37 +52,37 @@ export const generatedBackgroundCollections: BackgroundCollection[] = [
     "sizes": 5,
     "folder": "Background Collections",
     "color": "#e07850",
-    "thumbnail": "/backgrounds/Beach%20Sunset/BM_250724_2_DISPLAY_300x250.jpg",
+    "thumbnail": "https://res.cloudinary.com/dvq75cqna/image/upload/v1780071515/vw-funds/public/backgrounds/Beach_Sunset/BM_250724_2_DISPLAY_300x250.jpg",
     "images": {
-      "display-300x250": "/backgrounds/Beach%20Sunset/BM_250724_2_DISPLAY_300x250.jpg",
-      "social-1080x1080": "/backgrounds/Beach%20Sunset/BM_250724_2_SOCIAL_1080x1080.jpg",
-      "website-2000x500": "/backgrounds/Beach%20Sunset/BM_250724_2_WEBSITE_2000x500.jpg"
+      "display-300x250": "https://res.cloudinary.com/dvq75cqna/image/upload/v1780071515/vw-funds/public/backgrounds/Beach_Sunset/BM_250724_2_DISPLAY_300x250.jpg",
+      "social-1080x1080": "https://res.cloudinary.com/dvq75cqna/image/upload/v1780071516/vw-funds/public/backgrounds/Beach_Sunset/BM_250724_2_SOCIAL_1080x1080.jpg",
+      "website-2000x500": "https://res.cloudinary.com/dvq75cqna/image/upload/v1780071518/vw-funds/public/backgrounds/Beach_Sunset/BM_250724_2_WEBSITE_2000x500.jpg"
     },
     "dimensions": [
       {
         "width": 1080,
         "height": 1920,
-        "url": "/backgrounds/Beach%20Sunset/1777013896250_f3245c0b.jpg"
+        "url": "https://res.cloudinary.com/dvq75cqna/image/upload/v1780071515/vw-funds/public/backgrounds/Beach_Sunset/1777013896250_f3245c0b.jpg"
       },
       {
         "width": 300,
         "height": 250,
-        "url": "/backgrounds/Beach%20Sunset/BM_250724_2_DISPLAY_300x250.jpg"
+        "url": "https://res.cloudinary.com/dvq75cqna/image/upload/v1780071515/vw-funds/public/backgrounds/Beach_Sunset/BM_250724_2_DISPLAY_300x250.jpg"
       },
       {
         "width": 1080,
         "height": 1080,
-        "url": "/backgrounds/Beach%20Sunset/BM_250724_2_SOCIAL_1080x1080.jpg"
+        "url": "https://res.cloudinary.com/dvq75cqna/image/upload/v1780071516/vw-funds/public/backgrounds/Beach_Sunset/BM_250724_2_SOCIAL_1080x1080.jpg"
       },
       {
         "width": 1920,
         "height": 1080,
-        "url": "/backgrounds/Beach%20Sunset/BM_250724_2_SOCIAL_1080x1080_1920x1080_1768967568271.jpg"
+        "url": "https://res.cloudinary.com/dvq75cqna/image/upload/v1780071517/vw-funds/public/backgrounds/Beach_Sunset/BM_250724_2_SOCIAL_1080x1080_1920x1080_1768967568271.jpg"
       },
       {
         "width": 2000,
         "height": 500,
-        "url": "/backgrounds/Beach%20Sunset/BM_250724_2_WEBSITE_2000x500.jpg"
+        "url": "https://res.cloudinary.com/dvq75cqna/image/upload/v1780071518/vw-funds/public/backgrounds/Beach_Sunset/BM_250724_2_WEBSITE_2000x500.jpg"
       }
     ]
   },
@@ -93,52 +93,52 @@ export const generatedBackgroundCollections: BackgroundCollection[] = [
     "sizes": 8,
     "folder": "Background Collections",
     "color": "#c8a86b",
-    "thumbnail": "/backgrounds/Desert%20Day/tmp_b9mipxq_1080x1080_1774762572901_300x250_1774892650125.jpg",
+    "thumbnail": "https://res.cloudinary.com/dvq75cqna/image/upload/v1780071522/vw-funds/public/backgrounds/Desert_Day/tmp_b9mipxq_1080x1080_1774762572901_300x250_1774892650125.jpg",
     "images": {
-      "social-1080x1080": "/backgrounds/Desert%20Day/tmp_b9mipxq_1080x1080_1774762572901.jpg",
-      "display-300x250": "/backgrounds/Desert%20Day/tmp_b9mipxq_1080x1080_1774762572901_300x250_1774892650125.jpg",
-      "website-2000x500": "/backgrounds/Desert%20Day/tmp_b9mipxq_2000x500_1774551798555.jpg"
+      "social-1080x1080": "https://res.cloudinary.com/dvq75cqna/image/upload/v1780071520/vw-funds/public/backgrounds/Desert_Day/tmp_b9mipxq_1080x1080_1774762572901.jpg",
+      "display-300x250": "https://res.cloudinary.com/dvq75cqna/image/upload/v1780071522/vw-funds/public/backgrounds/Desert_Day/tmp_b9mipxq_1080x1080_1774762572901_300x250_1774892650125.jpg",
+      "website-2000x500": "https://res.cloudinary.com/dvq75cqna/image/upload/v1780071527/vw-funds/public/backgrounds/Desert_Day/tmp_b9mipxq_2000x500_1774551798555.jpg"
     },
     "dimensions": [
       {
         "width": 1024,
         "height": 1024,
-        "url": "/backgrounds/Desert%20Day/tmp_b9mipxq.jpg"
+        "url": "https://res.cloudinary.com/dvq75cqna/image/upload/v1780071519/vw-funds/public/backgrounds/Desert_Day/tmp_b9mipxq.jpg"
       },
       {
         "width": 1080,
         "height": 1080,
-        "url": "/backgrounds/Desert%20Day/tmp_b9mipxq_1080x1080_1774762572901.jpg"
+        "url": "https://res.cloudinary.com/dvq75cqna/image/upload/v1780071520/vw-funds/public/backgrounds/Desert_Day/tmp_b9mipxq_1080x1080_1774762572901.jpg"
       },
       {
         "width": 300,
         "height": 250,
-        "url": "/backgrounds/Desert%20Day/tmp_b9mipxq_1080x1080_1774762572901_300x250_1774892650125.jpg"
+        "url": "https://res.cloudinary.com/dvq75cqna/image/upload/v1780071522/vw-funds/public/backgrounds/Desert_Day/tmp_b9mipxq_1080x1080_1774762572901_300x250_1774892650125.jpg"
       },
       {
         "width": 1080,
         "height": 1920,
-        "url": "/backgrounds/Desert%20Day/tmp_b9mipxq_1080x1920_1774551798554.jpg"
+        "url": "https://res.cloudinary.com/dvq75cqna/image/upload/v1780071523/vw-funds/public/backgrounds/Desert_Day/tmp_b9mipxq_1080x1920_1774551798554.jpg"
       },
       {
         "width": 1440,
         "height": 900,
-        "url": "/backgrounds/Desert%20Day/tmp_b9mipxq_1440x900_1774551798576.jpg"
+        "url": "https://res.cloudinary.com/dvq75cqna/image/upload/v1780071524/vw-funds/public/backgrounds/Desert_Day/tmp_b9mipxq_1440x900_1774551798576.jpg"
       },
       {
         "width": 1600,
         "height": 900,
-        "url": "/backgrounds/Desert%20Day/tmp_b9mipxq_1600x900_1774551798555.jpg"
+        "url": "https://res.cloudinary.com/dvq75cqna/image/upload/v1780071525/vw-funds/public/backgrounds/Desert_Day/tmp_b9mipxq_1600x900_1774551798555.jpg"
       },
       {
         "width": 1920,
         "height": 1080,
-        "url": "/backgrounds/Desert%20Day/tmp_b9mipxq_1600x900_1774551798555_1920x1080_1774762662987.jpg"
+        "url": "https://res.cloudinary.com/dvq75cqna/image/upload/v1780071526/vw-funds/public/backgrounds/Desert_Day/tmp_b9mipxq_1600x900_1774551798555_1920x1080_1774762662987.jpg"
       },
       {
         "width": 2000,
         "height": 500,
-        "url": "/backgrounds/Desert%20Day/tmp_b9mipxq_2000x500_1774551798555.jpg"
+        "url": "https://res.cloudinary.com/dvq75cqna/image/upload/v1780071527/vw-funds/public/backgrounds/Desert_Day/tmp_b9mipxq_2000x500_1774551798555.jpg"
       }
     ]
   },
@@ -149,42 +149,42 @@ export const generatedBackgroundCollections: BackgroundCollection[] = [
     "sizes": 6,
     "folder": "Background Collections",
     "color": "#4a3878",
-    "thumbnail": "/backgrounds/Desert%20Pyramid%20Night%20Sky/1777056196506_131012de.jpg",
+    "thumbnail": "https://res.cloudinary.com/dvq75cqna/image/upload/v1780071533/vw-funds/public/backgrounds/Desert_Pyramid_Night_Sky/1777056196506_131012de.jpg",
     "images": {
-      "social-1080x1080": "/backgrounds/Desert%20Pyramid%20Night%20Sky/1777056189347_5dacf9b1.jpg",
-      "website-2000x500": "/backgrounds/Desert%20Pyramid%20Night%20Sky/1777056196358_e420b6ad.jpg",
-      "display-300x250": "/backgrounds/Desert%20Pyramid%20Night%20Sky/1777056196506_131012de.jpg"
+      "social-1080x1080": "https://res.cloudinary.com/dvq75cqna/image/upload/v1780071528/vw-funds/public/backgrounds/Desert_Pyramid_Night_Sky/1777056189347_5dacf9b1.jpg",
+      "website-2000x500": "https://res.cloudinary.com/dvq75cqna/image/upload/v1780071530/vw-funds/public/backgrounds/Desert_Pyramid_Night_Sky/1777056196358_e420b6ad.jpg",
+      "display-300x250": "https://res.cloudinary.com/dvq75cqna/image/upload/v1780071533/vw-funds/public/backgrounds/Desert_Pyramid_Night_Sky/1777056196506_131012de.jpg"
     },
     "dimensions": [
       {
         "width": 1080,
         "height": 1080,
-        "url": "/backgrounds/Desert%20Pyramid%20Night%20Sky/1777056189347_5dacf9b1.jpg"
+        "url": "https://res.cloudinary.com/dvq75cqna/image/upload/v1780071528/vw-funds/public/backgrounds/Desert_Pyramid_Night_Sky/1777056189347_5dacf9b1.jpg"
       },
       {
         "width": 1080,
         "height": 1920,
-        "url": "/backgrounds/Desert%20Pyramid%20Night%20Sky/1777056192917_50fe89c1.jpg"
+        "url": "https://res.cloudinary.com/dvq75cqna/image/upload/v1780071529/vw-funds/public/backgrounds/Desert_Pyramid_Night_Sky/1777056192917_50fe89c1.jpg"
       },
       {
         "width": 2000,
         "height": 500,
-        "url": "/backgrounds/Desert%20Pyramid%20Night%20Sky/1777056196358_e420b6ad.jpg"
+        "url": "https://res.cloudinary.com/dvq75cqna/image/upload/v1780071530/vw-funds/public/backgrounds/Desert_Pyramid_Night_Sky/1777056196358_e420b6ad.jpg"
       },
       {
         "width": 1920,
         "height": 1080,
-        "url": "/backgrounds/Desert%20Pyramid%20Night%20Sky/1777056196467_63249758.jpg"
+        "url": "https://res.cloudinary.com/dvq75cqna/image/upload/v1780071531/vw-funds/public/backgrounds/Desert_Pyramid_Night_Sky/1777056196467_63249758.jpg"
       },
       {
         "width": 300,
         "height": 250,
-        "url": "/backgrounds/Desert%20Pyramid%20Night%20Sky/1777056196506_131012de.jpg"
+        "url": "https://res.cloudinary.com/dvq75cqna/image/upload/v1780071533/vw-funds/public/backgrounds/Desert_Pyramid_Night_Sky/1777056196506_131012de.jpg"
       },
       {
         "width": 1008,
         "height": 1008,
-        "url": "/backgrounds/Desert%20Pyramid%20Night%20Sky/tmpj6dggwm8.jpg"
+        "url": "https://res.cloudinary.com/dvq75cqna/image/upload/v1780071534/vw-funds/public/backgrounds/Desert_Pyramid_Night_Sky/tmpj6dggwm8.jpg"
       }
     ]
   },
@@ -195,94 +195,94 @@ export const generatedBackgroundCollections: BackgroundCollection[] = [
     "sizes": 16,
     "folder": "Background Collections",
     "color": "#5b8db8",
-    "thumbnail": "/backgrounds/Docks%20Midday/BM_250515_1_SOCIAL_1080x1080_300x250_1774892650098.jpg",
+    "thumbnail": "https://res.cloudinary.com/dvq75cqna/image/upload/v1780071549/vw-funds/public/backgrounds/Docks_Midday/BM_250515_1_SOCIAL_1080x1080_300x250_1774892650098.jpg",
     "images": {
-      "social-1080x1080": "/backgrounds/Docks%20Midday/BM_250515_1_SOCIAL_1080x1080.jpg",
-      "display-300x250": "/backgrounds/Docks%20Midday/BM_250515_1_SOCIAL_1080x1080_300x250_1774892650098.jpg",
-      "website-2000x500": "/backgrounds/Docks%20Midday/BM_250516_1_WEBSITE_2000x500.jpg",
-      "website-600x1067": "/backgrounds/Docks%20Midday/BM_250604_1_STILL_600x1067.jpg",
-      "website-600x450": "/backgrounds/Docks%20Midday/BM_250728_1_WEBSITE_600x450.jpg"
+      "social-1080x1080": "https://res.cloudinary.com/dvq75cqna/image/upload/v1780071545/vw-funds/public/backgrounds/Docks_Midday/BM_250515_1_SOCIAL_1080x1080.jpg",
+      "display-300x250": "https://res.cloudinary.com/dvq75cqna/image/upload/v1780071549/vw-funds/public/backgrounds/Docks_Midday/BM_250515_1_SOCIAL_1080x1080_300x250_1774892650098.jpg",
+      "website-2000x500": "https://res.cloudinary.com/dvq75cqna/image/upload/v1780071550/vw-funds/public/backgrounds/Docks_Midday/BM_250516_1_WEBSITE_2000x500.jpg",
+      "website-600x1067": "https://res.cloudinary.com/dvq75cqna/image/upload/v1780071555/vw-funds/public/backgrounds/Docks_Midday/BM_250604_1_STILL_600x1067.jpg",
+      "website-600x450": "https://res.cloudinary.com/dvq75cqna/image/upload/v1780071560/vw-funds/public/backgrounds/Docks_Midday/BM_250728_1_WEBSITE_600x450.jpg"
     },
     "dimensions": [
       {
         "width": 1080,
         "height": 1080,
-        "url": "/backgrounds/Docks%20Midday/BM_250515_1_SOCIAL_1080x1080.jpg"
+        "url": "https://res.cloudinary.com/dvq75cqna/image/upload/v1780071545/vw-funds/public/backgrounds/Docks_Midday/BM_250515_1_SOCIAL_1080x1080.jpg"
       },
       {
         "width": 1080,
         "height": 1920,
-        "url": "/backgrounds/Docks%20Midday/BM_250515_1_SOCIAL_1080x1080_1080x1920_1776133858467.jpg"
+        "url": "https://res.cloudinary.com/dvq75cqna/image/upload/v1780071546/vw-funds/public/backgrounds/Docks_Midday/BM_250515_1_SOCIAL_1080x1080_1080x1920_1776133858467.jpg"
       },
       {
         "width": 1920,
         "height": 1080,
-        "url": "/backgrounds/Docks%20Midday/BM_250515_1_SOCIAL_1080x1080_1920x1080_1776133858473.jpg"
+        "url": "https://res.cloudinary.com/dvq75cqna/image/upload/v1780071547/vw-funds/public/backgrounds/Docks_Midday/BM_250515_1_SOCIAL_1080x1080_1920x1080_1776133858473.jpg"
       },
       {
         "width": 300,
         "height": 250,
-        "url": "/backgrounds/Docks%20Midday/BM_250515_1_SOCIAL_1080x1080_300x250_1774892650098.jpg"
+        "url": "https://res.cloudinary.com/dvq75cqna/image/upload/v1780071549/vw-funds/public/backgrounds/Docks_Midday/BM_250515_1_SOCIAL_1080x1080_300x250_1774892650098.jpg"
       },
       {
         "width": 2000,
         "height": 500,
-        "url": "/backgrounds/Docks%20Midday/BM_250516_1_WEBSITE_2000x500.jpg"
+        "url": "https://res.cloudinary.com/dvq75cqna/image/upload/v1780071550/vw-funds/public/backgrounds/Docks_Midday/BM_250516_1_WEBSITE_2000x500.jpg"
       },
       {
         "width": 1940,
         "height": 500,
-        "url": "/backgrounds/Docks%20Midday/BM_250529_1_DISPLAY_970x250.jpg"
+        "url": "https://res.cloudinary.com/dvq75cqna/image/upload/v1780071551/vw-funds/public/backgrounds/Docks_Midday/BM_250529_1_DISPLAY_970x250.jpg"
       },
       {
         "width": 600,
         "height": 500,
-        "url": "/backgrounds/Docks%20Midday/BM_250603_1_STILL_300x250.jpg"
+        "url": "https://res.cloudinary.com/dvq75cqna/image/upload/v1780071552/vw-funds/public/backgrounds/Docks_Midday/BM_250603_1_STILL_300x250.jpg"
       },
       {
         "width": 600,
         "height": 1200,
-        "url": "/backgrounds/Docks%20Midday/BM_250604_1_STILL_300x600.jpg"
+        "url": "https://res.cloudinary.com/dvq75cqna/image/upload/v1780071553/vw-funds/public/backgrounds/Docks_Midday/BM_250604_1_STILL_300x600.jpg"
       },
       {
         "width": 600,
         "height": 1067,
-        "url": "/backgrounds/Docks%20Midday/BM_250604_1_STILL_600x1067.jpg"
+        "url": "https://res.cloudinary.com/dvq75cqna/image/upload/v1780071555/vw-funds/public/backgrounds/Docks_Midday/BM_250604_1_STILL_600x1067.jpg"
       },
       {
         "width": 320,
         "height": 1200,
-        "url": "/backgrounds/Docks%20Midday/BM_250613_1_DISPLAY_160x600.jpg"
+        "url": "https://res.cloudinary.com/dvq75cqna/image/upload/v1780071556/vw-funds/public/backgrounds/Docks_Midday/BM_250613_1_DISPLAY_160x600.jpg"
       },
       {
         "width": 1456,
         "height": 180,
-        "url": "/backgrounds/Docks%20Midday/BM_250613_1_DISPLAY_728x90.jpg"
+        "url": "https://res.cloudinary.com/dvq75cqna/image/upload/v1780071557/vw-funds/public/backgrounds/Docks_Midday/BM_250613_1_DISPLAY_728x90.jpg"
       },
       {
         "width": 1900,
         "height": 776,
-        "url": "/backgrounds/Docks%20Midday/BM_250630_1_WEBSITE_1900x776.jpg"
+        "url": "https://res.cloudinary.com/dvq75cqna/image/upload/v1780071558/vw-funds/public/backgrounds/Docks_Midday/BM_250630_1_WEBSITE_1900x776.jpg"
       },
       {
         "width": 800,
         "height": 326,
-        "url": "/backgrounds/Docks%20Midday/BM_250725_1_WEBSITE_800x326.jpg"
+        "url": "https://res.cloudinary.com/dvq75cqna/image/upload/v1780071559/vw-funds/public/backgrounds/Docks_Midday/BM_250725_1_WEBSITE_800x326.jpg"
       },
       {
         "width": 600,
         "height": 450,
-        "url": "/backgrounds/Docks%20Midday/BM_250728_1_WEBSITE_600x450.jpg"
+        "url": "https://res.cloudinary.com/dvq75cqna/image/upload/v1780071560/vw-funds/public/backgrounds/Docks_Midday/BM_250728_1_WEBSITE_600x450.jpg"
       },
       {
         "width": 1440,
         "height": 540,
-        "url": "/backgrounds/Docks%20Midday/tmpgwvwccpi.jpg"
+        "url": "https://res.cloudinary.com/dvq75cqna/image/upload/v1780071561/vw-funds/public/backgrounds/Docks_Midday/tmpgwvwccpi.jpg"
       },
       {
         "width": 1440,
         "height": 925,
-        "url": "/backgrounds/Docks%20Midday/tmptmf1k1wx.jpg"
+        "url": "https://res.cloudinary.com/dvq75cqna/image/upload/v1780071562/vw-funds/public/backgrounds/Docks_Midday/tmptmf1k1wx.jpg"
       }
     ]
   },
@@ -293,42 +293,42 @@ export const generatedBackgroundCollections: BackgroundCollection[] = [
     "sizes": 6,
     "folder": "Background Collections",
     "color": "#6a9e6a",
-    "thumbnail": "/backgrounds/Field%20With%20Mountain/1777014100078_094e3bd4.jpg",
+    "thumbnail": "https://res.cloudinary.com/dvq75cqna/image/upload/v1780071563/vw-funds/public/backgrounds/Field_With_Mountain/1777014100078_094e3bd4.jpg",
     "images": {
-      "display-300x250": "/backgrounds/Field%20With%20Mountain/1777014100078_094e3bd4.jpg",
-      "website-2000x500": "/backgrounds/Field%20With%20Mountain/1777014103853_dac91349.jpg",
-      "social-1080x1080": "/backgrounds/Field%20With%20Mountain/1777014103877_980b4e71.jpg"
+      "display-300x250": "https://res.cloudinary.com/dvq75cqna/image/upload/v1780071563/vw-funds/public/backgrounds/Field_With_Mountain/1777014100078_094e3bd4.jpg",
+      "website-2000x500": "https://res.cloudinary.com/dvq75cqna/image/upload/v1780071564/vw-funds/public/backgrounds/Field_With_Mountain/1777014103853_dac91349.jpg",
+      "social-1080x1080": "https://res.cloudinary.com/dvq75cqna/image/upload/v1780071565/vw-funds/public/backgrounds/Field_With_Mountain/1777014103877_980b4e71.jpg"
     },
     "dimensions": [
       {
         "width": 300,
         "height": 250,
-        "url": "/backgrounds/Field%20With%20Mountain/1777014100078_094e3bd4.jpg"
+        "url": "https://res.cloudinary.com/dvq75cqna/image/upload/v1780071563/vw-funds/public/backgrounds/Field_With_Mountain/1777014100078_094e3bd4.jpg"
       },
       {
         "width": 2000,
         "height": 500,
-        "url": "/backgrounds/Field%20With%20Mountain/1777014103853_dac91349.jpg"
+        "url": "https://res.cloudinary.com/dvq75cqna/image/upload/v1780071564/vw-funds/public/backgrounds/Field_With_Mountain/1777014103853_dac91349.jpg"
       },
       {
         "width": 1080,
         "height": 1080,
-        "url": "/backgrounds/Field%20With%20Mountain/1777014103877_980b4e71.jpg"
+        "url": "https://res.cloudinary.com/dvq75cqna/image/upload/v1780071565/vw-funds/public/backgrounds/Field_With_Mountain/1777014103877_980b4e71.jpg"
       },
       {
         "width": 1920,
         "height": 1080,
-        "url": "/backgrounds/Field%20With%20Mountain/1777014105925_224608eb.jpg"
+        "url": "https://res.cloudinary.com/dvq75cqna/image/upload/v1780071566/vw-funds/public/backgrounds/Field_With_Mountain/1777014105925_224608eb.jpg"
       },
       {
         "width": 1080,
         "height": 1920,
-        "url": "/backgrounds/Field%20With%20Mountain/1777014107932_91d29ba7.jpg"
+        "url": "https://res.cloudinary.com/dvq75cqna/image/upload/v1780071567/vw-funds/public/backgrounds/Field_With_Mountain/1777014107932_91d29ba7.jpg"
       },
       {
         "width": 1008,
         "height": 1008,
-        "url": "/backgrounds/Field%20With%20Mountain/tmp0vpd_qji.jpg"
+        "url": "https://res.cloudinary.com/dvq75cqna/image/upload/v1780071568/vw-funds/public/backgrounds/Field_With_Mountain/tmp0vpd_qji.jpg"
       }
     ]
   },
@@ -339,42 +339,42 @@ export const generatedBackgroundCollections: BackgroundCollection[] = [
     "sizes": 6,
     "folder": "Background Collections",
     "color": "#5a7a5a",
-    "thumbnail": "/backgrounds/Forest%20Lodge/1777217113411_a7cf6a69.jpg",
+    "thumbnail": "https://res.cloudinary.com/dvq75cqna/image/upload/v1780071569/vw-funds/public/backgrounds/Forest_Lodge/1777217113411_a7cf6a69.jpg",
     "images": {
-      "display-300x250": "/backgrounds/Forest%20Lodge/1777217113411_a7cf6a69.jpg",
-      "social-1080x1080": "/backgrounds/Forest%20Lodge/1777217113788_5f374958.jpg",
-      "website-2000x500": "/backgrounds/Forest%20Lodge/1777217115259_67383756.jpg"
+      "display-300x250": "https://res.cloudinary.com/dvq75cqna/image/upload/v1780071569/vw-funds/public/backgrounds/Forest_Lodge/1777217113411_a7cf6a69.jpg",
+      "social-1080x1080": "https://res.cloudinary.com/dvq75cqna/image/upload/v1780071570/vw-funds/public/backgrounds/Forest_Lodge/1777217113788_5f374958.jpg",
+      "website-2000x500": "https://res.cloudinary.com/dvq75cqna/image/upload/v1780071571/vw-funds/public/backgrounds/Forest_Lodge/1777217115259_67383756.jpg"
     },
     "dimensions": [
       {
         "width": 300,
         "height": 250,
-        "url": "/backgrounds/Forest%20Lodge/1777217113411_a7cf6a69.jpg"
+        "url": "https://res.cloudinary.com/dvq75cqna/image/upload/v1780071569/vw-funds/public/backgrounds/Forest_Lodge/1777217113411_a7cf6a69.jpg"
       },
       {
         "width": 1080,
         "height": 1080,
-        "url": "/backgrounds/Forest%20Lodge/1777217113788_5f374958.jpg"
+        "url": "https://res.cloudinary.com/dvq75cqna/image/upload/v1780071570/vw-funds/public/backgrounds/Forest_Lodge/1777217113788_5f374958.jpg"
       },
       {
         "width": 2000,
         "height": 500,
-        "url": "/backgrounds/Forest%20Lodge/1777217115259_67383756.jpg"
+        "url": "https://res.cloudinary.com/dvq75cqna/image/upload/v1780071571/vw-funds/public/backgrounds/Forest_Lodge/1777217115259_67383756.jpg"
       },
       {
         "width": 1080,
         "height": 1920,
-        "url": "/backgrounds/Forest%20Lodge/1777217118578_2ecb1bea.jpg"
+        "url": "https://res.cloudinary.com/dvq75cqna/image/upload/v1780071572/vw-funds/public/backgrounds/Forest_Lodge/1777217118578_2ecb1bea.jpg"
       },
       {
         "width": 1920,
         "height": 1080,
-        "url": "/backgrounds/Forest%20Lodge/1777217119263_b86cc88d.jpg"
+        "url": "https://res.cloudinary.com/dvq75cqna/image/upload/v1780071573/vw-funds/public/backgrounds/Forest_Lodge/1777217119263_b86cc88d.jpg"
       },
       {
         "width": 1008,
         "height": 1008,
-        "url": "/backgrounds/Forest%20Lodge/tmpcfcldy8k.jpg"
+        "url": "https://res.cloudinary.com/dvq75cqna/image/upload/v1780071574/vw-funds/public/backgrounds/Forest_Lodge/tmpcfcldy8k.jpg"
       }
     ]
   },
@@ -385,37 +385,37 @@ export const generatedBackgroundCollections: BackgroundCollection[] = [
     "sizes": 5,
     "folder": "Background Collections",
     "color": "#8ab4d4",
-    "thumbnail": "/backgrounds/Frozen%20Lake%20Night/1777303348542_7657d84b.jpg",
+    "thumbnail": "https://res.cloudinary.com/dvq75cqna/image/upload/v1780071579/vw-funds/public/backgrounds/Frozen_Lake_Night/1777303348542_7657d84b.jpg",
     "images": {
-      "social-1080x1080": "/backgrounds/Frozen%20Lake%20Night/1777303258067_2591d360.jpg",
-      "website-2000x500": "/backgrounds/Frozen%20Lake%20Night/1777303344664_f6b2740a.jpg",
-      "display-300x250": "/backgrounds/Frozen%20Lake%20Night/1777303348542_7657d84b.jpg"
+      "social-1080x1080": "https://res.cloudinary.com/dvq75cqna/image/upload/v1780071575/vw-funds/public/backgrounds/Frozen_Lake_Night/1777303258067_2591d360.jpg",
+      "website-2000x500": "https://res.cloudinary.com/dvq75cqna/image/upload/v1780071577/vw-funds/public/backgrounds/Frozen_Lake_Night/1777303344664_f6b2740a.jpg",
+      "display-300x250": "https://res.cloudinary.com/dvq75cqna/image/upload/v1780071579/vw-funds/public/backgrounds/Frozen_Lake_Night/1777303348542_7657d84b.jpg"
     },
     "dimensions": [
       {
         "width": 1080,
         "height": 1080,
-        "url": "/backgrounds/Frozen%20Lake%20Night/1777303258067_2591d360.jpg"
+        "url": "https://res.cloudinary.com/dvq75cqna/image/upload/v1780071575/vw-funds/public/backgrounds/Frozen_Lake_Night/1777303258067_2591d360.jpg"
       },
       {
         "width": 2000,
         "height": 500,
-        "url": "/backgrounds/Frozen%20Lake%20Night/1777303344664_f6b2740a.jpg"
+        "url": "https://res.cloudinary.com/dvq75cqna/image/upload/v1780071577/vw-funds/public/backgrounds/Frozen_Lake_Night/1777303344664_f6b2740a.jpg"
       },
       {
         "width": 1080,
         "height": 1920,
-        "url": "/backgrounds/Frozen%20Lake%20Night/1777303347662_302ab0fa.jpg"
+        "url": "https://res.cloudinary.com/dvq75cqna/image/upload/v1780071577/vw-funds/public/backgrounds/Frozen_Lake_Night/1777303347662_302ab0fa.jpg"
       },
       {
         "width": 300,
         "height": 250,
-        "url": "/backgrounds/Frozen%20Lake%20Night/1777303348542_7657d84b.jpg"
+        "url": "https://res.cloudinary.com/dvq75cqna/image/upload/v1780071579/vw-funds/public/backgrounds/Frozen_Lake_Night/1777303348542_7657d84b.jpg"
       },
       {
         "width": 1920,
         "height": 1080,
-        "url": "/backgrounds/Frozen%20Lake%20Night/1777303355700_1e13892e.jpg"
+        "url": "https://res.cloudinary.com/dvq75cqna/image/upload/v1780071580/vw-funds/public/backgrounds/Frozen_Lake_Night/1777303355700_1e13892e.jpg"
       }
     ]
   },
@@ -426,42 +426,42 @@ export const generatedBackgroundCollections: BackgroundCollection[] = [
     "sizes": 6,
     "folder": "Background Collections",
     "color": "#a0c8e8",
-    "thumbnail": "/backgrounds/Ice%20Lab/1777123961113_36260ab2.jpg",
+    "thumbnail": "https://res.cloudinary.com/dvq75cqna/image/upload/v1780071589/vw-funds/public/backgrounds/Ice_Lab/1777123961113_36260ab2.jpg",
     "images": {
-      "display-300x250": "/backgrounds/Ice%20Lab/1777123961113_36260ab2.jpg",
-      "social-1080x1080": "/backgrounds/Ice%20Lab/1777123964410_30e18216.jpg",
-      "website-2000x500": "/backgrounds/Ice%20Lab/1777217952184_c6ebb98c.jpg"
+      "display-300x250": "https://res.cloudinary.com/dvq75cqna/image/upload/v1780071589/vw-funds/public/backgrounds/Ice_Lab/1777123961113_36260ab2.jpg",
+      "social-1080x1080": "https://res.cloudinary.com/dvq75cqna/image/upload/v1780071589/vw-funds/public/backgrounds/Ice_Lab/1777123964410_30e18216.jpg",
+      "website-2000x500": "https://res.cloudinary.com/dvq75cqna/image/upload/v1780071591/vw-funds/public/backgrounds/Ice_Lab/1777217952184_c6ebb98c.jpg"
     },
     "dimensions": [
       {
         "width": 300,
         "height": 250,
-        "url": "/backgrounds/Ice%20Lab/1777123961113_36260ab2.jpg"
+        "url": "https://res.cloudinary.com/dvq75cqna/image/upload/v1780071589/vw-funds/public/backgrounds/Ice_Lab/1777123961113_36260ab2.jpg"
       },
       {
         "width": 1080,
         "height": 1080,
-        "url": "/backgrounds/Ice%20Lab/1777123964410_30e18216.jpg"
+        "url": "https://res.cloudinary.com/dvq75cqna/image/upload/v1780071589/vw-funds/public/backgrounds/Ice_Lab/1777123964410_30e18216.jpg"
       },
       {
         "width": 1080,
         "height": 1920,
-        "url": "/backgrounds/Ice%20Lab/1777217951457_369775d6.jpg"
+        "url": "https://res.cloudinary.com/dvq75cqna/image/upload/v1780071590/vw-funds/public/backgrounds/Ice_Lab/1777217951457_369775d6.jpg"
       },
       {
         "width": 2000,
         "height": 500,
-        "url": "/backgrounds/Ice%20Lab/1777217952184_c6ebb98c.jpg"
+        "url": "https://res.cloudinary.com/dvq75cqna/image/upload/v1780071591/vw-funds/public/backgrounds/Ice_Lab/1777217952184_c6ebb98c.jpg"
       },
       {
         "width": 1920,
         "height": 1080,
-        "url": "/backgrounds/Ice%20Lab/1777217956222_cb32e042.jpg"
+        "url": "https://res.cloudinary.com/dvq75cqna/image/upload/v1780071592/vw-funds/public/backgrounds/Ice_Lab/1777217956222_cb32e042.jpg"
       },
       {
         "width": 1008,
         "height": 1008,
-        "url": "/backgrounds/Ice%20Lab/tmp3qvkh_ck.jpg"
+        "url": "https://res.cloudinary.com/dvq75cqna/image/upload/v1780071593/vw-funds/public/backgrounds/Ice_Lab/tmp3qvkh_ck.jpg"
       }
     ]
   },
@@ -472,59 +472,59 @@ export const generatedBackgroundCollections: BackgroundCollection[] = [
     "sizes": 9,
     "folder": "Background Collections",
     "color": "#2a4a6a",
-    "thumbnail": "/backgrounds/Stadium%20Night/BM_250825_1C_Display_300x250.jpg",
+    "thumbnail": "https://res.cloudinary.com/dvq75cqna/image/upload/v1780071628/vw-funds/public/backgrounds/Stadium_Night/BM_250825_1C_Display_300x250.jpg",
     "images": {
-      "display-300x250": "/backgrounds/Stadium%20Night/BM_250825_1C_Display_300x250.jpg",
-      "display-970x250": "/backgrounds/Stadium%20Night/BM_250825_1C_Display_970x250.jpg",
-      "social-1080x1080": "/backgrounds/Stadium%20Night/BM_250825_1C_Social_1080x1080.jpg",
-      "website-2000x500": "/backgrounds/Stadium%20Night/BM_250825_1C_Website_2000x500.jpg",
-      "website-600x450": "/backgrounds/Stadium%20Night/BM_250825_1C_Website_600x450.jpg"
+      "display-300x250": "https://res.cloudinary.com/dvq75cqna/image/upload/v1780071628/vw-funds/public/backgrounds/Stadium_Night/BM_250825_1C_Display_300x250.jpg",
+      "display-970x250": "https://res.cloudinary.com/dvq75cqna/image/upload/v1780071628/vw-funds/public/backgrounds/Stadium_Night/BM_250825_1C_Display_970x250.jpg",
+      "social-1080x1080": "https://res.cloudinary.com/dvq75cqna/image/upload/v1780071629/vw-funds/public/backgrounds/Stadium_Night/BM_250825_1C_Social_1080x1080.jpg",
+      "website-2000x500": "https://res.cloudinary.com/dvq75cqna/image/upload/v1780071632/vw-funds/public/backgrounds/Stadium_Night/BM_250825_1C_Website_2000x500.jpg",
+      "website-600x450": "https://res.cloudinary.com/dvq75cqna/image/upload/v1780071632/vw-funds/public/backgrounds/Stadium_Night/BM_250825_1C_Website_600x450.jpg"
     },
     "dimensions": [
       {
         "width": 1080,
         "height": 1920,
-        "url": "/backgrounds/Stadium%20Night/1777052316983_0d2379ef.jpg"
+        "url": "https://res.cloudinary.com/dvq75cqna/image/upload/v1780071621/vw-funds/public/backgrounds/Stadium_Night/1777052316983_0d2379ef.jpg"
       },
       {
         "width": 1920,
         "height": 1080,
-        "url": "/backgrounds/Stadium%20Night/1777052317533_7bfc6804.jpg"
+        "url": "https://res.cloudinary.com/dvq75cqna/image/upload/v1780071627/vw-funds/public/backgrounds/Stadium_Night/1777052317533_7bfc6804.jpg"
       },
       {
         "width": 300,
         "height": 250,
-        "url": "/backgrounds/Stadium%20Night/BM_250825_1C_Display_300x250.jpg"
+        "url": "https://res.cloudinary.com/dvq75cqna/image/upload/v1780071628/vw-funds/public/backgrounds/Stadium_Night/BM_250825_1C_Display_300x250.jpg"
       },
       {
         "width": 970,
         "height": 250,
-        "url": "/backgrounds/Stadium%20Night/BM_250825_1C_Display_970x250.jpg"
+        "url": "https://res.cloudinary.com/dvq75cqna/image/upload/v1780071628/vw-funds/public/backgrounds/Stadium_Night/BM_250825_1C_Display_970x250.jpg"
       },
       {
         "width": 1080,
         "height": 1080,
-        "url": "/backgrounds/Stadium%20Night/BM_250825_1C_Social_1080x1080.jpg"
+        "url": "https://res.cloudinary.com/dvq75cqna/image/upload/v1780071629/vw-funds/public/backgrounds/Stadium_Night/BM_250825_1C_Social_1080x1080.jpg"
       },
       {
         "width": 1920,
         "height": 200,
-        "url": "/backgrounds/Stadium%20Night/BM_250825_1C_Website_1920x200.jpg"
+        "url": "https://res.cloudinary.com/dvq75cqna/image/upload/v1780071630/vw-funds/public/backgrounds/Stadium_Night/BM_250825_1C_Website_1920x200.jpg"
       },
       {
         "width": 2000,
         "height": 200,
-        "url": "/backgrounds/Stadium%20Night/BM_250825_1C_Website_2000x200.jpg"
+        "url": "https://res.cloudinary.com/dvq75cqna/image/upload/v1780071631/vw-funds/public/backgrounds/Stadium_Night/BM_250825_1C_Website_2000x200.jpg"
       },
       {
         "width": 2000,
         "height": 500,
-        "url": "/backgrounds/Stadium%20Night/BM_250825_1C_Website_2000x500.jpg"
+        "url": "https://res.cloudinary.com/dvq75cqna/image/upload/v1780071632/vw-funds/public/backgrounds/Stadium_Night/BM_250825_1C_Website_2000x500.jpg"
       },
       {
         "width": 600,
         "height": 450,
-        "url": "/backgrounds/Stadium%20Night/BM_250825_1C_Website_600x450.jpg"
+        "url": "https://res.cloudinary.com/dvq75cqna/image/upload/v1780071632/vw-funds/public/backgrounds/Stadium_Night/BM_250825_1C_Website_600x450.jpg"
       }
     ]
   },
@@ -535,45 +535,45 @@ export const generatedBackgroundCollections: BackgroundCollection[] = [
     "sizes": 6,
     "folder": "Background Collections",
     "color": "#2a9d8f",
-    "thumbnail": "/backgrounds/Man%20Walking/Man%20Walking.png",
+    "thumbnail": "https://res.cloudinary.com/dvq75cqna/image/upload/v1780071598/vw-funds/public/backgrounds/Man_Walking/Man_Walking.png",
     "images": {
-      "banner-300x600": "/backgrounds/Man%20Walking/Man%20Walking.png",
-      "banner-160x600": "/backgrounds/Man%20Walking/Man%20Walking-1.png",
-      "display-300x250": "/backgrounds/Man%20Walking/Man%20Walking-2.png",
-      "banner-728x90": "/backgrounds/Man%20Walking/Man%20Walking-3.png",
-      "banner-300x50": "/backgrounds/Man%20Walking/Man%20Walking-4.png",
-      "banner-320x50": "/backgrounds/Man%20Walking/Man%20Walking-5.png"
+      "banner-300x600": "https://res.cloudinary.com/dvq75cqna/image/upload/v1780071598/vw-funds/public/backgrounds/Man_Walking/Man_Walking.png",
+      "banner-160x600": "https://res.cloudinary.com/dvq75cqna/image/upload/v1780071594/vw-funds/public/backgrounds/Man_Walking/Man_Walking-1.png",
+      "display-300x250": "https://res.cloudinary.com/dvq75cqna/image/upload/v1780071594/vw-funds/public/backgrounds/Man_Walking/Man_Walking-2.png",
+      "banner-728x90": "https://res.cloudinary.com/dvq75cqna/image/upload/v1780071595/vw-funds/public/backgrounds/Man_Walking/Man_Walking-3.png",
+      "banner-300x50": "https://res.cloudinary.com/dvq75cqna/image/upload/v1780071596/vw-funds/public/backgrounds/Man_Walking/Man_Walking-4.png",
+      "banner-320x50": "https://res.cloudinary.com/dvq75cqna/image/upload/v1780071597/vw-funds/public/backgrounds/Man_Walking/Man_Walking-5.png"
     },
     "dimensions": [
       {
         "width": 300,
         "height": 600,
-        "url": "/backgrounds/Man%20Walking/Man%20Walking.png"
+        "url": "https://res.cloudinary.com/dvq75cqna/image/upload/v1780071598/vw-funds/public/backgrounds/Man_Walking/Man_Walking.png"
       },
       {
         "width": 160,
         "height": 600,
-        "url": "/backgrounds/Man%20Walking/Man%20Walking-1.png"
+        "url": "https://res.cloudinary.com/dvq75cqna/image/upload/v1780071594/vw-funds/public/backgrounds/Man_Walking/Man_Walking-1.png"
       },
       {
         "width": 300,
         "height": 250,
-        "url": "/backgrounds/Man%20Walking/Man%20Walking-2.png"
+        "url": "https://res.cloudinary.com/dvq75cqna/image/upload/v1780071594/vw-funds/public/backgrounds/Man_Walking/Man_Walking-2.png"
       },
       {
         "width": 728,
         "height": 90,
-        "url": "/backgrounds/Man%20Walking/Man%20Walking-3.png"
+        "url": "https://res.cloudinary.com/dvq75cqna/image/upload/v1780071595/vw-funds/public/backgrounds/Man_Walking/Man_Walking-3.png"
       },
       {
         "width": 300,
         "height": 50,
-        "url": "/backgrounds/Man%20Walking/Man%20Walking-4.png"
+        "url": "https://res.cloudinary.com/dvq75cqna/image/upload/v1780071596/vw-funds/public/backgrounds/Man_Walking/Man_Walking-4.png"
       },
       {
         "width": 320,
         "height": 50,
-        "url": "/backgrounds/Man%20Walking/Man%20Walking-5.png"
+        "url": "https://res.cloudinary.com/dvq75cqna/image/upload/v1780071597/vw-funds/public/backgrounds/Man_Walking/Man_Walking-5.png"
       }
     ]
   },
@@ -584,45 +584,45 @@ export const generatedBackgroundCollections: BackgroundCollection[] = [
     "sizes": 6,
     "folder": "Background Collections",
     "color": "#2a9d8f",
-    "thumbnail": "/backgrounds/Woman%20Hiking/Woman%20Hiking.png",
+    "thumbnail": "https://res.cloudinary.com/dvq75cqna/image/upload/v1780071637/vw-funds/public/backgrounds/Woman_Hiking/Woman_Hiking.png",
     "images": {
-      "banner-300x600": "/backgrounds/Woman%20Hiking/Woman%20Hiking.png",
-      "banner-160x600": "/backgrounds/Woman%20Hiking/Woman%20Hiking-1.png",
-      "display-300x250": "/backgrounds/Woman%20Hiking/Woman%20Hiking-2.png",
-      "banner-728x90": "/backgrounds/Woman%20Hiking/Woman%20Hiking-3.png",
-      "banner-300x50": "/backgrounds/Woman%20Hiking/Woman%20Hiking-4.png",
-      "banner-320x50": "/backgrounds/Woman%20Hiking/Woman%20Hiking-5.png"
+      "banner-300x600": "https://res.cloudinary.com/dvq75cqna/image/upload/v1780071637/vw-funds/public/backgrounds/Woman_Hiking/Woman_Hiking.png",
+      "banner-160x600": "https://res.cloudinary.com/dvq75cqna/image/upload/v1780071633/vw-funds/public/backgrounds/Woman_Hiking/Woman_Hiking-1.png",
+      "display-300x250": "https://res.cloudinary.com/dvq75cqna/image/upload/v1780071634/vw-funds/public/backgrounds/Woman_Hiking/Woman_Hiking-2.png",
+      "banner-728x90": "https://res.cloudinary.com/dvq75cqna/image/upload/v1780071635/vw-funds/public/backgrounds/Woman_Hiking/Woman_Hiking-3.png",
+      "banner-300x50": "https://res.cloudinary.com/dvq75cqna/image/upload/v1780071636/vw-funds/public/backgrounds/Woman_Hiking/Woman_Hiking-4.png",
+      "banner-320x50": "https://res.cloudinary.com/dvq75cqna/image/upload/v1780071636/vw-funds/public/backgrounds/Woman_Hiking/Woman_Hiking-5.png"
     },
     "dimensions": [
       {
         "width": 300,
         "height": 600,
-        "url": "/backgrounds/Woman%20Hiking/Woman%20Hiking.png"
+        "url": "https://res.cloudinary.com/dvq75cqna/image/upload/v1780071637/vw-funds/public/backgrounds/Woman_Hiking/Woman_Hiking.png"
       },
       {
         "width": 160,
         "height": 600,
-        "url": "/backgrounds/Woman%20Hiking/Woman%20Hiking-1.png"
+        "url": "https://res.cloudinary.com/dvq75cqna/image/upload/v1780071633/vw-funds/public/backgrounds/Woman_Hiking/Woman_Hiking-1.png"
       },
       {
         "width": 300,
         "height": 250,
-        "url": "/backgrounds/Woman%20Hiking/Woman%20Hiking-2.png"
+        "url": "https://res.cloudinary.com/dvq75cqna/image/upload/v1780071634/vw-funds/public/backgrounds/Woman_Hiking/Woman_Hiking-2.png"
       },
       {
         "width": 728,
         "height": 90,
-        "url": "/backgrounds/Woman%20Hiking/Woman%20Hiking-3.png"
+        "url": "https://res.cloudinary.com/dvq75cqna/image/upload/v1780071635/vw-funds/public/backgrounds/Woman_Hiking/Woman_Hiking-3.png"
       },
       {
         "width": 300,
         "height": 50,
-        "url": "/backgrounds/Woman%20Hiking/Woman%20Hiking-4.png"
+        "url": "https://res.cloudinary.com/dvq75cqna/image/upload/v1780071636/vw-funds/public/backgrounds/Woman_Hiking/Woman_Hiking-4.png"
       },
       {
         "width": 320,
         "height": 50,
-        "url": "/backgrounds/Woman%20Hiking/Woman%20Hiking-5.png"
+        "url": "https://res.cloudinary.com/dvq75cqna/image/upload/v1780071636/vw-funds/public/backgrounds/Woman_Hiking/Woman_Hiking-5.png"
       }
     ]
   }

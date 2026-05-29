@@ -8,7 +8,7 @@ import { ImageWithFallback } from './figma/ImageWithFallback';
 import { InteractiveAnnotation } from './pre-approval/InteractiveAnnotation';
 
 // Full-size Jack Daniels VW inventory screenshot — from Dialog.tsx Figma component
-import imgDialog from 'figma:asset/e77c7a2ee09d8ca869445423a77526a5edbb0b4e.png';
+const imgDialog = 'https://res.cloudinary.com/dvq75cqna/image/upload/v1780071137/vw-funds/e77c7a2ee09d8ca869445423a77526a5edbb0b4e.png';
 
 interface WebMonitoringModalProps {
   item: WCMItem;

@@ -1580,7 +1580,7 @@ function LogoSquare({ src, alt, size }: { src: string; alt: string; size: number
 function HondaPrimaryLogoMini() {
   return (
     <div className="w-8 h-8 rounded-lg border border-gray-200 bg-white overflow-hidden shadow-sm relative">
-      <img src="/logos/Honda-Logo.png" alt="Honda" className="absolute inset-0 w-full h-full object-contain p-0.5"  />
+      <img src="https://res.cloudinary.com/dvq75cqna/image/upload/v1780071713/vw-funds/public/logos/Honda-Logo.png" alt="Honda" className="absolute inset-0 w-full h-full object-contain p-0.5"  />
     </div>
   );
 }
@@ -1588,7 +1588,7 @@ function HondaPrimaryLogoMini() {
 function HondaEventLogoMini() {
   return (
     <div className="w-8 h-8 rounded-full border border-gray-200 bg-white overflow-hidden shadow-sm relative">
-      <img src="/logos/Spring-Event-Logo.png" alt="Honda Spring Event" className="absolute inset-0 w-full h-full object-contain"  />
+      <img src="https://res.cloudinary.com/dvq75cqna/image/upload/v1780071714/vw-funds/public/logos/Spring-Event-Logo.png" alt="Honda Spring Event" className="absolute inset-0 w-full h-full object-contain"  />
     </div>
   );
 }

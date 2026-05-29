@@ -2,9 +2,8 @@ import { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { ArrowLeft, Search } from 'lucide-react';
 import { cn } from '../../lib/utils';
-import audiLogoOEM from '../../assets/logos/Audi.png';
-import rideNowLogo from '../../assets/logos/RideNow.png';
-
+const audiLogoOEM = 'https://res.cloudinary.com/dvq75cqna/image/upload/v1780071269/vw-funds/logos/Audi.png';
+const rideNowLogo = 'https://res.cloudinary.com/dvq75cqna/image/upload/v1780071277/vw-funds/logos/RideNow.png';
 // ─── Logos ─────────────────────────────────────────────────────────────────
 
 const VW_LOGO_PATH =

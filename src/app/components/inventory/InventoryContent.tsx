@@ -433,8 +433,7 @@ export function InventoryContent() {
         </div>
 
         {/* Channel icons wrapper — fill #f4f5f6, radius 12, px-4, gap-12 (from Figma hug wrapper) */}
-        <div className="flex items-center px-[8px] py-[12px]">
-          <div className="flex gap-[12px] items-center px-[4px] rounded-[12px]" style={{ background: '#f4f5f6' }}>
+        <div className="flex gap-[12px] items-center px-[4px] rounded-[12px]" style={{ background: '#f4f5f6' }}>
             {CHANNELS.map(ch => (
               <div key={ch.id} className="relative flex gap-[2px] items-center">
                 {/* Error badge */}
@@ -457,7 +456,6 @@ export function InventoryContent() {
                 </span>
               </div>
             ))}
-          </div>
         </div>
 
         {/* Spacer */}

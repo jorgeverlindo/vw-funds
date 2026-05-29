@@ -143,7 +143,7 @@ export default function AppContent() {
 
   // Sync data-mode to <html> so portals (rendered outside the wrapper div) also inherit CSS vars
   // [FV] dealer-singular and dealer-emich both share the dealer CSS palette
-  const cssMode = (userType === 'dealer-singular' || userType === 'dealer-emich') ? 'dealer' : userType;
+  const cssMode = (userType === 'dealer-singular' || userType === 'dealer-emich' || userType === 'dealer-ridenow') ? 'dealer' : userType;
 
   // [FV] current dealer identity (own dealership name + user) — drives Compliance scope, AI auto-fill, and labels
   const currentDealerIdentity = getDealerIdentity(userType);
@@ -173,7 +173,7 @@ export default function AppContent() {
         setUserType('oem');
         setActiveTab(nextTab);
         navigate(buildUrl('oem', client.clientId, nextTab), { replace: true });
-        emitSnackbar('OEM view (e)');
+        emitSnackbar(client.clientId === 'ride-now' ? 'RideNow OEM (e)' : 'OEM view (e)');
       }
       if (e.key === 'a') {
         unlockDealership();
@@ -182,10 +182,18 @@ export default function AppContent() {
         emitSnackbar('Agency view (a)');
       }
       if (e.key === 'd') {
-        lockDealership(WORKFLOW_DEALER.code);
-        setUserType('dealer-singular');
-        navigate(buildUrl('dealer-singular', client.clientId, activeTab), { replace: true });
-        emitSnackbar('Jack Daniels Volkswagen (d)'); // [FV] toast label decoupled from WORKFLOW_DEALER.name
+        if (client.clientId === 'ride-now') {
+          // [FV] RideNow dealer: Rachel Hui @ RideNow Powersports Weatherford
+          unlockDealership();
+          setUserType('dealer-ridenow');
+          navigate(buildUrl('dealer-singular', client.clientId, activeTab), { replace: true });
+          emitSnackbar('RideNow Powersports Weatherford (d)');
+        } else {
+          lockDealership(WORKFLOW_DEALER.code);
+          setUserType('dealer-singular');
+          navigate(buildUrl('dealer-singular', client.clientId, activeTab), { replace: true });
+          emitSnackbar('Jack Daniels Volkswagen (d)'); // [FV] toast label decoupled from WORKFLOW_DEALER.name
+        }
       }
       // [FV] 's' → Emich Volkswagen dealer view (used to demo cross-dealer compliance reports)
       if (e.key === 's') {
@@ -219,7 +227,7 @@ export default function AppContent() {
   const selectedClaim = useSelectedClaim(selectedClaimId);
 
   const handleSettingsClick = useCallback((section: string) => {
-    if (client.clientId === 'ride-now') {
+    if (client.clientId === 'ride-now' && userType === 'oem') {
       const targetSection = section === 'client-settings' ? 'global-ai-configs' : section;
       setSettingsSection(targetSection);
       navigate(buildUrl(userType, client.clientId, 'client-settings'), { replace: true });
@@ -586,19 +594,24 @@ export default function AppContent() {
 
       {/* Main Layout Container - Fixed offsets for sidebar/navbar */}
       <CommentsProvider contextId={commentsContextId} contextName={commentsContextName} currentUserId={
-        client.clientId === 'ride-now'
-          ? 'rachel-hui'
-          : (({
-              'dealer':          'mallory-manning',
-              'dealer-emich':    'katelyn-gray',
-              'oem':             'jenny-eckhart',
-              'dealer-singular': 'zak-flaten',
-            } as Record<string, string>)[userType] ?? 'jorge-verlindo')
+        (({
+          // RideNow: OEM = Jenny Eckhart | dealer = Rachel Hui
+          'ride-now:oem':            'jenny-eckhart',
+          'ride-now:dealer-ridenow': 'rachel-hui',
+          // VW / Audi
+          'vw:dealer':               'mallory-manning',
+          'vw:dealer-emich':         'katelyn-gray',
+          'vw:oem':                  'jenny-eckhart',
+          'vw:dealer-singular':      'zak-flaten',
+          'audi:dealer':             'mallory-manning',
+          'audi:oem':                'jenny-eckhart',
+        } as Record<string, string>)[`${client.clientId}:${userType}`]
+          ?? (client.clientId === 'ride-now' ? 'rachel-hui' : 'jorge-verlindo'))
       }>
       <main className="ml-[72px] mt-[32px] h-[calc(100vh-48px)] flex p-6 gap-6 overflow-hidden mr-[0px] mb-[0px] relative">
 
         {/* ── Client Settings (Ride Now) — fills the whole main flex row ── */}
-        {settingsSection && client.clientId === 'ride-now' ? (
+        {settingsSection && client.clientId === 'ride-now' && userType === 'oem' ? (
           <>
             <ClientSettingsContent initialSection={settingsSection} />
             {/* Agent + Comments panes are pervasive — available on every screen */}

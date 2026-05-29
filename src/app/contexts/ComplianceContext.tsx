@@ -57,9 +57,10 @@ const DEALER_SEEN_CASE_UPDATE_KEY     = 'vw-funds-2:dealerSeenCaseUpdateIds';
 
 // [FV] dealer identity per role — drives Compliance scope, AI auto-fill, and "submitted by" labels
 const DEALER_IDENTITY: Record<string, { dealership: string; userName: string }> = {
-  'dealer':          { dealership: 'Jack Daniels Volkswagen', userName: 'Mallory Manning' },
-  'dealer-singular': { dealership: 'Jack Daniels Volkswagen', userName: 'Mallory Manning' },
-  'dealer-emich':    { dealership: 'Emich Volkswagen',        userName: 'Katelyn Gray' },
+  'dealer':               { dealership: 'Jack Daniels Volkswagen',          userName: 'Mallory Manning' },
+  'dealer-singular':      { dealership: 'Jack Daniels Volkswagen',          userName: 'Mallory Manning' },
+  'dealer-emich':         { dealership: 'Emich Volkswagen',                 userName: 'Katelyn Gray' },
+  'dealer-ridenow':       { dealership: 'RideNow Powersports Weatherford',  userName: 'Rachel Hui' },
 };
 
 // [FV] kept for backward compatibility — used as default when userType isn't a known dealer role

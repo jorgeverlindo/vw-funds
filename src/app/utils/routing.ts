@@ -6,7 +6,7 @@
  * buildUrl    — constructs an absolute pathname for a given role, client, and tab
  */
 
-export type UserType = 'dealer' | 'dealer-singular' | 'dealer-emich' | 'oem';
+export type UserType = 'dealer' | 'dealer-singular' | 'dealer-emich' | 'dealer-ridenow' | 'oem';
 
 export const TAB_SLUGS: Record<string, string> = {
   'overview':       'Overview',
@@ -37,7 +37,8 @@ export function buildUrl(role: UserType, clientId: string, tabId: string): strin
     return `/Audi/OEM/${slug}`;
   }
   const brand = clientId === 'audi' ? 'Audi' : clientId === 'ride-now' ? 'Ride-Now' : 'Volkswagen';
-  if (role === 'dealer-singular') return `/${brand}/dealership-singular/${slug}`;
-  if (role === 'dealer-emich')    return `/${brand}/dealership-emich/${slug}`; // [FV]
+  if (role === 'dealer-singular')  return `/${brand}/dealership-singular/${slug}`;
+  if (role === 'dealer-emich')     return `/${brand}/dealership-emich/${slug}`; // [FV]
+  if (role === 'dealer-ridenow')   return `/${brand}/dealership-singular/${slug}`; // [FV] RideNow Powersports Weatherford
   return `/${brand}/dealership/${slug}`;
 }

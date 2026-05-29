@@ -14,8 +14,16 @@ interface ClientContextValue {
 
 const ClientContext = createContext<ClientContextValue | null>(null);
 
+/** Derive initial client from the URL so deep-links and reloads start in the right context. */
+function getInitialClientId(): string {
+  const path = window.location.pathname.toLowerCase();
+  if (path.startsWith('/ride-now/') || path.startsWith('/ride-now')) return 'ride-now';
+  if (path.startsWith('/audi/'))  return 'audi';
+  return 'vw';
+}
+
 export function ClientProvider({ children }: { children: ReactNode }) {
-  const [clientId, setClientId] = useState<string>('vw');
+  const [clientId, setClientId] = useState<string>(getInitialClientId);
   const client = CLIENTS[clientId] ?? vwConfig;
 
   return (

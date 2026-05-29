@@ -10,7 +10,8 @@ const vwLogoDealer = 'https://res.cloudinary.com/dvq75cqna/image/upload/v1780071
 const vwLogoOEM = 'https://res.cloudinary.com/dvq75cqna/image/upload/v1780071278/vw-funds/logos/VW-Logo.jpg';
 const vwLogoEmich = 'https://res.cloudinary.com/dvq75cqna/image/upload/v1780071272/vw-funds/logos/Emich.png';
 const constellationLogo = 'https://res.cloudinary.com/dvq75cqna/image/upload/v1780071277/vw-funds/logos/Projects___Website_Campaigns/Brand_Logo/Constellation.png';
-const rideNowLogo = 'https://res.cloudinary.com/dvq75cqna/image/upload/v1780071277/vw-funds/logos/RideNow.png';
+const rideNowLogo    = 'https://res.cloudinary.com/dvq75cqna/image/upload/v1780071277/vw-funds/logos/RideNow.png';
+const rideNowOEMLogo = 'https://res.cloudinary.com/dvq75cqna/image/upload/v1780072519/vw-funds/logos/RideNow-OEM.jpg';
 
 interface NavItemProps {
   icon: React.ReactNode;
@@ -126,7 +127,9 @@ export function AppSidebar({
 
   // Client + role → correct logo PNG
   const clientLogo = client.clientId === 'ride-now' ? (
-    <ClientLogoImg src={rideNowLogo} alt="Ride Now" noPadding />
+    userType === 'oem'
+      ? <ClientLogoImg src={rideNowOEMLogo} alt="RideNow Group" noPadding />
+      : <ClientLogoImg src={rideNowLogo} alt="RideNow Powersports Weatherford" noPadding />
   ) : client.clientId === 'audi' ? (
     userType === 'oem'
       ? <ClientLogoImg src={audiLogoOEM}    alt="Audi" />

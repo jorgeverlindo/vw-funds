@@ -374,7 +374,17 @@ export function TopNavBar({
         </div>
 
         {/* Avatar */}
-        {client.clientId === 'ride-now' ? (
+        {client.clientId === 'ride-now' && userType === 'oem' ? (
+          // RideNow OEM — Jenny Eckhart (initials JE)
+          <AvatarInitials
+            initials="JE"
+            size={32}
+            shape="circular"
+            bgColor="#0e7490"
+            className="ml-2 cursor-pointer"
+          />
+        ) : client.clientId === 'ride-now' ? (
+          // RideNow dealer — Rachel Hui (photo)
           <div className="size-8 rounded-full overflow-hidden ml-2 cursor-pointer">
             <img src={imgRachelHui} alt="Rachel Hui" className="size-full object-cover" />
           </div>

@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
-import { MoreVertical } from 'lucide-react';
+import { MoreVertical, X } from 'lucide-react';
 import { cn } from '../../../lib/utils';
 import { AIConfigRecord } from '../../../data/inventory/aiConfigs';
 import type { VinFilters } from '../../../data/inventory/types';
 import { Thumbnail } from './Thumbnail';
 import { YMMTCItems } from './YMMTCItems';
 import { StatusChip } from '../shared/StatusIcon';
+import { GlobalAIConfigMenu, type GlobalAIConfigMenuAnchor } from './GlobalAIConfigMenu';
 
 // ─── Arrow Down Icon (Figma: ArrowDownwardFilled 18×18) ───────────────────────
 function ArrowDownIcon() {
@@ -139,6 +140,7 @@ export function DataGrid({ records, selected, onToggleRow, onToggleAll, onRowCli
   const allSelected = records.length > 0 && records.every(r => selected.has(r.id));
   const [widths, setWidths] = useState<ColWidths>(DEFAULT_WIDTHS);
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
+  const [openMenu, setOpenMenu] = useState<{ recordId: string; anchor: GlobalAIConfigMenuAnchor } | null>(null);
 
   const toggleExpand = (id: string) => {
     setExpandedRows(prev => {
@@ -384,17 +386,37 @@ export function DataGrid({ records, selected, onToggleRow, onToggleAll, onRowCli
                     <p className={cn(BODY2, 'text-[#1f1d25] whitespace-nowrap')}>
                       {record.createdAt}
                     </p>
-                    {/* Kebab overlays on hover with white bg so text stays readable */}
+                    {/* Kebab overlays on hover with white bg so text stays readable.
+                        Stays visible while its menu is open (openMenu?.recordId === record.id). */}
                     <button
-                      onClick={e => e.stopPropagation()}
+                      onClick={e => {
+                        e.stopPropagation();
+                        if (openMenu?.recordId === record.id) {
+                          setOpenMenu(null);
+                        } else {
+                          const rect = e.currentTarget.getBoundingClientRect();
+                          setOpenMenu({
+                            recordId: record.id,
+                            anchor: {
+                              top: rect.bottom + 4,
+                              right: window.innerWidth - rect.right,
+                            },
+                          });
+                        }
+                      }}
                       className={cn(
                         'absolute right-2 top-1/2 -translate-y-1/2',
-                        'invisible group-hover:visible',
+                        openMenu?.recordId === record.id
+                          ? 'visible bg-[rgba(17,16,20,0.08)]'
+                          : 'invisible group-hover:visible bg-white',
                         'w-8 h-8 rounded flex items-center justify-center',
-                        'bg-white text-[rgba(17,16,20,0.56)] hover:bg-[rgba(17,16,20,0.06)] transition-colors',
+                        'text-[rgba(17,16,20,0.56)] hover:bg-[rgba(17,16,20,0.06)] transition-colors',
                       )}
                     >
-                      <MoreVertical size={16} />
+                      {openMenu?.recordId === record.id
+                        ? <X size={16} />
+                        : <MoreVertical size={16} />
+                      }
                     </button>
                   </td>
                 </tr>
@@ -425,6 +447,18 @@ export function DataGrid({ records, selected, onToggleRow, onToggleAll, onRowCli
           })}
         </tbody>
       </table>
+
+      {/* GlobalAI Config row menu — portal-mounted, same animation as VehiclesMenu */}
+      {openMenu && (
+        <GlobalAIConfigMenu
+          anchor={openMenu.anchor}
+          onAction={action => {
+            // TODO: wire individual actions (edit → onRowClick, duplicate, remove, etc.)
+            if (action === 'edit') onRowClick(openMenu.recordId);
+          }}
+          onClose={() => setOpenMenu(null)}
+        />
+      )}
     </div>
   );
 }

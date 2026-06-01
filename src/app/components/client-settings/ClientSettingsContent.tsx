@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useRef, useState, useEffect } from 'react';
 import { MoreVertical } from 'lucide-react';
 import { SideSheet } from '../side-sheet/SideSheet';
 import { SideSheetNavItem } from '../side-sheet/SideSheetNavItem';
@@ -9,6 +9,21 @@ import { NewGlobalAIConfigContent } from './NewGlobalAIConfigContent';
 import { Snackbar } from './Snackbar';
 import { AI_CONFIGS, type AIConfigRecord, type SavedFormState } from '../../../data/inventory/aiConfigs';
 import type { AngleKey } from '../../../data/inventory/types';
+import { STORAGE_KEYS } from '../../constants/storageKeys';
+
+// ─── LocalStorage persistence helpers ─────────────────────────────────────────
+function loadUserConfigs(): AIConfigRecord[] {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEYS.AI_CONFIGS_LIST);
+    return raw ? (JSON.parse(raw) as AIConfigRecord[]) : [];
+  } catch { return []; }
+}
+function saveUserConfigs(userConfigs: AIConfigRecord[]) {
+  // Only persist user-created records (not static seed AI_CONFIGS)
+  const seedIds = new Set(AI_CONFIGS.map(c => c.id));
+  const toSave = userConfigs.filter(c => !seedIds.has(c.id));
+  try { localStorage.setItem(STORAGE_KEYS.AI_CONFIGS_LIST, JSON.stringify(toSave)); } catch { /* noop */ }
+}
 
 // ─── Client Settings nav items ─────────────────────────────────────────────────
 // Order matches Figma node 3771:68304
@@ -106,18 +121,93 @@ function ToolbarIconBtn({
 
 interface ClientSettingsContentProps {
   initialSection?: string;
+  /**
+   * When set, the gallery automatically opens this config in edit view.
+   * Used by the "Config Used" link in VinDetailContent (OEM only).
+   * Call `onConfigOpened` after consuming so AppContent can clear the value.
+   */
+  openConfigId?: string | null;
+  onConfigOpened?: () => void;
 }
 
-export function ClientSettingsContent({ initialSection }: ClientSettingsContentProps) {
+export function ClientSettingsContent({ initialSection, openConfigId, onConfigOpened }: ClientSettingsContentProps) {
   const [isSideSheetOpen, setIsSideSheetOpen] = useState(true);
   const [activeNavItem, setActiveNavItem]     = useState<NavItem>((initialSection as NavItem) ?? 'global-ai-configs');
   const [search, setSearch]                   = useState('');
   const [selected, setSelected]               = useState<Set<string>>(new Set());
   const [view, setView]                       = useState<'list' | 'new-config' | 'edit-config'>('list');
-  const [configs, setConfigs]                 = useState<AIConfigRecord[]>([...AI_CONFIGS]);
+  const [configs, setConfigs]                 = useState<AIConfigRecord[]>(() => {
+    const user = loadUserConfigs();
+    // Prepend user-created configs (most recent first), then static seed
+    return [...user, ...AI_CONFIGS];
+  });
   const [editData, setEditData]               = useState<SavedFormState | undefined>(undefined);
   const [snackbarOpen, setSnackbarOpen]       = useState(false);
   const snackbarTimerRef                      = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Persist user-created configs whenever the list changes
+  useEffect(() => { saveUserConfigs(configs); }, [configs]);
+
+  // One-time migration: backfill thumbnail for any user config saved without one
+  // using the stored formState.bgUrl (background scene, no vehicle).
+  // Configs with no bgUrl stored cannot be auto-fixed — they need regeneration.
+  useEffect(() => {
+    const seedIds = new Set(AI_CONFIGS.map(c => c.id));
+    setConfigs(prev => {
+      let changed = false;
+      const next = prev.map(c => {
+        if (seedIds.has(c.id)) return c; // skip static seed
+        if (c.thumbnail && !c.thumbnail.includes('empty-state')) return c; // already has real thumb
+        const bgUrl = c.formState?.bgUrl ?? null;
+        if (!bgUrl) return c; // no stored bg — needs regeneration
+        changed = true;
+        return { ...c, thumbnail: bgUrl };
+      });
+      return changed ? next : prev;
+    });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // run once on mount
+
+  // Deep-link: when AppContent passes a specific config id (from "Config Used" link in
+  // VinDetailContent), navigate directly to that config's edit view.
+  useEffect(() => {
+    if (!openConfigId) return;
+    const record = configs.find(c => c.id === openConfigId);
+    if (record) {
+      // Re-use the same logic as handleRowClick to build formState
+      if (record.formState) {
+        setEditData(record.formState);
+      } else {
+        const vg = record.vehicleGroups?.[0];
+        const effectiveOrder: AngleKey[] = vg?.angleOrder ?? ANGLE_KEYS_ORDERED;
+        const genAngles  = vg ? effectiveOrder.map(k => vg.angles[k] ?? null) : undefined;
+        const srcAngles  = vg?.sourceAngles
+          ? effectiveOrder.map(k => vg.sourceAngles![k] ?? null)
+          : undefined;
+        setEditData({
+          configName:      record.name,
+          aiConfigActive:  record.status === 'Active',
+          aiModel:         MODEL_ID_MAP[record.model] ?? 'flux-kontext-max',
+          seed:            '',
+          prompt:          '',
+          productPosition: { x: 0, y: -30, width: 480 },
+          bgUrl:           record.thumbnail,
+          overlayUrl:      null,
+          vinsCount:       record.vins,
+          filterGroups:    record.vehicleGroups
+            ? record.vehicleGroups.map(vg => ({ filters: { models: [vg.model] as string[] } }))
+            : [],
+          isStaticRecord:  true,
+          genAngles,
+          sourceAngles:    srcAngles,
+        });
+      }
+      setView('edit-config');
+    }
+    onConfigOpened?.();
+  // configs intentionally excluded — we only react to the id changing
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [openConfigId]);
 
   // Prepend newly-saved (or updated) config, show snackbar, return to list
   const handleSaveNewConfig = (record: AIConfigRecord) => {
@@ -357,6 +447,12 @@ export function ClientSettingsContent({ initialSection }: ClientSettingsContentP
               onToggleAll={handleToggleAll}
               onRowClick={handleRowClick}
               onAngleReorder={handleAngleReorder}
+              onRemoveConfig={configId => {
+                // Remove config record from the gallery list; the DataGrid's
+                // internal `removeConfig` (InventoryContext) already stripped
+                // the override from every VIN that carried it.
+                setConfigs(prev => prev.filter(c => c.id !== configId));
+              }}
             />
           </>
         )}

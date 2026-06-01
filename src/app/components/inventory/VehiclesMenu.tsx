@@ -15,6 +15,7 @@ const iconPlus = 'https://res.cloudinary.com/dvq75cqna/image/upload/v1780071162/
 const iconPhotos = 'https://res.cloudinary.com/dvq75cqna/image/upload/v1780071158/vw-funds/icons/Inventory_Table/Card___Row/images-2__photos__pictures__shot.svg';
 const iconEye = 'https://res.cloudinary.com/dvq75cqna/image/upload/v1780071156/vw-funds/icons/Inventory_Table/Card___Row/eye-open__show__see__reveal__look__visible.svg';
 const iconPower = 'https://res.cloudinary.com/dvq75cqna/image/upload/v1780071154/vw-funds/icons/Inventory_Table/Card___Row/esc__power.svg';
+const iconTrash = 'https://res.cloudinary.com/dvq75cqna/image/upload/v1780074746/vw-funds/icons/Inventory_Table/Card___Row/trash.svg';
 // ── Keyframe animation ────────────────────────────────────────────────────────
 const SLIDE_DOWN_STYLE = `
 @keyframes vehiclesMenuIn {
@@ -31,6 +32,7 @@ export type VehiclesMenuAction =
   | 'viewSourceImages'
   | 'goToVdp'
   | 'disableAiImage'
+  | 'removeAiConfig'
   | 'attachComment';
 
 export interface VehiclesMenuAnchor {
@@ -100,11 +102,13 @@ interface VehiclesMenuProps {
   anchor: VehiclesMenuAnchor;
   syndicationStatus: SyndicationStatus;
   aiGenerationStatus: AIGenerationStatus;
+  /** True when an AI config is currently applied to this VIN — shows "Remove AI Config" item */
+  aiConfigApplied?: boolean;
   onAction: (action: VehiclesMenuAction) => void;
   onClose: () => void;
 }
 
-export function VehiclesMenu({ anchor, syndicationStatus, aiGenerationStatus, onAction, onClose }: VehiclesMenuProps) {
+export function VehiclesMenu({ anchor, syndicationStatus, aiGenerationStatus, aiConfigApplied = false, onAction, onClose }: VehiclesMenuProps) {
   const menuRef = useRef<HTMLDivElement>(null);
 
   // ── Close on outside click or Escape ──────────────────────────────────────
@@ -176,6 +180,13 @@ export function VehiclesMenu({ anchor, syndicationStatus, aiGenerationStatus, on
             label={aiGenerationStatus === 'enabled' ? 'Disable AI Image' : 'Enable AI Image'}
             onClick={handle('disableAiImage')}
           />
+          {aiConfigApplied && (
+            <MenuItem
+              iconSrc={iconTrash}
+              label="Remove AI Config"
+              onClick={handle('removeAiConfig')}
+            />
+          )}
 
           <MenuDivider />
 

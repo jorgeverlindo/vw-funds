@@ -11,7 +11,21 @@ const copyIconSrc = 'https://res.cloudinary.com/dvq75cqna/image/upload/v17800711
 import { emitSnackbar } from '../Snackbar';
 import { cn } from '../../../lib/utils';
 import type { VinInventoryRecord } from '../../../data/inventory/vehicleInventory';
-import { AI_CONFIGS } from '../../../data/inventory/aiConfigs';
+import { useInventory } from '../../contexts/InventoryContext';
+import { AI_CONFIGS, type AIConfigRecord } from '../../../data/inventory/aiConfigs';
+import { STORAGE_KEYS } from '../../constants/storageKeys';
+
+function findAIConfig(id: string): AIConfigRecord | undefined {
+  // Check static seed first
+  const found = AI_CONFIGS.find(c => c.id === id);
+  if (found) return found;
+  // Fall back to user-created configs persisted in localStorage
+  try {
+    const raw = localStorage.getItem(STORAGE_KEYS.AI_CONFIGS_LIST);
+    const userConfigs: AIConfigRecord[] = raw ? JSON.parse(raw) : [];
+    return userConfigs.find(c => c.id === id);
+  } catch { return undefined; }
+}
 import type { AngleKey } from '../../../data/inventory/types';
 import { BreadcrumbBar }  from '../BreadcrumbBar';
 import { CommentsButton } from '../comments';
@@ -94,7 +108,7 @@ function DetailRow({
       {/* Value + optional full-URL tooltip */}
       <div className="relative flex-1 min-w-0">
         {children}
-        {tooltip && hovered && (
+        {tooltip && hovered && !showCopyTip && (
           <div className="absolute bottom-full left-0 z-50 mb-[6px] pointer-events-none" style={{ maxWidth: 340 }}>
             <div
               className="bg-[#1f1d25]/90 backdrop-blur-[2px] text-white rounded-[6px] px-[10px] py-[6px] break-all"
@@ -125,17 +139,17 @@ function DetailRow({
           <div className="relative">
             {/* "Copy Value" tooltip */}
             {showCopyTip && (
-              <div className="absolute bottom-full right-0 z-50 mb-[6px] pointer-events-none whitespace-nowrap">
+              <div className="absolute top-full right-0 z-50 mt-[6px] pointer-events-none whitespace-nowrap">
+                <div
+                  className="absolute right-[8px] w-0 h-0"
+                  style={{ bottom: '100%', borderLeft: '4px solid transparent', borderRight: '4px solid transparent', borderBottom: '4px solid rgba(31,29,37,0.9)' }}
+                />
                 <div
                   className="bg-[#1f1d25]/90 backdrop-blur-[2px] text-white rounded-[6px] px-[10px] py-[5px]"
                   style={{ fontFamily: "'Roboto', sans-serif", fontSize: 11, fontWeight: 500, boxShadow: '0 2px 8px rgba(0,0,0,0.28)' }}
                 >
                   Copy Value
                 </div>
-                <div
-                  className="absolute right-[8px] w-0 h-0"
-                  style={{ top: '100%', borderLeft: '4px solid transparent', borderRight: '4px solid transparent', borderTop: '4px solid rgba(31,29,37,0.9)' }}
-                />
               </div>
             )}
             <button
@@ -158,6 +172,32 @@ function DetailText({ children, primary }: { children: React.ReactNode; primary?
     <span className={cn(BODY1, primary ? 'text-[#473bab] cursor-pointer hover:underline' : 'text-[#1f1d25]')}>
       {children}
     </span>
+  );
+}
+
+// ─── TrashIcon (inline, reused in Config Used remove button) ─────────────────
+function TrashIcon() {
+  return (
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+      <polyline points="3 6 5 6 21 6"/>
+      <path d="M19 6l-1 14H6L5 6"/>
+      <path d="M10 11v6"/>
+      <path d="M14 11v6"/>
+      <path d="M9 6V4h6v2"/>
+    </svg>
+  );
+}
+
+// ─── RemoveConfigBtn (inline trash button, OEM only) ──────────────────────────
+function RemoveConfigBtn({ onClick }: { onClick: () => void }) {
+  return (
+    <button
+      onClick={onClick}
+      title="Remove AI Config"
+      className="flex items-center justify-center w-[22px] h-[22px] rounded-full hover:bg-red-50 transition-colors cursor-pointer shrink-0 text-[rgba(17,16,20,0.38)] hover:text-red-500"
+    >
+      <TrashIcon />
+    </button>
   );
 }
 
@@ -213,8 +253,25 @@ export function VinDetailContent({ record, onBack, variant = 'auto' }: VinDetail
   }, []);
 
   // ── AI config lookup ────────────────────────────────────────────────────────
-  const aiConfig = record.aiConfigId ? AI_CONFIGS.find(c => c.id === record.aiConfigId) : null;
+  const aiConfig = record.aiConfigId ? (findAIConfig(record.aiConfigId) ?? null) : null;
   const vg       = record.vehicleGroup ?? null;
+
+  // OEM users can click "Config Used" to jump directly to that config's edit view.
+  // Dealer users see the name as read-only text.
+  const isOem = typeof window !== 'undefined' && window.location.pathname.includes('/oem/');
+  const { removeConfigFromVin } = useInventory();
+
+  const handleRemoveConfig = () => {
+    removeConfigFromVin(record.id);
+    emitSnackbar('AI Config removed from VIN');
+  };
+
+  const handleOpenConfig = () => {
+    if (!aiConfig) return;
+    window.dispatchEvent(new CustomEvent('constellation:open-config', {
+      detail: { configId: aiConfig.id },
+    }));
+  };
 
   // ── Current hero image ──────────────────────────────────────────────────────
   const heroSrc: string | null = (() => {
@@ -222,6 +279,19 @@ export function VinDetailContent({ record, onBack, variant = 'auto' }: VinDetail
     if (imageMode === 'source') return vg.sourceAngles?.[activeAngle] ?? null;
     return vg.angles[activeAngle] ?? null;
   })();
+
+  // If heroSrc is a stale/broken URL (e.g. in-memory data URL from a previous session),
+  // fall back gracefully: switch to source-cutout mode so both the hero and the angle
+  // strip show the clean vehicle images instead of broken AI composites.
+  const [heroError, setHeroError] = useState(false);
+  useEffect(() => { setHeroError(false); }, [heroSrc]);          // reset per angle/mode change
+  useEffect(() => {
+    if (heroError && imageMode === 'generated' && vg?.sourceAngles) {
+      setImageMode('source');    // triggers heroSrc recalc → heroError resets automatically
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [heroError]);
+  const effectiveHeroSrc = heroError ? record.thumbnail : heroSrc;
 
   const hasSource = !!vg?.sourceAngles;
 
@@ -329,14 +399,15 @@ export function VinDetailContent({ record, onBack, variant = 'auto' }: VinDetail
               <div
                 className={cn(
                   'relative w-full rounded-[4px] overflow-hidden',
-                  vg && heroSrc && imageMode !== 'source' ? 'bg-[#1a1a1a]' : 'bg-[#f0f2f4]',
+                  'bg-[#f0f2f4]',
                 )}
                 style={{ aspectRatio: '4/3' }}
               >
-                {heroSrc
+                {effectiveHeroSrc
                   ? <img
-                      src={heroSrc}
+                      src={effectiveHeroSrc}
                       alt={`${record.make} ${record.model}`}
+                      onError={() => setHeroError(true)}
                       className={cn('w-full h-full', imageMode === 'source' ? 'object-contain' : 'object-cover')}
                     />
                   : (
@@ -400,11 +471,32 @@ export function VinDetailContent({ record, onBack, variant = 'auto' }: VinDetail
                 <DetailText primary>{record.vin}</DetailText>
               </DetailRow>
               {aiConfig && (
-                <DetailRow label="Config Used" copyValue={aiConfig.name}>
-                  <DetailText primary>{aiConfig.name}</DetailText>
+                <DetailRow label="Config Used" copyValue={isOem ? undefined : aiConfig.name}>
+                  {isOem ? (
+                    <div className="flex items-center gap-[4px] min-w-0">
+                      <button
+                        onClick={handleOpenConfig}
+                        className={cn(BODY1, 'text-[#473bab] hover:underline cursor-pointer bg-transparent border-none p-0 text-left min-w-0 flex-1')}
+                      >
+                        {aiConfig.name}
+                      </button>
+                      <RemoveConfigBtn onClick={handleRemoveConfig} />
+                    </div>
+                  ) : (
+                    <DetailText>{aiConfig.name}</DetailText>
+                  )}
                 </DetailRow>
               )}
-              <DetailRow label="VDP Link" copyValue={vdpLink} tooltip={vdpLink}>
+              {/* Orphaned: vehicleGroup exists but config was deleted — OEM only */}
+              {!aiConfig && record.vehicleGroup && isOem && (
+                <DetailRow label="Config Used">
+                  <div className="flex items-center gap-[4px] min-w-0">
+                    <span className={cn(BODY1, 'text-[rgba(17,16,20,0.38)] italic flex-1')}>Config removed</span>
+                    <RemoveConfigBtn onClick={handleRemoveConfig} />
+                  </div>
+                </DetailRow>
+              )}
+              <DetailRow label="VDP Link" copyValue={vdpLink}>
                 <a
                   href={vdpLink}
                   target="_blank"
@@ -476,14 +568,15 @@ export function VinDetailContent({ record, onBack, variant = 'auto' }: VinDetail
               <div
                 className={cn(
                   'relative w-full rounded-[4px] overflow-hidden',
-                  vg && heroSrc && imageMode !== 'source' ? 'bg-[#1a1a1a]' : 'bg-[#f0f2f4]',
+                  'bg-[#f0f2f4]',
                 )}
                 style={{ aspectRatio: '4/3' }}
               >
-                {heroSrc
+                {effectiveHeroSrc
                   ? <img
-                      src={heroSrc}
+                      src={effectiveHeroSrc}
                       alt={`${record.make} ${record.model}`}
+                      onError={() => setHeroError(true)}
                       className={cn('w-full h-full', imageMode === 'source' ? 'object-contain' : 'object-cover')}
                     />
                   : (
@@ -553,8 +646,29 @@ export function VinDetailContent({ record, onBack, variant = 'auto' }: VinDetail
                   <DetailText primary>{record.vin}</DetailText>
                 </DetailRow>
                 {aiConfig && (
-                  <DetailRow label="Config Used" copyValue={aiConfig.name}>
-                    <DetailText primary>{aiConfig.name}</DetailText>
+                  <DetailRow label="Config Used" copyValue={isOem ? undefined : aiConfig.name}>
+                    {isOem ? (
+                      <div className="flex items-center gap-[4px] min-w-0">
+                        <button
+                          onClick={handleOpenConfig}
+                          className={cn(BODY1, 'text-[#473bab] hover:underline cursor-pointer bg-transparent border-none p-0 text-left min-w-0 flex-1')}
+                        >
+                          {aiConfig.name}
+                        </button>
+                        <RemoveConfigBtn onClick={handleRemoveConfig} />
+                      </div>
+                    ) : (
+                      <DetailText primary>{aiConfig.name}</DetailText>
+                    )}
+                  </DetailRow>
+                )}
+                {/* Orphaned: vehicleGroup exists but config was deleted — OEM only */}
+                {!aiConfig && record.vehicleGroup && isOem && (
+                  <DetailRow label="Config Used">
+                    <div className="flex items-center gap-[4px] min-w-0">
+                      <span className={cn(BODY1, 'text-[rgba(17,16,20,0.38)] italic flex-1')}>Config removed</span>
+                      <RemoveConfigBtn onClick={handleRemoveConfig} />
+                    </div>
                   </DetailRow>
                 )}
                 <DetailRow label="Stock nº" copyValue={stockNo}>
@@ -563,7 +677,7 @@ export function VinDetailContent({ record, onBack, variant = 'auto' }: VinDetail
                 <DetailRow label="Hash" copyValue={hash}>
                   <DetailText>{hash}</DetailText>
                 </DetailRow>
-                <DetailRow label="VDP Link" copyValue={vdpLink} tooltip={vdpLink}>
+                <DetailRow label="VDP Link" copyValue={vdpLink}>
                   <a href={vdpLink} target="_blank" rel="noopener noreferrer"
                     className={cn(BODY1, 'text-[#473bab] hover:underline truncate block')}>
                     {vdpLink}

@@ -1,5 +1,6 @@
 import { useState, useRef } from 'react';
 import { X } from 'lucide-react';
+import { motion } from 'motion/react';
 
 // ─── SideSheet — Generic slot-based side panel ────────────────────────────────
 //
@@ -10,7 +11,8 @@ import { X } from 'lucide-react';
 //
 // Layout contract:
 //   • Must be a direct child of a `flex` row container.
-//   • Width animates 0 ↔ [user-set] px (400ms ease-out) and pushes sibling panes.
+//   • Width animates 0 ↔ [user-set] px (450ms cubic-ease-out) and pushes sibling panes.
+//   • Inner panel slides in/out (translateX) in sync with the width — same motion as AgentPane.
 //   • Right edge is draggable to resize (200px–480px, no animation while dragging).
 //   • Title style and close button are fixed — only `title` prop changes.
 //   • `children` is the **slot** that varies per module.
@@ -19,6 +21,10 @@ import { X } from 'lucide-react';
 const DEFAULT_WIDTH = 280;
 const MIN_WIDTH      = 200;
 const MAX_WIDTH      = 480;
+
+/** Same easing used by AgentPane for a consistent system-wide panel feel. */
+const PANEL_EASE = [0.0, 0.0, 0.2, 1] as const;
+const PANEL_DURATION = 0.45;
 
 interface SideSheetProps {
   isOpen: boolean;
@@ -58,22 +64,34 @@ export function SideSheet({ isOpen, onClose, title, children }: SideSheetProps) 
     window.addEventListener('mouseup', onUp);
   };
 
+  // While dragging, skip animation so resize is instant.
+  const transition = dragging
+    ? { duration: 0 }
+    : { duration: PANEL_DURATION, ease: PANEL_EASE };
+
   return (
-    // Animated outer wrapper — controls the space this panel occupies.
-    // Width + margin-right animate only when NOT dragging.
-    <div
-      className="flex-none h-full overflow-hidden relative"
-      style={{
+    // ── Outer wrapper: controls the space this panel occupies in the flex row.
+    // Width animates 0 ↔ panelWidth — this is what "pushes" the main content pane.
+    // initial={false} prevents the animation from running on first mount.
+    <motion.div
+      initial={false}
+      animate={{
         width:       isOpen ? panelWidth : 0,
         marginRight: isOpen ? 16 : 0,
-        transition:  dragging ? 'none' : 'width 400ms ease-out, margin-right 400ms ease-out',
       }}
+      transition={transition}
+      className="flex-none h-full overflow-hidden relative"
     >
-      {/* ── Inner panel — always panelWidth px; outer wrapper clips it during animation ── */}
-      {/* Figma: white bg, rounded-[16px], overflow-hidden, flex-col */}
-      <div
+
+      {/* ── Inner panel: always panelWidth px wide; slides in/out in sync with the wrapper.
+          Translates from -100% (off-screen left) to 0 when opening, and back when closing.
+          Because the outer wrapper has overflow-hidden, nothing leaks outside. ── */}
+      <motion.div
+        initial={false}
+        animate={{ x: isOpen ? '0%' : '-100%' }}
+        transition={transition}
         className="h-full bg-white rounded-[16px] overflow-hidden flex flex-col shadow-sm border border-[rgba(0,0,0,0.04)]"
-        style={{ width: panelWidth }}
+        style={{ width: panelWidth, willChange: 'transform' }}
       >
 
         {/* ── Header — Figma: min-h-[40px], px-[16px], pt-[12px], pb-[8px] ── */}
@@ -100,7 +118,8 @@ export function SideSheet({ isOpen, onClose, title, children }: SideSheetProps) 
         <div className="flex-1 overflow-y-auto pb-[24px] px-[16px] pt-[4px]">
           {children}
         </div>
-      </div>
+
+      </motion.div>
 
       {/* ── Resize handle — 6px hotspot on the right edge ── */}
       {isOpen && (
@@ -118,6 +137,7 @@ export function SideSheet({ isOpen, onClose, title, children }: SideSheetProps) 
           ].join(' ')} />
         </div>
       )}
-    </div>
+
+    </motion.div>
   );
 }

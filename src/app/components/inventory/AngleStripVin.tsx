@@ -102,6 +102,7 @@ function AngleCardSm({
             src={src ?? defaultSrc}
             alt={label}
             className="w-full h-full object-cover"
+            onError={e => { (e.currentTarget as HTMLImageElement).src = defaultSrc; }}
           />
         </div>
 

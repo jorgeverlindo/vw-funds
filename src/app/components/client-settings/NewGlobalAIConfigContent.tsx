@@ -4,7 +4,7 @@
 // same EmptyState illustration, same footer.
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Info, X, BookOpen, Paperclip, SendHorizonal, ChevronLeft, ChevronRight, ChevronDown, Eye, Loader2, Pencil } from 'lucide-react';
+import { Info, X, BookOpen, Paperclip, SendHorizonal, ChevronLeft, ChevronRight, ChevronDown, Eye, Loader2, Pencil, RotateCcw } from 'lucide-react';
 import { generateImage, generateAllAngles, KODIAK_VEHICLE_GUARD, assetToDataUrl } from '../../../lib/replicateClient';
 import {
   ResizablePanelGroup,
@@ -43,6 +43,8 @@ import type { VinFilters, VinRecord, AngleKey } from '../../../data/inventory/ty
 import { filterVins } from '../../../data/inventory/vins';
 import { BLUE_GEN_ANGLES, BLUE_SOURCE_ANGLES, BLUE_VEHICLE_GROUP } from '../../../data/inventory/blueVehicle';
 import { KODIAK_SOURCE_ANGLES, KODIAK_VEHICLE_GROUP } from '../../../data/inventory/kodiakVehicle';
+import { VEHICLE_INVENTORY } from '../../../data/inventory/vehicleInventory';
+import { useInventory } from '../../contexts/InventoryContext';
 
 // ─── Asset icons ──────────────────────────────────────────────────────────────
 const IconUpload = () => (
@@ -145,6 +147,27 @@ function useConstellationAnim(running: boolean): ArcState {
   }, [running]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return arcs;
+}
+
+// ─── BgGeneratingPanel ───────────────────────────────────────────────────────
+// Full-panel loading state shown when a background is being generated from
+// the text prompt (isGeneratingBg=true, no content yet).
+// Uses the same Constellation arc animation as the Kodiak overlay.
+function BgGeneratingPanel({ modelLabel }: { modelLabel: string }) {
+  const arcs = useConstellationAnim(true);
+  return (
+    <div className="flex-1 min-h-0 bg-[#f4f5f6] rounded-[16px] flex flex-col items-center justify-center gap-[16px] select-none">
+      <ConstellationArcMark arcs={arcs} size={48} />
+      <div className="text-center">
+        <p className="font-['Roboto'] font-medium text-[14px] text-[#1f1d25] mb-1">
+          Generating background…
+        </p>
+        <p className="font-['Roboto'] text-[12px] text-[#9c99a9]">
+          {modelLabel} · ~35s
+        </p>
+      </div>
+    </div>
+  );
 }
 
 // ─── GlobalAIRenderOverlay ────────────────────────────────────────────────────
@@ -653,7 +676,7 @@ function ActionBtn({
     <button
       onClick={onClick}
       title={title}
-      className="bg-white rounded-full flex items-center justify-center border-none cursor-pointer shrink-0"
+      className="bg-white hover:bg-[rgba(17,16,20,0.06)] transition-colors rounded-full flex items-center justify-center border-none cursor-pointer shrink-0 text-[rgba(17,16,20,0.56)]"
       style={{
         padding: '3.5px',
         boxShadow:
@@ -743,9 +766,15 @@ interface PreviewPanelProps {
    * Blue flow: ignored (overlay is started internally).
    */
   onPreviewClick?: () => void;
+  /**
+   * Called when the user clicks the Regenerate button on an angle image.
+   * The parent should re-run single-angle generation for the given index
+   * using the current prompt (no edit step).
+   */
+  onRegenerateAngle?: (index: number) => void;
 }
 
-function PreviewPanel({ bgUrl, hasVinsSelected, onRequestUpload, initialDone = false, angleImages = null, sourceAngles = null, previousAngles = null, isGeneratingBg = false, modelLabel = 'Flux Kontext Pro', isGeneratingImgs = false, genImgCompleted = 0, isGeneratingSingleAngle = false, onOverlayComplete: onOverlayCompleteProp, editingAngleIndex = null, onEditAngle, onCancelEdit, isKodiakFlow = false, onPreviewClick, vinList = [], selectedVinIndex = 0, onVinChange }: PreviewPanelProps) {
+function PreviewPanel({ bgUrl, hasVinsSelected, onRequestUpload, initialDone = false, angleImages = null, sourceAngles = null, previousAngles = null, isGeneratingBg = false, modelLabel = 'Flux Kontext Pro', isGeneratingImgs = false, genImgCompleted = 0, isGeneratingSingleAngle = false, onOverlayComplete: onOverlayCompleteProp, editingAngleIndex = null, onEditAngle, onCancelEdit, isKodiakFlow = false, onPreviewClick, onRegenerateAngle, vinList = [], selectedVinIndex = 0, onVinChange }: PreviewPanelProps) {
   const [phase,          setPhase]          = useState<RenderPhase>(initialDone ? 'done' : 'idle');
   const [overlayRunning, setOverlayRunning] = useState(false);
   const [angleIndex,     setAngleIndex]     = useState(0);
@@ -849,25 +878,7 @@ function PreviewPanel({ bgUrl, hasVinsSelected, onRequestUpload, initialDone = f
   if (!hasContent) {
     // BG prompt send-button generating
     if (isGeneratingBg) {
-      return (
-        <div className="flex-1 min-h-0 flex flex-col items-center justify-center gap-5 select-none">
-          <div className="relative w-[56px] h-[56px]">
-            <div className="absolute inset-0 rounded-full border-[3px] border-[#473bab]/20" />
-            <div
-              className="absolute inset-0 rounded-full border-[3px] border-[#473bab] border-t-transparent animate-spin"
-              style={{ animationDuration: '1s' }}
-            />
-          </div>
-          <div className="text-center">
-            <p className="text-[14px] font-medium text-[#1f1d25] font-['Roboto'] mb-1">
-              Generating background…
-            </p>
-            <p className="text-[12px] text-[#9c99a9] font-['Roboto']">
-              {modelLabel} · ~35s
-            </p>
-          </div>
-        </div>
-      );
+      return <BgGeneratingPanel modelLabel={modelLabel} />;
     }
 
     return <EmptyState onRequestUpload={onRequestUpload} />;
@@ -1113,8 +1124,14 @@ function PreviewPanel({ bgUrl, hasVinsSelected, onRequestUpload, initialDone = f
         {viewMode === 'single' && !isGeneratingImgs && (
           <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-10 pointer-events-none">
 
-            {/* Top-right: Preview / Edit-or-Cancel */}
+            {/* Top-right: Regenerate / Preview / Edit-or-Cancel */}
             <div className="absolute top-[10px] right-[10px] flex items-center gap-[10px] pointer-events-auto">
+              {/* Regenerate — only when a generated image exists for this angle and not in edit mode */}
+              {angleImages?.[angleIndex] && editingAngleIndex === null && (
+                <ActionBtn title="Regenerate angle" onClick={() => onRegenerateAngle?.(angleIndex)}>
+                  <RotateCcw size={17} strokeWidth={2} />
+                </ActionBtn>
+              )}
               <ActionBtn title="Preview" onClick={() => setModalOpen(true)}>
                 <img src={PreviewIconSrc} alt="" width={17} height={17} />
               </ActionBtn>
@@ -1340,6 +1357,8 @@ export function NewGlobalAIConfigContent({
   isSideSheetOpen = false,
   onToggleSideSheet,
 }: NewGlobalAIConfigContentProps) {
+  const { applyConfig } = useInventory();
+
   // ── Form state — seed from initialData when editing ──
   const [configName,      setConfigName]      = useState(initialData?.configName      ?? '');
   const [aiConfigActive,  setAiConfigActive]  = useState(initialData?.aiConfigActive  ?? true);
@@ -1425,21 +1444,22 @@ export function NewGlobalAIConfigContent({
   //             no real API call. Only active when a non-Kodiak model is
   //             explicitly selected in VINs Applied filters.
   //
-  // DEFAULT IS KODIAK — so the demo works without requiring the user to set
-  // up VINs Applied filters first. Blue demo only triggers when filterGroups
-  // explicitly contains a model that is NOT 'Kodiak 450'.
+  // DEFAULT IS KODIAK — real Flux flow runs unless ALL matched VINs lack
+  // sourceAngles (in which case Blue demo is used as fallback).
+  // This lets any vehicle with vehicleGroup.sourceAngles (Kodiak, Wolverine, etc.)
+  // use the real API generation rather than the Blue demo animation.
   //
-  const isKodiak = useMemo(
-    () => !filterGroupsState.some(g => {
-      // New multi-select: check models[] array first
-      if (g.filters.models?.length) {
-        return g.filters.models.some(m => m !== 'Kodiak 450');
-      }
-      // Legacy single-value fallback
-      return g.filters.model && g.filters.model !== 'Kodiak 450';
-    }),
-    [filterGroupsState],
-  );
+  const isKodiak = useMemo(() => {
+    // No filter groups → default to real Flux flow
+    if (!filterGroupsState.length) return true;
+    // Resolve all filtered VINs across groups
+    const vinSet = new Set(
+      filterGroupsState.flatMap(g => filterVins(g.filters).map(v => v.vin))
+    );
+    if (vinSet.size === 0) return true; // no match yet → default to real flow
+    // Real flow if any matched VIN has sourceAngles available
+    return VEHICLE_INVENTORY.some(r => vinSet.has(r.vin) && r.vehicleGroup?.sourceAngles != null);
+  }, [filterGroupsState]);
 
   // ── Blue demo reveal gate ──────────────────────────────────────────────────
   // BLUE_GEN_ANGLES are revealed only AFTER:
@@ -1605,16 +1625,19 @@ export function NewGlobalAIConfigContent({
           throw new Error(`Could not encode vehicle image: ${(encErr as Error).message}`);
         }
 
-        // Generate all 6 angles + a background-only thumbnail in parallel.
-        // The bg thumbnail is a pure text-to-image (no vehicle) used as the
-        // DataGrid parent row thumbnail so the landscape is shown without the ATV.
+        // Generate all 6 angles + one background-only thumbnail in parallel.
+        // bgThumbnailTask: pure text-to-image (no vehicle) — same prompt, no
+        // vehicle guard — produces the landscape scene used as the config row
+        // thumbnail (sem o veículo). Slight visual variation vs. the composited
+        // angles is expected since generations share the prompt but not a seed.
         const bgThumbnailTask = generateImage({
-          prompt:  sceneDescription,   // same scene, no vehicle guard
+          prompt:  sceneDescription,
           modelId: aiModel,
           signal:  abort.signal,
         }).then(url => setBgThumbnail(url)).catch(() => { /* non-critical */ });
 
         await Promise.all([
+          bgThumbnailTask,
           ...cutoutDataUrls.map(async (cutoutDataUrl, i) => {
             // Stagger launch: 0, 300, 600 … 1500 ms — prevents simultaneous burst
             // that can trigger Replicate's concurrent-prediction rate limit.
@@ -1667,7 +1690,6 @@ export function NewGlobalAIConfigContent({
               }
             }
           }),
-          bgThumbnailTask,
         ]);
       } else {
         // ── FLOW B: Other vehicles — embed vehicle description in prompt ─────
@@ -1710,8 +1732,9 @@ export function NewGlobalAIConfigContent({
   // Called when the user clicks Edit on an angle chip, writes a new prompt,
   // then presses Send. Replaces only that angle's image; saves the old one as
   // "Previous Version" so the user can compare before/after in the modal.
-  const handleGenerateSingleAngle = useCallback(async () => {
-    if (editingAngleIndex === null || isEditingAngle || isGeneratingBg) return;
+  const handleGenerateSingleAngle = useCallback(async (forceIndex?: number) => {
+    const targetIndex = forceIndex ?? editingAngleIndex;
+    if (targetIndex === null || targetIndex === undefined || isEditingAngle || isGeneratingBg) return;
 
     editAngleAbortRef.current?.abort();
     const abort = new AbortController();
@@ -1732,12 +1755,12 @@ export function NewGlobalAIConfigContent({
         `The vehicle must occupy 58% of the image width with proportional height. ` +
         `${KODIAK_VEHICLE_GUARD}`;
 
-      const cutoutDataUrl = await assetToDataUrl(KODIAK_SOURCE_ANGLES[editingAngleIndex]);
+      const cutoutDataUrl = await assetToDataUrl(KODIAK_SOURCE_ANGLES[targetIndex]);
 
       // Store the current image as "previous version" BEFORE generating
       setPreviousAngles(prev => {
         const next = prev ? [...prev] : Array(6).fill(null);
-        next[editingAngleIndex] = generatedAngles?.[editingAngleIndex] ?? null;
+        next[targetIndex] = generatedAngles?.[targetIndex] ?? null;
         return next;
       });
 
@@ -1750,7 +1773,7 @@ export function NewGlobalAIConfigContent({
 
       setGeneratedAngles(prev => {
         const next = prev ? [...prev] : Array(6).fill(null);
-        next[editingAngleIndex] = url;
+        next[targetIndex] = url;
         return next;
       });
 
@@ -1764,6 +1787,14 @@ export function NewGlobalAIConfigContent({
       setIsEditingAngle(false);
     }
   }, [editingAngleIndex, isEditingAngle, isGeneratingBg, prompt, aiModel, generatedAngles]);
+
+  // ── Regenerate a single angle without entering edit mode ─────────────────
+  // Called from the Regenerate button in the PreviewPanel hover overlay.
+  // Re-runs the same Flux generation for the given angle index using the
+  // current prompt — no custom prompt step, just re-send.
+  const handleRegenerateAngle = useCallback((index: number) => {
+    handleGenerateSingleAngle(index);
+  }, [handleGenerateSingleAngle]);
 
   // ── Save ──
   const handleSave = () => {
@@ -1846,9 +1877,11 @@ export function NewGlobalAIConfigContent({
     const newRecord: AIConfigRecord = {
       id:           `config-${Date.now()}`,
       name:         configName.trim() || 'New Global AI Config',
-      // Thumbnail = pure background scene (no vehicle) when available,
-      // else uploaded/generated background, else empty state fallback.
-      // bgThumbnail is generated as a text-to-image alongside the angle generation.
+      // Thumbnail = the reference background the user uploaded/generated (no vehicle).
+      // Using bgUrl ensures visual consistency with the angle images — same scene intent,
+      // no separate generation that would produce a different-looking landscape.
+      // bgThumbnail = pure background scene generated without the vehicle (sem o veículo).
+      // Falls back to bgUrl (uploaded/generated bg), then emptyStateSvg.
       thumbnail:    bgThumbnail ?? bgUrl ?? emptyStateSvg,
       dimensions:   '1600 × 1200',
       vinsApplied:  vinsAppliedStr,
@@ -1864,6 +1897,18 @@ export function NewGlobalAIConfigContent({
       formState:    savedFormState,
     };
     onSave?.(newRecord);
+
+    // ── Option B: only apply to VINs when at least one angle has been generated ─
+    // vehicleGroups is populated in handleSave only when hasSelectedVins is true
+    // AND angles exist (Kodiak real gen or Blue demo). Check non-null angles.
+    const hasGeneratedAngles = vehicleGroups?.[0]
+      ? Object.values(vehicleGroups[0].angles).some(url => url !== null)
+      : false;
+
+    if (hasGeneratedAngles && filterGroupsState.length > 0) {
+      applyConfig(newRecord.id, vehicleGroups![0], filterGroupsState);
+    }
+
     onCancel();
   };
 
@@ -2215,6 +2260,7 @@ export function NewGlobalAIConfigContent({
                   editingAngleIndex={editingAngleIndex}
                   onEditAngle={setEditingAngleIndex}
                   onCancelEdit={() => setEditingAngleIndex(null)}
+                  onRegenerateAngle={handleRegenerateAngle}
                   vinList={vinList}
                   selectedVinIndex={selectedVinIndex}
                   onVinChange={setSelectedVinIndex}
@@ -2249,12 +2295,26 @@ export function NewGlobalAIConfigContent({
           >
             Cancel
           </button>
-          <button
-            onClick={handleSave}
-            className="h-9 px-[18px] rounded-full border-[1.5px] border-[#6356e1] text-[13px] font-medium text-[#473bab] font-['Roboto'] hover:bg-[#473bab]/5 transition-colors cursor-pointer"
-          >
-            Save
-          </button>
+          {/* Save button — label reflects whether config will be published to VINs */}
+          {(() => {
+            const willPublish =
+              (generatedAngles?.some(a => a !== null) ?? false) &&
+              filterGroupsState.length > 0;
+            return (
+              <button
+                onClick={handleSave}
+                title={willPublish ? 'Config has generated images — will apply to matched VINs' : 'Generate images first to publish to VINs'}
+                className={cn(
+                  "h-9 px-[18px] rounded-full border-[1.5px] text-[13px] font-medium font-['Roboto'] transition-colors cursor-pointer",
+                  willPublish
+                    ? 'border-[#473bab] bg-[#473bab] text-white hover:bg-[#3c3192]'
+                    : 'border-[#6356e1] text-[#473bab] hover:bg-[#473bab]/5',
+                )}
+              >
+                {willPublish ? 'Save & Publish' : 'Save Draft'}
+              </button>
+            );
+          })()}
           {/* Generate AI Images — last button, only on new/edit (not static demo records) */}
           {!initialData?.isStaticRecord && (
             <button

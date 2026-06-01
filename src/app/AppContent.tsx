@@ -104,6 +104,8 @@ export default function AppContent() {
   const [settingsSection, setSettingsSection] = useState<string | null>(
     _initTab === 'client-settings' && client.clientId === 'ride-now' ? 'global-ai-configs' : null,
   );
+  // Deep-link to a specific config (fired by "Config Used" link in VinDetailContent, OEM only)
+  const [pendingConfigId, setPendingConfigId] = useState<string | null>(null);
 
   // [FV] compliance context — all infraction/solution/notification state
   const {
@@ -398,6 +400,17 @@ export default function AppContent() {
   const [commentsContextId, setCommentsContextId]     = useState<string>("campaigns-main");
   const [commentsContextName, setCommentsContextName] = useState<string>("");
 
+  // ── "Config Used" deep-link (OEM only, fired from VinDetailContent) ─────────
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const { configId } = (e as CustomEvent<{ configId: string }>).detail;
+      setSettingsSection('global-ai-configs');
+      setPendingConfigId(configId);
+    };
+    window.addEventListener('constellation:open-config', handler);
+    return () => window.removeEventListener('constellation:open-config', handler);
+  }, []);
+
   // ── Comment notification bridge (window event from CommentsProvider) ──────
   const [commentNotifs, setCommentNotifs] = useState<NotifItem[]>([]);
   const [commentUnreadCount, setCommentUnreadCount] = useState(0);
@@ -629,7 +642,11 @@ export default function AppContent() {
         {/* ── Client Settings (Ride Now) — fills the whole main flex row ── */}
         {settingsSection && client.clientId === 'ride-now' && userType === 'oem' ? (
           <>
-            <ClientSettingsContent initialSection={settingsSection} />
+            <ClientSettingsContent
+              initialSection={settingsSection}
+              openConfigId={pendingConfigId}
+              onConfigOpened={() => setPendingConfigId(null)}
+            />
             {/* Agent + Comments panes are pervasive — available on every screen */}
             <AgentPane
               isOpen={isAgentPaneOpen}

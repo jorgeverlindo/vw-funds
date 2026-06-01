@@ -9,6 +9,7 @@ import { MoreVertical, X } from 'lucide-react';
 import { cn } from '../../../lib/utils';
 import { emitSnackbar } from '../Snackbar';
 import { VehiclesMenu, type VehiclesMenuAnchor, type VehiclesMenuAction } from './VehiclesMenu';
+import { useInventory } from '../../contexts/InventoryContext';
 import type {
   VinInventoryRecord,
   AIGenerationStatus,
@@ -237,20 +238,33 @@ export function PriorityScoreChip({ score }: { score: number }) {
 //    inner div  60×60  overflow-hidden          — clips the scaled image
 //    img        60×60  object-contain + dynamic scale so short side fills box
 //    Scale = (long/short) × 0.80 — normalises any aspect ratio without hard-coding.
-function ThumbnailImg({ src, alt, cover }: { src: string; alt: string; cover?: boolean }) {
-  const [scale, setScale] = useState(1);
+function ThumbnailImg({ src, alt, cover, fallbackSrc }: { src: string; alt: string; cover?: boolean; fallbackSrc?: string }) {
+  const [scale,      setScale]      = useState(1);
+  const [imgSrc,     setImgSrc]     = useState(src);
+  const [isFallback, setIsFallback] = useState(false);
+
+  // Reset when the intended src changes (e.g. different row re-uses the component)
+  React.useEffect(() => { setImgSrc(src); setIsFallback(false); }, [src]);
 
   const handleLoad = useCallback((e: React.SyntheticEvent<HTMLImageElement>) => {
-    if (cover) return;
+    if (cover && !isFallback) return;           // cover mode shows full-bleed — no scale calc
     const { naturalWidth: w, naturalHeight: h } = e.currentTarget;
     if (!w || !h) return;
     setScale((Math.max(w, h) / Math.min(w, h)) * 0.80);
-  }, [cover]);
+  }, [cover, isFallback]);
 
-  if (cover) {
+  const handleError = useCallback(() => {
+    if (fallbackSrc && imgSrc !== fallbackSrc) {
+      setImgSrc(fallbackSrc);
+      setIsFallback(true);      // switch to contain mode so jellybean shows on gray bg
+    }
+  }, [fallbackSrc, imgSrc]);
+
+  // Show cover only when we have the real AI-generated image (not the fallback jellybean)
+  if (cover && !isFallback) {
     return (
       <div className="size-[76px] overflow-hidden">
-        <img src={src} alt={alt} className="w-full h-full object-cover" />
+        <img src={imgSrc} alt={alt} onError={handleError} className="w-full h-full object-cover" />
       </div>
     );
   }
@@ -259,9 +273,10 @@ function ThumbnailImg({ src, alt, cover }: { src: string; alt: string; cover?: b
     <div className="size-[76px] bg-[#f0f2f4] flex items-center justify-center p-[8px]">
       <div className="size-[60px] overflow-hidden flex items-center justify-center">
         <img
-          src={src}
+          src={imgSrc}
           alt={alt}
           onLoad={handleLoad}
+          onError={handleError}
           className="w-full h-full object-contain"
           style={{ transform: `scale(${scale})` }}
         />
@@ -360,6 +375,7 @@ export function VehicleInventoryGrid({
   onViewSourceImages,
   onAttachComment,
 }: VehicleInventoryGridProps) {
+  const { removeConfigFromVin } = useInventory();
   const allSelected = records.length > 0 && records.every(r => selected.has(r.id));
   const [widths, setWidths] = useState<ColWidths>(DEFAULT_WIDTHS);
 
@@ -369,11 +385,18 @@ export function VehicleInventoryGrid({
     anchor: VehiclesMenuAnchor;
     syndicationStatus: SyndicationStatus;
     aiGenerationStatus: AIGenerationStatus;
+    aiConfigApplied: boolean;
   } | null>(null);
 
   const handleMenuAction = useCallback((action: VehiclesMenuAction) => {
     if (!openMenu) return;
     const { recordId, syndicationStatus, aiGenerationStatus } = openMenu;
+    if (action === 'removeAiConfig') {
+      removeConfigFromVin(recordId);
+      emitSnackbar('AI Config removed from VIN');
+      setOpenMenu(null);
+      return;
+    }
     if (action === 'vinDetails')       { onVinClick?.(recordId); }
     if (action === 'syndicate')        {
       onSyndicationToggle?.(recordId);
@@ -547,6 +570,7 @@ export function VehicleInventoryGrid({
                       }
                       alt={`${record.make} ${record.model}`}
                       cover={!!(record.aiConfigApplied && record.vehicleGroup?.angles?.['34l'])}
+                      fallbackSrc={record.thumbnail}
                     />
                     {record.aiGeneration === 'enabled' && <AIConfigBadge />}
                   </motion.div>
@@ -689,6 +713,9 @@ export function VehicleInventoryGrid({
                                 recordId: record.id,
                                 syndicationStatus: record.syndication,
                                 aiGenerationStatus: record.aiGeneration,
+                                // Show "Remove AI Config" whenever there's a vehicleGroup
+                                // (covers static-seed VINs where aiConfigApplied=false but vehicleGroup exists)
+                                aiConfigApplied: !!(record.aiConfigApplied || record.vehicleGroup),
                                 anchor: {
                                   top:   rect.bottom + 4,
                                   right: window.innerWidth - rect.right,
@@ -722,6 +749,7 @@ export function VehicleInventoryGrid({
         anchor={openMenu.anchor}
         syndicationStatus={openMenu.syndicationStatus}
         aiGenerationStatus={openMenu.aiGenerationStatus}
+        aiConfigApplied={openMenu.aiConfigApplied}
         onAction={handleMenuAction}
         onClose={() => setOpenMenu(null)}
       />

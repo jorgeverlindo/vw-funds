@@ -15,6 +15,7 @@ const motoThumb = 'https://res.cloudinary.com/dvq75cqna/image/upload/v1780071251
 import type { VehicleGroup } from './types';
 import { BLUE_VEHICLE_GROUP }  from './blueVehicle';
 import { VEHICLE_GROUPS_2 }    from './vehicleGroups';
+import { KODIAK_VEHICLE_GROUP } from './kodiakVehicle';
 
 export type PriceToMarket = 'well-above' | 'above' | 'close' | 'below' | 'well-below';
 export type AIGenerationStatus = 'enabled' | 'disabled';
@@ -97,6 +98,7 @@ export const VEHICLE_INVENTORY: VinInventoryRecord[] = [
     id: 'vin-04', vin: 'JY4AW10XPRA002567',
     condition: 'New',  year: 2024, make: 'Yamaha', model: 'Wolverine', trim: 'RMAX4 1000 Ltd',
     price: 19999, aiGeneration: 'enabled', aiConfigApplied: false,
+    vehicleGroup: { ...KODIAK_VEHICLE_GROUP, id: 'kodiak-vg-04', vin: 'JY4AW10XPRA002567' },
     syndication: 'syndicated',    exteriorColor: 'Dark Bluish Gray',
     vehicleStatus: 'In Transit',  dol: 10, priceToMarket: 'below',      priorityScore: 6,
     thumbnail: kodiakThumb,
@@ -115,6 +117,7 @@ export const VEHICLE_INVENTORY: VinInventoryRecord[] = [
     id: 'vin-06', vin: 'JY4AK05RNRA003782',
     condition: 'New',  year: 2024, make: 'Yamaha', model: 'Kodiak 450', trim: 'EPS',
     price: 8999, aiGeneration: 'disabled', aiConfigApplied: false,
+    vehicleGroup: { ...KODIAK_VEHICLE_GROUP, id: 'kodiak-vg-06', vin: 'JY4AK05RNRA003782' },
     syndication: 'not-syndicated', exteriorColor: 'Dark Yellowish Gray Metallic',
     vehicleStatus: 'On the lot',  dol: 80, priceToMarket: 'well-above', priorityScore: 2,
     thumbnail: kodiakThumb,
@@ -123,6 +126,7 @@ export const VEHICLE_INVENTORY: VinInventoryRecord[] = [
     id: 'vin-07', vin: 'JY4AK05RNRA006543',
     condition: 'Used', year: 2023, make: 'Yamaha', model: 'Kodiak 450', trim: 'EPS',
     price: 7500, aiGeneration: 'enabled', aiConfigApplied: false,
+    vehicleGroup: { ...KODIAK_VEHICLE_GROUP, id: 'kodiak-vg-07', vin: 'JY4AK05RNRA006543' },
     syndication: 'syndicated',    exteriorColor: 'Camouflage',
     vehicleStatus: 'In Transit',  dol: 30, priceToMarket: 'below',      priorityScore: 5,
     thumbnail: kodiakThumb,
@@ -131,6 +135,7 @@ export const VEHICLE_INVENTORY: VinInventoryRecord[] = [
     id: 'vin-08', vin: 'JY4AK05XRRA010003',
     condition: 'New',  year: 2026, make: 'Yamaha', model: 'Kodiak 450', trim: 'EPS',
     price: 9299, aiGeneration: 'enabled', aiConfigApplied: false,
+    vehicleGroup: { ...KODIAK_VEHICLE_GROUP, id: 'kodiak-vg-08', vin: 'JY4AK05XRRA010003' },
     syndication: 'syndicated',    exteriorColor: 'Dark Purplish Blue Solid',
     vehicleStatus: 'On the lot',  dol: 14, priceToMarket: 'close',      priorityScore: 4,
     thumbnail: kodiakThumb,
@@ -139,6 +144,7 @@ export const VEHICLE_INVENTORY: VinInventoryRecord[] = [
     id: 'vin-09', vin: 'JY4AK05XRRA010006',
     condition: 'New',  year: 2026, make: 'Yamaha', model: 'Kodiak 450', trim: 'EPS XT-R',
     price: 9699, aiGeneration: 'enabled', aiConfigApplied: false,
+    vehicleGroup: { ...KODIAK_VEHICLE_GROUP, id: 'kodiak-vg-09', vin: 'JY4AK05XRRA010006' },
     syndication: 'syndicated',    exteriorColor: 'Dark Grayish Yellow Solid',
     vehicleStatus: 'In Transit',  dol: 7,  priceToMarket: 'below',      priorityScore: 6,
     thumbnail: kodiakThumb,

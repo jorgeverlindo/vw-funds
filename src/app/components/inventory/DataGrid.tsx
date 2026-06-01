@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { MoreVertical, X } from 'lucide-react';
 import { cn } from '../../../lib/utils';
 import { AIConfigRecord } from '../../../data/inventory/aiConfigs';
+import { useInventory } from '../../contexts/InventoryContext';
+import { emitSnackbar } from '../Snackbar';
 import type { VinFilters } from '../../../data/inventory/types';
 import { Thumbnail } from './Thumbnail';
 import { YMMTCItems } from './YMMTCItems';
@@ -136,7 +138,8 @@ interface DataGridProps {
   onAngleReorder?: (recordId: string, groupId: string, order: import('../../../data/inventory/types').AngleKey[]) => void;
 }
 
-export function DataGrid({ records, selected, onToggleRow, onToggleAll, onRowClick, onAngleReorder }: DataGridProps) {
+export function DataGrid({ records, selected, onToggleRow, onToggleAll, onRowClick, onAngleReorder, onRemoveConfig }: DataGridProps & { onRemoveConfig?: (configId: string) => void }) {
+  const { removeConfig } = useInventory();
   const allSelected = records.length > 0 && records.every(r => selected.has(r.id));
   const [widths, setWidths] = useState<ColWidths>(DEFAULT_WIDTHS);
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
@@ -470,8 +473,15 @@ export function DataGrid({ records, selected, onToggleRow, onToggleAll, onRowCli
         <GlobalAIConfigMenu
           anchor={openMenu.anchor}
           onAction={action => {
-            // TODO: wire individual actions (edit → onRowClick, duplicate, remove, etc.)
-            if (action === 'edit') onRowClick(openMenu.recordId);
+            if (action === 'edit') {
+              onRowClick(openMenu.recordId);
+            } else if (action === 'remove') {
+              const configId = openMenu.recordId;
+              removeConfig(configId);
+              onRemoveConfig?.(configId);
+              emitSnackbar('AI Config removed from inventory');
+              setOpenMenu(null);
+            }
           }}
           onClose={() => setOpenMenu(null)}
         />

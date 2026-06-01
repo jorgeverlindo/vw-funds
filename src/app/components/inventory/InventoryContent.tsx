@@ -5,7 +5,8 @@
 // Structure:
 //   BreadcrumbBar → Page Title → Tabs → Toolbar → VehicleInventoryGrid
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
+import { useNavigate, useParams, useLocation } from 'react-router';
 import { AnimatePresence, motion, LayoutGroup } from 'motion/react';
 import { cn } from '../../../lib/utils';
 import {
@@ -25,6 +26,9 @@ import { CommentsButton, useComments } from '../comments';
 import { VehicleInventoryGrid } from './VehicleInventoryGrid';
 import { VinDetailContent }     from './VinDetailContent';
 import { useClient }            from '../../contexts/ClientContext';
+import { useInventory }         from '../../contexts/InventoryContext';
+import { buildVinSlug, extractVinFromSlug } from '../../utils/routing';
+import { STORAGE_KEYS } from '../../constants/storageKeys';
 import { AnglePreviewModal }     from './AnglePreviewModal';
 import { ANGLES }                from './AngleBar';
 import { VEHICLE_INVENTORY }    from '../../../data/inventory/vehicleInventory';
@@ -159,6 +163,10 @@ const IconTableSmall = () => (
 export function InventoryContent({ isAgentPaneOpen = false }: { isAgentPaneOpen?: boolean }) {
   const { client } = useClient();
   const { isPanelOpen } = useComments();
+  const { vehicles: inventoryVehicles } = useInventory();
+  const navigate  = useNavigate();
+  const location  = useLocation();
+  const { vinSlug } = useParams<{ vinSlug?: string }>();
   // Hide channel labels when either side panel (comments or agent) is open —
   // they overlap the narrow toolbar in that layout.
   const hideChannelLabels = isPanelOpen || isAgentPaneOpen;
@@ -183,9 +191,53 @@ export function InventoryContent({ isAgentPaneOpen = false }: { isAgentPaneOpen?
   const [search,               setSearch]               = useState('');
   const [selected,             setSelected]             = useState<Set<string>>(new Set());
   const [activeTab,            setActiveTab]            = useState<'insights' | 'conquest' | 'vehicles'>('vehicles');
-  const [selectedVinId,        setSelectedVinId]        = useState<string | null>(null);
+  // ── VIN detail URL sync ───────────────────────────────────────────────────
+  // Derive initial selectedVinId from URL on first render so that deep-links
+  // and page refreshes land directly on the correct VIN detail page.
+  const [selectedVinId, setSelectedVinId] = useState<string | null>(() => {
+    if (!vinSlug) return null;
+    const vin = extractVinFromSlug(vinSlug);
+    return VEHICLE_INVENTORY.find(r => r.vin.toUpperCase() === vin)?.id ?? null;
+  });
   const [syndicationOverrides,  setSyndicationOverrides]  = useState<Map<string, SyndicationStatus>>(new Map());
-  const [aiGenerationOverrides, setAiGenerationOverrides] = useState<Map<string, AIGenerationStatus>>(new Map());
+  const [aiGenerationOverrides, setAiGenerationOverrides] = useState<Map<string, AIGenerationStatus>>(() => {
+    // Persist across page reloads — Disable/Enable should survive navigation
+    // without ever touching the vehicleGroup / generated images.
+    try {
+      const raw = localStorage.getItem(STORAGE_KEYS.AI_GENERATION_OVERRIDES);
+      const obj: Record<string, AIGenerationStatus> = raw ? JSON.parse(raw) : {};
+      return new Map(Object.entries(obj));
+    } catch { return new Map(); }
+  });
+
+  // Keep URL in sync when vinSlug changes externally (browser back/forward)
+  useEffect(() => {
+    if (!vinSlug) {
+      setSelectedVinId(null);
+      return;
+    }
+    const vin = extractVinFromSlug(vinSlug);
+    const record = VEHICLE_INVENTORY.find(r => r.vin.toUpperCase() === vin);
+    setSelectedVinId(record?.id ?? null);
+  }, [vinSlug]);
+
+  // Navigate to VIN detail URL — base path is the inventory path without any vinSlug
+  const baseInventoryPath = vinSlug
+    ? location.pathname.slice(0, location.pathname.lastIndexOf('/' + vinSlug))
+    : location.pathname;
+
+  const handleVinClick = useCallback((id: string) => {
+    const record = inventoryVehicles.find(r => r.id === id);
+    if (!record) return;
+    const slug = buildVinSlug(record.make, record.model, record.trim, record.exteriorColor, record.vin);
+    setSelectedVinId(id);
+    navigate(`${baseInventoryPath}/${slug}`);
+  }, [baseInventoryPath, navigate]);
+
+  const handleVinBack = useCallback(() => {
+    setSelectedVinId(null);
+    navigate(baseInventoryPath);
+  }, [baseInventoryPath, navigate]);
 
   // ── Source Images modal ────────────────────────────────────────────────────
   const [sourceImagesVinId,    setSourceImagesVinId]    = useState<string | null>(null);
@@ -199,7 +251,7 @@ export function InventoryContent({ isAgentPaneOpen = false }: { isAgentPaneOpen?
   // Toggle syndication for a record (overrides the static data)
   const handleSyndicationToggle = useCallback((id: string) => {
     setSyndicationOverrides(prev => {
-      const base = VEHICLE_INVENTORY.find(r => r.id === id)!.syndication;
+      const base = inventoryVehicles.find(r => r.id === id)!.syndication;
       const current = prev.get(id) ?? base;
       const next = new Map(prev);
       next.set(id, current === 'syndicated' ? 'not-syndicated' : 'syndicated');
@@ -210,7 +262,7 @@ export function InventoryContent({ isAgentPaneOpen = false }: { isAgentPaneOpen?
   // Open comments panel with the vehicle attached as entity reference
   const commentsCtx = useComments();
   const handleAttachComment = useCallback((id: string) => {
-    const record = VEHICLE_INVENTORY.find(r => r.id === id);
+    const record = inventoryVehicles.find(r => r.id === id);
     if (!record || !commentsCtx) return;
     commentsCtx.openPanelForEntity({
       id:    record.vin,
@@ -219,19 +271,25 @@ export function InventoryContent({ isAgentPaneOpen = false }: { isAgentPaneOpen?
     });
   }, [commentsCtx]);
 
-  // Toggle AI generation for a record (overrides the static data)
+  // Toggle AI generation for a record — persisted to localStorage so generated
+  // images are never affected: only the aiGeneration flag is written.
   const handleAiGenerationToggle = useCallback((id: string) => {
     setAiGenerationOverrides(prev => {
-      const base = VEHICLE_INVENTORY.find(r => r.id === id)!.aiGeneration;
+      const base    = inventoryVehicles.find(r => r.id === id)!.aiGeneration;
       const current = prev.get(id) ?? base;
-      const next = new Map(prev);
+      const next    = new Map(prev);
       next.set(id, current === 'enabled' ? 'disabled' : 'enabled');
+      // Persist — convert Map to plain object for JSON serialisation
+      try {
+        const obj = Object.fromEntries(next.entries());
+        localStorage.setItem(STORAGE_KEYS.AI_GENERATION_OVERRIDES, JSON.stringify(obj));
+      } catch { /* quota exceeded — fail silently */ }
       return next;
     });
-  }, []);
+  }, [inventoryVehicles]);
 
   // Filter records by search and apply overrides
-  const records = VEHICLE_INVENTORY
+  const records = inventoryVehicles
     .filter(r => {
       if (!search) return true;
       const q     = search.toLowerCase();
@@ -321,12 +379,12 @@ export function InventoryContent({ isAgentPaneOpen = false }: { isAgentPaneOpen?
 
   // ── VIN Detail: replace entire content (no toolbar/tabs overhead) ──────────
   if (selectedVinId) {
-    const record = VEHICLE_INVENTORY.find(r => r.id === selectedVinId);
+    const record = inventoryVehicles.find(r => r.id === selectedVinId);
     if (record) {
       return (
         <VinDetailContent
           record={record}
-          onBack={() => setSelectedVinId(null)}
+          onBack={handleVinBack}
           variant={client.clientId === 'ride-now' ? 'sport' : 'auto'}
         />
       );
@@ -519,7 +577,7 @@ export function InventoryContent({ isAgentPaneOpen = false }: { isAgentPaneOpen?
                   selected={selected}
                   onToggleRow={handleToggleRow}
                   onToggleAll={handleToggleAll}
-                  onVinClick={(id) => setSelectedVinId(id)}
+                  onVinClick={handleVinClick}
                   onSyndicationToggle={handleSyndicationToggle}
                   onAiGenerationToggle={handleAiGenerationToggle}
                   onViewSourceImages={handleViewSourceImages}
@@ -540,7 +598,7 @@ export function InventoryContent({ isAgentPaneOpen = false }: { isAgentPaneOpen?
                   records={records}
                   selected={selected}
                   onToggleRow={handleToggleRow}
-                  onVinClick={(id) => setSelectedVinId(id)}
+                  onVinClick={handleVinClick}
                   onSyndicationToggle={handleSyndicationToggle}
                   onAiGenerationToggle={handleAiGenerationToggle}
                   onViewSourceImages={handleViewSourceImages}
@@ -561,7 +619,7 @@ export function InventoryContent({ isAgentPaneOpen = false }: { isAgentPaneOpen?
                   records={records}
                   selected={selected}
                   onToggleRow={handleToggleRow}
-                  onVinClick={(id) => setSelectedVinId(id)}
+                  onVinClick={handleVinClick}
                   onSyndicationToggle={handleSyndicationToggle}
                   onAiGenerationToggle={handleAiGenerationToggle}
                   onViewSourceImages={handleViewSourceImages}
@@ -583,7 +641,7 @@ export function InventoryContent({ isAgentPaneOpen = false }: { isAgentPaneOpen?
                   selected={selected}
                   onToggleRow={handleToggleRow}
                   onToggleAll={handleToggleAll}
-                  onVinClick={(id) => setSelectedVinId(id)}
+                  onVinClick={handleVinClick}
                   onSyndicationToggle={handleSyndicationToggle}
                   onAiGenerationToggle={handleAiGenerationToggle}
                   onViewSourceImages={handleViewSourceImages}

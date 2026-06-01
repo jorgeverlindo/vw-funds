@@ -24,6 +24,25 @@ export const STORAGE_KEYS = {
    * Usage: `STORAGE_KEYS.PROJECT_STATE(projectId)`
    */
   PROJECT_STATE: (projectId: string) => `constellation_proj_state_${projectId}`,
+
+  /**
+   * Inventory VIN config overrides — maps VIN string → applied AIConfig data.
+   * Keyed by raw VIN (e.g. 'JY4AW10XPRA002567'), not internal record id.
+   * Written by applyConfig; cleared per-VIN by removeConfig.
+   */
+  INVENTORY_CONFIG_OVERRIDES: 'constellation_inventory_config_overrides',
+
+  /**
+   * User-created Global AI Config records (created via NewGlobalAIConfigContent).
+   * Stored as a JSON array; merged with the static AI_CONFIGS seed on read.
+   */
+  AI_CONFIGS_LIST: 'constellation_ai_configs_list',
+
+  /**
+   * Per-VIN AI Generation toggle overrides — maps record id → 'enabled' | 'disabled'.
+   * Persisted so Disable/Enable survives page reload without touching the vehicleGroup.
+   */
+  AI_GENERATION_OVERRIDES: 'constellation_ai_generation_overrides',
 } as const;
 
 /** Password used by the PasswordGate component.

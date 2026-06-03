@@ -2690,11 +2690,21 @@ export function ProjectAgentPane({ isOpen, onClose, userType, activeUserName }: 
           projectId:   ctx?.projectId,
           projectName: ctx?.projectName ?? "Campaign",
           oem:         ctx?.oem,
-          offers:      projectOffers.map(o => ({
-            id: o.id, year: o.year, make: o.make, model: o.model, trim: o.trim,
-            offerType: o.offerType, monthlyPayment: o.monthlyPayment, term: o.term,
-            image: (o as { image?: string }).image ?? "",
-          })),
+          offers:      projectOffers.map(o => {
+            const rawImage = (o as { image?: string }).image ?? "";
+            // blob: and data: URLs are browser-session-only — strip them before
+            // sending so the email falls back to the make-colour avatar instead
+            // of a broken-image icon in the recipient's inbox.
+            const safeImage =
+              rawImage.startsWith("blob:") || rawImage.startsWith("data:")
+                ? ""
+                : rawImage;
+            return {
+              id: o.id, year: o.year, make: o.make, model: o.model, trim: o.trim,
+              offerType: o.offerType, monthlyPayment: o.monthlyPayment, term: o.term,
+              image: safeImage,
+            };
+          }),
           templates: projectTemplates.map(t => ({
             id: t.id, name: t.name, format: t.format,
           })),

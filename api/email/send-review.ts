@@ -40,9 +40,17 @@ interface SendReviewBody {
 
 const APP_URL = "https://constellation-ux-app.vercel.app";
 
-/** Resolve a (possibly relative) image path to an absolute URL, or "" if none. */
+/** Resolve a (possibly relative) image path to an absolute URL, or "" if none.
+ *
+ * blob: URLs are browser-memory-only — they die with the tab and are completely
+ * unreachable by email clients.  data: URLs (base64) are either stripped by
+ * email clients as a security measure or make the message absurdly large.
+ * Both cases fall back to the make-colour avatar rendered in the email template.
+ */
 function resolveImageUrl(image?: string): string {
   if (!image) return "";
+  // blob: and data: URLs only exist inside the browser session — unusable in email
+  if (image.startsWith("blob:") || image.startsWith("data:")) return "";
   if (image.startsWith("http")) return image;
   // Relative path: "/cars/CR-V.png" → absolute
   return `${APP_URL}${image.startsWith("/") ? "" : "/"}${image}`;

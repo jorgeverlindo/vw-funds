@@ -642,8 +642,8 @@ function BackgroundsProposalCard({ input, onApply, onDismiss }: BackgroundsCardP
                 return (
                   <button key={bg.id} onClick={() => toggle(bg.id)}
                     className="group flex-none flex flex-col items-center gap-[4px] cursor-pointer"
-                    style={{ width: 176 }}>
-                    <div className="relative w-[176px] h-[120px] rounded-[10px] overflow-hidden transition-all"
+                    style={{ width: 200 }}>
+                    <div className="relative w-[200px] h-[133px] rounded-[10px] overflow-hidden transition-all"
                       style={{
                         outline: isSelected ? "2px solid var(--brand-accent)" : "2px solid transparent",
                         outlineOffset: 1,
@@ -2060,12 +2060,14 @@ interface ProjectAgentPaneProps { isOpen: boolean; onClose: () => void; userType
 
 export function ProjectAgentPane({ isOpen, onClose, userType, activeUserName }: ProjectAgentPaneProps) {
   const [paneWidth, setPaneWidth] = useState(400);
+  const [isResizing, setIsResizing] = useState(false);
   const isDraggingPane = useRef(false);
   const dragStartX = useRef(0);
   const dragStartWidth = useRef(0);
 
   function handlePaneDragStart(e: React.MouseEvent) {
     isDraggingPane.current = true;
+    setIsResizing(true); // disable spring during drag → right edge stays pinned
     dragStartX.current = e.clientX;
     dragStartWidth.current = paneWidth;
     e.preventDefault();
@@ -2078,6 +2080,7 @@ export function ProjectAgentPane({ isOpen, onClose, userType, activeUserName }: 
     }
     function onUp() {
       isDraggingPane.current = false;
+      setIsResizing(false); // restore open/close animation
       window.removeEventListener('mousemove', onMove);
       window.removeEventListener('mouseup', onUp);
     }
@@ -3008,7 +3011,7 @@ export function ProjectAgentPane({ isOpen, onClose, userType, activeUserName }: 
         /* Outer: animates width so MainPane (flex-1) expands/shrinks in concert */
         <motion.div key="project-agent-pane-wrapper"
           initial={{ width: 0 }} animate={{ width: paneWidth }} exit={{ width: 0 }}
-          transition={{ duration: 0.45, ease: [0.0, 0.0, 0.2, 1] }}
+          transition={isResizing ? { duration: 0 } : { duration: 0.45, ease: [0.0, 0.0, 0.2, 1] }}
           className="flex-none h-full overflow-hidden"
         >
         <motion.div key="project-agent-pane"

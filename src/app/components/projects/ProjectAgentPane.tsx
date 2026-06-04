@@ -50,12 +50,19 @@ export interface ProjectContextPayload {
   projectId: string;
   projectName: string;
   oem: string;
+  /** Campaign start date string, e.g. "Jun 1, 2026" */
+  startDate?: string;
+  /** Campaign end date string, e.g. "Jun 30, 2026" */
+  endDate?: string;
+  /** Primary campaign owner / contact name */
+  owner?: string;
   currentOfferIds: string[];
   currentTemplateIds: string[];
   availableOffers: {
     id: string; year: string; make: string; model: string; trim: string;
     offerType: string; monthlyPayment: number; term: number;
     pvi: number; aging: number; stock: number;
+    image?: string;
   }[];
   availableTemplates: {
     id: string; name: string; format: string; width: number; height: number; brand: string;
@@ -2777,10 +2784,13 @@ export function ProjectAgentPane({ isOpen, onClose, userType, activeUserName }: 
         recipient_email: recipient,
         message,
         project: {
-          projectId:   ctx?.projectId,
-          projectName: ctx?.projectName ?? "Campaign",
-          oem:         ctx?.oem,
-          assets:      (ctx as unknown as { generatedAssets?: string[] })?.generatedAssets
+          projectId:       ctx?.projectId,
+          projectName:     ctx?.projectName ?? "Campaign",
+          oem:             ctx?.oem,
+          start_date:      ctx?.startDate,
+          end_date:        ctx?.endDate,
+          campaign_owner:  ctx?.owner,
+          assets:          (ctx as unknown as { generatedAssets?: string[] })?.generatedAssets
             ?.filter((url: string) => url.startsWith('http'))
             .slice(0, 4) ?? [],
           offers:      projectOffers.map(o => {

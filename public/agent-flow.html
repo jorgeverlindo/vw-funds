@@ -207,6 +207,75 @@
     gap: 4px;
     border-top: 1px solid rgba(0,0,0,0.06);
   }
+  .card-footer-row {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+  .btn-grad-flex { flex: 1; }
+
+  /* ── Offer edit panel ───────────────────────────────────────── */
+  .offer-edit-panel {
+    margin-top: 4px;
+    padding: 10px 12px;
+    border-radius: 10px;
+    background: rgba(71,59,171,0.04);
+    border: 1px solid rgba(71,59,171,0.12);
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 16px;
+    align-items: flex-end;
+  }
+  .offer-edit-field {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    font-size: 11px;
+    color: var(--ink-2);
+  }
+  .offer-edit-field input {
+    width: 90px;
+    padding: 4px 8px;
+    border-radius: 6px;
+    border: 1px solid rgba(0,0,0,0.12);
+    font-size: 12px;
+    color: var(--ink);
+    background: white;
+    outline: none;
+    font-family: var(--font);
+    transition: border-color 0.12s;
+  }
+  .offer-edit-field input:focus {
+    border-color: var(--brand);
+    box-shadow: 0 0 0 2px rgba(71,59,171,0.12);
+  }
+  /* Active "Customize" button state */
+  .btn-customize-active {
+    padding: 8px 14px;
+    border-radius: 100px;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    border: 1px solid rgba(71,59,171,0.3);
+    background: rgba(71,59,171,0.08);
+    color: var(--brand);
+    font-family: var(--font);
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  .btn-customize-idle {
+    padding: 8px 14px;
+    border-radius: 100px;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    border: 1px solid rgba(0,0,0,0.12);
+    background: transparent;
+    color: var(--ink-2);
+    font-family: var(--font);
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
 
   /* Section label inside card body */
   .section-label {
@@ -928,6 +997,22 @@
             </div>
           </div>
 
+          <!-- Offer 1 edit panel — open/active state (Customize mode) -->
+          <div class="offer-edit-panel">
+            <div class="offer-edit-field">
+              <label>Monthly Payment ($)</label>
+              <input type="number" value="529">
+            </div>
+            <div class="offer-edit-field">
+              <label>Term (mo)</label>
+              <input type="number" value="36">
+            </div>
+            <div class="offer-edit-field">
+              <label>Due at Signing ($)</label>
+              <input type="number" value="4999">
+            </div>
+          </div>
+
           <!-- Offer 2: HR-V Sport -->
           <div class="offer-card">
             <div class="offer-top">
@@ -1073,9 +1158,13 @@
           </div>
 
         </div><!-- /offers-body -->
-        <div class="card-footer">
-          <button class="btn-grad">Add 5 Offers</button>
-          <button class="btn-skip">Skip</button>
+        <!-- Footer: flex row — "Add offers" + "Done" (customize active state) -->
+        <div class="card-footer" style="padding-top:10px;">
+          <div class="card-footer-row">
+            <button class="btn-grad btn-grad-flex">Add 5 Offers</button>
+            <!-- "Done" = customize mode active, click exits edit mode -->
+            <button class="btn-customize-active">Done</button>
+          </div>
         </div>
       </div>
 

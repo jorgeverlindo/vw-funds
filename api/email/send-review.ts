@@ -21,6 +21,14 @@ interface TemplateSummary {
   format?: string;
 }
 
+/** One generated asset — bg + vehicle to be composited via Cloudinary URL transforms */
+interface AssetItem {
+  bgUrl: string;
+  vehicleUrl?: string;
+  offerName?: string;
+  dims?: string;
+}
+
 interface ProjectSummary {
   projectId?: string;
   projectName: string;
@@ -30,7 +38,10 @@ interface ProjectSummary {
   campaign_owner?: string;
   offers?: OfferSummary[];
   templates?: TemplateSummary[];
-  assets?: string[];  // up to 4 generated asset image URLs (absolute HTTPS only)
+  /** Legacy: plain bg image URLs. Superseded by assetItems. */
+  assets?: string[];
+  /** Rich asset items — each carries bgUrl + vehicleUrl for Cloudinary compositing */
+  assetItems?: AssetItem[];
 }
 
 interface SendReviewBody {
@@ -68,6 +79,60 @@ function titleCase(str: string): string {
 /** Format a dollar amount without decimals */
 function formatMoney(n: number): string {
   return n.toLocaleString("en-US", { maximumFractionDigits: 0 });
+}
+
+// ─── Cloudinary composite ──────────────────────────────────────────────────────
+//
+// Both bg and vehicle images live in the same Cloudinary account (dvq75cqna).
+// We use URL-based layer transformations to composite the vehicle PNG (transparent
+// cutout) over the background — zero server compute, result is cached by CDN.
+//
+// Output URL pattern:
+//   .../image/upload/w_600,h_400,c_fill          ← resize bg
+//   /l_PUBLIC_ID_WITH_COLONS,w_320,c_fit,g_south,y_-20  ← place vehicle
+//   /fl_layer_apply                               ← flatten
+//   /BG_PUBLIC_ID                                 ← base image
+//
+const CLOUD_NAME   = "dvq75cqna";
+const CL_BASE      = `https://res.cloudinary.com/${CLOUD_NAME}/image/upload/`;
+
+function extractPublicId(url: string): string | null {
+  if (!url.startsWith(CL_BASE)) return null;
+  return url
+    .slice(CL_BASE.length)
+    .replace(/^v\d+\//, "")   // strip version prefix
+    .replace(/\.[^.]+$/, ""); // strip extension
+}
+
+/**
+ * Return a Cloudinary URL that shows `vehicleUrl` composited over `bgUrl`.
+ * Falls back to `bgUrl` alone if either ID can't be extracted.
+ */
+function buildCompositeUrl(
+  bgUrl: string,
+  vehicleUrl?: string,
+  outputW = 600,
+  outputH = 400,
+): string {
+  const bgId      = extractPublicId(bgUrl);
+  const vehicleId = vehicleUrl ? extractPublicId(vehicleUrl) : null;
+
+  if (!bgId) return bgUrl; // can't parse — return bg as-is
+
+  if (!vehicleId) {
+    // No vehicle — just resize the background
+    return `${CL_BASE}w_${outputW},h_${outputH},c_fill/${bgId}`;
+  }
+
+  const vLayer = vehicleId.replace(/\//g, ":"); // folder sep → colon
+  const vW     = Math.round(outputW * 0.55);    // vehicle ~55% of output width
+
+  return (
+    `${CL_BASE}w_${outputW},h_${outputH},c_fill` +
+    `/l_${vLayer},w_${vW},c_fit,g_south,y_-15` +
+    `/fl_layer_apply` +
+    `/${bgId}`
+  );
 }
 
 // ─── Offer card (email-safe table layout) ─────────────────────────────────────
@@ -173,22 +238,39 @@ function buildEmailHtml(body: SendReviewBody): string {
     <div>${templatePills}</div>`
       : "";
 
-  // ── Assets preview ───────────────────────────────────────────────────────────
-  const validAssets = (project.assets ?? [])
-    .filter(url => url.startsWith('http') && !url.startsWith('blob:') && !url.startsWith('data:'))
-    .slice(0, 4);
+  // ── Assets preview ─────────────────────────────────────────────────────────────
+  // Prefer rich assetItems (bg + vehicle → Cloudinary composite URL).
+  // Fall back to legacy plain `assets` array.
+  const rawItems: AssetItem[] = project.assetItems?.length
+    ? project.assetItems.slice(0, 4)
+    : (project.assets ?? [])
+        .filter(u => u.startsWith("http") && !u.startsWith("blob:") && !u.startsWith("data:"))
+        .slice(0, 4)
+        .map(bgUrl => ({ bgUrl }));
 
-  const assetsSection = validAssets.length > 0 ? `
+  // Build composited (or plain bg) URLs via Cloudinary
+  const compositeItems = rawItems.map(item => ({
+    url:   buildCompositeUrl(item.bgUrl, item.vehicleUrl, 580, 390),
+    label: item.offerName ?? "",
+    dims:  item.dims ?? "",
+  }));
+
+  // Keep plain URLs list for the "Review Campaign" CTA link query param
+  const validAssets = compositeItems.map(c => c.url);
+
+  const assetsSection = compositeItems.length > 0 ? `
   <h3 style="margin:28px 0 12px;font-size:13px;font-weight:600;color:#8f8c9c;text-transform:uppercase;letter-spacing:.07em;font-family:Helvetica,Arial,sans-serif;">
-    Generated Assets (${validAssets.length})
+    Generated Assets (${compositeItems.length})
   </h3>
   <table width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;">
     ${(() => {
       const rows: string[] = [];
-      for (let i = 0; i < validAssets.length; i += 2) {
-        const cells = validAssets.slice(i, i + 2).map(url =>
+      for (let i = 0; i < compositeItems.length; i += 2) {
+        const cells = compositeItems.slice(i, i + 2).map(item =>
           `<td width="50%" style="padding:4px;vertical-align:top;">
-            <img src="${url}" width="100%" alt="Asset" style="display:block;width:100%;border-radius:8px;border:1px solid #ece9f5;" />
+            <img src="${item.url}" width="100%" alt="${item.label || 'Asset'}"
+                 style="display:block;width:100%;border-radius:8px;border:1px solid #ece9f5;" />
+            ${item.label ? `<p style="margin:4px 0 0;font-size:10px;color:#8f8c9c;font-family:Helvetica,Arial,sans-serif;text-align:center;">${item.label}</p>` : ''}
           </td>`
         );
         if (cells.length === 1) cells.push('<td width="50%"></td>');

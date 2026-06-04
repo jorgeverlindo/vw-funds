@@ -78,6 +78,7 @@ export interface ProjectContextPayload {
    */
   generatedAssetPreviews?: Array<{
     bgUrl: string;
+    vehicleUrl: string;
     offerName: string;
     templateName: string;
     dims: string;
@@ -2801,8 +2802,13 @@ export function ProjectAgentPane({ isOpen, onClose, userType, activeUserName }: 
           start_date:      ctx?.startDate,
           end_date:        ctx?.endDate,
           campaign_owner:  ctx?.owner,
-          // Use generatedAssetPreviews (bg Cloudinary URLs per template)
-          assets: (ctx?.generatedAssetPreviews ?? []).map(p => p.bgUrl),
+          // Rich asset items — Cloudinary will composite vehicle over bg server-side
+          assetItems: (ctx?.generatedAssetPreviews ?? []).map(p => ({
+            bgUrl:      p.bgUrl,
+            vehicleUrl: p.vehicleUrl,
+            offerName:  p.offerName,
+            dims:       p.dims,
+          })),
           offers:      projectOffers.map(o => {
             const rawImage = (o as { image?: string }).image ?? "";
             // blob: and data: URLs are browser-session-only — strip them before

@@ -1314,8 +1314,10 @@ function ProjectDetailView({
         const bg = bgId ? backgroundCollections.find(b => b.id === bgId) ?? null : null;
         const bgUrl = getBgImage(bg, template);
         if (!bgUrl || !bgUrl.startsWith('http')) return [];
+        const vehicleUrl = (offer as any).image ?? "";
         return [{
           bgUrl,
+          vehicleUrl: vehicleUrl.startsWith('http') ? vehicleUrl : "",
           offerName: `${offer.year} ${offer.make} ${offer.model}`,
           templateName: template.name,
           dims: `${template.width}×${template.height}`,

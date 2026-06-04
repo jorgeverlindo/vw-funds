@@ -1268,16 +1268,20 @@ body {
       <div class="assets-scroll-wrap">
         <div class="assets-row">
 
-          <!-- Asset 1: Website Hero 2000×500 -->
-          <div class="asset-card" onclick="openAssetModal(this)">
+          <!--
+            Asset cards: Cloudinary URL compositing — vehicle PNG layered over background.
+            Format: /image/upload/{bg-transforms}/l_{vehicle-public-id},{vehicle-transforms}/fl_layer_apply/{bg-public-id}
+            These render server-side by Cloudinary CDN — no JS compositing needed.
+          -->
+
+          <!-- Asset 1: CR-V TrailSport + Balloon Festival · 1080×1080 -->
+          <div class="asset-card"
+               data-full-url="https://res.cloudinary.com/dvq75cqna/image/upload/w_1080,h_1080,c_fill/l_vw-funds:public:cars:CR-V,w_700,c_fit,g_south,y_-30/fl_layer_apply/vw-funds/public/backgrounds/Ballon_Festival/1777265296524_9d7c8327"
+               onclick="openAssetModal(this)">
             <div class="asset-thumb">
-              <div class="asset-thumb-placeholder">
-                <div class="asset-ph-headline"></div>
-                <div class="asset-ph-sub"></div>
-                <div class="asset-ph-img"></div>
-                <div class="asset-ph-cta"></div>
-              </div>
-              <div class="asset-ph-logo"></div>
+              <img src="https://res.cloudinary.com/dvq75cqna/image/upload/w_320,h_220,c_fill/l_vw-funds:public:cars:CR-V,w_210,c_fit,g_south,y_-10/fl_layer_apply/vw-funds/public/backgrounds/Ballon_Festival/1777265296524_9d7c8327"
+                   alt="CR-V TrailSport · Balloon Festival"
+                   style="width:100%;height:100%;object-fit:cover;display:block;">
               <div class="asset-thumb-overlay">
                 <div class="asset-eye">
                   <svg width="15" height="15" viewBox="0 0 24 24" fill="none">
@@ -1289,20 +1293,18 @@ body {
             </div>
             <div class="asset-info">
               <span class="asset-name">CR-V TrailSport Lease</span>
-              <span class="asset-dims">Website Hero · 2000×500</span>
+              <span class="asset-dims">Social · 1080×1080</span>
             </div>
           </div>
 
-          <!-- Asset 2: Leaderboard 970×250 -->
-          <div class="asset-card" onclick="openAssetModal(this)">
+          <!-- Asset 2: HR-V Sport + Balloon Festival · 1080×1080 -->
+          <div class="asset-card"
+               data-full-url="https://res.cloudinary.com/dvq75cqna/image/upload/w_1080,h_1080,c_fill/l_vw-funds:public:cars:HR-V,w_700,c_fit,g_south,y_-30/fl_layer_apply/vw-funds/public/backgrounds/Ballon_Festival/1777265296524_9d7c8327"
+               onclick="openAssetModal(this)">
             <div class="asset-thumb">
-              <div class="asset-thumb-placeholder">
-                <div class="asset-ph-headline"></div>
-                <div class="asset-ph-sub"></div>
-                <div class="asset-ph-img" style="max-height:38px"></div>
-                <div class="asset-ph-cta"></div>
-              </div>
-              <div class="asset-ph-logo"></div>
+              <img src="https://res.cloudinary.com/dvq75cqna/image/upload/w_320,h_220,c_fill/l_vw-funds:public:cars:HR-V,w_210,c_fit,g_south,y_-10/fl_layer_apply/vw-funds/public/backgrounds/Ballon_Festival/1777265296524_9d7c8327"
+                   alt="HR-V Sport · Balloon Festival"
+                   style="width:100%;height:100%;object-fit:cover;display:block;">
               <div class="asset-thumb-overlay">
                 <div class="asset-eye">
                   <svg width="15" height="15" viewBox="0 0 24 24" fill="none">
@@ -1314,20 +1316,18 @@ body {
             </div>
             <div class="asset-info">
               <span class="asset-name">HR-V Sport Lease</span>
-              <span class="asset-dims">Leaderboard · 970×250</span>
+              <span class="asset-dims">Social · 1080×1080</span>
             </div>
           </div>
 
-          <!-- Asset 3: Medium Rectangle 300×250 -->
-          <div class="asset-card" onclick="openAssetModal(this)">
+          <!-- Asset 3: Civic Sport + Dirt Road · 300×250 -->
+          <div class="asset-card"
+               data-full-url="https://res.cloudinary.com/dvq75cqna/image/upload/w_600,h_500,c_fill/l_vw-funds:public:cars:Civic,w_420,c_fit,g_south,y_-20/fl_layer_apply/vw-funds/public/backgrounds/Dirt-Road-HO_251027_1_Display_300x250_1"
+               onclick="openAssetModal(this)">
             <div class="asset-thumb">
-              <div class="asset-thumb-placeholder" style="padding:10px;gap:4px;">
-                <div class="asset-ph-headline" style="width:60%"></div>
-                <div class="asset-ph-img" style="flex:1;max-height:52px"></div>
-                <div class="asset-ph-sub" style="width:80%"></div>
-                <div class="asset-ph-cta" style="width:55%"></div>
-              </div>
-              <div class="asset-ph-logo"></div>
+              <img src="https://res.cloudinary.com/dvq75cqna/image/upload/w_320,h_220,c_fill/l_vw-funds:public:cars:Civic,w_210,c_fit,g_south,y_-10/fl_layer_apply/vw-funds/public/backgrounds/Dirt-Road-HO_251027_1_Display_300x250_1"
+                   alt="Civic Sport · Dirt Road"
+                   style="width:100%;height:100%;object-fit:cover;display:block;">
               <div class="asset-thumb-overlay">
                 <div class="asset-eye">
                   <svg width="15" height="15" viewBox="0 0 24 24" fill="none">
@@ -1339,21 +1339,18 @@ body {
             </div>
             <div class="asset-info">
               <span class="asset-name">Civic Sport Lease</span>
-              <span class="asset-dims">Med. Rectangle · 300×250</span>
+              <span class="asset-dims">Display · 300×250</span>
             </div>
           </div>
 
-          <!-- Asset 4: Social Square 1080×1080 -->
-          <div class="asset-card" onclick="openAssetModal(this)">
+          <!-- Asset 4: Odyssey + Dirt Road · Social 1080×1080 -->
+          <div class="asset-card"
+               data-full-url="https://res.cloudinary.com/dvq75cqna/image/upload/w_1080,h_1080,c_fill/l_vw-funds:public:cars:Odyssey,w_700,c_fit,g_south,y_-30/fl_layer_apply/vw-funds/public/backgrounds/Dirt-Road-HO_251027_1_Social_1080x1080_1"
+               onclick="openAssetModal(this)">
             <div class="asset-thumb">
-              <div class="asset-thumb-placeholder" style="justify-content:space-between;padding:12px;">
-                <div class="asset-ph-headline" style="width:55%"></div>
-                <div class="asset-ph-img" style="flex:1;min-height:44px"></div>
-                <div style="display:flex;gap:6px;align-items:center">
-                  <div class="asset-ph-cta" style="width:50%"></div>
-                  <div class="asset-ph-logo" style="position:relative;bottom:auto;right:auto;width:18px;height:14px"></div>
-                </div>
-              </div>
+              <img src="https://res.cloudinary.com/dvq75cqna/image/upload/w_320,h_220,c_fill/l_vw-funds:public:cars:Odyssey,w_210,c_fit,g_south,y_-10/fl_layer_apply/vw-funds/public/backgrounds/Dirt-Road-HO_251027_1_Social_1080x1080_1"
+                   alt="Odyssey EX-L · Dirt Road"
+                   style="width:100%;height:100%;object-fit:cover;display:block;">
               <div class="asset-thumb-overlay">
                 <div class="asset-eye">
                   <svg width="15" height="15" viewBox="0 0 24 24" fill="none">
@@ -1365,7 +1362,7 @@ body {
             </div>
             <div class="asset-info">
               <span class="asset-name">Odyssey EX-L Lease</span>
-              <span class="asset-dims">Social Square · 1080×1080</span>
+              <span class="asset-dims">Social · 1080×1080</span>
             </div>
           </div>
 
@@ -1570,14 +1567,16 @@ renderPlatforms();
 
 /* ── Asset preview modal ──────────────────────────────────────── */
 function openAssetModal(cardEl) {
-  var img = cardEl.querySelector('.asset-thumb img');
   var modal = document.getElementById('asset-preview-modal');
   var modalImg = document.getElementById('asset-modal-img-el');
-  if (img && img.src && !img.src.endsWith('#')) {
-    modalImg.src = img.src;
+  // Prefer data-full-url (full-res composite) over the thumb img src
+  var fullUrl = cardEl.getAttribute('data-full-url');
+  var thumbImg = cardEl.querySelector('.asset-thumb img');
+  var src = fullUrl || (thumbImg && thumbImg.src) || '';
+  if (src) {
+    modalImg.src = src;
     modalImg.style.display = 'block';
   } else {
-    // No real image — show a branded placeholder
     modalImg.style.display = 'none';
   }
   modal.classList.add('open');

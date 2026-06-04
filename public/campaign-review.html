@@ -530,8 +530,8 @@ body {
 .cta-fields { display: flex; flex-direction: column; gap: 8px; }
 
 .btn-primary {
-  display: block; width: 100%;
-  padding: 11px;
+  flex: 1;
+  padding: 11px 20px;
   margin-top: 16px;
   border-radius: 6px; border: none; cursor: pointer;
   background: var(--brand-grad);
@@ -541,6 +541,49 @@ body {
   transition: opacity 0.15s;
 }
 .btn-primary:hover { opacity: 0.9; }
+
+.btn-secondary {
+  flex: 1;
+  padding: 11px 20px;
+  margin-top: 16px;
+  border-radius: 6px; cursor: pointer;
+  background: transparent;
+  border: 1.5px solid var(--brand);
+  font-size: 14px; font-weight: 500;
+  letter-spacing: 0.46px; color: var(--brand);
+  font-family: var(--font);
+  transition: background 0.15s;
+}
+.btn-secondary:hover { background: var(--brand-tint); }
+
+.cta-actions {
+  display: flex; gap: 10px;
+  margin-top: 0;
+}
+
+/* ── View All Assets button ───────────────────────────────────── */
+.view-all-wrap {
+  padding: 14px 0 4px;
+  display: flex; justify-content: center;
+}
+.view-all-btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 9px 20px;
+  border-radius: 100px;
+  background: var(--card-bg);
+  border: 1.5px solid var(--brand);
+  color: var(--brand);
+  font-size: 13px; font-weight: 500;
+  font-family: var(--font); letter-spacing: 0.1px;
+  text-decoration: none;
+  transition: background 0.15s, box-shadow 0.15s;
+  box-shadow: 0 1px 4px rgba(71,59,171,0.10);
+}
+.view-all-btn:hover {
+  background: var(--brand-tint);
+  box-shadow: 0 3px 10px rgba(71,59,171,0.18);
+}
+.view-all-btn svg { flex-shrink: 0; }
 
 .cta-disclaimer {
   font-size: 11px; color: var(--text-3); line-height: 1.55;
@@ -1521,6 +1564,25 @@ body {
         </div>
       </div><!-- /assets-scroll-wrap -->
 
+      <!-- View All Assets CTA -->
+      <div class="view-all-wrap">
+        <a href="https://constellation-ux-app.vercel.app/OEM/Projects#assets"
+           class="view-all-btn"
+           id="view-all-assets-link"
+           target="_blank">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none">
+            <rect x="3" y="3" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="1.6"/>
+            <rect x="14" y="3" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="1.6"/>
+            <rect x="3" y="14" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="1.6"/>
+            <rect x="14" y="14" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="1.6"/>
+          </svg>
+          View All Assets in Platform
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none">
+            <path d="M7 17L17 7M17 7H7M17 7v10" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </a>
+      </div>
+
       <!-- Feedback -->
       <div class="feedback-box">
         <div class="textarea-wrap">
@@ -1567,9 +1629,16 @@ body {
         </div>
       </div>
 
-      <button class="btn-primary">Confirm Campaign &amp; Generate Assets</button>
+      <div class="cta-actions">
+        <button class="btn-secondary" onclick="document.querySelector('.cta-fields textarea').focus()">
+          Provide Feedback
+        </button>
+        <button class="btn-primary">
+          Publish Campaign
+        </button>
+      </div>
 
-      <p class="cta-disclaimer">By confirming, you authorize Constellation to generate and publish assets across the selected platforms. You'll receive a preview before anything goes live.</p>
+      <p class="cta-disclaimer">By clicking Publish, you authorize Constellation to publish assets across the selected platforms. You'll receive a confirmation once live.</p>
     </div>
   </div>
 
@@ -1685,6 +1754,17 @@ document.addEventListener('click', function(e) {
 
 /* Init */
 renderPlatforms();
+
+/* ── Deep-link "View All Assets" to the correct project ──────── */
+(function() {
+  var params = new URLSearchParams(window.location.search);
+  var projectId = params.get('projectId');
+  var link = document.getElementById('view-all-assets-link');
+  if (link && projectId) {
+    link.href = 'https://constellation-ux-app.vercel.app/OEM/Projects?project='
+      + encodeURIComponent(projectId) + '&section=assets';
+  }
+})();
 
 /* ── Inject real asset images from ?assets= query param ──────── */
 (function() {

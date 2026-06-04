@@ -547,6 +547,164 @@ body {
   text-align: center; margin-top: 12px;
 }
 
+/* ── Assets horizontal scroll ─────────────────────────────────── */
+.assets-scroll-wrap {
+  overflow-x: auto;
+  padding-bottom: 6px;
+  /* Hide scrollbar on most browsers but keep functional */
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0,0,0,0.12) transparent;
+}
+.assets-scroll-wrap::-webkit-scrollbar { height: 4px; }
+.assets-scroll-wrap::-webkit-scrollbar-track { background: transparent; }
+.assets-scroll-wrap::-webkit-scrollbar-thumb {
+  background: rgba(0,0,0,0.12); border-radius: 2px;
+}
+
+.assets-row {
+  display: flex; gap: 10px;
+  /* Don't wrap — this is the scroll container */
+  width: max-content;
+}
+
+.asset-card {
+  flex-shrink: 0;
+  width: 160px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  overflow: hidden;
+  background: var(--card-bg);
+  cursor: pointer;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.asset-card:hover {
+  border-color: rgba(71,59,171,0.4);
+  box-shadow: 0 4px 12px rgba(71,59,171,0.12);
+}
+
+.asset-thumb {
+  width: 160px; height: 110px;
+  position: relative; overflow: hidden;
+  background: #f0eff8;
+  display: flex; align-items: center; justify-content: center;
+}
+.asset-thumb img {
+  width: 100%; height: 100%;
+  object-fit: cover; display: block;
+}
+/* Placeholder when no real asset image */
+.asset-thumb-placeholder {
+  width: 100%; height: 100%;
+  display: flex; flex-direction: column;
+  align-items: stretch; justify-content: flex-start;
+  padding: 10px 12px; gap: 5px;
+  background: linear-gradient(135deg, rgba(71,59,171,0.06) 0%, rgba(99,86,225,0.10) 100%);
+}
+.asset-ph-headline {
+  height: 6px; border-radius: 3px;
+  background: rgba(71,59,171,0.4); width: 75%;
+}
+.asset-ph-sub {
+  height: 4px; border-radius: 2px;
+  background: rgba(71,59,171,0.2); width: 50%;
+}
+.asset-ph-img {
+  flex: 1; border-radius: 4px;
+  background: rgba(71,59,171,0.14); margin-top: 2px;
+}
+.asset-ph-cta {
+  height: 7px; border-radius: 3px;
+  background: rgba(71,59,171,0.45); width: 40%;
+  margin-top: 2px;
+}
+.asset-ph-logo {
+  position: absolute; bottom: 8px; right: 10px;
+  width: 22px; height: 16px;
+  background: rgba(71,59,171,0.18); border-radius: 3px;
+}
+
+/* Eye / preview overlay */
+.asset-thumb-overlay {
+  position: absolute; inset: 0;
+  background: rgba(0,0,0,0);
+  display: flex; align-items: center; justify-content: center;
+  transition: background 0.15s;
+}
+.asset-card:hover .asset-thumb-overlay {
+  background: rgba(0,0,0,0.28);
+}
+.asset-eye {
+  width: 32px; height: 32px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.92);
+  display: flex; align-items: center; justify-content: center;
+  opacity: 0; transform: scale(0.8);
+  transition: opacity 0.15s, transform 0.15s;
+}
+.asset-card:hover .asset-eye {
+  opacity: 1; transform: scale(1);
+}
+
+.asset-info {
+  padding: 8px 10px;
+  border-top: 1px solid var(--border);
+}
+.asset-name {
+  font-size: 11px; font-weight: 500; color: var(--text-1);
+  line-height: 1.3; white-space: nowrap; overflow: hidden;
+  text-overflow: ellipsis; display: block;
+}
+.asset-dims {
+  font-size: 10px; color: var(--text-3);
+  margin-top: 2px; display: block;
+  white-space: nowrap;
+}
+
+/* More assets count pill */
+.assets-more-pill {
+  flex-shrink: 0;
+  width: 160px; height: 110px + 41px;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center; gap: 6px;
+  border: 1.5px dashed rgba(71,59,171,0.3);
+  border-radius: 10px; background: rgba(71,59,171,0.03);
+  cursor: pointer; transition: border-color 0.15s, background 0.15s;
+  align-self: stretch;
+  min-height: 151px;
+}
+.assets-more-pill:hover {
+  border-color: var(--brand); background: rgba(71,59,171,0.06);
+}
+.assets-more-count {
+  font-size: 20px; font-weight: 700; color: var(--brand);
+  line-height: 1;
+}
+.assets-more-label {
+  font-size: 11px; color: var(--text-2);
+  text-align: center; line-height: 1.4;
+}
+
+/* Full-screen asset preview modal */
+.asset-modal-backdrop {
+  display: none; position: fixed; inset: 0;
+  background: rgba(0,0,0,0.78); z-index: 9999;
+  align-items: center; justify-content: center;
+}
+.asset-modal-backdrop.open { display: flex; }
+.asset-modal-img {
+  max-width: 90vw; max-height: 88vh;
+  border-radius: 10px; display: block;
+  box-shadow: 0 24px 48px rgba(0,0,0,0.5);
+}
+.asset-modal-close {
+  position: absolute; top: 16px; right: 16px;
+  width: 36px; height: 36px; border-radius: 50%;
+  background: rgba(255,255,255,0.15); border: none; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  color: #fff; transition: background 0.12s;
+}
+.asset-modal-close:hover { background: rgba(255,255,255,0.28); }
+
 /* ── Footer ───────────────────────────────────────────────────── */
 .footer {
   text-align: center; margin-top: 32px;
@@ -572,6 +730,7 @@ body {
         <span class="opening-chip">5 offers</span>
         <span class="opening-chip">4 templates</span>
         <span class="opening-chip">4 backgrounds</span>
+        <span class="opening-chip">72 assets</span>
         <span class="opening-chip">Jun 1 – Jun 30, 2026</span>
       </div>
     </div>
@@ -1089,10 +1248,163 @@ body {
 
 
   <!-- ═══════════════════════════════════════════════════════════
-       5. CONFIRMATION
+       5. GENERATED ASSETS
   ════════════════════════════════════════════════════════════ -->
   <div class="section-header">
     <div class="section-num">5</div>
+    <span class="section-title">Generated Assets</span>
+    <div class="section-line"></div>
+    <span class="section-subtitle" id="assets-count-label">72 assets total</span>
+  </div>
+
+  <div class="card">
+    <div class="card-inner">
+
+      <p class="rationale">
+        Here's a preview of the first generated assets — one per template format. Review the layout, copy, and imagery. Scroll to see more. Use the feedback box to request changes before confirming.
+      </p>
+
+      <!-- Horizontal scroll row of asset cards -->
+      <div class="assets-scroll-wrap">
+        <div class="assets-row">
+
+          <!-- Asset 1: Website Hero 2000×500 -->
+          <div class="asset-card" onclick="openAssetModal(this)">
+            <div class="asset-thumb">
+              <div class="asset-thumb-placeholder">
+                <div class="asset-ph-headline"></div>
+                <div class="asset-ph-sub"></div>
+                <div class="asset-ph-img"></div>
+                <div class="asset-ph-cta"></div>
+              </div>
+              <div class="asset-ph-logo"></div>
+              <div class="asset-thumb-overlay">
+                <div class="asset-eye">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none">
+                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" stroke="#473bab" stroke-width="1.8"/>
+                    <circle cx="12" cy="12" r="3" stroke="#473bab" stroke-width="1.8"/>
+                  </svg>
+                </div>
+              </div>
+            </div>
+            <div class="asset-info">
+              <span class="asset-name">CR-V TrailSport Lease</span>
+              <span class="asset-dims">Website Hero · 2000×500</span>
+            </div>
+          </div>
+
+          <!-- Asset 2: Leaderboard 970×250 -->
+          <div class="asset-card" onclick="openAssetModal(this)">
+            <div class="asset-thumb">
+              <div class="asset-thumb-placeholder">
+                <div class="asset-ph-headline"></div>
+                <div class="asset-ph-sub"></div>
+                <div class="asset-ph-img" style="max-height:38px"></div>
+                <div class="asset-ph-cta"></div>
+              </div>
+              <div class="asset-ph-logo"></div>
+              <div class="asset-thumb-overlay">
+                <div class="asset-eye">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none">
+                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" stroke="#473bab" stroke-width="1.8"/>
+                    <circle cx="12" cy="12" r="3" stroke="#473bab" stroke-width="1.8"/>
+                  </svg>
+                </div>
+              </div>
+            </div>
+            <div class="asset-info">
+              <span class="asset-name">HR-V Sport Lease</span>
+              <span class="asset-dims">Leaderboard · 970×250</span>
+            </div>
+          </div>
+
+          <!-- Asset 3: Medium Rectangle 300×250 -->
+          <div class="asset-card" onclick="openAssetModal(this)">
+            <div class="asset-thumb">
+              <div class="asset-thumb-placeholder" style="padding:10px;gap:4px;">
+                <div class="asset-ph-headline" style="width:60%"></div>
+                <div class="asset-ph-img" style="flex:1;max-height:52px"></div>
+                <div class="asset-ph-sub" style="width:80%"></div>
+                <div class="asset-ph-cta" style="width:55%"></div>
+              </div>
+              <div class="asset-ph-logo"></div>
+              <div class="asset-thumb-overlay">
+                <div class="asset-eye">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none">
+                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" stroke="#473bab" stroke-width="1.8"/>
+                    <circle cx="12" cy="12" r="3" stroke="#473bab" stroke-width="1.8"/>
+                  </svg>
+                </div>
+              </div>
+            </div>
+            <div class="asset-info">
+              <span class="asset-name">Civic Sport Lease</span>
+              <span class="asset-dims">Med. Rectangle · 300×250</span>
+            </div>
+          </div>
+
+          <!-- Asset 4: Social Square 1080×1080 -->
+          <div class="asset-card" onclick="openAssetModal(this)">
+            <div class="asset-thumb">
+              <div class="asset-thumb-placeholder" style="justify-content:space-between;padding:12px;">
+                <div class="asset-ph-headline" style="width:55%"></div>
+                <div class="asset-ph-img" style="flex:1;min-height:44px"></div>
+                <div style="display:flex;gap:6px;align-items:center">
+                  <div class="asset-ph-cta" style="width:50%"></div>
+                  <div class="asset-ph-logo" style="position:relative;bottom:auto;right:auto;width:18px;height:14px"></div>
+                </div>
+              </div>
+              <div class="asset-thumb-overlay">
+                <div class="asset-eye">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none">
+                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" stroke="#473bab" stroke-width="1.8"/>
+                    <circle cx="12" cy="12" r="3" stroke="#473bab" stroke-width="1.8"/>
+                  </svg>
+                </div>
+              </div>
+            </div>
+            <div class="asset-info">
+              <span class="asset-name">Odyssey EX-L Lease</span>
+              <span class="asset-dims">Social Square · 1080×1080</span>
+            </div>
+          </div>
+
+          <!-- +more pill -->
+          <div class="assets-more-pill" onclick="document.getElementById('assets-modal-full').classList.toggle('open')">
+            <span class="assets-more-count">+68</span>
+            <span class="assets-more-label">more assets<br>ready to preview</span>
+          </div>
+
+        </div>
+      </div><!-- /assets-scroll-wrap -->
+
+      <!-- Feedback -->
+      <div class="feedback-box">
+        <div class="textarea-wrap">
+          <label class="textarea-label">Feedback on Assets</label>
+          <textarea class="textarea-field" placeholder="e.g. The CR-V headline should say '$499/mo', remove the snowflake from the Odyssey banner…"></textarea>
+        </div>
+      </div>
+
+    </div><!-- /card-inner -->
+  </div><!-- /card -->
+
+  <!-- Asset preview modal -->
+  <div class="asset-modal-backdrop" id="asset-preview-modal" onclick="closeAssetModal(event)">
+    <button class="asset-modal-close" onclick="document.getElementById('asset-preview-modal').classList.remove('open')">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+        <path d="M18 6L6 18M6 6l12 12" stroke="white" stroke-width="2" stroke-linecap="round"/>
+      </svg>
+    </button>
+    <img class="asset-modal-img" id="asset-modal-img-el" src="" alt="Asset preview">
+  </div>
+
+
+  <!-- ═══════════════════════════════════════════════════════════
+       6. CONFIRMATION
+  ════════════════════════════════════════════════════════════ -->
+  <div class="section-header">
+    <div class="section-num">6</div>
     <span class="section-title">Confirmation</span>
   </div>
 
@@ -1230,6 +1542,34 @@ document.addEventListener('click', function(e) {
 
 /* Init */
 renderPlatforms();
+
+/* ── Asset preview modal ──────────────────────────────────────── */
+function openAssetModal(cardEl) {
+  var img = cardEl.querySelector('.asset-thumb img');
+  var modal = document.getElementById('asset-preview-modal');
+  var modalImg = document.getElementById('asset-modal-img-el');
+  if (img && img.src && !img.src.endsWith('#')) {
+    modalImg.src = img.src;
+    modalImg.style.display = 'block';
+  } else {
+    // No real image — show a branded placeholder
+    modalImg.style.display = 'none';
+  }
+  modal.classList.add('open');
+}
+
+function closeAssetModal(e) {
+  if (e.target === document.getElementById('asset-preview-modal')) {
+    document.getElementById('asset-preview-modal').classList.remove('open');
+  }
+}
+
+/* Close modal on Escape */
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') {
+    document.getElementById('asset-preview-modal').classList.remove('open');
+  }
+});
 </script>
 </body>
 </html>

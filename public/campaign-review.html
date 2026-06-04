@@ -675,6 +675,112 @@ body {
 .assets-more-pill:hover {
   border-color: var(--brand); background: rgba(71,59,171,0.06);
 }
+
+/* ── Full ad card with data overlays ──────────────────────────── */
+.asset-card-full {
+  position: relative;
+  width: 200px;
+  flex-shrink: 0;
+  border-radius: 10px;
+  overflow: hidden;
+  cursor: pointer;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.10);
+  transition: box-shadow 0.15s, transform 0.15s;
+}
+.asset-card-full:hover {
+  box-shadow: 0 6px 20px rgba(0,0,0,0.18);
+  transform: translateY(-2px);
+}
+.asset-card-full .ac-img-wrap {
+  position: relative;
+  width: 200px;
+  height: 200px;
+  background: #e2e2e2;
+}
+.asset-card-full .ac-img-wrap img {
+  width: 100%; height: 100%;
+  object-fit: cover; display: block;
+}
+/* Top row: dealer name + make text */
+.ac-top {
+  position: absolute; top: 0; left: 0; right: 0;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 8px 10px;
+}
+.ac-dealer {
+  font-size: 11px; font-weight: 500;
+  color: rgba(255,255,255,0.92);
+  white-space: nowrap; line-height: 1;
+}
+.ac-make {
+  font-size: 10px; font-weight: 700;
+  color: rgba(255,255,255,0.55);
+  letter-spacing: 0.8px; text-transform: uppercase;
+}
+/* Format badge — top-left below dealer row */
+.ac-format {
+  position: absolute; top: 30px; left: 8px;
+  background: rgba(71,59,171,0.82);
+  color: white; font-size: 9px; font-weight: 600;
+  padding: 2px 5px; border-radius: 4px;
+  letter-spacing: 0.3px;
+}
+/* Draft badge — top-right below dealer row */
+.ac-draft {
+  position: absolute; top: 30px; right: 8px;
+  display: flex; align-items: center; gap: 3px;
+  background: rgba(255,255,255,0.88);
+  color: #686576; font-size: 9px; font-weight: 600;
+  padding: 2px 6px; border-radius: 100px;
+}
+.ac-draft-dot {
+  width: 5px; height: 5px; border-radius: 50%;
+  background: #9c99a9; flex-shrink: 0;
+}
+/* Bottom pricing bar */
+.ac-bottom {
+  position: absolute; bottom: 0; left: 0; right: 0;
+  padding: 6px 10px 8px;
+  background: linear-gradient(to top, rgba(0,0,0,0.55) 0%, transparent 100%);
+}
+.ac-offer-label {
+  font-size: 9px; font-weight: 500;
+  color: rgba(255,255,255,0.70);
+  letter-spacing: 0.4px; text-transform: uppercase;
+  margin-bottom: 1px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.ac-price-row {
+  display: flex; align-items: baseline; gap: 2px;
+}
+.ac-price {
+  font-size: 22px; font-weight: 700;
+  color: white; line-height: 1;
+}
+.ac-per-mo {
+  font-size: 11px; color: rgba(255,255,255,0.60);
+}
+.ac-term {
+  font-size: 9px; color: rgba(255,255,255,0.45);
+  margin-top: 1px;
+}
+/* Eye overlay on hover */
+.ac-eye-overlay {
+  position: absolute; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(0,0,0,0);
+  transition: background 0.15s;
+}
+.asset-card-full:hover .ac-eye-overlay { background: rgba(0,0,0,0.2); }
+.ac-eye-btn {
+  width: 36px; height: 36px; border-radius: 50%;
+  background: rgba(255,255,255,0.90);
+  display: flex; align-items: center; justify-content: center;
+  opacity: 0; transform: scale(0.8);
+  transition: opacity 0.15s, transform 0.15s;
+}
+.asset-card-full:hover .ac-eye-btn { opacity: 1; transform: scale(1); }
+
 .assets-more-count {
   font-size: 20px; font-weight: 700; color: var(--brand);
   line-height: 1;
@@ -1254,7 +1360,7 @@ body {
     <div class="section-num">5</div>
     <span class="section-title">Generated Assets</span>
     <div class="section-line"></div>
-    <span class="section-subtitle" id="assets-count-label">72 assets total</span>
+    <span class="section-subtitle" id="assets-count-label">8 of 72 shown</span>
   </div>
 
   <div class="card">
@@ -1264,112 +1370,152 @@ body {
         Here's a preview of the first generated assets — one per template format. Review the layout, copy, and imagery. Scroll to see more. Use the feedback box to request changes before confirming.
       </p>
 
-      <!-- Horizontal scroll row of asset cards -->
+      <!-- Horizontal scroll row: ALL assets — no pill, full scroll -->
       <div class="assets-scroll-wrap">
         <div class="assets-row">
 
-          <!--
-            Asset cards: Cloudinary URL compositing — vehicle PNG layered over background.
-            Format: /image/upload/{bg-transforms}/l_{vehicle-public-id},{vehicle-transforms}/fl_layer_apply/{bg-public-id}
-            These render server-side by Cloudinary CDN — no JS compositing needed.
-          -->
-
-          <!-- Asset 1: CR-V TrailSport + Balloon Festival · 1080×1080 -->
-          <div class="asset-card"
+          <!-- 1: CR-V TrailSport + Balloon Festival · 1080×1080 -->
+          <div class="asset-card-full"
                data-full-url="https://res.cloudinary.com/dvq75cqna/image/upload/w_1080,h_1080,c_fill/l_vw-funds:public:cars:CR-V,w_700,c_fit,g_south,y_-30/fl_layer_apply/vw-funds/public/backgrounds/Ballon_Festival/1777265296524_9d7c8327"
                onclick="openAssetModal(this)">
-            <div class="asset-thumb">
-              <img src="https://res.cloudinary.com/dvq75cqna/image/upload/w_320,h_220,c_fill/l_vw-funds:public:cars:CR-V,w_210,c_fit,g_south,y_-10/fl_layer_apply/vw-funds/public/backgrounds/Ballon_Festival/1777265296524_9d7c8327"
-                   alt="CR-V TrailSport · Balloon Festival"
-                   style="width:100%;height:100%;object-fit:cover;display:block;">
-              <div class="asset-thumb-overlay">
-                <div class="asset-eye">
-                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none">
-                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" stroke="#473bab" stroke-width="1.8"/>
-                    <circle cx="12" cy="12" r="3" stroke="#473bab" stroke-width="1.8"/>
-                  </svg>
-                </div>
+            <div class="ac-img-wrap">
+              <img src="https://res.cloudinary.com/dvq75cqna/image/upload/w_320,h_320,c_fill/l_vw-funds:public:cars:CR-V,w_210,c_fit,g_south,y_-10/fl_layer_apply/vw-funds/public/backgrounds/Ballon_Festival/1777265296524_9d7c8327" alt="CR-V Balloon">
+              <div class="ac-top"><span class="ac-dealer">Honda Dealer</span><span class="ac-make">Honda</span></div>
+              <div class="ac-format">1080×1080</div>
+              <div class="ac-draft"><div class="ac-draft-dot"></div>Draft</div>
+              <div class="ac-bottom">
+                <div class="ac-offer-label">Lease · 2026 Honda CR-V TrailSport</div>
+                <div class="ac-price-row"><span class="ac-price">$529</span><span class="ac-per-mo">/mo</span></div>
+                <div class="ac-term">36mo · TrailSport AWD</div>
               </div>
-            </div>
-            <div class="asset-info">
-              <span class="asset-name">CR-V TrailSport Lease</span>
-              <span class="asset-dims">Social · 1080×1080</span>
+              <div class="ac-eye-overlay"><div class="ac-eye-btn"><svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" stroke="#473bab" stroke-width="1.8"/><circle cx="12" cy="12" r="3" stroke="#473bab" stroke-width="1.8"/></svg></div></div>
             </div>
           </div>
 
-          <!-- Asset 2: HR-V Sport + Balloon Festival · 1080×1080 -->
-          <div class="asset-card"
+          <!-- 2: HR-V Sport + Balloon Festival · 1080×1080 -->
+          <div class="asset-card-full"
                data-full-url="https://res.cloudinary.com/dvq75cqna/image/upload/w_1080,h_1080,c_fill/l_vw-funds:public:cars:HR-V,w_700,c_fit,g_south,y_-30/fl_layer_apply/vw-funds/public/backgrounds/Ballon_Festival/1777265296524_9d7c8327"
                onclick="openAssetModal(this)">
-            <div class="asset-thumb">
-              <img src="https://res.cloudinary.com/dvq75cqna/image/upload/w_320,h_220,c_fill/l_vw-funds:public:cars:HR-V,w_210,c_fit,g_south,y_-10/fl_layer_apply/vw-funds/public/backgrounds/Ballon_Festival/1777265296524_9d7c8327"
-                   alt="HR-V Sport · Balloon Festival"
-                   style="width:100%;height:100%;object-fit:cover;display:block;">
-              <div class="asset-thumb-overlay">
-                <div class="asset-eye">
-                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none">
-                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" stroke="#473bab" stroke-width="1.8"/>
-                    <circle cx="12" cy="12" r="3" stroke="#473bab" stroke-width="1.8"/>
-                  </svg>
-                </div>
+            <div class="ac-img-wrap">
+              <img src="https://res.cloudinary.com/dvq75cqna/image/upload/w_320,h_320,c_fill/l_vw-funds:public:cars:HR-V,w_210,c_fit,g_south,y_-10/fl_layer_apply/vw-funds/public/backgrounds/Ballon_Festival/1777265296524_9d7c8327" alt="HR-V Balloon">
+              <div class="ac-top"><span class="ac-dealer">Honda Dealer</span><span class="ac-make">Honda</span></div>
+              <div class="ac-format">1080×1080</div>
+              <div class="ac-draft"><div class="ac-draft-dot"></div>Draft</div>
+              <div class="ac-bottom">
+                <div class="ac-offer-label">Lease · 2026 Honda HR-V Sport</div>
+                <div class="ac-price-row"><span class="ac-price">$699</span><span class="ac-per-mo">/mo</span></div>
+                <div class="ac-term">36mo · Sport 2WD</div>
               </div>
-            </div>
-            <div class="asset-info">
-              <span class="asset-name">HR-V Sport Lease</span>
-              <span class="asset-dims">Social · 1080×1080</span>
+              <div class="ac-eye-overlay"><div class="ac-eye-btn"><svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" stroke="#473bab" stroke-width="1.8"/><circle cx="12" cy="12" r="3" stroke="#473bab" stroke-width="1.8"/></svg></div></div>
             </div>
           </div>
 
-          <!-- Asset 3: Civic Sport + Dirt Road · 300×250 -->
-          <div class="asset-card"
-               data-full-url="https://res.cloudinary.com/dvq75cqna/image/upload/w_600,h_500,c_fill/l_vw-funds:public:cars:Civic,w_420,c_fit,g_south,y_-20/fl_layer_apply/vw-funds/public/backgrounds/Dirt-Road-HO_251027_1_Display_300x250_1"
+          <!-- 3: Civic Sport + Balloon Festival · 1080×1080 -->
+          <div class="asset-card-full"
+               data-full-url="https://res.cloudinary.com/dvq75cqna/image/upload/w_1080,h_1080,c_fill/l_vw-funds:public:cars:Civic,w_700,c_fit,g_south,y_-30/fl_layer_apply/vw-funds/public/backgrounds/Ballon_Festival/1777265296524_9d7c8327"
                onclick="openAssetModal(this)">
-            <div class="asset-thumb">
-              <img src="https://res.cloudinary.com/dvq75cqna/image/upload/w_320,h_220,c_fill/l_vw-funds:public:cars:Civic,w_210,c_fit,g_south,y_-10/fl_layer_apply/vw-funds/public/backgrounds/Dirt-Road-HO_251027_1_Display_300x250_1"
-                   alt="Civic Sport · Dirt Road"
-                   style="width:100%;height:100%;object-fit:cover;display:block;">
-              <div class="asset-thumb-overlay">
-                <div class="asset-eye">
-                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none">
-                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" stroke="#473bab" stroke-width="1.8"/>
-                    <circle cx="12" cy="12" r="3" stroke="#473bab" stroke-width="1.8"/>
-                  </svg>
-                </div>
+            <div class="ac-img-wrap">
+              <img src="https://res.cloudinary.com/dvq75cqna/image/upload/w_320,h_320,c_fill/l_vw-funds:public:cars:Civic,w_210,c_fit,g_south,y_-10/fl_layer_apply/vw-funds/public/backgrounds/Ballon_Festival/1777265296524_9d7c8327" alt="Civic Balloon">
+              <div class="ac-top"><span class="ac-dealer">Honda Dealer</span><span class="ac-make">Honda</span></div>
+              <div class="ac-format">1080×1080</div>
+              <div class="ac-draft"><div class="ac-draft-dot"></div>Draft</div>
+              <div class="ac-bottom">
+                <div class="ac-offer-label">Lease · 2026 Honda Civic Sport</div>
+                <div class="ac-price-row"><span class="ac-price">$799</span><span class="ac-per-mo">/mo</span></div>
+                <div class="ac-term">36mo · Touring Hybrid</div>
               </div>
-            </div>
-            <div class="asset-info">
-              <span class="asset-name">Civic Sport Lease</span>
-              <span class="asset-dims">Display · 300×250</span>
+              <div class="ac-eye-overlay"><div class="ac-eye-btn"><svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" stroke="#473bab" stroke-width="1.8"/><circle cx="12" cy="12" r="3" stroke="#473bab" stroke-width="1.8"/></svg></div></div>
             </div>
           </div>
 
-          <!-- Asset 4: Odyssey + Dirt Road · Social 1080×1080 -->
-          <div class="asset-card"
-               data-full-url="https://res.cloudinary.com/dvq75cqna/image/upload/w_1080,h_1080,c_fill/l_vw-funds:public:cars:Odyssey,w_700,c_fit,g_south,y_-30/fl_layer_apply/vw-funds/public/backgrounds/Dirt-Road-HO_251027_1_Social_1080x1080_1"
+          <!-- 4: Odyssey + Balloon Festival · 1080×1080 -->
+          <div class="asset-card-full"
+               data-full-url="https://res.cloudinary.com/dvq75cqna/image/upload/w_1080,h_1080,c_fill/l_vw-funds:public:cars:Odyssey,w_700,c_fit,g_south,y_-30/fl_layer_apply/vw-funds/public/backgrounds/Ballon_Festival/1777265296524_9d7c8327"
                onclick="openAssetModal(this)">
-            <div class="asset-thumb">
-              <img src="https://res.cloudinary.com/dvq75cqna/image/upload/w_320,h_220,c_fill/l_vw-funds:public:cars:Odyssey,w_210,c_fit,g_south,y_-10/fl_layer_apply/vw-funds/public/backgrounds/Dirt-Road-HO_251027_1_Social_1080x1080_1"
-                   alt="Odyssey EX-L · Dirt Road"
-                   style="width:100%;height:100%;object-fit:cover;display:block;">
-              <div class="asset-thumb-overlay">
-                <div class="asset-eye">
-                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none">
-                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" stroke="#473bab" stroke-width="1.8"/>
-                    <circle cx="12" cy="12" r="3" stroke="#473bab" stroke-width="1.8"/>
-                  </svg>
-                </div>
+            <div class="ac-img-wrap">
+              <img src="https://res.cloudinary.com/dvq75cqna/image/upload/w_320,h_320,c_fill/l_vw-funds:public:cars:Odyssey,w_210,c_fit,g_south,y_-10/fl_layer_apply/vw-funds/public/backgrounds/Ballon_Festival/1777265296524_9d7c8327" alt="Odyssey Balloon">
+              <div class="ac-top"><span class="ac-dealer">Honda Dealer</span><span class="ac-make">Honda</span></div>
+              <div class="ac-format">1080×1080</div>
+              <div class="ac-draft"><div class="ac-draft-dot"></div>Draft</div>
+              <div class="ac-bottom">
+                <div class="ac-offer-label">Lease · 2026 Honda Odyssey EX-L</div>
+                <div class="ac-price-row"><span class="ac-price">$1,200</span><span class="ac-per-mo">/mo</span></div>
+                <div class="ac-term">39mo · EX-L</div>
               </div>
-            </div>
-            <div class="asset-info">
-              <span class="asset-name">Odyssey EX-L Lease</span>
-              <span class="asset-dims">Social · 1080×1080</span>
+              <div class="ac-eye-overlay"><div class="ac-eye-btn"><svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" stroke="#473bab" stroke-width="1.8"/><circle cx="12" cy="12" r="3" stroke="#473bab" stroke-width="1.8"/></svg></div></div>
             </div>
           </div>
 
-          <!-- +more pill -->
-          <div class="assets-more-pill" onclick="document.getElementById('assets-modal-full').classList.toggle('open')">
-            <span class="assets-more-count">+68</span>
-            <span class="assets-more-label">more assets<br>ready to preview</span>
+          <!-- 5: CR-V TrailSport + Dirt Road · 300×250 -->
+          <div class="asset-card-full"
+               data-full-url="https://res.cloudinary.com/dvq75cqna/image/upload/w_600,h_500,c_fill/l_vw-funds:public:cars:CR-V,w_380,c_fit,g_south,y_-20/fl_layer_apply/vw-funds/public/backgrounds/Dirt-Road-HO_251027_1_Display_300x250_1"
+               onclick="openAssetModal(this)">
+            <div class="ac-img-wrap">
+              <img src="https://res.cloudinary.com/dvq75cqna/image/upload/w_320,h_320,c_fill/l_vw-funds:public:cars:CR-V,w_210,c_fit,g_south,y_-10/fl_layer_apply/vw-funds/public/backgrounds/Dirt-Road-HO_251027_1_Display_300x250_1" alt="CR-V Dirt Road">
+              <div class="ac-top"><span class="ac-dealer">Honda Dealer</span><span class="ac-make">Honda</span></div>
+              <div class="ac-format">300×250</div>
+              <div class="ac-draft"><div class="ac-draft-dot"></div>Draft</div>
+              <div class="ac-bottom">
+                <div class="ac-offer-label">Lease · 2026 Honda CR-V TrailSport</div>
+                <div class="ac-price-row"><span class="ac-price">$529</span><span class="ac-per-mo">/mo</span></div>
+                <div class="ac-term">36mo · TrailSport AWD</div>
+              </div>
+              <div class="ac-eye-overlay"><div class="ac-eye-btn"><svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" stroke="#473bab" stroke-width="1.8"/><circle cx="12" cy="12" r="3" stroke="#473bab" stroke-width="1.8"/></svg></div></div>
+            </div>
+          </div>
+
+          <!-- 6: HR-V Sport + Dirt Road · 300×250 -->
+          <div class="asset-card-full"
+               data-full-url="https://res.cloudinary.com/dvq75cqna/image/upload/w_600,h_500,c_fill/l_vw-funds:public:cars:HR-V,w_380,c_fit,g_south,y_-20/fl_layer_apply/vw-funds/public/backgrounds/Dirt-Road-HO_251027_1_Display_300x250_1"
+               onclick="openAssetModal(this)">
+            <div class="ac-img-wrap">
+              <img src="https://res.cloudinary.com/dvq75cqna/image/upload/w_320,h_320,c_fill/l_vw-funds:public:cars:HR-V,w_210,c_fit,g_south,y_-10/fl_layer_apply/vw-funds/public/backgrounds/Dirt-Road-HO_251027_1_Display_300x250_1" alt="HR-V Dirt Road">
+              <div class="ac-top"><span class="ac-dealer">Honda Dealer</span><span class="ac-make">Honda</span></div>
+              <div class="ac-format">300×250</div>
+              <div class="ac-draft"><div class="ac-draft-dot"></div>Draft</div>
+              <div class="ac-bottom">
+                <div class="ac-offer-label">Lease · 2026 Honda HR-V Sport</div>
+                <div class="ac-price-row"><span class="ac-price">$699</span><span class="ac-per-mo">/mo</span></div>
+                <div class="ac-term">36mo · Sport 2WD</div>
+              </div>
+              <div class="ac-eye-overlay"><div class="ac-eye-btn"><svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" stroke="#473bab" stroke-width="1.8"/><circle cx="12" cy="12" r="3" stroke="#473bab" stroke-width="1.8"/></svg></div></div>
+            </div>
+          </div>
+
+          <!-- 7: Civic Sport + Dirt Road · 300×250 -->
+          <div class="asset-card-full"
+               data-full-url="https://res.cloudinary.com/dvq75cqna/image/upload/w_600,h_500,c_fill/l_vw-funds:public:cars:Civic,w_380,c_fit,g_south,y_-20/fl_layer_apply/vw-funds/public/backgrounds/Dirt-Road-HO_251027_1_Display_300x250_1"
+               onclick="openAssetModal(this)">
+            <div class="ac-img-wrap">
+              <img src="https://res.cloudinary.com/dvq75cqna/image/upload/w_320,h_320,c_fill/l_vw-funds:public:cars:Civic,w_210,c_fit,g_south,y_-10/fl_layer_apply/vw-funds/public/backgrounds/Dirt-Road-HO_251027_1_Display_300x250_1" alt="Civic Dirt Road">
+              <div class="ac-top"><span class="ac-dealer">Honda Dealer</span><span class="ac-make">Honda</span></div>
+              <div class="ac-format">300×250</div>
+              <div class="ac-draft"><div class="ac-draft-dot"></div>Draft</div>
+              <div class="ac-bottom">
+                <div class="ac-offer-label">Lease · 2026 Honda Civic Sport</div>
+                <div class="ac-price-row"><span class="ac-price">$799</span><span class="ac-per-mo">/mo</span></div>
+                <div class="ac-term">36mo · Touring Hybrid</div>
+              </div>
+              <div class="ac-eye-overlay"><div class="ac-eye-btn"><svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" stroke="#473bab" stroke-width="1.8"/><circle cx="12" cy="12" r="3" stroke="#473bab" stroke-width="1.8"/></svg></div></div>
+            </div>
+          </div>
+
+          <!-- 8: Odyssey + Dirt Road · 300×250 -->
+          <div class="asset-card-full"
+               data-full-url="https://res.cloudinary.com/dvq75cqna/image/upload/w_600,h_500,c_fill/l_vw-funds:public:cars:Odyssey,w_380,c_fit,g_south,y_-20/fl_layer_apply/vw-funds/public/backgrounds/Dirt-Road-HO_251027_1_Display_300x250_1"
+               onclick="openAssetModal(this)">
+            <div class="ac-img-wrap">
+              <img src="https://res.cloudinary.com/dvq75cqna/image/upload/w_320,h_320,c_fill/l_vw-funds:public:cars:Odyssey,w_210,c_fit,g_south,y_-10/fl_layer_apply/vw-funds/public/backgrounds/Dirt-Road-HO_251027_1_Display_300x250_1" alt="Odyssey Dirt Road">
+              <div class="ac-top"><span class="ac-dealer">Honda Dealer</span><span class="ac-make">Honda</span></div>
+              <div class="ac-format">300×250</div>
+              <div class="ac-draft"><div class="ac-draft-dot"></div>Draft</div>
+              <div class="ac-bottom">
+                <div class="ac-offer-label">Lease · 2026 Honda Odyssey EX-L</div>
+                <div class="ac-price-row"><span class="ac-price">$1,200</span><span class="ac-per-mo">/mo</span></div>
+                <div class="ac-term">39mo · EX-L</div>
+              </div>
+              <div class="ac-eye-overlay"><div class="ac-eye-btn"><svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" stroke="#473bab" stroke-width="1.8"/><circle cx="12" cy="12" r="3" stroke="#473bab" stroke-width="1.8"/></svg></div></div>
+            </div>
           </div>
 
         </div>
@@ -1569,9 +1715,8 @@ renderPlatforms();
 function openAssetModal(cardEl) {
   var modal = document.getElementById('asset-preview-modal');
   var modalImg = document.getElementById('asset-modal-img-el');
-  // Prefer data-full-url (full-res composite) over the thumb img src
   var fullUrl = cardEl.getAttribute('data-full-url');
-  var thumbImg = cardEl.querySelector('.asset-thumb img');
+  var thumbImg = cardEl.querySelector('.ac-img-wrap img') || cardEl.querySelector('.asset-thumb img');
   var src = fullUrl || (thumbImg && thumbImg.src) || '';
   if (src) {
     modalImg.src = src;

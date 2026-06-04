@@ -27,6 +27,12 @@ interface AssetItem {
   vehicleUrl?: string;
   offerName?: string;
   dims?: string;
+  /** Full offer data for displaying ad copy */
+  offerType?: string;
+  monthlyPayment?: number;
+  term?: number;
+  trim?: string;
+  make?: string;
 }
 
 interface ProjectSummary {
@@ -266,13 +272,37 @@ function buildEmailHtml(body: SendReviewBody): string {
     ${(() => {
       const rows: string[] = [];
       for (let i = 0; i < compositeItems.length; i += 2) {
-        const cells = compositeItems.slice(i, i + 2).map(item =>
-          `<td width="50%" style="padding:4px;vertical-align:top;">
-            <img src="${item.url}" width="100%" alt="${item.label || 'Asset'}"
-                 style="display:block;width:100%;border-radius:8px;border:1px solid #ece9f5;" />
-            ${item.label ? `<p style="margin:4px 0 0;font-size:10px;color:#8f8c9c;font-family:Helvetica,Arial,sans-serif;text-align:center;">${item.label}</p>` : ''}
-          </td>`
-        );
+        const pair = compositeItems.slice(i, i + 2);
+        const cells = pair.map((item, idx) => {
+          const src = rawItems[i + idx];
+          const offerLabel = src?.offerType
+            ? `${src.offerType.toUpperCase()} · ${src.offerName ?? ''}`
+            : (src?.offerName ?? '');
+          const priceStr = src?.monthlyPayment ? `$${src.monthlyPayment.toLocaleString('en-US', { maximumFractionDigits: 0 })}` : '';
+          const termStr  = src?.term ? `${src.term}mo${src.trim ? ' · ' + src.trim : ''}` : '';
+          const dims     = src?.dims ?? '';
+
+          return `<td width="50%" style="padding:4px;vertical-align:top;">
+            <table width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;border:1px solid #ece9f5;border-radius:10px;overflow:hidden;">
+              <tr>
+                <td style="padding:0;position:relative;">
+                  <img src="${item.url}" width="100%" alt="${src?.offerName || 'Asset'}"
+                       style="display:block;width:100%;border-radius:10px 10px 0 0;" />
+                </td>
+              </tr>
+              <tr>
+                <td style="padding:8px 10px;background:#ffffff;border-radius:0 0 10px 10px;">
+                  ${dims ? `<div style="display:inline-block;background:rgba(71,59,171,0.10);color:#473bab;font-size:9px;font-weight:600;padding:2px 6px;border-radius:4px;letter-spacing:0.3px;margin-bottom:5px;font-family:Helvetica,Arial,sans-serif;">${dims}</div>` : ''}
+                  ${offerLabel ? `<p style="margin:0 0 2px;font-size:9px;font-weight:600;color:#9c99a9;letter-spacing:0.5px;text-transform:uppercase;font-family:Helvetica,Arial,sans-serif;">${offerLabel}</p>` : ''}
+                  ${priceStr ? `<p style="margin:0;font-size:16px;font-weight:700;color:#1f1d25;line-height:1;font-family:Helvetica,Arial,sans-serif;">
+                    ${priceStr}<span style="font-size:11px;font-weight:400;color:#686576;">/mo</span>
+                  </p>` : ''}
+                  ${termStr ? `<p style="margin:2px 0 0;font-size:10px;color:#9c99a9;font-family:Helvetica,Arial,sans-serif;">${termStr}</p>` : ''}
+                </td>
+              </tr>
+            </table>
+          </td>`;
+        });
         if (cells.length === 1) cells.push('<td width="50%"></td>');
         rows.push(`<tr>${cells.join('')}</tr>`);
       }

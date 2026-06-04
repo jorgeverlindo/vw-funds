@@ -1317,10 +1317,15 @@ function ProjectDetailView({
         const vehicleUrl = (offer as any).image ?? "";
         return [{
           bgUrl,
-          vehicleUrl: vehicleUrl.startsWith('http') ? vehicleUrl : "",
-          offerName: `${offer.year} ${offer.make} ${offer.model}`,
-          templateName: template.name,
-          dims: `${template.width}×${template.height}`,
+          vehicleUrl:     vehicleUrl.startsWith('http') ? vehicleUrl : "",
+          offerName:      `${offer.year} ${offer.make} ${offer.model}`,
+          templateName:   template.name,
+          dims:           `${template.width}×${template.height}`,
+          offerType:      (offer as any).offerType ?? '',
+          monthlyPayment: (offer as any).monthlyPayment ?? 0,
+          term:           (offer as any).term ?? 0,
+          trim:           (offer as any).trim ?? '',
+          make:           (offer as any).make ?? '',
         }];
       }),
       taskOwners:         Object.fromEntries(

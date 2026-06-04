@@ -82,6 +82,11 @@ export interface ProjectContextPayload {
     offerName: string;
     templateName: string;
     dims: string;
+    offerType?: string;
+    monthlyPayment?: number;
+    term?: number;
+    trim?: string;
+    make?: string;
   }>;
 }
 
@@ -2804,10 +2809,15 @@ export function ProjectAgentPane({ isOpen, onClose, userType, activeUserName }: 
           campaign_owner:  ctx?.owner,
           // Rich asset items — Cloudinary will composite vehicle over bg server-side
           assetItems: (ctx?.generatedAssetPreviews ?? []).map(p => ({
-            bgUrl:      p.bgUrl,
-            vehicleUrl: p.vehicleUrl,
-            offerName:  p.offerName,
-            dims:       p.dims,
+            bgUrl:         p.bgUrl,
+            vehicleUrl:    p.vehicleUrl,
+            offerName:     p.offerName,
+            dims:          p.dims,
+            offerType:     p.offerType,
+            monthlyPayment: p.monthlyPayment,
+            term:          p.term,
+            trim:          p.trim,
+            make:          p.make,
           })),
           offers:      projectOffers.map(o => {
             const rawImage = (o as { image?: string }).image ?? "";

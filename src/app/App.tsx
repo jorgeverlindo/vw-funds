@@ -5,6 +5,7 @@ import { LanguageProvider } from './contexts/LanguageContext';
 import { ClientProvider } from './contexts/ClientContext';
 import { FilterProvider } from './contexts/FilterContext';
 import { WorkflowProvider } from './contexts/WorkflowContext';
+import { InventoryProvider } from './contexts/InventoryContext';
 import { ComplianceProvider } from './contexts/ComplianceContext';
 import { SnackbarHost } from './components/Snackbar';
 import React, { useState, useEffect } from 'react';
@@ -230,6 +231,7 @@ export default function App() {
     <ErrorBoundary>
       <PasswordGate>
         <LanguageProvider>
+          <InventoryProvider>
           <ClientProvider>
             <FilterProvider>
               <WorkflowProvider>
@@ -241,6 +243,7 @@ export default function App() {
               </WorkflowProvider>
             </FilterProvider>
           </ClientProvider>
+          </InventoryProvider>
         </LanguageProvider>
       </PasswordGate>
     </ErrorBoundary>

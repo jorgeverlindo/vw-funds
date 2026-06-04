@@ -25,8 +25,12 @@ interface ProjectSummary {
   projectId?: string;
   projectName: string;
   oem?: string;
+  start_date?: string;
+  end_date?: string;
+  campaign_owner?: string;
   offers?: OfferSummary[];
   templates?: TemplateSummary[];
+  assets?: string[];  // up to 4 generated asset image URLs (absolute HTTPS only)
 }
 
 interface SendReviewBody {
@@ -122,6 +126,21 @@ function buildEmailHtml(body: SendReviewBody): string {
   const { recipient_name, message, project } = body;
   const greeting = recipient_name ? `Hi ${recipient_name},` : "Hi there,";
 
+  // ── Metadata summary ────────────────────────────────────────────────────────
+  const metaRows: string[] = [];
+  if (project.oem)              metaRows.push(`<tr><td class="em-meta-label">Brand</td><td class="em-meta-val">${project.oem}</td></tr>`);
+  if (project.campaign_owner)   metaRows.push(`<tr><td class="em-meta-label">Campaign Owner</td><td class="em-meta-val">${project.campaign_owner}</td></tr>`);
+  if (project.start_date && project.end_date) {
+    metaRows.push(`<tr><td class="em-meta-label">Duration</td><td class="em-meta-val">${project.start_date} → ${project.end_date}</td></tr>`);
+  }
+  if (project.offers?.length)   metaRows.push(`<tr><td class="em-meta-label">Offers</td><td class="em-meta-val">${project.offers.length}</td></tr>`);
+  if (project.templates?.length) metaRows.push(`<tr><td class="em-meta-label">Templates</td><td class="em-meta-val">${project.templates.length}</td></tr>`);
+
+  const metadataSection = metaRows.length > 0 ? `
+  <table width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 24px;border-collapse:collapse;border-radius:8px;overflow:hidden;border:1px solid #ece9f5;">
+    ${metaRows.join('')}
+  </table>` : '';
+
   // ── Offers section ──────────────────────────────────────────────────────────
   const offersSection =
     project.offers && project.offers.length > 0
@@ -154,6 +173,31 @@ function buildEmailHtml(body: SendReviewBody): string {
     <div>${templatePills}</div>`
       : "";
 
+  // ── Assets preview ───────────────────────────────────────────────────────────
+  const validAssets = (project.assets ?? [])
+    .filter(url => url.startsWith('http') && !url.startsWith('blob:') && !url.startsWith('data:'))
+    .slice(0, 4);
+
+  const assetsSection = validAssets.length > 0 ? `
+  <h3 style="margin:28px 0 12px;font-size:13px;font-weight:600;color:#8f8c9c;text-transform:uppercase;letter-spacing:.07em;font-family:Helvetica,Arial,sans-serif;">
+    Generated Assets (${validAssets.length})
+  </h3>
+  <table width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;">
+    ${(() => {
+      const rows: string[] = [];
+      for (let i = 0; i < validAssets.length; i += 2) {
+        const cells = validAssets.slice(i, i + 2).map(url =>
+          `<td width="50%" style="padding:4px;vertical-align:top;">
+            <img src="${url}" width="100%" alt="Asset" style="display:block;width:100%;border-radius:8px;border:1px solid #ece9f5;" />
+          </td>`
+        );
+        if (cells.length === 1) cells.push('<td width="50%"></td>');
+        rows.push(`<tr>${cells.join('')}</tr>`);
+      }
+      return rows.join('');
+    })()}
+  </table>` : '';
+
   // ── Custom message ────────────────────────────────────────────────────────────
   const projectUrl = `${APP_URL}/OEM/Projects?project=${encodeURIComponent(project.projectId ?? "")}`;
   const formattedMessage = message
@@ -175,6 +219,8 @@ function buildEmailHtml(body: SendReviewBody): string {
   <meta name="supported-color-schemes" content="light dark" />
   <title>Project Review — ${project.projectName}</title>
   <style>
+    .em-meta-label { padding:8px 14px; font-size:12px; color:#8f8c9c; font-family:Helvetica,Arial,sans-serif; white-space:nowrap; border-bottom:1px solid #ece9f5; width:140px; }
+    .em-meta-val   { padding:8px 14px; font-size:12px; color:#1f1d25; font-family:Helvetica,Arial,sans-serif; font-weight:500; border-bottom:1px solid #ece9f5; }
     @media (prefers-color-scheme: dark) {
       body, .em-outer { background: #13121e !important; }
       .em-card       { background: #1e1c2e !important; box-shadow: 0 1px 6px rgba(0,0,0,.4) !important; }
@@ -190,6 +236,8 @@ function buildEmailHtml(body: SendReviewBody): string {
       .em-offer-card { background: #252339 !important; border-color: rgba(255,255,255,0.08) !important; }
       .em-offer-text { color: #d8d6eb !important; }
       .em-offer-sub  { color: #9d9ab5 !important; }
+      .em-meta-label { background: #1e1c2e !important; color: #7370a0 !important; border-bottom-color: rgba(255,255,255,0.08) !important; }
+      .em-meta-val   { background: #1e1c2e !important; color: #d8d6eb !important; border-bottom-color: rgba(255,255,255,0.08) !important; }
       /* Constellation logo: show white version, hide dark version */
       .em-logo-light { display: none !important; max-height: 0 !important; overflow: hidden !important; }
       .em-logo-dark  { display: block !important; max-height: none !important; }
@@ -237,8 +285,14 @@ function buildEmailHtml(body: SendReviewBody): string {
               <p class="em-greeting" style="margin:0 0 8px;font-size:15px;color:#1f1d25;">${greeting}</p>
               ${customMessage}
 
+              <!-- Metadata -->
+              ${metadataSection}
+
               <!-- Offers -->
               ${offersSection}
+
+              <!-- Assets -->
+              ${assetsSection}
 
               <!-- Templates -->
               ${templatesSection}

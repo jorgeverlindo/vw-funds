@@ -157,6 +157,7 @@ interface ShareMsg        { id: string; role: "assistant"; type: "share";       
 interface NotifyOwnersMsg { id: string; role: "assistant"; type: "notify_owners"; input: NotifyOwnersInput; applied: boolean; liveOwners?: Record<string, string>; }
 interface TaskOwnersInput {
   owners?: Record<string, string>; // section → owner name suggestions from agent
+  suggested_owners?: Array<{ section: string; name: string }>;
 }
 interface TaskOwnersMsg { id: string; role: "assistant"; type: "task_owners"; input: TaskOwnersInput; applied: boolean; liveOwners?: Record<string, string>; }
 interface ProactiveQuestionsInput {
@@ -588,6 +589,14 @@ interface BackgroundsCardProps {
 function BackgroundsProposalCard({ input, onApply, onDismiss }: BackgroundsCardProps) {
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [applied, setApplied] = useState(false);
+  const [previewBg, setPreviewBg] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!previewBg) return;
+    const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') setPreviewBg(null); };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [previewBg]);
 
   // Scroll the main panel to the backgrounds section when this card appears
   useEffect(() => {
@@ -627,14 +636,14 @@ function BackgroundsProposalCard({ input, onApply, onDismiss }: BackgroundsCardP
             <p className="text-[10px] font-semibold uppercase tracking-[0.06em] text-[var(--ink-tertiary)] mb-[8px]">
               Backgrounds · {selectedIds.length} selected
             </p>
-            <div className="flex gap-[8px] overflow-x-auto pb-1">
+            <div className="flex gap-[10px] overflow-x-auto pb-2">
               {SCENE_BACKGROUNDS.map(bg => {
                 const isSelected = selectedIds.includes(bg.id);
                 return (
                   <button key={bg.id} onClick={() => toggle(bg.id)}
-                    className="flex-none flex flex-col items-center gap-[4px] cursor-pointer"
-                    style={{ width: 64 }}>
-                    <div className="relative w-[64px] h-[48px] rounded-[7px] overflow-hidden transition-all"
+                    className="group flex-none flex flex-col items-center gap-[4px] cursor-pointer"
+                    style={{ width: 176 }}>
+                    <div className="relative w-[176px] h-[120px] rounded-[10px] overflow-hidden transition-all"
                       style={{
                         outline: isSelected ? "2px solid var(--brand-accent)" : "2px solid transparent",
                         outlineOffset: 1,
@@ -647,6 +656,17 @@ function BackgroundsProposalCard({ input, onApply, onDismiss }: BackgroundsCardP
                           <Check size={12} strokeWidth={2.5} className="text-white drop-shadow" />
                         </div>
                       )}
+                      {/* Preview button — top right, visible on hover */}
+                      <button
+                        className="absolute top-[6px] right-[6px] z-10 w-[26px] h-[26px] rounded-full bg-black/50 hover:bg-black/70 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                        onClick={e => { e.stopPropagation(); setPreviewBg(bg.thumbnail); }}
+                        title="Preview"
+                      >
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none">
+                          <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" stroke="white" strokeWidth="1.8"/>
+                          <circle cx="12" cy="12" r="3" stroke="white" strokeWidth="1.8"/>
+                        </svg>
+                      </button>
                     </div>
                     <span className="text-[9px] text-[var(--ink-secondary)] text-center leading-tight truncate w-full">
                       {bg.name}
@@ -670,6 +690,33 @@ function BackgroundsProposalCard({ input, onApply, onDismiss }: BackgroundsCardP
           </div>
         </div>
       </div>
+      {previewBg && createPortal(
+        <div
+          className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/75"
+          onClick={() => setPreviewBg(null)}
+          onKeyDown={e => e.key === 'Escape' && setPreviewBg(null)}
+        >
+          <div
+            className="relative max-w-[90vw] max-h-[85vh] rounded-[12px] overflow-hidden shadow-2xl"
+            onClick={e => e.stopPropagation()}
+          >
+            <img
+              src={previewBg}
+              alt="Background preview"
+              className="block max-w-[90vw] max-h-[85vh] object-contain"
+            />
+            <button
+              className="absolute top-[10px] right-[10px] w-[32px] h-[32px] rounded-full bg-black/60 hover:bg-black/80 flex items-center justify-center text-white transition-colors"
+              onClick={() => setPreviewBg(null)}
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+                <path d="M18 6L6 18M6 6l12 12" stroke="white" strokeWidth="2" strokeLinecap="round"/>
+              </svg>
+            </button>
+          </div>
+        </div>,
+        document.body,
+      )}
     </motion.div>
   );
 }
@@ -794,9 +841,21 @@ function TaskOwnersProposalCard({
   onApply: (owners: Record<string, string>) => void;
 }) {
 
+  // Seed from agent suggestions if no live owners set yet
+  const seededOwners = useMemo(() => {
+    const seed: Record<string, string> = {};
+    (input.suggested_owners ?? []).forEach(({ section, name }) => {
+      const match = PROJECT_OWNERS.find(o =>
+        o.name.toLowerCase().includes(name.toLowerCase())
+      );
+      if (match) seed[section] = match.id;
+    });
+    return seed;
+  }, [input.suggested_owners]);
+
   // Merge agent suggestions with live owners from context
   const [selections, setSelections] = useState<Record<string, string>>(() => {
-    const base: Record<string, string> = { ...liveOwners };
+    const base: Record<string, string> = { ...seededOwners };
     if (input.owners) {
       Object.entries(input.owners).forEach(([section, name]) => {
         const owner = PROJECT_OWNERS.find(o =>
@@ -805,6 +864,8 @@ function TaskOwnersProposalCard({
         if (owner) base[section] = owner.id;
       });
     }
+    // Live owners take final priority
+    Object.assign(base, liveOwners);
     return base;
   });
 
@@ -843,7 +904,7 @@ function TaskOwnersProposalCard({
       {/* Header */}
       <div className="px-[14px] pt-[10px] pb-[8px] border-b border-[rgba(0,0,0,0.06)] bg-[#fafafa]">
         <p style={{ fontSize: 11, fontWeight: 600, color: "var(--ink)" }}>Assign Task Owners</p>
-        <p style={{ fontSize: 10.5, color: "var(--ink-tertiary)", marginTop: 2 }}>Choose a responsible owner for each section</p>
+        <p style={{ fontSize: 10.5, color: "var(--ink-tertiary)", marginTop: 2 }}>{input.suggested_owners?.length ? "Based on your team and recent campaigns, I'm proposing these task owners for your review." : "Choose a responsible owner for each section."}</p>
       </div>
 
       {/* Section rows */}
@@ -1998,6 +2059,32 @@ const HONDA_ACCOUNTS = ["Honda of Anywhere", "Honda City"];
 interface ProjectAgentPaneProps { isOpen: boolean; onClose: () => void; userType?: UserType; activeUserName?: string; }
 
 export function ProjectAgentPane({ isOpen, onClose, userType, activeUserName }: ProjectAgentPaneProps) {
+  const [paneWidth, setPaneWidth] = useState(400);
+  const isDraggingPane = useRef(false);
+  const dragStartX = useRef(0);
+  const dragStartWidth = useRef(0);
+
+  function handlePaneDragStart(e: React.MouseEvent) {
+    isDraggingPane.current = true;
+    dragStartX.current = e.clientX;
+    dragStartWidth.current = paneWidth;
+    e.preventDefault();
+
+    function onMove(ev: MouseEvent) {
+      if (!isDraggingPane.current) return;
+      const delta = dragStartX.current - ev.clientX;
+      const next = Math.max(320, Math.min(800, dragStartWidth.current + delta));
+      setPaneWidth(next);
+    }
+    function onUp() {
+      isDraggingPane.current = false;
+      window.removeEventListener('mousemove', onMove);
+      window.removeEventListener('mouseup', onUp);
+    }
+    window.addEventListener('mousemove', onMove);
+    window.addEventListener('mouseup', onUp);
+  }
+
   const [messages,      setMessages]      = useState<Message[]>([]);
   const [streamingText, setStreamingText] = useState("");
   const [projectContext, setProjectContext] = useState<ProjectContextPayload | null>(null);
@@ -2690,6 +2777,9 @@ export function ProjectAgentPane({ isOpen, onClose, userType, activeUserName }: 
           projectId:   ctx?.projectId,
           projectName: ctx?.projectName ?? "Campaign",
           oem:         ctx?.oem,
+          assets:      (ctx as unknown as { generatedAssets?: string[] })?.generatedAssets
+            ?.filter((url: string) => url.startsWith('http'))
+            .slice(0, 4) ?? [],
           offers:      projectOffers.map(o => {
             const rawImage = (o as { image?: string }).image ?? "";
             // blob: and data: URLs are browser-session-only — strip them before
@@ -2917,16 +3007,23 @@ export function ProjectAgentPane({ isOpen, onClose, userType, activeUserName }: 
       {isOpen && (
         /* Outer: animates width so MainPane (flex-1) expands/shrinks in concert */
         <motion.div key="project-agent-pane-wrapper"
-          initial={{ width: 0 }} animate={{ width: 400 }} exit={{ width: 0 }}
+          initial={{ width: 0 }} animate={{ width: paneWidth }} exit={{ width: 0 }}
           transition={{ duration: 0.45, ease: [0.0, 0.0, 0.2, 1] }}
           className="flex-none h-full overflow-hidden"
         >
         <motion.div key="project-agent-pane"
           initial={{ x: "100%", opacity: 0 }} animate={{ x: 0, opacity: 1 }} exit={{ x: "100%", opacity: 0 }}
           transition={{ duration: 0.45, ease: [0.0, 0.0, 0.2, 1] }}
-          style={{ willChange: "transform" }}
-          className="flex-none h-full w-[400px] overflow-hidden bg-white rounded-2xl shadow-sm border border-[rgba(0,0,0,0.04)]"
+          style={{ willChange: "transform", width: paneWidth }}
+          className="relative flex-none h-full overflow-hidden bg-white rounded-2xl shadow-sm border border-[rgba(0,0,0,0.04)]"
         >
+          {/* Drag handle — left edge, resize pane width */}
+          <div
+            className="absolute left-0 top-0 h-full w-[6px] cursor-col-resize z-10 group"
+            onMouseDown={handlePaneDragStart}
+          >
+            <div className="h-full w-[3px] ml-[1.5px] bg-transparent group-hover:bg-[#6356e1] group-active:bg-[#6356e1] transition-colors duration-150 rounded-full" />
+          </div>
           <div className="flex flex-col h-full pt-[12px] px-[16px]">
 
             {/* ── Top bar ─────────────────────────────────────────── */}

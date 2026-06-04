@@ -342,7 +342,146 @@ const [checked, setChecked] = useState(false);
 <KeyValueRow label="Status" value={<StatusChip status="In Review" />} />`,
   },
 
+  {
+    id: "status-icon",
+    name: "StatusIcon",
+    category: "Primitives",
+    description:
+      "Small icon-based status indicator used alongside workflow state labels. Maps each status (Approved, Denied, In Review, etc.) to a distinct icon and colour, complementing StatusChip in non-chip contexts.",
+    path: "src/app/components/shared/StatusIcon.tsx",
+    tags: ["status", "icon", "indicator", "workflow", "shared"],
+    preview: (
+      <div className="flex items-center gap-4">
+        {[
+          { color: "#22c55e", label: "Approved" },
+          { color: "#f59e0b", label: "In Review" },
+          { color: "#ef4444", label: "Denied" },
+        ].map(({ color, label }) => (
+          <div key={label} className="flex items-center gap-1.5">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill={color}>
+              <circle cx="12" cy="12" r="9" />
+            </svg>
+            <span className="text-[12px] text-[#686576]">{label}</span>
+          </div>
+        ))}
+      </div>
+    ),
+    usage: `import { StatusIcon } from "@/components/shared/StatusIcon";
+
+<StatusIcon status="Approved" />
+<StatusIcon status="Denied" size={16} />`,
+  },
+
   // ── Navigation ─────────────────────────────────────────────────────────────
+
+  {
+    id: "app-sidebar",
+    name: "AppSidebar",
+    category: "Navigation",
+    description:
+      "Main left-side navigation panel. Renders the app logo, client logo, nav items grouped by section, and the user avatar at the bottom. Adapts between dealer and OEM modes, showing the correct logo and nav items per UserType.",
+    path: "src/app/components/AppSidebar.tsx",
+    tags: ["sidebar", "navigation", "logo", "user", "oem", "dealer"],
+    preview: (
+      <ContextPreview
+        label="AppSidebar"
+        note="Full-height sidebar — rendered once in the app shell. Switch user modes to see OEM vs dealer variants."
+      />
+    ),
+    usage: `import { AppSidebar } from "@/components/AppSidebar";
+
+<AppSidebar
+  activeSection={activeSection}
+  onSectionChange={setActiveSection}
+  userType="dealer"
+/>`,
+  },
+
+  {
+    id: "top-nav-bar",
+    name: "TopNavBar",
+    category: "Navigation",
+    description:
+      "Sticky top bar with page title, breadcrumb, and action buttons (notifications bell, agent pane toggle, user avatar). Appears inside main content panes across sections.",
+    path: "src/app/components/TopNavBar.tsx",
+    tags: ["top-bar", "navigation", "header", "breadcrumb", "notifications"],
+    preview: (
+      <ContextPreview
+        label="TopNavBar"
+        note="Fixed top navigation bar. Always visible in the main pane header."
+      />
+    ),
+    usage: `import { TopNavBar } from "@/components/TopNavBar";
+
+<TopNavBar title="Inventory" onNotifClick={openNotif} />`,
+  },
+
+  {
+    id: "client-switcher",
+    name: "ClientSwitcher",
+    category: "Navigation",
+    description:
+      "Dropdown menu for switching between dealer clients (dealer-singular, dealer-emich, dealer-ridenow) and OEM mode. Displayed in the sidebar when the user has multi-client access.",
+    path: "src/app/components/ClientSwitcher.tsx",
+    tags: ["client", "switcher", "dropdown", "dealer", "oem", "sidebar"],
+    preview: (
+      <ContextPreview
+        label="ClientSwitcher"
+        note="Visible in the sidebar when multi-client mode is active."
+      />
+    ),
+    usage: `import { ClientSwitcher } from "@/components/ClientSwitcher";
+
+<ClientSwitcher
+  currentClient={clientId}
+  onSwitch={handleClientSwitch}
+/>`,
+  },
+
+  {
+    id: "side-sheet",
+    name: "SideSheet",
+    category: "Navigation",
+    description:
+      "Animated slide-in drawer panel that appears from the right. Generic container used for detail views, settings, and forms that need to co-exist with the main pane.",
+    path: "src/app/components/side-sheet/SideSheet.tsx",
+    tags: ["side-sheet", "drawer", "panel", "slide", "overlay"],
+    preview: (
+      <ContextPreview
+        label="SideSheet"
+        note="Slide-in panel overlay. Used in Client Settings and other detail flows."
+      />
+    ),
+    usage: `import { SideSheet } from "@/components/side-sheet/SideSheet";
+
+<SideSheet open={open} onClose={() => setOpen(false)} title="Settings">
+  {children}
+</SideSheet>`,
+  },
+
+  {
+    id: "side-sheet-nav-item",
+    name: "SideSheetNavItem",
+    category: "Navigation",
+    description:
+      "Individual navigation row inside a SideSheet. Shows an icon, label, and active state. Used to build vertical nav lists within side drawers.",
+    path: "src/app/components/side-sheet/SideSheetNavItem.tsx",
+    tags: ["nav-item", "side-sheet", "list", "icon", "active"],
+    preview: (
+      <ContextPreview
+        label="SideSheetNavItem"
+        note="Used inside SideSheet to build section navigation lists."
+      />
+    ),
+    usage: `import { SideSheetNavItem } from "@/components/side-sheet/SideSheetNavItem";
+
+<SideSheetNavItem
+  icon={<SettingsIcon />}
+  label="General"
+  active={activeNav === "general"}
+  onClick={() => setActiveNav("general")}
+/>`,
+  },
 
   {
     id: "tab-navigation",
@@ -412,6 +551,49 @@ const [checked, setChecked] = useState(false);
   },
 
   // ── Charts & Data ──────────────────────────────────────────────────────────
+
+  {
+    id: "dataviz-tooltip",
+    name: "DatavizTooltip",
+    category: "Charts & Data",
+    description:
+      "Custom Recharts tooltip component used across all chart cards. Shows a dark-background pill with label and formatted value. Passed as content prop to Recharts Tooltip.",
+    path: "src/app/components/DatavizTooltip.tsx",
+    tags: ["tooltip", "chart", "recharts", "dataviz"],
+    preview: (
+      <div className="flex items-center gap-3 bg-[#1f1d25] text-white rounded-xl px-4 py-2.5 text-[12px] shadow-lg w-fit">
+        <span className="text-[#9c99a9]">March</span>
+        <span className="font-semibold">$24,500</span>
+      </div>
+    ),
+    usage: `import { DatavizTooltip } from "@/components/DatavizTooltip";
+
+// Pass to any Recharts chart:
+<Tooltip content={<DatavizTooltip />} />`,
+  },
+
+  {
+    id: "activity-monitor",
+    name: "ActivityMonitor",
+    category: "Charts & Data",
+    description:
+      "Animated progress overlay for long-running AI or export tasks. Shows stage name, progress bar, and cancel/close controls. Supports states: preparing, complete, error, cancelled.",
+    path: "src/app/components/ActivityMonitor.tsx",
+    tags: ["monitor", "progress", "ai", "loading", "overlay", "task"],
+    preview: (
+      <ContextPreview
+        label="ActivityMonitor"
+        note="Appears during AI image generation. Triggered from VehicleInventoryGrid actions."
+      />
+    ),
+    usage: `import { ActivityMonitor } from "@/components/ActivityMonitor";
+
+<ActivityMonitor
+  stage="preparing"
+  displayName="Generating AI Image"
+  onClose={handleClose}
+/>`,
+  },
 
   {
     id: "funds-pie-card",
@@ -509,6 +691,94 @@ const [checked, setChecked] = useState(false);
   },
 
   // ── Comments ───────────────────────────────────────────────────────────────
+
+  {
+    id: "comments-provider",
+    name: "CommentsProvider",
+    category: "Comments",
+    description:
+      "React context provider that manages all comment state for a given context ID (section + tab or project UUID). Wrap any section that needs comments with it. Exposes full CRUD plus notifications, panel open state, and deep-link rover support.",
+    path: "src/app/components/comments/CommentsContext.tsx",
+    tags: ["comments", "provider", "context", "state", "notifications"],
+    preview: (
+      <ContextPreview
+        label="CommentsProvider"
+        note="Wraps section content — not visually rendered itself. Used at the section level in AppContent."
+      />
+    ),
+    usage: `import { CommentsProvider } from "@comments";
+
+<CommentsProvider contextId={\`\${section}-\${tab}\`}>
+  {/* CommentsButton, CommentsSidePanel, NotificationsTray available inside */}
+  {children}
+</CommentsProvider>`,
+  },
+
+  {
+    id: "notifications-tray",
+    name: "NotificationsTray",
+    category: "Comments",
+    description:
+      "Sliding right-side panel listing @mention and reply notifications for the current user. Animates width (0→400px) in concert with the main pane. Shows unread dot badges and a mark-all-read button.",
+    path: "src/app/components/comments/NotificationsTray.tsx",
+    tags: ["notifications", "tray", "panel", "mentions", "bell", "unread"],
+    preview: (
+      <ContextPreview
+        label="NotificationsTray"
+        note="Opens from the bell icon in the top nav. Managed by CommentsProvider."
+      />
+    ),
+    usage: `// NotificationsTray is rendered automatically by CommentsProvider.
+// Toggle it via the BellIcon in the top nav:
+const { openNotif } = useCommentsRequired();
+<button onClick={openNotif}><BellIcon /></button>`,
+  },
+
+  {
+    id: "notification-overlay",
+    name: "NotificationOverlay",
+    category: "Comments",
+    description:
+      "Dealer-mode notification drop-down overlay. Shows a list of recent system notifications (pre-approval status, payment updates). Appears anchored to the bell button in the top nav.",
+    path: "src/app/components/notifications/NotificationOverlay.tsx",
+    tags: ["notifications", "overlay", "dropdown", "dealer", "bell"],
+    preview: (
+      <ContextPreview
+        label="NotificationOverlay"
+        note="Dealer-specific notifications dropdown. Click the bell icon in dealer mode."
+      />
+    ),
+    usage: `import { NotificationOverlay } from "@/components/notifications/NotificationOverlay";
+
+<NotificationOverlay
+  open={notifOpen}
+  anchorEl={bellRef.current}
+  onClose={() => setNotifOpen(false)}
+/>`,
+  },
+
+  {
+    id: "notification-overlay-oem",
+    name: "NotificationOverlayOEM",
+    category: "Comments",
+    description:
+      "OEM-mode notification overlay. Shows system-level alerts (compliance flags, submission deadlines). Same anchor pattern as NotificationOverlay but with OEM-specific content and styling.",
+    path: "src/app/components/notifications/NotificationOverlayOEM.tsx",
+    tags: ["notifications", "overlay", "oem", "bell", "compliance"],
+    preview: (
+      <ContextPreview
+        label="NotificationOverlayOEM"
+        note="OEM-specific notifications dropdown. Switch to OEM mode and click the bell."
+      />
+    ),
+    usage: `import { NotificationOverlayOEM } from "@/components/notifications/NotificationOverlayOEM";
+
+<NotificationOverlayOEM
+  open={notifOpen}
+  anchorEl={bellRef.current}
+  onClose={() => setNotifOpen(false)}
+/>`,
+  },
 
   {
     id: "chat-bubble",
@@ -636,6 +906,82 @@ const [checked, setChecked] = useState(false);
   // ── Forms & Controls ───────────────────────────────────────────────────────
 
   {
+    id: "custom-select",
+    name: "CustomSelect",
+    category: "Forms & Controls",
+    description:
+      "Styled single-value select built on Radix Primitive. OEM brand accent on focus. Supports option groups, disabled items, and a clearable value. Replaces native <select> with consistent cross-browser styling.",
+    path: "src/app/components/ui/CustomSelect.tsx",
+    tags: ["select", "dropdown", "form", "radix", "controlled"],
+    preview: (
+      <ContextPreview
+        label="CustomSelect"
+        note="Used in forms across the app (Pre-Approval, Client Settings)."
+      />
+    ),
+    usage: `import { CustomSelect } from "@/components/ui/CustomSelect";
+
+<CustomSelect
+  value={value}
+  onChange={setValue}
+  options={[
+    { value: "vw",   label: "Volkswagen" },
+    { value: "audi", label: "Audi" },
+  ]}
+  placeholder="Select OEM…"
+/>`,
+  },
+
+  {
+    id: "single-date-picker",
+    name: "SingleDatePicker",
+    category: "Forms & Controls",
+    description:
+      "Single-month calendar popover for selecting a single date. Shares the same calendar UI as DateRangePicker. Renders in a portal above z-index 10001.",
+    path: "src/app/components/ui/SingleDatePicker.tsx",
+    tags: ["date", "picker", "calendar", "form", "single"],
+    preview: (
+      <ContextPreview
+        label="SingleDatePicker"
+        note="Used in form fields requiring a single date selection."
+      />
+    ),
+    usage: `import { SingleDatePicker } from "@/components/ui/SingleDatePicker";
+
+<SingleDatePicker
+  value={date}
+  onChange={setDate}
+  placeholder="Select date…"
+/>`,
+  },
+
+  {
+    id: "split-button",
+    name: "SplitButton",
+    category: "Forms & Controls",
+    description:
+      "Two-part button: the left segment fires the primary action, the right chevron opens a dropdown with secondary options. Used for report generation and export flows.",
+    path: "src/app/components/ui/SplitButton.tsx",
+    tags: ["split-button", "button", "dropdown", "export", "actions"],
+    preview: (
+      <ContextPreview
+        label="SplitButton"
+        note="Used in the Campaigns Overview header for report generation."
+      />
+    ),
+    usage: `import { SplitButton } from "@/components/ui/SplitButton";
+
+<SplitButton
+  label="Generate Report"
+  onPrimary={handleGenerate}
+  options={[
+    { label: "Export PDF", onClick: handlePDF },
+    { label: "Export CSV", onClick: handleCSV },
+  ]}
+/>`,
+  },
+
+  {
     id: "filter-select",
     name: "FilterSelect",
     category: "Forms & Controls",
@@ -717,6 +1063,220 @@ import { SnackbarHost }  from "@/components/Snackbar";
 
 // Trigger from anywhere:
 emitSnackbar("Pre-Approval submitted successfully");`,
+  },
+
+  // ── Inventory ──────────────────────────────────────────────────────────────
+
+  {
+    id: "inventory-content",
+    name: "InventoryContent",
+    category: "Inventory",
+    description:
+      "Root container for the Inventory section. Renders the active view (table, card-grid, card-list, or GlobalAI Config) based on the selected channel/tab. Hides channel labels when the comments panel or AI agent pane is open.",
+    path: "src/app/components/inventory/InventoryContent.tsx",
+    tags: ["inventory", "container", "view-switcher", "tabs"],
+    preview: (
+      <ContextPreview
+        label="InventoryContent"
+        note="Full section container — navigate to the Inventory tab to see it live."
+      />
+    ),
+    usage: `import { InventoryContent } from "@/components/inventory/InventoryContent";
+
+<InventoryContent isAgentPaneOpen={isAgentOpen} />`,
+  },
+
+  {
+    id: "vehicle-inventory-grid",
+    name: "VehicleInventoryGrid",
+    category: "Inventory",
+    description:
+      "Full data table for vehicle inventory. Supports sort, filter, search, syndication toggle, and AI image enable/disable. Each row has a sticky hover-triggered kebab menu with contextual actions. Fires snackbar confirmations for state changes.",
+    path: "src/app/components/inventory/VehicleInventoryGrid.tsx",
+    tags: ["table", "inventory", "vehicles", "sort", "filter", "kebab"],
+    preview: (
+      <ContextPreview
+        label="VehicleInventoryGrid"
+        note="Requires vehicle data. View in Inventory → VIN table tab."
+      />
+    ),
+    usage: `import { VehicleInventoryGrid } from "@/components/inventory/VehicleInventoryGrid";
+
+<VehicleInventoryGrid
+  vehicles={vehicles}
+  onSyndicationToggle={handleSyndication}
+  onAiGenerationToggle={handleAIToggle}
+/>`,
+  },
+
+  {
+    id: "vehicle-card-grid",
+    name: "VehicleCardGrid",
+    category: "Inventory",
+    description:
+      "Masonry/grid card layout for vehicle inventory. Each card shows a Thumbnail, VIN, year/make/model, price, and status chips. Supports selection and hover state.",
+    path: "src/app/components/inventory/VehicleCardGrid.tsx",
+    tags: ["grid", "card", "inventory", "vehicles", "thumbnail"],
+    preview: (
+      <ContextPreview
+        label="VehicleCardGrid"
+        note="Requires vehicle data. View in Inventory → Card Grid tab."
+      />
+    ),
+    usage: `import { VehicleCardGrid } from "@/components/inventory/VehicleCardGrid";
+
+<VehicleCardGrid vehicles={vehicles} />`,
+  },
+
+  {
+    id: "vehicle-card-list",
+    name: "VehicleCardList",
+    category: "Inventory",
+    description:
+      "Horizontal list layout for vehicle inventory cards. Wider aspect ratio than card-grid, shows more metadata per item. Alternative layout mode for the Inventory section.",
+    path: "src/app/components/inventory/VehicleCardList.tsx",
+    tags: ["list", "card", "inventory", "vehicles"],
+    preview: (
+      <ContextPreview
+        label="VehicleCardList"
+        note="Requires vehicle data. View in Inventory → Card List tab."
+      />
+    ),
+    usage: `import { VehicleCardList } from "@/components/inventory/VehicleCardList";
+
+<VehicleCardList vehicles={vehicles} />`,
+  },
+
+  {
+    id: "data-grid",
+    name: "DataGrid",
+    category: "Inventory",
+    description:
+      "Generic data table for the GlobalAI Config section. Supports custom column definitions, row hover with sticky kebab menu, and contextual action dispatch via GlobalAIConfigMenu.",
+    path: "src/app/components/inventory/DataGrid.tsx",
+    tags: ["table", "data-grid", "global-ai", "config", "kebab"],
+    preview: (
+      <ContextPreview
+        label="DataGrid"
+        note="Used in Inventory → GlobalAI Config tab."
+      />
+    ),
+    usage: `import { DataGrid } from "@/components/inventory/DataGrid";
+
+<DataGrid columns={columns} rows={rows} />`,
+  },
+
+  {
+    id: "vehicles-menu",
+    name: "VehiclesMenu",
+    category: "Inventory",
+    description:
+      "Portal-mounted context menu for VehicleInventoryGrid rows. Slide-down entry animation. Actions: Syndicate, Edit, View on Site, Disable AI Image, Duplicate, Delete.",
+    path: "src/app/components/inventory/VehiclesMenu.tsx",
+    tags: ["context-menu", "portal", "vehicles", "kebab", "actions"],
+    preview: (
+      <ContextPreview
+        label="VehiclesMenu"
+        note="Appears on row hover in the Vehicle table. Anchored to the kebab button position."
+      />
+    ),
+    usage: `import { VehiclesMenu } from "@/components/inventory/VehiclesMenu";
+
+{openMenu && (
+  <VehiclesMenu
+    anchor={openMenu.anchor}
+    syndicationStatus={row.syndicationStatus}
+    aiGenerationStatus={row.aiGenerationStatus}
+    onAction={handleMenuAction}
+    onClose={() => setOpenMenu(null)}
+  />
+)}`,
+  },
+
+  {
+    id: "global-ai-config-menu",
+    name: "GlobalAIConfigMenu",
+    category: "Inventory",
+    description:
+      "Portal-mounted context menu for GlobalAI Config DataGrid rows. Same slide-down animation as VehiclesMenu. Actions: Download Background, Duplicate, Enable AI Config, Edit | Remove.",
+    path: "src/app/components/inventory/GlobalAIConfigMenu.tsx",
+    tags: ["context-menu", "portal", "global-ai", "kebab", "actions"],
+    preview: (
+      <ContextPreview
+        label="GlobalAIConfigMenu"
+        note="Appears on row hover in the GlobalAI Config table."
+      />
+    ),
+    usage: `import { GlobalAIConfigMenu } from "@/components/inventory/GlobalAIConfigMenu";
+
+{openMenu && (
+  <GlobalAIConfigMenu
+    anchor={openMenu.anchor}
+    onAction={handleAction}
+    onClose={() => setOpenMenu(null)}
+  />
+)}`,
+  },
+
+  {
+    id: "thumbnail",
+    name: "Thumbnail",
+    category: "Inventory",
+    description:
+      "Vehicle image thumbnail with aspect-ratio container, fallback skeleton, and optional overlay badge. Used in card-grid and card-list inventory views.",
+    path: "src/app/components/inventory/Thumbnail.tsx",
+    tags: ["thumbnail", "image", "vehicle", "fallback", "aspect-ratio"],
+    preview: (
+      <ContextPreview
+        label="Thumbnail"
+        note="Used inside VehicleCardGrid and VehicleCardList."
+      />
+    ),
+    usage: `import { Thumbnail } from "@/components/inventory/Thumbnail";
+
+<Thumbnail src={vehicle.imageUrl} alt={vehicle.vin} />`,
+  },
+
+  {
+    id: "vin-detail-content",
+    name: "VinDetailContent",
+    category: "Inventory",
+    description:
+      "Full-page detail view for a single vehicle VIN. Shows image gallery, spec table, pricing, syndication status, AI generation status, and related offers.",
+    path: "src/app/components/inventory/VinDetailContent.tsx",
+    tags: ["vin", "vehicle", "detail", "gallery", "spec"],
+    preview: (
+      <ContextPreview
+        label="VinDetailContent"
+        note="Rendered when a VIN row is clicked in Inventory."
+      />
+    ),
+    usage: `import { VinDetailContent } from "@/components/inventory/VinDetailContent";
+
+<VinDetailContent vin={selectedVin} onBack={handleBack} />`,
+  },
+
+  {
+    id: "prompt-library-modal",
+    name: "PromptLibraryModal",
+    category: "Inventory",
+    description:
+      "Modal dialog for browsing and selecting AI prompt templates used during vehicle AI image generation. Filterable by category.",
+    path: "src/app/components/inventory/PromptLibraryModal.tsx",
+    tags: ["modal", "prompt", "library", "ai", "template"],
+    preview: (
+      <ContextPreview
+        label="PromptLibraryModal"
+        note="Opened via the AI Image generation flow in Inventory."
+      />
+    ),
+    usage: `import { PromptLibraryModal } from "@/components/inventory/PromptLibraryModal";
+
+<PromptLibraryModal
+  open={open}
+  onClose={() => setOpen(false)}
+  onSelect={handlePromptSelect}
+/>`,
   },
 
   // ── Portal ─────────────────────────────────────────────────────────────────

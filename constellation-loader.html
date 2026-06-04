@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Constellation Arc Loader</title>
+  <style>
+    /* ── Brand tokens ─────────────────────────────────────────────────────────── */
+    :root {
+      --brand-accent: #473BAB;   /* outer arc  */
+      --brand-mid:    #6356e1;   /* middle arc */
+      --brand-light:  #8c86fc;   /* inner arc  */
+    }
+
+    /* ── Demo shell ───────────────────────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: #f4f5f6;
+      min-height: 100dvh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 48px;
+    }
+    h1 { font-size: 13px; font-weight: 500; color: rgba(0,0,0,0.4); letter-spacing: .05em; text-transform: uppercase; }
+    .row {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 40px;
+      flex-wrap: wrap;
+    }
+    .demo-card {
+      background: white;
+      border-radius: 16px;
+      padding: 32px 40px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 16px;
+      box-shadow: 0 1px 4px rgba(0,0,0,.06), 0 4px 16px rgba(0,0,0,.04);
+    }
+    .demo-card .label {
+      font-size: 12px;
+      font-weight: 500;
+      color: rgba(0,0,0,.38);
+      letter-spacing: .03em;
+    }
+    button {
+      margin-top: 24px;
+      padding: 10px 28px;
+      border-radius: 100px;
+      border: none;
+      background: var(--brand-accent);
+      color: white;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background 150ms ease;
+    }
+    button:hover { background: #3D3295; }
+
+    /* ── Arc SVG — opacity is driven by JS ───────────────────────────────────── */
+    .arc-outer  { fill: var(--brand-accent); transition: opacity 120ms ease; }
+    .arc-middle { fill: var(--brand-mid);    transition: opacity 120ms ease; }
+    .arc-inner  { fill: var(--brand-light);  transition: opacity 120ms ease; }
+
+    /* Size variants */
+    .size-sm  { width: 11px; height: 20px; }
+    .size-md  { width: 17px; height: 30px; }   /* default (20 × 0.56 ≈ 11, viewBox scale kept) */
+    .size-lg  { width: 28px; height: 50px; }
+    .size-xl  { width: 45px; height: 80px; }
+  </style>
+</head>
+<body>
+
+  <h1>Constellation Arc Loader</h1>
+
+  <div class="row">
+
+    <!-- Small -->
+    <div class="demo-card">
+      <svg class="arc-mark size-sm" viewBox="0 0 18 33" fill="none" aria-hidden="true">
+        <path class="arc-outer" d="M2.22422 16.0471C2.22422 7.57204 8.61025 0.631495 16.6988 0.0413128C16.332 0.0118036 15.9594 0 15.5867 0C6.97648 0 0 7.18252 0 16.0471C0 24.9116 6.97648 32.0941 15.5867 32.0941C15.9594 32.0941 16.332 32.0823 16.6988 32.0528C8.61025 31.4626 2.22422 24.5221 2.22422 16.0471Z"/>
+        <path class="arc-middle" d="M6.12227 16.047C6.12227 9.69073 10.9089 4.48533 16.9796 4.04269C16.7045 4.02498 16.4236 4.01318 16.1427 4.01318C9.6879 4.01318 4.4541 9.40154 4.4541 16.047C4.4541 22.6924 9.6879 28.0808 16.1427 28.0808C16.4236 28.0808 16.7045 28.069 16.9796 28.0513C10.9146 27.6086 6.12227 22.4032 6.12227 16.047Z"/>
+        <path class="arc-inner" d="M17.2605 8.04407C17.0771 8.03227 16.8937 8.02637 16.7045 8.02637C12.3994 8.02637 8.9082 11.6206 8.9082 16.0529C8.9082 20.4851 12.3994 24.0793 16.7045 24.0793C16.8937 24.0793 17.0771 24.0734 17.2605 24.0557C13.2134 23.7606 10.0261 20.2904 10.0261 16.0529C10.0261 11.8154 13.2191 8.34507 17.2605 8.04998V8.04407Z"/>
+      </svg>
+      <span class="label">sm · 20px</span>
+    </div>
+
+    <!-- Medium (app default) -->
+    <div class="demo-card">
+      <svg class="arc-mark size-md" viewBox="0 0 18 33" fill="none" aria-hidden="true">
+        <path class="arc-outer" d="M2.22422 16.0471C2.22422 7.57204 8.61025 0.631495 16.6988 0.0413128C16.332 0.0118036 15.9594 0 15.5867 0C6.97648 0 0 7.18252 0 16.0471C0 24.9116 6.97648 32.0941 15.5867 32.0941C15.9594 32.0941 16.332 32.0823 16.6988 32.0528C8.61025 31.4626 2.22422 24.5221 2.22422 16.0471Z"/>
+        <path class="arc-middle" d="M6.12227 16.047C6.12227 9.69073 10.9089 4.48533 16.9796 4.04269C16.7045 4.02498 16.4236 4.01318 16.1427 4.01318C9.6879 4.01318 4.4541 9.40154 4.4541 16.047C4.4541 22.6924 9.6879 28.0808 16.1427 28.0808C16.4236 28.0808 16.7045 28.069 16.9796 28.0513C10.9146 27.6086 6.12227 22.4032 6.12227 16.047Z"/>
+        <path class="arc-inner" d="M17.2605 8.04407C17.0771 8.03227 16.8937 8.02637 16.7045 8.02637C12.3994 8.02637 8.9082 11.6206 8.9082 16.0529C8.9082 20.4851 12.3994 24.0793 16.7045 24.0793C16.8937 24.0793 17.0771 24.0734 17.2605 24.0557C13.2134 23.7606 10.0261 20.2904 10.0261 16.0529C10.0261 11.8154 13.2191 8.34507 17.2605 8.04998V8.04407Z"/>
+      </svg>
+      <span class="label">md · 30px (default)</span>
+    </div>
+
+    <!-- Large -->
+    <div class="demo-card">
+      <svg class="arc-mark size-lg" viewBox="0 0 18 33" fill="none" aria-hidden="true">
+        <path class="arc-outer" d="M2.22422 16.0471C2.22422 7.57204 8.61025 0.631495 16.6988 0.0413128C16.332 0.0118036 15.9594 0 15.5867 0C6.97648 0 0 7.18252 0 16.0471C0 24.9116 6.97648 32.0941 15.5867 32.0941C15.9594 32.0941 16.332 32.0823 16.6988 32.0528C8.61025 31.4626 2.22422 24.5221 2.22422 16.0471Z"/>
+        <path class="arc-middle" d="M6.12227 16.047C6.12227 9.69073 10.9089 4.48533 16.9796 4.04269C16.7045 4.02498 16.4236 4.01318 16.1427 4.01318C9.6879 4.01318 4.4541 9.40154 4.4541 16.047C4.4541 22.6924 9.6879 28.0808 16.1427 28.0808C16.4236 28.0808 16.7045 28.069 16.9796 28.0513C10.9146 27.6086 6.12227 22.4032 6.12227 16.047Z"/>
+        <path class="arc-inner" d="M17.2605 8.04407C17.0771 8.03227 16.8937 8.02637 16.7045 8.02637C12.3994 8.02637 8.9082 11.6206 8.9082 16.0529C8.9082 20.4851 12.3994 24.0793 16.7045 24.0793C16.8937 24.0793 17.0771 24.0734 17.2605 24.0557C13.2134 23.7606 10.0261 20.2904 10.0261 16.0529C10.0261 11.8154 13.2191 8.34507 17.2605 8.04998V8.04407Z"/>
+      </svg>
+      <span class="label">lg · 50px</span>
+    </div>
+
+    <!-- XL -->
+    <div class="demo-card">
+      <svg class="arc-mark size-xl" viewBox="0 0 18 33" fill="none" aria-hidden="true">
+        <path class="arc-outer" d="M2.22422 16.0471C2.22422 7.57204 8.61025 0.631495 16.6988 0.0413128C16.332 0.0118036 15.9594 0 15.5867 0C6.97648 0 0 7.18252 0 16.0471C0 24.9116 6.97648 32.0941 15.5867 32.0941C15.9594 32.0941 16.332 32.0823 16.6988 32.0528C8.61025 31.4626 2.22422 24.5221 2.22422 16.0471Z"/>
+        <path class="arc-middle" d="M6.12227 16.047C6.12227 9.69073 10.9089 4.48533 16.9796 4.04269C16.7045 4.02498 16.4236 4.01318 16.1427 4.01318C9.6879 4.01318 4.4541 9.40154 4.4541 16.047C4.4541 22.6924 9.6879 28.0808 16.1427 28.0808C16.4236 28.0808 16.7045 28.069 16.9796 28.0513C10.9146 27.6086 6.12227 22.4032 6.12227 16.047Z"/>
+        <path class="arc-inner" d="M17.2605 8.04407C17.0771 8.03227 16.8937 8.02637 16.7045 8.02637C12.3994 8.02637 8.9082 11.6206 8.9082 16.0529C8.9082 20.4851 12.3994 24.0793 16.7045 24.0793C16.8937 24.0793 17.0771 24.0734 17.2605 24.0557C13.2134 23.7606 10.0261 20.2904 10.0261 16.0529C10.0261 11.8154 13.2191 8.34507 17.2605 8.04998V8.04407Z"/>
+      </svg>
+      <span class="label">xl · 80px</span>
+    </div>
+
+  </div>
+
+  <button id="toggle">▶ Start animation</button>
+
+  <script>
+    // ── State ──────────────────────────────────────────────────────────────────
+    let running  = false;
+    let cancelled = false;
+    const timers  = [];
+
+    // All .arc-mark SVGs on the page share the same animation state
+    const outers  = document.querySelectorAll('.arc-outer');
+    const middles = document.querySelectorAll('.arc-middle');
+    const inners  = document.querySelectorAll('.arc-inner');
+
+    // Dim values match the React source (opacity when arc is OFF)
+    const DIM = { outer: 0.22, middle: 0.18, inner: 0.12 };
+    const LIT = { outer: 0.92, middle: 0.82, inner: 0.72 };
+
+    function setArcs(o, m, i) {
+      outers .forEach(el => el.style.opacity = o ? LIT.outer  : DIM.outer);
+      middles.forEach(el => el.style.opacity = m ? LIT.middle : DIM.middle);
+      inners .forEach(el => el.style.opacity = i ? LIT.inner  : DIM.inner);
+    }
+
+    function all(lit) { setArcs(lit, lit, lit); }
+    function clearAll() { timers.forEach(clearTimeout); timers.length = 0; }
+
+    // ── Animation loop (mirrors useConstellationAnim exactly) ─────────────────
+    function loop() {
+      if (cancelled) return;
+      let t = 80;
+      function q(delay, fn) {
+        t += delay;
+        timers.push(setTimeout(() => { if (!cancelled) fn(); }, t));
+      }
+
+      all(false);
+      q(80,  () => setArcs(1,0,0));  q(240, () => setArcs(1,1,0));  q(240, () => all(1));
+      q(600, () => {});               q(180, () => all(0));           q(380, () => {});
+      q(140, () => all(1));           q(280, () => all(0));           q(200, () => all(1));
+      q(280, () => all(0));           q(320, () => {});
+      q(80,  () => setArcs(1,0,0));
+      q(220, () => setArcs(0,1,0));
+      q(220, () => setArcs(0,0,1));
+      q(220, () => setArcs(0,0,0));
+      q(140, () => all(1));  q(420, () => all(0));  q(380, () => loop());
+    }
+
+    // ── Controls ──────────────────────────────────────────────────────────────
+    const btn = document.getElementById('toggle');
+    btn.addEventListener('click', () => {
+      running = !running;
+      if (running) {
+        cancelled = false;
+        btn.textContent = '⏹ Stop animation';
+        loop();
+      } else {
+        cancelled = true;
+        clearAll();
+        all(false);
+        btn.textContent = '▶ Start animation';
+      }
+    });
+
+    // Auto-start
+    btn.click();
+  </script>
+</body>
+</html>

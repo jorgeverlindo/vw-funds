@@ -342,6 +342,22 @@ export const agentTools: Anthropic.Tool[] = [
             "Values: full person name (e.g. 'Jenni Eckhart'). Omit sections with no suggestion.",
           additionalProperties: { type: "string" },
         },
+        suggested_owners: {
+          type: "array",
+          description:
+            "Pre-filled owner suggestions for each task section. Each item: { section: string, name: string }. " +
+            "sections: offers, templates, platforms, backgrounds, brand, assets, adshells, campaigns. " +
+            "Base suggestions on available team members. Constellation team handles creative tasks " +
+            "(offers, templates, assets); dealer team handles distribution (platforms, brand, campaigns).",
+          items: {
+            type: "object",
+            properties: {
+              section: { type: "string" },
+              name: { type: "string", description: "Full name matching a known team member." },
+            },
+            required: ["section", "name"],
+          },
+        },
       },
       required: [],
     },

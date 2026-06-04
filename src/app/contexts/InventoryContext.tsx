@@ -88,7 +88,10 @@ function mergeVehicles(overrides: OverridesMap): VinInventoryRecord[] {
     // vehicleGroup (source cutouts) so the angle strip still shows the vehicle on a
     // plain background. VINs without a static vehicleGroup get undefined naturally.
     if (ov.cleared) {
-      return { ...r, aiConfigApplied: false, aiConfigId: undefined };
+      // Keep base record's aiConfigApplied and vehicleGroup intact — only strip the
+      // config link. Static-seed VINs with aiConfigApplied:true keep their AI images
+      // in the grid even after their linked gallery config is deleted.
+      return { ...r, aiConfigId: undefined };
     }
     return {
       ...r,
@@ -145,14 +148,6 @@ export function InventoryProvider({ children }: { children: React.ReactNode }) {
           } else {
             delete next[vin];
           }
-        }
-      }
-
-      // 2. Also handle static-seed VINs that carry this configId in VEHICLE_INVENTORY
-      //    (they never had an override, so the loop above missed them).
-      for (const r of VEHICLE_INVENTORY) {
-        if (r.aiConfigId === configId && !next[r.vin]) {
-          next[r.vin] = { cleared: true };
         }
       }
 

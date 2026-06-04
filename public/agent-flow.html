@@ -1,0 +1,1542 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Agent Flow — Honda Campaign · Design Reference</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --brand:       #473bab;
+    --brand-mid:   #6356e1;
+    --brand-grad:  linear-gradient(99deg, #473bab 0%, #6356e1 100%);
+    --brand-tint:  rgba(71,59,171,0.08);
+    --ink:         #1f1d25;
+    --ink-2:       #686576;
+    --ink-3:       #9c99a9;
+    --border:      rgba(0,0,0,0.10);
+    --bg:          #f9f9fb;
+    --surface:     #ffffff;
+    --radius-card: 14px;
+    --font:        'Roboto', sans-serif;
+  }
+
+  body {
+    background: #f2f1f6;
+    font-family: var(--font);
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    padding: 0;
+  }
+
+  .pane {
+    width: 420px;
+    max-width: 420px;
+    min-width: 420px;
+    background: white;
+    min-height: 100vh;
+    border-left: 1px solid rgba(0,0,0,0.06);
+    border-right: 1px solid rgba(0,0,0,0.06);
+    padding-bottom: 40px;
+    position: relative;
+  }
+
+  /* ── HEADER ── */
+  .pane-header {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: white;
+    border-bottom: 1px solid rgba(0,0,0,0.08);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 11px 14px;
+  }
+  .pane-header .header-title {
+    font-size: 13.5px;
+    font-weight: 600;
+    color: var(--ink);
+    letter-spacing: -0.1px;
+  }
+  .pane-header .header-chevron {
+    color: var(--ink-3);
+    display: flex;
+    align-items: center;
+  }
+  .pane-header .header-spacer { flex: 1; }
+  .pane-header .header-icon {
+    width: 30px;
+    height: 30px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--ink-3);
+    cursor: pointer;
+  }
+  .pane-header .header-icon:hover { background: var(--bg); }
+  .pane-header .header-icon-close {
+    color: var(--ink-2);
+  }
+
+  /* ── CONVERSATION ── */
+  .conversation {
+    padding: 16px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  .turn { display: flex; flex-direction: column; gap: 8px; }
+
+  /* Agent row */
+  .agent-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+  }
+  .agent-avatar {
+    flex-shrink: 0;
+    width: 22px;
+    height: 22px;
+    margin-top: 2px;
+  }
+  .agent-bubble {
+    background: var(--bg);
+    border: 1px solid rgba(0,0,0,0.07);
+    border-radius: 0px 12px 12px 12px;
+    padding: 9px 12px;
+    font-size: 13px;
+    color: var(--ink);
+    line-height: 1.5;
+    max-width: 320px;
+  }
+  .agent-bubble em { font-style: normal; }
+  .agent-bubble strong { font-weight: 600; }
+
+  /* Why link */
+  .why-link {
+    margin-left: 32px;
+    font-size: 11.5px;
+    color: var(--brand);
+    font-weight: 500;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    text-decoration: none;
+    margin-top: -2px;
+  }
+  .why-link:hover { text-decoration: underline; }
+
+  /* User bubble */
+  .user-turn {
+    display: flex;
+    justify-content: flex-end;
+  }
+  .user-bubble {
+    background: var(--brand-grad);
+    color: white;
+    border-radius: 12px 12px 0px 12px;
+    padding: 9px 13px;
+    font-size: 13px;
+    line-height: 1.5;
+    max-width: 320px;
+  }
+
+  /* Confirmed chip */
+  .confirmed-chip-wrap { margin-left: 32px; margin-top: 2px; }
+  .confirmed-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 10px;
+    border-radius: 100px;
+    background: rgba(35,150,90,0.08);
+    border: 1px solid rgba(35,150,90,0.18);
+    color: #1e7a48;
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: 0.17px;
+  }
+  .confirmed-dot {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: #2e9c5e;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 9px;
+    font-weight: 700;
+    flex-shrink: 0;
+  }
+
+  /* ── SMART CARD base ── */
+  .smart-card {
+    margin-left: 32px;
+    border: 1px solid rgba(0,0,0,0.10);
+    border-radius: 14px;
+    background: white;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+    overflow: hidden;
+  }
+  .card-header {
+    background: #fafafa;
+    border-bottom: 1px solid rgba(0,0,0,0.07);
+    padding: 10px 14px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .card-header-left { display: flex; flex-direction: column; gap: 2px; }
+  .card-title { font-size: 11px; font-weight: 600; color: var(--ink); letter-spacing: 0.3px; }
+  .card-subtitle { font-size: 10.5px; color: var(--ink-3); }
+  .card-body { padding: 14px; display: flex; flex-direction: column; gap: 8px; }
+  .card-footer {
+    padding: 10px 14px 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    border-top: 1px solid rgba(0,0,0,0.06);
+  }
+
+  /* Section label inside card body */
+  .section-label {
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--ink-3);
+    letter-spacing: 0.6px;
+    text-transform: uppercase;
+    margin-bottom: 2px;
+  }
+
+  /* Buttons */
+  .btn-grad {
+    display: block;
+    width: 100%;
+    padding: 9px;
+    border-radius: 100px;
+    border: none;
+    cursor: pointer;
+    background: linear-gradient(99deg, #473bab, #6356e1);
+    color: white;
+    font-size: 13px;
+    font-weight: 500;
+    letter-spacing: 0.46px;
+    font-family: var(--font);
+    text-align: center;
+  }
+  .btn-skip {
+    display: block;
+    width: 100%;
+    padding: 9px;
+    border-radius: 100px;
+    border: none;
+    cursor: pointer;
+    background: transparent;
+    color: var(--ink-2);
+    font-size: 13px;
+    font-family: var(--font);
+    text-align: center;
+  }
+
+  /* Field */
+  .field {
+    position: relative;
+    border: 1px solid rgba(0,0,0,0.18);
+    border-radius: 4px;
+    padding: 6px 12px 8px;
+    min-height: 50px;
+  }
+  .field-label {
+    font-size: 10px;
+    color: var(--ink-3);
+    letter-spacing: 0.4px;
+    display: block;
+    margin-bottom: 2px;
+    text-transform: uppercase;
+  }
+  .field-value {
+    font-size: 13px;
+    color: var(--ink);
+  }
+  .field-arrow {
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--ink-3);
+  }
+  .row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+
+  /* Channel chips */
+  .chips-row { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 6px; }
+  .channel-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    background: #f2f1f6;
+    border: 1px solid rgba(0,0,0,0.10);
+    border-radius: 100px;
+    padding: 3px 8px 3px 4px;
+    font-size: 11px;
+    color: var(--ink);
+    font-weight: 500;
+  }
+  .channel-chip-icon {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 8px;
+    color: var(--ink-3);
+    border: 1px solid rgba(0,0,0,0.10);
+    flex-shrink: 0;
+  }
+  .chip-x {
+    font-size: 9px;
+    color: var(--ink-3);
+    margin-left: 2px;
+    cursor: pointer;
+  }
+
+  /* ── OFFERS CARD ── */
+  .offers-section-header {
+    padding: 10px 14px 6px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .offers-label {
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--ink-3);
+    letter-spacing: 0.6px;
+    text-transform: uppercase;
+  }
+  .count-pill {
+    background: var(--brand-tint);
+    color: var(--brand);
+    font-size: 10.5px;
+    font-weight: 600;
+    border-radius: 100px;
+    padding: 2px 8px;
+    letter-spacing: 0.2px;
+  }
+  .offers-body { padding: 0 10px 10px; display: flex; flex-direction: column; gap: 6px; }
+
+  .offer-card {
+    border: 1px solid rgba(0,0,0,0.08);
+    border-radius: 12px;
+    overflow: hidden;
+    background: white;
+  }
+  .offer-top {
+    display: flex;
+    gap: 0;
+  }
+  .offer-img {
+    width: 90px;
+    min-width: 90px;
+    height: 80px;
+    background: #f5f4f8;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    flex-shrink: 0;
+  }
+  .offer-img img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    padding: 6px;
+  }
+  .offer-content {
+    flex: 1;
+    padding: 8px 10px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 4px;
+  }
+  .offer-vehicle {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--ink);
+    line-height: 1.3;
+  }
+  .offer-stock {
+    font-size: 10.5px;
+    color: var(--ink-3);
+  }
+  .offer-metrics {
+    display: flex;
+    gap: 4px;
+    flex-wrap: wrap;
+  }
+  .metric-chip {
+    background: rgba(59,130,246,0.08);
+    color: #2563eb;
+    font-size: 10px;
+    font-weight: 600;
+    border-radius: 4px;
+    padding: 1.5px 5px;
+    white-space: nowrap;
+  }
+  .offer-divider { height: 1px; background: rgba(0,0,0,0.07); }
+  .offer-bottom {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 6px 10px;
+    gap: 6px;
+  }
+  .offer-chips { display: flex; gap: 4px; align-items: center; flex-shrink: 0; }
+  .offer-type-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    background: rgba(71,59,171,0.10);
+    color: var(--brand);
+    font-size: 10px;
+    font-weight: 600;
+    border-radius: 100px;
+    padding: 2px 7px 2px 4px;
+  }
+  .offer-type-check {
+    width: 13px;
+    height: 13px;
+    border-radius: 50%;
+    background: var(--brand);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 7.5px;
+  }
+  .offer-regional-chip {
+    background: #f2f1f6;
+    color: var(--ink-2);
+    font-size: 10px;
+    font-weight: 500;
+    border-radius: 100px;
+    padding: 2px 7px;
+  }
+  .offer-pvi-chip {
+    background: rgba(59,130,246,0.08);
+    color: #2563eb;
+    font-size: 10px;
+    font-weight: 600;
+    border-radius: 4px;
+    padding: 2px 5px;
+  }
+  .offer-pricing {
+    font-size: 10.5px;
+    color: var(--ink-2);
+    text-align: right;
+    flex-shrink: 0;
+    white-space: nowrap;
+  }
+  .offer-price-main {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--ink);
+  }
+
+  /* ── TEMPLATES CARD ── */
+  .template-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    border: 1px solid rgba(0,0,0,0.08);
+    border-radius: 8px;
+    padding: 9px 10px;
+  }
+  .template-thumb {
+    width: 72px;
+    min-width: 72px;
+    height: 54px;
+    border-radius: 6px;
+    background: var(--brand-tint);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    flex-shrink: 0;
+  }
+  .template-info { flex: 1; display: flex; flex-direction: column; gap: 2px; }
+  .template-name { font-size: 11.5px; font-weight: 500; color: var(--ink); }
+  .template-sub { font-size: 10.5px; color: var(--ink-3); }
+  .template-dims {
+    background: #f0eff5;
+    color: var(--ink-3);
+    font-size: 10px;
+    border-radius: 4px;
+    padding: 2px 6px;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  .alert-box {
+    background: rgba(59,130,246,0.07);
+    border: 1px solid rgba(59,130,246,0.18);
+    border-radius: 8px;
+    padding: 9px 11px;
+    font-size: 11.5px;
+    color: #1d4ed8;
+    line-height: 1.5;
+  }
+  .feedback-area {
+    border: 1px solid rgba(0,0,0,0.14);
+    border-radius: 8px;
+    background: #fafafb;
+    padding: 9px 11px;
+    font-size: 12px;
+    color: var(--ink-3);
+    font-family: var(--font);
+    min-height: 54px;
+    resize: none;
+    width: 100%;
+    line-height: 1.5;
+  }
+
+  /* ── BACKGROUNDS CARD ── */
+  .bg-scroll-row {
+    display: flex;
+    gap: 8px;
+    padding: 0 14px 14px;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .bg-scroll-row::-webkit-scrollbar { display: none; }
+  .bg-tile {
+    width: 200px;
+    min-width: 200px;
+    height: 133px;
+    border-radius: 10px;
+    overflow: hidden;
+    border: 2px solid transparent;
+    position: relative;
+    flex-shrink: 0;
+    cursor: pointer;
+  }
+  .bg-tile.selected {
+    border-color: var(--brand);
+  }
+  .bg-tile img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+  .bg-tile-overlay {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(0deg, rgba(20,10,60,0.5) 0%, transparent 55%);
+  }
+  .bg-tile.selected .bg-tile-overlay {
+    background: linear-gradient(0deg, rgba(20,10,60,0.6) 0%, rgba(71,59,171,0.18) 100%);
+  }
+  .bg-tile-label {
+    position: absolute;
+    bottom: 8px;
+    left: 9px;
+    color: white;
+    z-index: 2;
+  }
+  .bg-tile-name { font-size: 11px; font-weight: 600; }
+  .bg-tile-mood { font-size: 10px; opacity: 0.75; }
+  .bg-check {
+    position: absolute;
+    top: 7px;
+    right: 7px;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: var(--brand);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 9px;
+    font-weight: 700;
+    z-index: 3;
+  }
+
+  /* ── TASK OWNERS CARD ── */
+  .owner-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 14px;
+    border-bottom: 1px solid rgba(0,0,0,0.06);
+  }
+  .owner-row:last-child { border-bottom: none; }
+  .owner-section-label {
+    font-size: 12px;
+    color: var(--ink-2);
+    flex: 1;
+  }
+  .owner-btn {
+    min-width: 130px;
+    border: 1px solid rgba(0,0,0,0.12);
+    border-radius: 8px;
+    background: #fafafa;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 6px;
+    padding: 6px 8px;
+    cursor: pointer;
+  }
+  .owner-btn-inner { display: flex; align-items: center; gap: 6px; }
+  .owner-avatar {
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 8.5px;
+    font-weight: 700;
+    color: white;
+    flex-shrink: 0;
+  }
+  .av-brand { background: var(--brand); }
+  .av-green { background: #2d8a5e; }
+  .av-teal  { background: #0891b2; }
+  .owner-name { font-size: 12px; font-weight: 500; color: var(--ink); }
+
+  /* ── SHARE CARD ── */
+  .share-option {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 14px;
+    cursor: pointer;
+    border-bottom: 1px solid rgba(0,0,0,0.06);
+  }
+  .share-option:last-child { border-bottom: none; }
+  .share-option:hover { background: #fafafa; }
+  .share-icon-wrap {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: var(--brand-tint);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+  .share-option-info { flex: 1; }
+  .share-option-title { font-size: 13px; font-weight: 500; color: var(--ink); }
+  .share-option-desc { font-size: 11px; color: var(--ink-3); margin-top: 1px; }
+  .share-chevron { color: var(--ink-3); }
+
+  /* Email card */
+  .email-contact-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--brand-tint);
+    border: 1px solid rgba(71,59,171,0.18);
+    border-radius: 8px;
+    padding: 8px 10px;
+  }
+  .email-avatar {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: var(--brand);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 10px;
+    font-weight: 700;
+    flex-shrink: 0;
+  }
+  .email-contact-info { flex: 1; }
+  .email-contact-name { font-size: 12px; font-weight: 500; color: var(--ink); }
+  .email-contact-email { font-size: 10px; color: var(--ink-3); }
+  .email-check { color: var(--brand); font-size: 13px; font-weight: 700; }
+  .email-textarea {
+    border: 1px solid rgba(0,0,0,0.14);
+    border-radius: 8px;
+    background: #fafafb;
+    padding: 9px 11px;
+    font-size: 12px;
+    color: var(--ink-2);
+    font-family: var(--font);
+    min-height: 70px;
+    resize: none;
+    width: 100%;
+    line-height: 1.6;
+  }
+
+  /* Template wireframe SVG */
+  .tmpl-wireframe {
+    width: 60px;
+    height: 40px;
+  }
+</style>
+</head>
+<body>
+
+<div class="pane">
+
+  <!-- ── HEADER ── -->
+  <div class="pane-header">
+    <!-- Arc SVG logo small -->
+    <svg width="9" height="17" viewBox="0 0 18 33" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M2.22422 16.0471C2.22422 7.57204 8.61025 0.631495 16.6988 0.0413128C16.332 0.0118036 15.9594 0 15.5867 0C6.97648 0 0 7.18252 0 16.0471C0 24.9116 6.97648 32.0941 15.5867 32.0941C15.9594 32.0941 16.332 32.0823 16.6988 32.0528C8.61025 31.4626 2.22422 24.5221 2.22422 16.0471Z" fill="#473BAB"/>
+      <path d="M6.12227 16.047C6.12227 9.69073 10.9089 4.48533 16.9796 4.04269C16.7045 4.02498 16.4236 4.01318 16.1427 4.01318C9.6879 4.01318 4.4541 9.40154 4.4541 16.047C4.4541 22.6924 9.6879 28.0808 16.1427 28.0808C16.4236 28.0808 16.7045 28.069 16.9796 28.0513C10.9146 27.6086 6.12227 22.4032 6.12227 16.047Z" fill="#6356e1"/>
+      <path d="M17.2605 8.04407C17.0771 8.03227 16.8937 8.02637 16.7045 8.02637C12.3994 8.02637 8.9082 11.6206 8.9082 16.0529C8.9082 20.4851 12.3994 24.0793 16.7045 24.0793C16.8937 24.0793 17.0771 24.0734 17.2605 24.0557C13.2134 23.7606 10.0261 20.2904 10.0261 16.0529C10.0261 11.8154 13.2191 8.34507 17.2605 8.04998V8.04407Z" fill="#8c86fc"/>
+    </svg>
+
+    <span class="header-title">AI Agent Auto</span>
+
+    <!-- chevron down -->
+    <span class="header-chevron">
+      <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+        <path d="M3 4.5L6 7.5L9 4.5" stroke="#9c99a9" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </span>
+
+    <div class="header-spacer"></div>
+
+    <!-- history icon -->
+    <div class="header-icon">
+      <svg width="15" height="15" viewBox="0 0 16 16" fill="none">
+        <path d="M8 1.5A6.5 6.5 0 1 0 14.5 8" stroke="#9c99a9" stroke-width="1.4" stroke-linecap="round"/>
+        <path d="M8 4.5V8L10 10" stroke="#9c99a9" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M11 1.5L14.5 1.5V5" stroke="#9c99a9" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </div>
+
+    <!-- expand icon -->
+    <div class="header-icon">
+      <svg width="15" height="15" viewBox="0 0 16 16" fill="none">
+        <path d="M2.5 6V2.5H6" stroke="#9c99a9" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M13.5 6V2.5H10" stroke="#9c99a9" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M2.5 10V13.5H6" stroke="#9c99a9" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M13.5 10V13.5H10" stroke="#9c99a9" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </div>
+
+    <!-- close icon -->
+    <div class="header-icon header-icon-close">
+      <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+        <path d="M2 2L12 12M12 2L2 12" stroke="#686576" stroke-width="1.6" stroke-linecap="round"/>
+      </svg>
+    </div>
+  </div>
+  <!-- /header -->
+
+  <!-- ── CONVERSATION ── -->
+  <div class="conversation">
+
+    <!-- ─────────────────────────────────────── -->
+    <!-- TURN 0 — User opens                    -->
+    <!-- ─────────────────────────────────────── -->
+    <div class="turn user-turn">
+      <div class="user-bubble">Build a campaign for Honda of Anywhere, lease offers for June 2026.</div>
+    </div>
+
+    <!-- ─────────────────────────────────────── -->
+    <!-- TURN 1 — Project Setup                 -->
+    <!-- ─────────────────────────────────────── -->
+    <div class="turn">
+      <div class="agent-row">
+        <svg class="agent-avatar" viewBox="0 0 18 33" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M2.22422 16.0471C2.22422 7.57204 8.61025 0.631495 16.6988 0.0413128C16.332 0.0118036 15.9594 0 15.5867 0C6.97648 0 0 7.18252 0 16.0471C0 24.9116 6.97648 32.0941 15.5867 32.0941C15.9594 32.0941 16.332 32.0823 16.6988 32.0528C8.61025 31.4626 2.22422 24.5221 2.22422 16.0471Z" fill="#473BAB"/>
+          <path d="M6.12227 16.047C6.12227 9.69073 10.9089 4.48533 16.9796 4.04269C16.7045 4.02498 16.4236 4.01318 16.1427 4.01318C9.6879 4.01318 4.4541 9.40154 4.4541 16.047C4.4541 22.6924 9.6879 28.0808 16.1427 28.0808C16.4236 28.0808 16.7045 28.069 16.9796 28.0513C10.9146 27.6086 6.12227 22.4032 6.12227 16.047Z" fill="#6356e1"/>
+          <path d="M17.2605 8.04407C17.0771 8.03227 16.8937 8.02637 16.7045 8.02637C12.3994 8.02637 8.9082 11.6206 8.9082 16.0529C8.9082 20.4851 12.3994 24.0793 16.7045 24.0793C16.8937 24.0793 17.0771 24.0734 17.2605 24.0557C13.2134 23.7606 10.0261 20.2904 10.0261 16.0529C10.0261 11.8154 13.2191 8.34507 17.2605 8.04998V8.04407Z" fill="#8c86fc"/>
+        </svg>
+        <div class="agent-bubble">I'll set up your Honda campaign. Confirm the project details:</div>
+      </div>
+
+      <!-- Project Setup Card -->
+      <div class="smart-card">
+        <div class="card-header">
+          <div class="card-header-left">
+            <span class="card-title">Project Setup</span>
+            <span class="card-subtitle">Honda · Jun 1–30, 2026</span>
+          </div>
+        </div>
+        <div class="card-body">
+          <!-- Project Name -->
+          <div class="field">
+            <span class="field-label">Project Name</span>
+            <span class="field-value">Honda of Anywhere Summer Campaign 2026</span>
+          </div>
+          <!-- Row: Account + Brand -->
+          <div class="row-2">
+            <div class="field">
+              <span class="field-label">Account</span>
+              <span class="field-value">Honda of Anywhere</span>
+              <span class="field-arrow">
+                <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M2.5 4L5 6.5L7.5 4" stroke="#9c99a9" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              </span>
+            </div>
+            <div class="field">
+              <span class="field-label">Brand</span>
+              <span class="field-value">Honda</span>
+              <span class="field-arrow">
+                <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M2.5 4L5 6.5L7.5 4" stroke="#9c99a9" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              </span>
+            </div>
+          </div>
+          <!-- Row: Dates -->
+          <div class="row-2">
+            <div class="field">
+              <span class="field-label">Start Date</span>
+              <span class="field-value">Jun 1, 2026</span>
+            </div>
+            <div class="field">
+              <span class="field-label">End Date</span>
+              <span class="field-value">Jun 30, 2026</span>
+            </div>
+          </div>
+          <!-- Platforms -->
+          <div class="field" style="min-height:auto; padding-bottom:10px;">
+            <span class="field-label">Platforms</span>
+            <div class="chips-row">
+              <div class="channel-chip">
+                <div class="channel-chip-icon" style="background:#1877f2;">
+                  <svg width="9" height="9" viewBox="0 0 20 20" fill="white"><path d="M15 2h-2.5C10.6 2 9 3.6 9 5.5V8H6v3h3v7h3v-7h2.5l.5-3H12V5.5c0-.3.2-.5.5-.5H15V2z"/></svg>
+                </div>
+                Facebook
+                <span class="chip-x">✕</span>
+              </div>
+              <div class="channel-chip">
+                <div class="channel-chip-icon" style="background:white; border-color:rgba(0,0,0,0.14);">
+                  <svg width="9" height="9" viewBox="0 0 20 20" fill="none">
+                    <path d="M10 8.5v3" stroke="#4285f4" stroke-width="2.2" stroke-linecap="round"/>
+                    <circle cx="10" cy="10" r="8.5" stroke="#ea4335" stroke-width="1.4"/>
+                    <path d="M4.5 10h11" stroke="#fbbc04" stroke-width="1.4"/>
+                  </svg>
+                </div>
+                Google PMax
+                <span class="chip-x">✕</span>
+              </div>
+              <div class="channel-chip">
+                <div class="channel-chip-icon" style="background:linear-gradient(135deg,#f09433,#e6683c,#dc2743,#cc2366,#bc1888);">
+                  <svg width="8" height="8" viewBox="0 0 20 20" fill="white"><circle cx="10" cy="10" r="5.5"/><circle cx="14.5" cy="5.5" r="1.8"/><rect x="2" y="2" width="16" height="16" rx="5" stroke="white" stroke-width="2" fill="none"/></svg>
+                </div>
+                Meta
+                <span class="chip-x">✕</span>
+              </div>
+              <div class="channel-chip">
+                <div class="channel-chip-icon" style="background:#6356e1;">
+                  <svg width="8" height="8" viewBox="0 0 16 16" fill="white"><rect x="2" y="4" width="12" height="8" rx="1.5"/><path d="M5 4V3a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v1" stroke="white" stroke-width="1.2" fill="none"/></svg>
+                </div>
+                Website
+                <span class="chip-x">✕</span>
+              </div>
+            </div>
+          </div>
+          <!-- Campaign Owner -->
+          <div class="field">
+            <span class="field-label">Campaign Owner</span>
+            <span class="field-value">Jorge Verlindo</span>
+            <span class="field-arrow">
+              <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M2.5 4L5 6.5L7.5 4" stroke="#9c99a9" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </span>
+          </div>
+        </div>
+        <div class="card-footer">
+          <button class="btn-grad">Create Project</button>
+          <button class="btn-skip">Cancel</button>
+        </div>
+      </div>
+
+      <!-- Confirmed chip -->
+      <div class="confirmed-chip-wrap">
+        <div class="confirmed-chip">
+          <div class="confirmed-dot">✓</div>
+          <span>Project created — Honda of Anywhere Summer Campaign 2026</span>
+        </div>
+      </div>
+    </div>
+    <!-- /Turn 1 -->
+
+    <!-- ─────────────────────────────────────── -->
+    <!-- TURN 2 — Offers                        -->
+    <!-- ─────────────────────────────────────── -->
+    <div class="turn">
+      <div class="agent-row">
+        <svg class="agent-avatar" viewBox="0 0 18 33" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M2.22422 16.0471C2.22422 7.57204 8.61025 0.631495 16.6988 0.0413128C16.332 0.0118036 15.9594 0 15.5867 0C6.97648 0 0 7.18252 0 16.0471C0 24.9116 6.97648 32.0941 15.5867 32.0941C15.9594 32.0941 16.332 32.0823 16.6988 32.0528C8.61025 31.4626 2.22422 24.5221 2.22422 16.0471Z" fill="#473BAB"/>
+          <path d="M6.12227 16.047C6.12227 9.69073 10.9089 4.48533 16.9796 4.04269C16.7045 4.02498 16.4236 4.01318 16.1427 4.01318C9.6879 4.01318 4.4541 9.40154 4.4541 16.047C4.4541 22.6924 9.6879 28.0808 16.1427 28.0808C16.4236 28.0808 16.7045 28.069 16.9796 28.0513C10.9146 27.6086 6.12227 22.4032 6.12227 16.047Z" fill="#6356e1"/>
+          <path d="M17.2605 8.04407C17.0771 8.03227 16.8937 8.02637 16.7045 8.02637C12.3994 8.02637 8.9082 11.6206 8.9082 16.0529C8.9082 20.4851 12.3994 24.0793 16.7045 24.0793C16.8937 24.0793 17.0771 24.0734 17.2605 24.0557C13.2134 23.7606 10.0261 20.2904 10.0261 16.0529C10.0261 11.8154 13.2191 8.34507 17.2605 8.04998V8.04407Z" fill="#8c86fc"/>
+        </svg>
+        <div class="agent-bubble">I selected Honda's top-aging inventory with the strongest PVI scores for June. Prioritized units sitting 70+ days to accelerate turnover before end-of-quarter.</div>
+      </div>
+
+      <a href="#" class="why-link">
+        <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><circle cx="6" cy="6" r="5" stroke="#473bab" stroke-width="1.3"/><path d="M6 5.5V8.5" stroke="#473bab" stroke-width="1.3" stroke-linecap="round"/><circle cx="6" cy="3.8" r="0.7" fill="#473bab"/></svg>
+        Why these?
+      </a>
+
+      <!-- Offers Card -->
+      <div class="smart-card" style="padding-bottom:0;">
+        <div class="offers-section-header">
+          <span class="offers-label">Lease Offers</span>
+          <span class="count-pill">5 selected</span>
+        </div>
+        <div class="offers-body">
+
+          <!-- Offer 1: CR-V TrailSport -->
+          <div class="offer-card">
+            <div class="offer-top">
+              <div class="offer-img">
+                <img src="https://res.cloudinary.com/dvq75cqna/image/upload/v1780071654/vw-funds/public/cars/CR-V.png" alt="CR-V" onerror="this.style.display='none'; this.parentNode.innerHTML='<svg width=60 height=40 viewBox=\'0 0 60 40\' fill=\'none\'><rect x=4 y=14 width=52 height=18 rx=5 fill=\'#e8e7f0\'/><rect x=12 y=7 width=28 height=12 rx=3 fill=\'#d4d2e0\'/><circle cx=15 cy=33 r=5 fill=\'#c8c6d6\'/><circle cx=45 cy=33 r=5 fill=\'#c8c6d6\'/><circle cx=15 cy=33 r=2.5 fill=\'#a9a7bb\'/><circle cx=45 cy=33 r=2.5 fill=\'#a9a7bb\'/></svg>';" />
+              </div>
+              <div class="offer-content">
+                <div class="offer-vehicle">CR-V TrailSport AWD</div>
+                <div class="offer-stock">Stock #HN-20441</div>
+                <div class="offer-metrics">
+                  <span class="metric-chip">Aging: 27</span>
+                  <span class="metric-chip">Sales: 10</span>
+                  <span class="metric-chip">Inv: 16</span>
+                </div>
+              </div>
+            </div>
+            <div class="offer-divider"></div>
+            <div class="offer-bottom">
+              <div class="offer-chips">
+                <div class="offer-type-chip"><div class="offer-type-check">✓</div> Lease</div>
+                <div class="offer-regional-chip">Regional</div>
+                <div class="offer-pvi-chip">PVI 92</div>
+              </div>
+              <div class="offer-pricing">
+                <div class="offer-price-main">$529<span style="font-size:10px;font-weight:500;">/mo</span></div>
+                <div>36 mo · $4,999 total</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Offer 2: HR-V Sport -->
+          <div class="offer-card">
+            <div class="offer-top">
+              <div class="offer-img">
+                <img src="https://res.cloudinary.com/dvq75cqna/image/upload/v1780071654/vw-funds/public/cars/CR-V.png" alt="HR-V" onerror="this.style.display='none'; this.parentNode.innerHTML='<svg width=60 height=40 viewBox=\'0 0 60 40\' fill=\'none\'><rect x=4 y=15 width=52 height=17 rx=4 fill=\'#e8e7f0\'/><rect x=14 y=9 width=24 height=11 rx=3 fill=\'#d4d2e0\'/><circle cx=15 cy=33 r=5 fill=\'#c8c6d6\'/><circle cx=45 cy=33 r=5 fill=\'#c8c6d6\'/><circle cx=15 cy=33 r=2.5 fill=\'#a9a7bb\'/><circle cx=45 cy=33 r=2.5 fill=\'#a9a7bb\'/></svg>';" />
+              </div>
+              <div class="offer-content">
+                <div class="offer-vehicle">HR-V Sport 2WD</div>
+                <div class="offer-stock">Stock #HN-18822</div>
+                <div class="offer-metrics">
+                  <span class="metric-chip">Aging: 24</span>
+                  <span class="metric-chip">Sales: 9</span>
+                  <span class="metric-chip">Inv: 24</span>
+                </div>
+              </div>
+            </div>
+            <div class="offer-divider"></div>
+            <div class="offer-bottom">
+              <div class="offer-chips">
+                <div class="offer-type-chip"><div class="offer-type-check">✓</div> Lease</div>
+                <div class="offer-regional-chip">Regional</div>
+                <div class="offer-pvi-chip">PVI 93</div>
+              </div>
+              <div class="offer-pricing">
+                <div class="offer-price-main">$699<span style="font-size:10px;font-weight:500;">/mo</span></div>
+                <div>36 mo · $4,999 total</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Offer 3: CR-V LX -->
+          <div class="offer-card">
+            <div class="offer-top">
+              <div class="offer-img">
+                <img src="https://res.cloudinary.com/dvq75cqna/image/upload/v1780071654/vw-funds/public/cars/CR-V.png" alt="CR-V LX" onerror="this.style.display='none'; this.parentNode.innerHTML='<svg width=60 height=40 viewBox=\'0 0 60 40\' fill=\'none\'><rect x=4 y=14 width=52 height=18 rx=5 fill=\'#e8e7f0\'/><rect x=12 y=7 width=28 height=12 rx=3 fill=\'#d4d2e0\'/><circle cx=15 cy=33 r=5 fill=\'#c8c6d6\'/><circle cx=45 cy=33 r=5 fill=\'#c8c6d6\'/><circle cx=15 cy=33 r=2.5 fill=\'#a9a7bb\'/><circle cx=45 cy=33 r=2.5 fill=\'#a9a7bb\'/></svg>';" />
+              </div>
+              <div class="offer-content">
+                <div class="offer-vehicle">CR-V LX AWD</div>
+                <div class="offer-stock">Stock #HN-17003</div>
+                <div class="offer-metrics">
+                  <span class="metric-chip">Aging: 91</span>
+                  <span class="metric-chip">Sales: 3</span>
+                  <span class="metric-chip">Inv: 6</span>
+                </div>
+              </div>
+            </div>
+            <div class="offer-divider"></div>
+            <div class="offer-bottom">
+              <div class="offer-chips">
+                <div class="offer-type-chip"><div class="offer-type-check">✓</div> Lease</div>
+                <div class="offer-regional-chip">Regional</div>
+                <div class="offer-pvi-chip">PVI 92</div>
+              </div>
+              <div class="offer-pricing">
+                <div class="offer-price-main">$944<span style="font-size:10px;font-weight:500;">/mo</span></div>
+                <div>36 mo · $4,999 total</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Offer 4: Odyssey EX-L -->
+          <div class="offer-card">
+            <div class="offer-top">
+              <div class="offer-img" style="background:#f0f0f7;">
+                <!-- Minivan silhouette SVG -->
+                <svg width="70" height="48" viewBox="0 0 70 48" fill="none">
+                  <rect x="4" y="16" width="62" height="22" rx="5" fill="#e0dff0"/>
+                  <rect x="10" y="8" width="40" height="14" rx="4" fill="#cccadf"/>
+                  <rect x="14" y="10" width="10" height="9" rx="2" fill="#b8b5d4" opacity="0.7"/>
+                  <rect x="26" y="10" width="10" height="9" rx="2" fill="#b8b5d4" opacity="0.7"/>
+                  <rect x="38" y="10" width="9" height="9" rx="2" fill="#b8b5d4" opacity="0.7"/>
+                  <circle cx="17" cy="39" r="5.5" fill="#c4c2d8"/>
+                  <circle cx="53" cy="39" r="5.5" fill="#c4c2d8"/>
+                  <circle cx="17" cy="39" r="2.5" fill="#a8a5bf"/>
+                  <circle cx="53" cy="39" r="2.5" fill="#a8a5bf"/>
+                </svg>
+              </div>
+              <div class="offer-content">
+                <div class="offer-vehicle">Odyssey EX-L</div>
+                <div class="offer-stock">Stock #HN-09887</div>
+                <div class="offer-metrics">
+                  <span class="metric-chip">Aging: 77</span>
+                  <span class="metric-chip">Sales: 38</span>
+                  <span class="metric-chip">Inv: 29</span>
+                </div>
+              </div>
+            </div>
+            <div class="offer-divider"></div>
+            <div class="offer-bottom">
+              <div class="offer-chips">
+                <div class="offer-type-chip"><div class="offer-type-check">✓</div> Lease</div>
+                <div class="offer-regional-chip">Regional</div>
+                <div class="offer-pvi-chip">PVI 96</div>
+              </div>
+              <div class="offer-pricing">
+                <div class="offer-price-main">$999<span style="font-size:10px;font-weight:500;">/mo</span></div>
+                <div>39 mo · $4,999 total</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Offer 5: Civic Sport Touring Hybrid -->
+          <div class="offer-card">
+            <div class="offer-top">
+              <div class="offer-img" style="background:#f0f0f7;">
+                <!-- Civic/Sedan silhouette SVG -->
+                <svg width="70" height="48" viewBox="0 0 70 48" fill="none">
+                  <rect x="4" y="18" width="62" height="18" rx="5" fill="#e0dff0"/>
+                  <path d="M14 18 C16 10 24 8 35 8 C46 8 54 10 56 18Z" fill="#cccadf"/>
+                  <rect x="17" y="10" width="12" height="9" rx="2" fill="#b8b5d4" opacity="0.7"/>
+                  <rect x="31" y="10" width="12" height="9" rx="2" fill="#b8b5d4" opacity="0.7"/>
+                  <circle cx="16" cy="37" r="5.5" fill="#c4c2d8"/>
+                  <circle cx="54" cy="37" r="5.5" fill="#c4c2d8"/>
+                  <circle cx="16" cy="37" r="2.5" fill="#a8a5bf"/>
+                  <circle cx="54" cy="37" r="2.5" fill="#a8a5bf"/>
+                  <!-- hybrid badge -->
+                  <rect x="46" y="12" width="14" height="7" rx="2" fill="#2d8a5e" opacity="0.85"/>
+                  <text x="53" y="17.5" text-anchor="middle" font-size="5" fill="white" font-family="Roboto,sans-serif" font-weight="700">HEV</text>
+                </svg>
+              </div>
+              <div class="offer-content">
+                <div class="offer-vehicle">Civic Sport Touring Hybrid</div>
+                <div class="offer-stock">Stock #HN-22301</div>
+                <div class="offer-metrics">
+                  <span class="metric-chip">Aging: 71</span>
+                  <span class="metric-chip">Sales: 6</span>
+                  <span class="metric-chip">Inv: 10</span>
+                </div>
+              </div>
+            </div>
+            <div class="offer-divider"></div>
+            <div class="offer-bottom">
+              <div class="offer-chips">
+                <div class="offer-type-chip"><div class="offer-type-check">✓</div> Lease</div>
+                <div class="offer-regional-chip">Regional</div>
+                <div class="offer-pvi-chip">PVI 92</div>
+              </div>
+              <div class="offer-pricing">
+                <div class="offer-price-main">$799<span style="font-size:10px;font-weight:500;">/mo</span></div>
+                <div>36 mo · $4,999 total</div>
+              </div>
+            </div>
+          </div>
+
+        </div><!-- /offers-body -->
+        <div class="card-footer">
+          <button class="btn-grad">Add 5 Offers</button>
+          <button class="btn-skip">Skip</button>
+        </div>
+      </div>
+
+      <!-- Confirmed chip -->
+      <div class="confirmed-chip-wrap">
+        <div class="confirmed-chip">
+          <div class="confirmed-dot">✓</div>
+          <span>5 offers added</span>
+        </div>
+      </div>
+    </div>
+    <!-- /Turn 2 -->
+
+    <!-- ─────────────────────────────────────── -->
+    <!-- TURN 3 — Templates                     -->
+    <!-- ─────────────────────────────────────── -->
+    <div class="turn">
+      <div class="agent-row">
+        <svg class="agent-avatar" viewBox="0 0 18 33" fill="none">
+          <path d="M2.22422 16.0471C2.22422 7.57204 8.61025 0.631495 16.6988 0.0413128C16.332 0.0118036 15.9594 0 15.5867 0C6.97648 0 0 7.18252 0 16.0471C0 24.9116 6.97648 32.0941 15.5867 32.0941C15.9594 32.0941 16.332 32.0823 16.6988 32.0528C8.61025 31.4626 2.22422 24.5221 2.22422 16.0471Z" fill="#473BAB"/>
+          <path d="M6.12227 16.047C6.12227 9.69073 10.9089 4.48533 16.9796 4.04269C16.7045 4.02498 16.4236 4.01318 16.1427 4.01318C9.6879 4.01318 4.4541 9.40154 4.4541 16.047C4.4541 22.6924 9.6879 28.0808 16.1427 28.0808C16.4236 28.0808 16.7045 28.069 16.9796 28.0513C10.9146 27.6086 6.12227 22.4032 6.12227 16.047Z" fill="#6356e1"/>
+          <path d="M17.2605 8.04407C17.0771 8.03227 16.8937 8.02637 16.7045 8.02637C12.3994 8.02637 8.9082 11.6206 8.9082 16.0529C8.9082 20.4851 12.3994 24.0793 16.7045 24.0793C16.8937 24.0793 17.0771 24.0734 17.2605 24.0557C13.2134 23.7606 10.0261 20.2904 10.0261 16.0529C10.0261 11.8154 13.2191 8.34507 17.2605 8.04998V8.04407Z" fill="#8c86fc"/>
+        </svg>
+        <div class="agent-bubble">I selected the 4 highest-performing creative formats for Honda lease campaigns based on Q1 benchmark data. Coverage spans web hero, display, and social.</div>
+      </div>
+
+      <!-- Templates Card -->
+      <div class="smart-card">
+        <div class="card-header">
+          <div class="card-header-left">
+            <span class="card-title">Ad Templates</span>
+          </div>
+          <span class="count-pill">4 selected</span>
+        </div>
+        <div class="card-body">
+
+          <!-- Template 1: Website Hero 2000x500 -->
+          <div class="template-row">
+            <div class="template-thumb">
+              <!-- Wireframe: wide banner -->
+              <svg width="60" height="40" viewBox="0 0 60 40" fill="none">
+                <rect width="60" height="40" rx="3" fill="rgba(71,59,171,0.06)"/>
+                <!-- car silhouette -->
+                <rect x="28" y="12" width="24" height="14" rx="3" fill="rgba(71,59,171,0.15)"/>
+                <rect x="32" y="8" width="14" height="8" rx="2" fill="rgba(71,59,171,0.10)"/>
+                <!-- text blocks left -->
+                <rect x="4" y="10" width="18" height="3" rx="1.5" fill="rgba(71,59,171,0.35)"/>
+                <rect x="4" y="15" width="14" height="2" rx="1" fill="rgba(71,59,171,0.18)"/>
+                <rect x="4" y="19" width="10" height="2" rx="1" fill="rgba(71,59,171,0.12)"/>
+                <!-- CTA -->
+                <rect x="4" y="25" width="12" height="7" rx="3.5" fill="rgba(71,59,171,0.4)"/>
+              </svg>
+            </div>
+            <div class="template-info">
+              <div class="template-name">Honda_Lease_Website_2000x500</div>
+              <div class="template-sub">Hero banner · Desktop</div>
+            </div>
+            <div class="template-dims">2000×500</div>
+          </div>
+
+          <!-- Template 2: Leaderboard 970x250 -->
+          <div class="template-row">
+            <div class="template-thumb">
+              <svg width="60" height="40" viewBox="0 0 60 40" fill="none">
+                <rect width="60" height="40" rx="3" fill="rgba(71,59,171,0.06)"/>
+                <rect x="32" y="14" width="22" height="12" rx="3" fill="rgba(71,59,171,0.15)"/>
+                <rect x="35" y="10" width="12" height="7" rx="2" fill="rgba(71,59,171,0.10)"/>
+                <rect x="4" y="11" width="20" height="3" rx="1.5" fill="rgba(71,59,171,0.35)"/>
+                <rect x="4" y="16" width="15" height="2" rx="1" fill="rgba(71,59,171,0.18)"/>
+                <rect x="4" y="26" width="14" height="7" rx="3.5" fill="rgba(71,59,171,0.4)"/>
+              </svg>
+            </div>
+            <div class="template-info">
+              <div class="template-name">Honda_Lease_Display_970x250</div>
+              <div class="template-sub">Leaderboard · Display</div>
+            </div>
+            <div class="template-dims">970×250</div>
+          </div>
+
+          <!-- Template 3: Med rect 300x250 -->
+          <div class="template-row">
+            <div class="template-thumb">
+              <svg width="60" height="40" viewBox="0 0 60 40" fill="none">
+                <rect width="60" height="40" rx="3" fill="rgba(71,59,171,0.06)"/>
+                <!-- more square feel -->
+                <rect x="20" y="8" width="34" height="24" rx="3" fill="rgba(71,59,171,0.12)"/>
+                <rect x="22" y="10" width="30" height="18" rx="2" fill="rgba(71,59,171,0.08)"/>
+                <!-- car -->
+                <rect x="24" y="12" width="26" height="12" rx="2" fill="rgba(71,59,171,0.18)"/>
+                <!-- text blocks -->
+                <rect x="4" y="10" width="12" height="3" rx="1.5" fill="rgba(71,59,171,0.4)"/>
+                <rect x="4" y="15" width="10" height="2" rx="1" fill="rgba(71,59,171,0.2)"/>
+                <rect x="4" y="19" width="8" height="2" rx="1" fill="rgba(71,59,171,0.12)"/>
+                <rect x="4" y="28" width="10" height="6" rx="3" fill="rgba(71,59,171,0.4)"/>
+              </svg>
+            </div>
+            <div class="template-info">
+              <div class="template-name">Honda_Lease_Display_300x250</div>
+              <div class="template-sub">Medium rectangle · Display</div>
+            </div>
+            <div class="template-dims">300×250</div>
+          </div>
+
+          <!-- Template 4: Social 1080x1080 -->
+          <div class="template-row">
+            <div class="template-thumb">
+              <svg width="60" height="40" viewBox="0 0 60 40" fill="none">
+                <rect width="60" height="40" rx="3" fill="rgba(71,59,171,0.06)"/>
+                <!-- square crop feel -->
+                <rect x="10" y="2" width="40" height="36" rx="3" fill="rgba(71,59,171,0.10)"/>
+                <rect x="14" y="6" width="32" height="20" rx="2" fill="rgba(71,59,171,0.15)"/>
+                <!-- car -->
+                <rect x="16" y="9" width="28" height="14" rx="2" fill="rgba(71,59,171,0.2)"/>
+                <!-- text at bottom of square -->
+                <rect x="13" y="29" width="14" height="2.5" rx="1.2" fill="rgba(71,59,171,0.35)"/>
+                <rect x="29" y="29" width="8" height="2.5" rx="1.2" fill="rgba(71,59,171,0.18)"/>
+              </svg>
+            </div>
+            <div class="template-info">
+              <div class="template-name">Honda_Lease_Social_1080x1080</div>
+              <div class="template-sub">Square · Social</div>
+            </div>
+            <div class="template-dims">1080×1080</div>
+          </div>
+
+          <!-- Alert box -->
+          <div class="alert-box">
+            These templates are customizable. Click <strong>Edit Zone</strong> inside the app to adjust copy, colors, and layout per format.
+          </div>
+
+          <!-- Feedback textarea -->
+          <textarea class="feedback-area" placeholder="e.g. Also add the tall banner 600×1067 for stories…" rows="3"></textarea>
+        </div>
+        <div class="card-footer">
+          <button class="btn-grad">Add 4 Templates</button>
+          <button class="btn-skip">Skip</button>
+        </div>
+      </div>
+
+      <!-- Confirmed chip -->
+      <div class="confirmed-chip-wrap">
+        <div class="confirmed-chip">
+          <div class="confirmed-dot">✓</div>
+          <span>3 templates added</span>
+        </div>
+      </div>
+    </div>
+    <!-- /Turn 3 -->
+
+    <!-- ─────────────────────────────────────── -->
+    <!-- TURN 4 — Backgrounds                   -->
+    <!-- ─────────────────────────────────────── -->
+    <div class="turn">
+      <div class="agent-row">
+        <svg class="agent-avatar" viewBox="0 0 18 33" fill="none">
+          <path d="M2.22422 16.0471C2.22422 7.57204 8.61025 0.631495 16.6988 0.0413128C16.332 0.0118036 15.9594 0 15.5867 0C6.97648 0 0 7.18252 0 16.0471C0 24.9116 6.97648 32.0941 15.5867 32.0941C15.9594 32.0941 16.332 32.0823 16.6988 32.0528C8.61025 31.4626 2.22422 24.5221 2.22422 16.0471Z" fill="#473BAB"/>
+          <path d="M6.12227 16.047C6.12227 9.69073 10.9089 4.48533 16.9796 4.04269C16.7045 4.02498 16.4236 4.01318 16.1427 4.01318C9.6879 4.01318 4.4541 9.40154 4.4541 16.047C4.4541 22.6924 9.6879 28.0808 16.1427 28.0808C16.4236 28.0808 16.7045 28.069 16.9796 28.0513C10.9146 27.6086 6.12227 22.4032 6.12227 16.047Z" fill="#6356e1"/>
+          <path d="M17.2605 8.04407C17.0771 8.03227 16.8937 8.02637 16.7045 8.02637C12.3994 8.02637 8.9082 11.6206 8.9082 16.0529C8.9082 20.4851 12.3994 24.0793 16.7045 24.0793C16.8937 24.0793 17.0771 24.0734 17.2605 24.0557C13.2134 23.7606 10.0261 20.2904 10.0261 16.0529C10.0261 11.8154 13.2191 8.34507 17.2605 8.04998V8.04407Z" fill="#8c86fc"/>
+        </svg>
+        <div class="agent-bubble">I matched scenes to Summer 2026 brand mood: warm lighting, outdoor settings, lifestyle-led. Dirt Road is pre-selected as the primary hero.</div>
+      </div>
+
+      <!-- Backgrounds Card -->
+      <div class="smart-card" style="padding-bottom:0;">
+        <div class="card-header">
+          <span class="card-title" style="letter-spacing:0.5px;">BACKGROUNDS · 3 SELECTED</span>
+        </div>
+        <div class="bg-scroll-row">
+
+          <!-- Tile 1: Dirt Road — SELECTED -->
+          <div class="bg-tile selected">
+            <img src="https://res.cloudinary.com/dvq75cqna/image/upload/v1780071536/vw-funds/public/backgrounds/Dirt-Road-HO_251027_1_Display_300x250_1.png" alt="Dirt Road" />
+            <div class="bg-tile-overlay"></div>
+            <div class="bg-tile-label">
+              <div class="bg-tile-name">Dirt Road</div>
+              <div class="bg-tile-mood">Outdoor · Adventure</div>
+            </div>
+            <div class="bg-check">✓</div>
+          </div>
+
+          <!-- Tile 2: Gold Flare -->
+          <div class="bg-tile selected">
+            <img src="https://res.cloudinary.com/dvq75cqna/image/upload/v1780071581/vw-funds/public/backgrounds/Gold-Flare-HO_251027_3_Display_300x250_1.png" alt="Gold Flare" />
+            <div class="bg-tile-overlay"></div>
+            <div class="bg-tile-label">
+              <div class="bg-tile-name">Gold Flare</div>
+              <div class="bg-tile-mood">Warm · Sunset</div>
+            </div>
+            <div class="bg-check">✓</div>
+          </div>
+
+          <!-- Tile 3: Purple City -->
+          <div class="bg-tile selected">
+            <img src="https://res.cloudinary.com/dvq75cqna/image/upload/v1780071599/vw-funds/public/backgrounds/Purple-City-HO_251229_D_Keeler_Display_300x250_1.png" alt="Purple City" />
+            <div class="bg-tile-overlay"></div>
+            <div class="bg-tile-label">
+              <div class="bg-tile-name">Purple City</div>
+              <div class="bg-tile-mood">Urban · Night</div>
+            </div>
+            <div class="bg-check">✓</div>
+          </div>
+
+        </div>
+        <div class="card-footer" style="border-top: 1px solid rgba(0,0,0,0.06);">
+          <button class="btn-grad">Add 3 Backgrounds</button>
+          <button class="btn-skip">Skip</button>
+        </div>
+      </div>
+
+      <!-- Confirmed chip -->
+      <div class="confirmed-chip-wrap">
+        <div class="confirmed-chip">
+          <div class="confirmed-dot">✓</div>
+          <span>3 backgrounds added</span>
+        </div>
+      </div>
+    </div>
+    <!-- /Turn 4 -->
+
+    <!-- ─────────────────────────────────────── -->
+    <!-- TURN 5 — Task Owners                   -->
+    <!-- ─────────────────────────────────────── -->
+    <div class="turn">
+      <div class="agent-row">
+        <svg class="agent-avatar" viewBox="0 0 18 33" fill="none">
+          <path d="M2.22422 16.0471C2.22422 7.57204 8.61025 0.631495 16.6988 0.0413128C16.332 0.0118036 15.9594 0 15.5867 0C6.97648 0 0 7.18252 0 16.0471C0 24.9116 6.97648 32.0941 15.5867 32.0941C15.9594 32.0941 16.332 32.0823 16.6988 32.0528C8.61025 31.4626 2.22422 24.5221 2.22422 16.0471Z" fill="#473BAB"/>
+          <path d="M6.12227 16.047C6.12227 9.69073 10.9089 4.48533 16.9796 4.04269C16.7045 4.02498 16.4236 4.01318 16.1427 4.01318C9.6879 4.01318 4.4541 9.40154 4.4541 16.047C4.4541 22.6924 9.6879 28.0808 16.1427 28.0808C16.4236 28.0808 16.7045 28.069 16.9796 28.0513C10.9146 27.6086 6.12227 22.4032 6.12227 16.047Z" fill="#6356e1"/>
+          <path d="M17.2605 8.04407C17.0771 8.03227 16.8937 8.02637 16.7045 8.02637C12.3994 8.02637 8.9082 11.6206 8.9082 16.0529C8.9082 20.4851 12.3994 24.0793 16.7045 24.0793C16.8937 24.0793 17.0771 24.0734 17.2605 24.0557C13.2134 23.7606 10.0261 20.2904 10.0261 16.0529C10.0261 11.8154 13.2191 8.34507 17.2605 8.04998V8.04407Z" fill="#8c86fc"/>
+        </svg>
+        <div class="agent-bubble">Based on your team and recent campaigns, I'm proposing these task owners for your review.</div>
+      </div>
+
+      <!-- Task Owners Card -->
+      <div class="smart-card">
+        <div class="card-header">
+          <div class="card-header-left">
+            <span class="card-title">Assign Task Owners</span>
+            <span class="card-subtitle">Based on your team — adjust if needed</span>
+          </div>
+        </div>
+        <!-- Owner rows — no card-body padding, use divide pattern -->
+        <div style="padding: 4px 0;">
+
+          <!-- Offers -->
+          <div class="owner-row">
+            <span class="owner-section-label">Offers</span>
+            <div class="owner-btn">
+              <div class="owner-btn-inner">
+                <div class="owner-avatar av-brand">JV</div>
+                <span class="owner-name">Jorge Verlindo</span>
+              </div>
+              <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M2.5 4L5 6.5L7.5 4" stroke="#9c99a9" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </div>
+          </div>
+
+          <!-- Templates -->
+          <div class="owner-row">
+            <span class="owner-section-label">Templates</span>
+            <div class="owner-btn">
+              <div class="owner-btn-inner">
+                <div class="owner-avatar av-teal">RH</div>
+                <span class="owner-name">Rachel Hui</span>
+              </div>
+              <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M2.5 4L5 6.5L7.5 4" stroke="#9c99a9" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </div>
+          </div>
+
+          <!-- Platforms -->
+          <div class="owner-row">
+            <span class="owner-section-label">Platforms</span>
+            <div class="owner-btn">
+              <div class="owner-btn-inner">
+                <div class="owner-avatar av-green">MG</div>
+                <span class="owner-name">Mallory Gonzalez</span>
+              </div>
+              <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M2.5 4L5 6.5L7.5 4" stroke="#9c99a9" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </div>
+          </div>
+
+          <!-- Backgrounds -->
+          <div class="owner-row">
+            <span class="owner-section-label">Backgrounds</span>
+            <div class="owner-btn">
+              <div class="owner-btn-inner">
+                <div class="owner-avatar av-teal">RH</div>
+                <span class="owner-name">Rachel Hui</span>
+              </div>
+              <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M2.5 4L5 6.5L7.5 4" stroke="#9c99a9" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </div>
+          </div>
+
+          <!-- Brand -->
+          <div class="owner-row">
+            <span class="owner-section-label">Brand</span>
+            <div class="owner-btn">
+              <div class="owner-btn-inner">
+                <div class="owner-avatar av-green">MG</div>
+                <span class="owner-name">Mallory Gonzalez</span>
+              </div>
+              <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M2.5 4L5 6.5L7.5 4" stroke="#9c99a9" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </div>
+          </div>
+
+          <!-- Assets -->
+          <div class="owner-row">
+            <span class="owner-section-label">Assets</span>
+            <div class="owner-btn">
+              <div class="owner-btn-inner">
+                <div class="owner-avatar av-teal">RH</div>
+                <span class="owner-name">Rachel Hui</span>
+              </div>
+              <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M2.5 4L5 6.5L7.5 4" stroke="#9c99a9" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </div>
+          </div>
+
+          <!-- Ad Shells -->
+          <div class="owner-row">
+            <span class="owner-section-label">Ad Shells</span>
+            <div class="owner-btn">
+              <div class="owner-btn-inner">
+                <div class="owner-avatar av-brand">JV</div>
+                <span class="owner-name">Jorge Verlindo</span>
+              </div>
+              <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M2.5 4L5 6.5L7.5 4" stroke="#9c99a9" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </div>
+          </div>
+
+          <!-- Campaigns -->
+          <div class="owner-row" style="border-bottom:none;">
+            <span class="owner-section-label">Campaigns</span>
+            <div class="owner-btn">
+              <div class="owner-btn-inner">
+                <div class="owner-avatar av-brand">JV</div>
+                <span class="owner-name">Jorge Verlindo</span>
+              </div>
+              <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M2.5 4L5 6.5L7.5 4" stroke="#9c99a9" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </div>
+          </div>
+
+        </div>
+        <div class="card-footer">
+          <button class="btn-grad">Confirm Owners</button>
+          <button class="btn-skip">Skip</button>
+        </div>
+      </div>
+
+      <!-- Confirmed chip -->
+      <div class="confirmed-chip-wrap">
+        <div class="confirmed-chip">
+          <div class="confirmed-dot">✓</div>
+          <span>Task owners set for 8 sections</span>
+        </div>
+      </div>
+    </div>
+    <!-- /Turn 5 -->
+
+    <!-- ─────────────────────────────────────── -->
+    <!-- TURN 6 — Share                         -->
+    <!-- ─────────────────────────────────────── -->
+    <div class="turn">
+      <div class="agent-row">
+        <svg class="agent-avatar" viewBox="0 0 18 33" fill="none">
+          <path d="M2.22422 16.0471C2.22422 7.57204 8.61025 0.631495 16.6988 0.0413128C16.332 0.0118036 15.9594 0 15.5867 0C6.97648 0 0 7.18252 0 16.0471C0 24.9116 6.97648 32.0941 15.5867 32.0941C15.9594 32.0941 16.332 32.0823 16.6988 32.0528C8.61025 31.4626 2.22422 24.5221 2.22422 16.0471Z" fill="#473BAB"/>
+          <path d="M6.12227 16.047C6.12227 9.69073 10.9089 4.48533 16.9796 4.04269C16.7045 4.02498 16.4236 4.01318 16.1427 4.01318C9.6879 4.01318 4.4541 9.40154 4.4541 16.047C4.4541 22.6924 9.6879 28.0808 16.1427 28.0808C16.4236 28.0808 16.7045 28.069 16.9796 28.0513C10.9146 27.6086 6.12227 22.4032 6.12227 16.047Z" fill="#6356e1"/>
+          <path d="M17.2605 8.04407C17.0771 8.03227 16.8937 8.02637 16.7045 8.02637C12.3994 8.02637 8.9082 11.6206 8.9082 16.0529C8.9082 20.4851 12.3994 24.0793 16.7045 24.0793C16.8937 24.0793 17.0771 24.0734 17.2605 24.0557C13.2134 23.7606 10.0261 20.2904 10.0261 16.0529C10.0261 11.8154 13.2191 8.34507 17.2605 8.04998V8.04407Z" fill="#8c86fc"/>
+        </svg>
+        <div class="agent-bubble">Your campaign is ready! How would you like to share the review?</div>
+      </div>
+
+      <!-- Share Chooser Card -->
+      <div class="smart-card" style="overflow:hidden; padding:0;">
+        <!-- Email option -->
+        <div class="share-option">
+          <div class="share-icon-wrap">
+            <!-- mail icon -->
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+              <rect x="1.5" y="3.5" width="13" height="9" rx="1.5" stroke="#473bab" stroke-width="1.4"/>
+              <path d="M1.5 5L8 9.5L14.5 5" stroke="#473bab" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </div>
+          <div class="share-option-info">
+            <div class="share-option-title">Send via Email</div>
+            <div class="share-option-desc">Deliver review link to a recipient's inbox</div>
+          </div>
+          <div class="share-chevron">
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M5.5 4L8.5 7L5.5 10" stroke="#9c99a9" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </div>
+        </div>
+        <!-- Platform option -->
+        <div class="share-option">
+          <div class="share-icon-wrap">
+            <!-- chat icon -->
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+              <path d="M2 3.5C2 2.67 2.67 2 3.5 2h9C13.33 2 14 2.67 14 3.5v6c0 .83-.67 1.5-1.5 1.5H6l-3 2.5V11H3.5C2.67 11 2 10.33 2 9.5v-6z" stroke="#473bab" stroke-width="1.4" stroke-linejoin="round"/>
+              <path d="M5 6h6M5 8.5h4" stroke="#473bab" stroke-width="1.2" stroke-linecap="round"/>
+            </svg>
+          </div>
+          <div class="share-option-info">
+            <div class="share-option-title">Send via Platform</div>
+            <div class="share-option-desc">Notify team members inside Constellation</div>
+          </div>
+          <div class="share-chevron">
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M5.5 4L8.5 7L5.5 10" stroke="#9c99a9" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- Email sub-turn (as if Email was chosen) -->
+    <div class="turn">
+      <div class="agent-row">
+        <svg class="agent-avatar" viewBox="0 0 18 33" fill="none">
+          <path d="M2.22422 16.0471C2.22422 7.57204 8.61025 0.631495 16.6988 0.0413128C16.332 0.0118036 15.9594 0 15.5867 0C6.97648 0 0 7.18252 0 16.0471C0 24.9116 6.97648 32.0941 15.5867 32.0941C15.9594 32.0941 16.332 32.0823 16.6988 32.0528C8.61025 31.4626 2.22422 24.5221 2.22422 16.0471Z" fill="#473BAB"/>
+          <path d="M6.12227 16.047C6.12227 9.69073 10.9089 4.48533 16.9796 4.04269C16.7045 4.02498 16.4236 4.01318 16.1427 4.01318C9.6879 4.01318 4.4541 9.40154 4.4541 16.047C4.4541 22.6924 9.6879 28.0808 16.1427 28.0808C16.4236 28.0808 16.7045 28.069 16.9796 28.0513C10.9146 27.6086 6.12227 22.4032 6.12227 16.047Z" fill="#6356e1"/>
+          <path d="M17.2605 8.04407C17.0771 8.03227 16.8937 8.02637 16.7045 8.02637C12.3994 8.02637 8.9082 11.6206 8.9082 16.0529C8.9082 20.4851 12.3994 24.0793 16.7045 24.0793C16.8937 24.0793 17.0771 24.0734 17.2605 24.0557C13.2134 23.7606 10.0261 20.2904 10.0261 16.0529C10.0261 11.8154 13.2191 8.34507 17.2605 8.04998V8.04407Z" fill="#8c86fc"/>
+        </svg>
+        <div class="agent-bubble">Sharing project link for <strong>Honda of Anywhere Summer Campaign 2026</strong></div>
+      </div>
+
+      <!-- Email Card -->
+      <div class="smart-card">
+        <div class="card-header">
+          <div class="card-header-left">
+            <span class="card-subtitle" style="font-size:11px; color: var(--ink-2);">Sharing project link for <strong style="color:var(--ink); font-weight:600;">Honda of Anywhere Summer Campaign 2026</strong></span>
+          </div>
+        </div>
+        <div class="card-body">
+          <!-- Send To -->
+          <div class="section-label">Send To</div>
+          <div class="email-contact-row">
+            <div class="email-avatar">JV</div>
+            <div class="email-contact-info">
+              <div class="email-contact-name">Jorge Verlindo</div>
+              <div class="email-contact-email">jorge@verlindo.com</div>
+            </div>
+            <div class="email-check">✓</div>
+          </div>
+          <!-- Message -->
+          <div class="section-label" style="margin-top:4px;">Message</div>
+          <textarea class="email-textarea" rows="4">I'd like to share the Honda project "Honda of Anywhere Summer Campaign 2026" with you. Please find the project link below:
+
+https://constellation-ux-app.vercel.app/OEM/Projects</textarea>
+        </div>
+        <div class="card-footer">
+          <button class="btn-grad">Send Email</button>
+          <button class="btn-skip">Cancel</button>
+        </div>
+      </div>
+
+      <!-- Confirmed chip — final -->
+      <div class="confirmed-chip-wrap">
+        <div class="confirmed-chip">
+          <div class="confirmed-dot">✓</div>
+          <span>Email sent to jorge.verlindo@helloconstellation.com</span>
+        </div>
+      </div>
+    </div>
+    <!-- /Turn 6 -->
+
+  </div>
+  <!-- /conversation -->
+
+</div>
+</body>
+</html>

@@ -567,23 +567,18 @@ body {
   display: flex; justify-content: center;
 }
 .view-all-btn {
-  display: inline-flex; align-items: center; gap: 6px;
-  padding: 9px 20px;
+  display: inline-flex; align-items: center;
+  padding: 9px 24px;
   border-radius: 100px;
-  background: var(--card-bg);
-  border: 1.5px solid var(--brand);
-  color: var(--brand);
+  background: var(--brand-grad);
+  border: none;
+  color: #fff;
   font-size: 13px; font-weight: 500;
   font-family: var(--font); letter-spacing: 0.1px;
   text-decoration: none;
-  transition: background 0.15s, box-shadow 0.15s;
-  box-shadow: 0 1px 4px rgba(71,59,171,0.10);
+  transition: opacity 0.15s;
 }
-.view-all-btn:hover {
-  background: var(--brand-tint);
-  box-shadow: 0 3px 10px rgba(71,59,171,0.18);
-}
-.view-all-btn svg { flex-shrink: 0; }
+.view-all-btn:hover { opacity: 0.88; }
 
 .cta-disclaimer {
   font-size: 11px; color: var(--text-3); line-height: 1.55;
@@ -1570,16 +1565,7 @@ body {
            class="view-all-btn"
            id="view-all-assets-link"
            target="_blank">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none">
-            <rect x="3" y="3" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="1.6"/>
-            <rect x="14" y="3" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="1.6"/>
-            <rect x="3" y="14" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="1.6"/>
-            <rect x="14" y="14" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="1.6"/>
-          </svg>
           View All Assets in Platform
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none">
-            <path d="M7 17L17 7M17 7H7M17 7v10" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
-          </svg>
         </a>
       </div>
 

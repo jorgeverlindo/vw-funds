@@ -71,6 +71,17 @@ export interface ProjectContextPayload {
   activeBrandOem?: string;
   /** Per-section task owner names, keyed by section id (e.g. "offers", "templates") */
   taskOwners?: Record<string, string>;
+  /**
+   * First N generated asset preview records (bg image URL + label).
+   * Used for email asset grid and campaign-review.html query params.
+   * Only contains assets with publicly-accessible Cloudinary bg images.
+   */
+  generatedAssetPreviews?: Array<{
+    bgUrl: string;
+    offerName: string;
+    templateName: string;
+    dims: string;
+  }>;
 }
 
 // Custom offer (from file upload / extracted by AI)
@@ -2790,9 +2801,8 @@ export function ProjectAgentPane({ isOpen, onClose, userType, activeUserName }: 
           start_date:      ctx?.startDate,
           end_date:        ctx?.endDate,
           campaign_owner:  ctx?.owner,
-          assets:          (ctx as unknown as { generatedAssets?: string[] })?.generatedAssets
-            ?.filter((url: string) => url.startsWith('http'))
-            .slice(0, 4) ?? [],
+          // Use generatedAssetPreviews (bg Cloudinary URLs per template)
+          assets: (ctx?.generatedAssetPreviews ?? []).map(p => p.bgUrl),
           offers:      projectOffers.map(o => {
             const rawImage = (o as { image?: string }).image ?? "";
             // blob: and data: URLs are browser-session-only — strip them before

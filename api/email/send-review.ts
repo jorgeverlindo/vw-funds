@@ -299,7 +299,12 @@ function buildEmailHtml(body: SendReviewBody): string {
 
               <!-- CTA -->
               <div style="margin-top:32px;text-align:center;">
-                <a href="${APP_URL}/campaign-review.html"
+                <a href="${(() => {
+                  const base = `${APP_URL}/campaign-review.html`;
+                  if (validAssets.length === 0) return base;
+                  const params = validAssets.map(u => encodeURIComponent(u)).join(',');
+                  return `${base}?assets=${params}`;
+                })()}"
                    style="display:inline-block;background:#473bab;color:#ffffff;text-decoration:none;
                           font-size:14px;font-weight:600;padding:13px 30px;border-radius:10px;letter-spacing:.02em;">
                   Review Campaign

@@ -1543,6 +1543,31 @@ document.addEventListener('click', function(e) {
 /* Init */
 renderPlatforms();
 
+/* ── Inject real asset images from ?assets= query param ──────── */
+(function() {
+  const params = new URLSearchParams(window.location.search);
+  const raw = params.get('assets');
+  if (!raw) return;
+  const urls = raw.split(',').map(u => decodeURIComponent(u)).filter(Boolean);
+  const cards = document.querySelectorAll('.asset-card');
+  cards.forEach(function(card, i) {
+    if (i >= urls.length) return;
+    var url = urls[i];
+    var thumb = card.querySelector('.asset-thumb');
+    if (!thumb) return;
+    // Replace placeholder with real image
+    var placeholder = thumb.querySelector('.asset-thumb-placeholder');
+    var logo = thumb.querySelector('.asset-ph-logo');
+    if (placeholder) placeholder.remove();
+    if (logo) logo.remove();
+    var img = document.createElement('img');
+    img.src = url;
+    img.alt = 'Asset ' + (i + 1);
+    img.style.cssText = 'width:100%;height:100%;object-fit:cover;display:block;';
+    thumb.insertBefore(img, thumb.firstChild);
+  });
+})();
+
 /* ── Asset preview modal ──────────────────────────────────────── */
 function openAssetModal(cardEl) {
   var img = cardEl.querySelector('.asset-thumb img');

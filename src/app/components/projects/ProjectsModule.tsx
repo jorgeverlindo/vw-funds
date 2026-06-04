@@ -1309,6 +1309,18 @@ function ProjectDetailView({
       currentOfferIds:    visibleOfferIds,
       currentTemplateIds: visibleTemplateIds,
       activeBrandOem:     brandKit?.oem,
+      // First 4 generated asset previews — bg image URLs are public Cloudinary links
+      generatedAssetPreviews: generatedAssets.slice(0, 4).flatMap(({ offer, template, bgId }) => {
+        const bg = bgId ? backgroundCollections.find(b => b.id === bgId) ?? null : null;
+        const bgUrl = getBgImage(bg, template);
+        if (!bgUrl || !bgUrl.startsWith('http')) return [];
+        return [{
+          bgUrl,
+          offerName: `${offer.year} ${offer.make} ${offer.model}`,
+          templateName: template.name,
+          dims: `${template.width}×${template.height}`,
+        }];
+      }),
       taskOwners:         Object.fromEntries(
         Object.entries(taskOwners)
           .map(([section, id]) => [section, PROJECT_OWNERS.find(o => o.id === id)?.name ?? id])

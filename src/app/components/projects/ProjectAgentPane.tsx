@@ -2704,7 +2704,6 @@ export function ProjectAgentPane({ isOpen, onClose, userType, activeUserName }: 
       const offerCount    = ctx?.currentOfferIds.length ?? 0;
       const templateCount = ctx?.currentTemplateIds.length ?? 0;
       if (offerCount > 0 && templateCount > 0) {
-        // Approximate total: if backgrounds were added they'd be in ctx as well — use 1 as floor
         const total = offerCount * templateCount;
         setTimeout(() => {
           setMessages(prev => [...prev, {
@@ -2716,6 +2715,21 @@ export function ProjectAgentPane({ isOpen, onClose, userType, activeUserName }: 
           } as TextMessage]);
         }, 600);
       }
+
+      // Proactively propose task owners if none are set yet.
+      // Give the generate-assets message time to render first, then slide in the owners card.
+      const ownersAlreadySet = ctx?.taskOwners && Object.keys(ctx.taskOwners).length > 0;
+      const ownersAlreadyProposed = messagesRef.current.some(m => m.type === "task_owners");
+      if (!ownersAlreadySet && !ownersAlreadyProposed) {
+        setTimeout(() => sendInternal(
+          "Flow complete. Now call propose_task_owners with smart default owners: " +
+          "offers→Jorge Verlindo, templates→Rachel Hui, assets→Rachel Hui, " +
+          "platforms→Mallory Gonzalez, brand→Mallory Gonzalez, backgrounds→Rachel Hui, " +
+          "adshells→Jorge Verlindo, campaigns→Jorge Verlindo. " +
+          "Preface the card with: \"Based on your team and recent campaigns, I've pre-assigned task owners for you. Review and adjust as needed.\""
+        ), 1800);
+      }
+
       return;
     }
 
@@ -3323,6 +3337,14 @@ export function ProjectAgentPane({ isOpen, onClose, userType, activeUserName }: 
                           onTaskOwnersApply={(owners) => {
                             dispatchAction({ action: "set_task_owners", owners });
                             setMessages(prev => prev.map(m => m.id === msg.id ? { ...m, applied: true } : m));
+                            // Notify the agent so it knows task owners are now set and can handle the next user request correctly
+                            const count = Object.keys(owners).length;
+                            setTimeout(() => sendInternal(
+                              `Task owners have been set for ${count} section${count !== 1 ? "s" : ""}. ` +
+                              `Check the user's original request and continue with any remaining steps. ` +
+                              `If the user asked to share/send the project after this, do that now using propose_share or propose_email. ` +
+                              `Do NOT call propose_task_owners again — that step is complete.`
+                            ), 400);
                           }}
                           proactive={proactiveMode}
                           onProactiveQuestionsApply={handleProactiveQuestionsSubmit}

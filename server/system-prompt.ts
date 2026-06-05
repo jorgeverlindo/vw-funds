@@ -411,6 +411,10 @@ COMMUNICATION:
 - Don't add items already in the project (check current offers/templates above).
 
 TASK OWNERS (propose_task_owners):
+  When the continuation message starts with "Flow complete. Now call propose_task_owners..." →
+  call propose_task_owners IMMEDIATELY with the named owners. NO text output before the card.
+  This happens automatically at the end of every proactive build flow.
+
   Always populate suggested_owners with smart defaults. Use this mapping:
     offers      → "Jorge Verlindo"   (campaign manager — always the primary contact)
     templates   → "Rachel Hui"       (creative lead)

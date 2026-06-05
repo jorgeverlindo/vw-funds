@@ -2609,20 +2609,36 @@ export function ProjectAgentPane({ isOpen, onClose, userType, activeUserName }: 
     const legacySteps = setupMsg?.input.flow_steps;
     if (legacySteps && legacySteps.length > 0) return legacySteps;
 
-    // 3. Fallback: infer from first user message
-    const firstUser = msgs.find((m): m is TextMessage => m.type === "text" && m.role === "user");
-    if (firstUser) {
-      const t = firstUser.content.toLowerCase();
-      const wantsEmail = t.includes("email") || t.includes("send") || t.includes("share");
-      const wantsOffers = t.includes("offer");
-      const wantsTemplates = t.includes("template");
-      const wantsBackgrounds = t.includes("background");
+    // 3. Fallback: infer from user messages.
+    //    Scan MOST RECENT user message first (captures "add backgrounds and send to X"
+    //    on existing projects), then fall back to the first message for full-flow builds.
+    const userMsgs = msgs.filter((m): m is TextMessage => m.type === "text" && m.role === "user");
+    const recentUser = userMsgs.at(-1);
+    const firstUser  = userMsgs.at(0);
+
+    const inferStepsFrom = (text: string): string[] | null => {
+      const t = text.toLowerCase();
+      const wantsEmail       = t.includes("email") || t.includes("send") || t.includes("share") || t.includes("manda") || t.includes("envi");
+      const wantsOffers      = t.includes("offer");
+      const wantsTemplates   = t.includes("template");
+      const wantsBackgrounds = t.includes("background") || t.includes("cen") || t.includes("backgr");
       const steps: string[] = [];
-      if (wantsOffers) steps.push("offers");
-      if (wantsTemplates) steps.push("templates");
+      if (wantsOffers)      steps.push("offers");
+      if (wantsTemplates)   steps.push("templates");
       if (wantsBackgrounds) steps.push("backgrounds");
-      if (wantsEmail) steps.push("email");
-      if (steps.length > 0) return steps;
+      if (wantsEmail)       steps.push("email");
+      return steps.length > 0 ? steps : null;
+    };
+
+    // Prefer the most recent user message (partial flows on existing projects)
+    if (recentUser && recentUser !== firstUser) {
+      const steps = inferStepsFrom(recentUser.content);
+      if (steps) return steps;
+    }
+    // Fall back to first message (full-flow from scratch)
+    if (firstUser) {
+      const steps = inferStepsFrom(firstUser.content);
+      if (steps) return steps;
     }
     return ["offers", "templates", "backgrounds", "brand"];
   }, []);
@@ -2767,8 +2783,9 @@ export function ProjectAgentPane({ isOpen, onClose, userType, activeUserName }: 
   // ── Templates card ──────────────────────────────────────────────────────────
   const handleTemplatesApply = useCallback((templateIds: string[]) => {
     dispatchAction({ action: "add_templates", templateIds });
-    const inSetupFlow = messagesRef.current.some(m => m.type === "setup");
-    if (!inSetupFlow) return;
+    // Always fire next step — even on existing projects (no setup card).
+    // Previously guarded by inSetupFlow which silently dropped the continuation
+    // when templates were proposed directly on an open project.
     fireNextStep("templates");
   }, [dispatchAction, fireNextStep]);
 

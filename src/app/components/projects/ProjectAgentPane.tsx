@@ -2423,8 +2423,23 @@ export function ProjectAgentPane({ isOpen, onClose, userType, activeUserName }: 
       }
     }
 
-    // If the continuation explicitly requests propose_parsed_offers, force it so the model cannot refuse.
-    const forcedTool = text.includes("Call propose_parsed_offers") ? "propose_parsed_offers" : undefined;
+    // Force the exact tool whenever the continuation names one.
+    // This is the core guard against the agent calling setup_project or add_* tools
+    // instead of the propose_* tool we asked for. tool_choice = "tool" means the model
+    // HAS to call that specific tool and nothing else.
+    const FORCED_TOOL_PATTERNS: Array<[string, string]> = [
+      ["Next: propose_offers",       "propose_offers"],
+      ["Next: propose_templates",    "propose_templates"],
+      ["Next: propose_backgrounds",  "propose_backgrounds"],
+      ["Next: propose_brand",        "propose_brand"],
+      ["Next: propose_email",        "propose_email"],
+      ["Next: propose_share",        "propose_share"],
+      ["Next: propose_task_owners",  "propose_task_owners"],
+      ["Next: propose_notify_owners","propose_notify_owners"],
+      ["NOW call propose_task_owners","propose_task_owners"],
+      ["Call propose_parsed_offers", "propose_parsed_offers"],
+    ];
+    const forcedTool = FORCED_TOOL_PATTERNS.find(([pattern]) => text.includes(pattern))?.[1];
 
     accRef.current = ""; setStreamingText("");
     await streamMessage(history, ctx,
@@ -2677,25 +2692,11 @@ export function ProjectAgentPane({ isOpen, onClose, userType, activeUserName }: 
     if (catalogHasOffersFor(oem)) {
       return `${prefix}. Next: propose_offers`;
     }
-
     const hasFile = messagesRef.current.some(m => m.type === "user_file");
-
-    if (hasFile) {
-      // File uploaded → extract offers from it
-      return `${prefix}. The offer catalog has NO offers for "${oem}". Do NOT call propose_offers. Call propose_parsed_offers now — scan the image/document in the conversation history and extract every offer row you can see.`;
-    }
-
-    // No catalog offers AND no file uploaded.
-    // In a proactive / automated flow, we cannot fabricate offers the user didn't provide.
-    // Skip the offers step and move to the next one in the pipeline.
-    // Show a brief informational note to the user so they understand why.
-    const nextContinuation = "Step complete. Next: propose_templates";
-    return (
-      `${prefix}. ` +
-      `The offer catalog has no entries for "${oem}" and no offer document was uploaded. ` +
-      `Write ONE short sentence to the user: "No ${oem} offers found in the catalog — I'll skip to templates. You can add offers manually later." ` +
-      `Then immediately: ${nextContinuation}`
-    );
+    const context = hasFile
+      ? "Call propose_parsed_offers now — scan the image/document in the conversation history and extract every offer row you can see."
+      : "Call propose_parsed_offers now — no catalog offers exist for this brand. Create placeholder rows using the project OEM and current year so the user can fill in the details inline.";
+    return `${prefix}. The offer catalog has NO offers for "${oem}". Do NOT call propose_offers. ${context}`;
   }, [catalogHasOffersFor]);
 
   const fireNextStep = useCallback((completedStep: string) => {
@@ -2730,20 +2731,16 @@ export function ProjectAgentPane({ isOpen, onClose, userType, activeUserName }: 
         }, 600);
       }
 
-      // Proactively propose task owners if none are set yet.
-      // Give the generate-assets message time to render first, then slide in the owners card.
+      // Proactively propose task owners with smart defaults at the end of every flow.
       const ownersAlreadySet = ctx?.taskOwners && Object.keys(ctx.taskOwners).length > 0;
       const ownersAlreadyProposed = messagesRef.current.some(m => m.type === "task_owners");
       if (!ownersAlreadySet && !ownersAlreadyProposed) {
         setTimeout(() => sendInternal(
-          "Flow complete. " +
-          "⛔ DO NOT call setup_project, propose_offers, propose_templates, propose_backgrounds, or propose_brand — all steps are done. " +
-          "NOW call propose_task_owners ONLY, with these suggested_owners: " +
+          "NOW call propose_task_owners with suggested_owners: " +
           "[{section:'offers',name:'Jorge Verlindo'},{section:'templates',name:'Rachel Hui'}," +
           "{section:'assets',name:'Rachel Hui'},{section:'platforms',name:'Mallory Gonzalez'}," +
           "{section:'brand',name:'Mallory Gonzalez'},{section:'backgrounds',name:'Rachel Hui'}," +
-          "{section:'adshells',name:'Jorge Verlindo'},{section:'campaigns',name:'Jorge Verlindo'}]. " +
-          "Say: \"Based on your team and recent campaigns, I've pre-assigned task owners. Review and adjust as needed.\""
+          "{section:'adshells',name:'Jorge Verlindo'},{section:'campaigns',name:'Jorge Verlindo'}]."
         ), 1800);
       }
 
@@ -3354,16 +3351,9 @@ export function ProjectAgentPane({ isOpen, onClose, userType, activeUserName }: 
                           onTaskOwnersApply={(owners) => {
                             dispatchAction({ action: "set_task_owners", owners });
                             setMessages(prev => prev.map(m => m.id === msg.id ? { ...m, applied: true } : m));
-                            // Tell the agent the step is done — DO NOT tell it to "continue remaining steps"
-                            // because in proactive flows that causes it to re-read the original setup message
-                            // and call setup_project again. Just mark the step as done and wait.
-                            const count = Object.keys(owners).length;
-                            setTimeout(() => sendInternal(
-                              `Task owners confirmed for ${count} section${count !== 1 ? "s" : ""}. ` +
-                              `This step is DONE. ` +
-                              `⛔ Do NOT call setup_project, propose_task_owners, propose_offers, propose_templates, or any other tool. ` +
-                              `The flow is complete. Wait for the user's next message.`
-                            ), 400);
+                            // No continuation needed — task owners is always the final step.
+                            // Sending any continuation here risks the agent re-reading the
+                            // original "Proactive build" message and calling setup_project again.
                           }}
                           proactive={proactiveMode}
                           onProactiveQuestionsApply={handleProactiveQuestionsSubmit}

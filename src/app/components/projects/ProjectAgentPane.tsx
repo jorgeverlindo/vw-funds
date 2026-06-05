@@ -2568,6 +2568,7 @@ export function ProjectAgentPane({ isOpen, onClose, userType, activeUserName }: 
           }
         }
       } catch (err) {
+        if (import.meta.env.DEV) console.warn("[extract] Failed:", err);
         setMessages(prev => [...prev, { id: `e-${Date.now()}`, role: "assistant", type: "text", content: `⚠️ ${String(err)}` } as TextMessage]);
       } finally {
         setStreaming(false);
@@ -2842,9 +2843,9 @@ export function ProjectAgentPane({ isOpen, onClose, userType, activeUserName }: 
     })
       .then(r => r.json())
       .then(data => {
-        if (!data.success) console.warn("[email] send-review error:", data.error);
+        if (!data.success) { if (import.meta.env.DEV) console.warn("[email] send-review error:", data.error); }
       })
-      .catch(err => console.warn("[email] send-review fetch failed:", err));
+      .catch(err => { if (import.meta.env.DEV) console.warn("[email] send-review fetch failed:", err); });
 
     setMessages(prev => [...prev, {
       id: `a-${Date.now()}`, role: "assistant", type: "text",

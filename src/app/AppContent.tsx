@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useCallback, useRef } from 'react';
+import { useState, useMemo, useEffect, useCallback, useRef, Suspense, lazy } from 'react';
 import { useParams, useLocation, useNavigate } from 'react-router';
 import { AppSidebar } from './components/AppSidebar';
 import { TopNavBar } from './components/TopNavBar';
@@ -14,8 +14,8 @@ import { PreApprovalPanel } from './components/PreApprovalPanel';
 import { ClaimsPanel } from './components/ClaimsPanel';
 import { MainPane, RightPane } from './components/LayoutWrappers';
 import { DateRange } from 'react-day-picker';
-import { PortalContent } from './components/portal/PortalContent';
-import { ProjectsModule } from './components/projects/ProjectsModule';
+const PortalContent = lazy(() => import('./components/portal/PortalContent').then(m => ({ default: m.PortalContent })));
+const ProjectsModule = lazy(() => import('./components/projects/ProjectsModule').then(m => ({ default: m.ProjectsModule })));
 import { DrawerOEM } from './components/pre-approval/DrawerOEM';
 import { GuidelinesContent } from './components/GuidelinesContent';
 import { AgentPane } from './components/AgentPane';
@@ -41,7 +41,7 @@ import type { PreApproval } from './components/FundsPreApprovalsContent';
 import { CommentsProvider, CommentsSidePanel, CommentsButton } from './components/comments';
 import type { NotifItem } from './components/comments/types';
 import { ClientSettingsContent } from './components/client-settings/ClientSettingsContent';
-import { InventoryContent } from './components/inventory/InventoryContent';
+const InventoryContent = lazy(() => import('./components/inventory/InventoryContent').then(m => ({ default: m.InventoryContent })));
 
 const DEALER_TABS = [
   { id: 'overview', label: 'Overview' },
@@ -802,19 +802,25 @@ export default function AppContent() {
 
           {/* PORTAL SECTION */}
           {activeAppSection === 'portal' && (
-             <PortalContent onPreApproval={handlePortalPreApproval} />
+            <Suspense fallback={<div />}>
+              <PortalContent onPreApproval={handlePortalPreApproval} />
+            </Suspense>
           )}
 
           {/* PROJECTS SECTION */}
           {activeAppSection === 'projects' && (
              <div className="h-full overflow-hidden">
-               <ProjectsModule openProjectId={notifOpenProjectId} onProjectChange={handleProjectChange} />
+               <Suspense fallback={<div />}>
+                 <ProjectsModule openProjectId={notifOpenProjectId} onProjectChange={handleProjectChange} />
+               </Suspense>
              </div>
           )}
 
           {/* INVENTORY SECTION — RideNow only */}
           {activeAppSection === 'inventory' && client.clientId === 'ride-now' && (
-            <InventoryContent isAgentPaneOpen={isAgentPaneOpen} />
+            <Suspense fallback={<div />}>
+              <InventoryContent isAgentPaneOpen={isAgentPaneOpen} />
+            </Suspense>
           )}
 
           </> {/* end of normal sections */}

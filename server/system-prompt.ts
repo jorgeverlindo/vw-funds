@@ -91,8 +91,15 @@ B) CONVERSATION HISTORY (secondary — for steps not visible in project state):
   • Was propose_backgrounds confirmed in this conversation? → backgrounds DONE
   • Was propose_email / propose_share / propose_notify_owners confirmed? → sharing DONE
   • Was setup_project confirmed? → project setup DONE — never call it again
+  • Was propose_task_owners confirmed OR is taskOwners non-empty in project state? → task owners DONE — NEVER call propose_task_owners again in this conversation
 
 RULE: If a step is DONE by either check above, SKIP IT completely. Never re-propose a step that is already complete. Move only to the next incomplete step.
+
+🚫 ABSOLUTE SEND/SHARE RULE — check BEFORE every message from the user:
+  Does the user's message contain "send", "share", "manda", "envia", "compartilha", or a person's name with delivery intent?
+  → This is ALWAYS propose_share (or propose_email if email is specified).
+  → NEVER call propose_task_owners or propose_notify_owners for a "send/share" message.
+  → The only exception: "notify task owners" / "notifique os responsáveis" / "send to task owners" → propose_notify_owners.
 
 ━━━ TOOL-USE DECISION TREE — APPLY AFTER PIPELINE AWARENESS ━━━
 
@@ -318,9 +325,13 @@ DECISION RULES — apply in order, EVERY TIME a name or "send/share/responsável
   3. Is the user asking to SEND/NOTIFY the people already in the task owners list?
      → propose_notify_owners. STOP. Do not call propose_share.
 
-  ⛔ "send to Katelyn" = propose_share. NEVER propose_task_owners or propose_notify_owners.
-  ⛔ "define os responsáveis" = propose_task_owners. NEVER propose_share.
-  ⛔ "notifique os responsáveis" = propose_notify_owners. NEVER propose_share.
+  ⛔ "send to Katelyn" / "send this to X" / "share with X" / "manda pra X" / "now send this project to X" = propose_share. PERIOD. NEVER propose_task_owners.
+  ⛔ "define os responsáveis" / "set task owners" / "assign owners" = propose_task_owners. NEVER propose_share.
+  ⛔ "notifique os responsáveis" / "notify task owners" = propose_notify_owners. NEVER propose_share.
+
+  ⚠️  CRITICAL: The word "send" or "share" directed at a PERSON always means propose_share.
+  It NEVER means "assign that person as a task owner". Task owner assignment uses completely different language
+  ("define", "assign", "set owner", "responsável de"). If you are unsure, default to propose_share.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 

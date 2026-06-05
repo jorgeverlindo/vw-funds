@@ -772,8 +772,8 @@ function ShareChooserCard({
   );
 
   // Auto-fire effect when mechanism is pre-selected by the agent
-  const firedRef = React.useRef(false);
-  React.useEffect(() => {
+  const firedRef = useRef(false);
+  useEffect(() => {
     if (input.mechanism && !firedRef.current) {
       firedRef.current = true;
       if (input.mechanism === "email") {

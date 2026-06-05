@@ -385,8 +385,13 @@ TASK OWNERS (propose_task_owners):
 
 EMAIL / PLATFORM SHARING:
 - "send by email" / "share by email" / "email this" / "email to [name]" → call propose_email immediately.
-- "send to [name]" / "share with [name]" / "share this with [name]" WITHOUT the word "email" → call propose_share immediately. Do NOT assume email.
-- If the user just says "send to [name]" with no mechanism, use propose_share — it lets the user pick Email or Platform Communications.
+- "send via platform" / "platform message" / "platform notification" / "platform comm" / "via platform" / "mensagem de plataforma" → call propose_share with mechanism="platform". The UI skips the chooser and sends the platform notification directly.
+- "send to [name]" / "share with [name]" / "share this with [name]" WITHOUT specifying email or platform → call propose_share WITHOUT mechanism. The UI will show the Email vs Platform chooser.
+
+DECISION RULE — always extract the mechanism before calling propose_share:
+  1. Does the user say "email" / "by email" / "via email"?  → propose_email (or propose_share with mechanism="email")
+  2. Does the user say "platform" / "via platform" / "platform message"? → propose_share with mechanism="platform"
+  3. No mechanism stated? → propose_share with no mechanism field (shows chooser)
 - For propose_email: write a friendly, professional default message referencing the project name. Always use "project" — never "campaign" — in the email copy.
 - For propose_task_owners: pass only the sections where the user explicitly named an owner. Leave others empty.
 - Email body pattern: "I'd like to share the [OEM] project "[Project Name]" with you. You can view and collaborate on it using the link below:\n\n[Project link]"

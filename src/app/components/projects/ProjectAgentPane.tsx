@@ -245,6 +245,8 @@ interface EmailInput {
 interface ShareInput {
   recipient_hint: string;
   project_name?: string;
+  /** Pre-selected mechanism — when set, the chooser is skipped entirely */
+  mechanism?: "email" | "platform";
 }
 interface NotifyOwnersInput {
   owners?: Record<string, string>; // section → owner name hint from agent
@@ -761,13 +763,29 @@ function ShareChooserCard({
   onChoosePlatform: (recipientName: string) => void;
 }) {
 
-  const [chosen, setChosen] = useState<"email" | "platform" | null>(null);
-
   const recipient = input.recipient_hint || "the recipient";
   const firstName = recipient.split(" ")[0];
 
+  // If the agent already specified a mechanism, skip the chooser and fire immediately
+  const [chosen, setChosen] = useState<"email" | "platform" | null>(
+    input.mechanism ?? null,
+  );
+
+  // Auto-fire effect when mechanism is pre-selected by the agent
+  const firedRef = React.useRef(false);
+  React.useEffect(() => {
+    if (input.mechanism && !firedRef.current) {
+      firedRef.current = true;
+      if (input.mechanism === "email") {
+        onChooseEmail(recipient);
+      } else {
+        onChoosePlatform(recipient);
+      }
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   if (chosen === "email") {
-    // Delegate immediately — email proposal card will render as a separate message
     return (
       <div className="ml-[32px] mt-[4px]">
         <ConfirmedChip label={`Opening email share for ${firstName}…`} />

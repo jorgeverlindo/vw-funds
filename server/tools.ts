@@ -280,11 +280,12 @@ export const agentTools: Anthropic.Tool[] = [
   {
     name: "propose_share",
     description:
-      "Propose a sharing mechanism when the user wants to send or share a project with someone " +
-      "but has NOT specified whether to use email or the platform. " +
-      "Shows a choice card: 'Send via Email' or 'Send via Platform Communications'. " +
-      "Use this INSTEAD of propose_email when the user says things like 'send to [name]', " +
-      "'share with [name]', 'send this to Katelyn' — without saying 'email'.",
+      "Propose sharing a project with a specific person. " +
+      "When the user specifies a mechanism ('via email', 'by email' → mechanism='email'; " +
+      "'via platform', 'platform message', 'platform notification', 'platform comm' → mechanism='platform'), " +
+      "pass it in the mechanism field and the UI will skip the chooser entirely. " +
+      "When the user says 'send to [name]' or 'share with [name]' WITHOUT specifying a mechanism, " +
+      "omit mechanism and the UI will show the 'Email vs Platform' chooser card.",
     input_schema: {
       type: "object" as const,
       properties: {
@@ -295,6 +296,15 @@ export const agentTools: Anthropic.Tool[] = [
         project_name: {
           type: "string",
           description: "Current project name, for display in the card. Leave blank to use the active project name.",
+        },
+        mechanism: {
+          type: "string",
+          enum: ["email", "platform"],
+          description:
+            "Pre-selected delivery channel. " +
+            "Set 'email' when user says 'via email', 'by email', 'send email'. " +
+            "Set 'platform' when user says 'via platform', 'platform message', 'platform notification', 'platform comm', 'mensagem de plataforma'. " +
+            "Omit entirely when user has not specified a channel.",
         },
       },
       required: ["recipient_hint"],

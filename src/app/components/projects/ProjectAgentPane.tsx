@@ -2677,11 +2677,25 @@ export function ProjectAgentPane({ isOpen, onClose, userType, activeUserName }: 
     if (catalogHasOffersFor(oem)) {
       return `${prefix}. Next: propose_offers`;
     }
+
     const hasFile = messagesRef.current.some(m => m.type === "user_file");
-    const context = hasFile
-      ? "Call propose_parsed_offers now — scan the image/document in the conversation history and extract every offer row you can see."
-      : "Call propose_parsed_offers now — no catalog offers exist for this brand. Create placeholder rows using the project OEM and current year so the user can fill in the details inline.";
-    return `${prefix}. The offer catalog has NO offers for "${oem}". Do NOT write any text. Do NOT call propose_offers. ${context}`;
+
+    if (hasFile) {
+      // File uploaded → extract offers from it
+      return `${prefix}. The offer catalog has NO offers for "${oem}". Do NOT call propose_offers. Call propose_parsed_offers now — scan the image/document in the conversation history and extract every offer row you can see.`;
+    }
+
+    // No catalog offers AND no file uploaded.
+    // In a proactive / automated flow, we cannot fabricate offers the user didn't provide.
+    // Skip the offers step and move to the next one in the pipeline.
+    // Show a brief informational note to the user so they understand why.
+    const nextContinuation = "Step complete. Next: propose_templates";
+    return (
+      `${prefix}. ` +
+      `The offer catalog has no entries for "${oem}" and no offer document was uploaded. ` +
+      `Write ONE short sentence to the user: "No ${oem} offers found in the catalog — I'll skip to templates. You can add offers manually later." ` +
+      `Then immediately: ${nextContinuation}`
+    );
   }, [catalogHasOffersFor]);
 
   const fireNextStep = useCallback((completedStep: string) => {

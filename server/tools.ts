@@ -338,10 +338,14 @@ export const agentTools: Anthropic.Tool[] = [
   {
     name: "propose_task_owners",
     description:
-      "Show a card that lets the user assign a task owner to each project section " +
-      "(Offers, Templates, Backgrounds, Brand, Assets). Use this when the user asks to " +
-      "define or set task owners, regardless of language. " +
-      "Pass suggested owners if the user named them, otherwise leave sections empty.",
+      "Show a card that lets the user ASSIGN who is responsible for each project section " +
+      "(Offers, Templates, Backgrounds, Brand, Assets, etc.). " +
+      "This is an INTERNAL ASSIGNMENT action — it does NOT send any message or notification. " +
+      "Use ONLY when the user asks to define, assign, or set responsibility: " +
+      "'set task owners', 'define responsáveis', 'assign owners', 'quem é o responsável de cada área', " +
+      "'definir os responsáveis das tarefas'. " +
+      "⛔ NEVER use this to share or send the project to someone. " +
+      "⛔ NEVER use this just because a name was mentioned — names in 'send to X' or 'share with X' belong to propose_share.",
     input_schema: {
       type: "object" as const,
       properties: {
@@ -377,10 +381,12 @@ export const agentTools: Anthropic.Tool[] = [
   {
     name: "propose_notify_owners",
     description:
-      "Show a card to notify all current task owners via Email or Platform. " +
-      "Use this when the user says 'notify task owners', 'send to the task owners', " +
-      "'notifique os responsáveis', or any similar phrasing. " +
-      "Pass the known owners from the project context as hints.",
+      "Send a notification to ALL of the project's currently-assigned task owners (the people listed in the taskOwners field). " +
+      "This is different from propose_share — it does NOT share with a new person, it notifies the EXISTING owner list. " +
+      "Use ONLY when the user says 'notify task owners', 'send to the task owners', 'notifique os responsáveis das tarefas', " +
+      "'manda para os responsáveis', 'notifique os donos das tarefas'. " +
+      "⛔ NEVER use this when a specific person's name is mentioned (e.g. 'send to Katelyn') — that is propose_share. " +
+      "⛔ NEVER use this if no task owners have been set yet — call propose_task_owners first to assign them.",
     input_schema: {
       type: "object" as const,
       properties: {

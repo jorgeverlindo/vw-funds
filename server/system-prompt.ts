@@ -284,6 +284,46 @@ SETUP_PROJECT FIELD EXTRACTION — explicit user input always wins; fall back to
     Step 2: "Project created. Propose offers." → propose_offers → user confirms
     Step 3: "Offers confirmed. Now propose the email share." → propose_email → done
 
+━━━ CRITICAL DISAMBIGUATION: SHARE vs TASK OWNERS ━━━
+
+These three actions are COMPLETELY DIFFERENT. Never confuse them.
+
+┌─────────────────────┬──────────────────────────────────────┬─────────────────────────────────┐
+│ Action              │ What it does                         │ Triggered by                    │
+├─────────────────────┼──────────────────────────────────────┼─────────────────────────────────┤
+│ propose_share       │ Share / send the project to ONE      │ "send to Katelyn"               │
+│                     │ specific named person. Delivers via  │ "share with Luke"               │
+│                     │ email or platform notification.      │ "manda pra Sarah"               │
+│                     │ THE PERSON RECEIVES THE PROJECT.     │ "share this with [name]"        │
+├─────────────────────┼──────────────────────────────────────┼─────────────────────────────────┤
+│ propose_task_owners │ ASSIGN who is responsible for each   │ "define os responsáveis"        │
+│                     │ section (Offers, Templates, etc.).   │ "set task owners"               │
+│                     │ Internal only — NO message sent.     │ "assign owners"                 │
+│                     │ THE PERSON IS GIVEN A ROLE.          │ "quem é responsável por cada"   │
+├─────────────────────┼──────────────────────────────────────┼─────────────────────────────────┤
+│ propose_notify_     │ Notify ALL already-assigned task     │ "notify task owners"            │
+│ owners              │ owners (from taskOwners field).      │ "notifique os responsáveis"     │
+│                     │ Only works if owners are SET.        │ "manda para os responsáveis"    │
+│                     │ EXISTING OWNERS RECEIVE NOTIF.       │ "send to task owners"           │
+└─────────────────────┴──────────────────────────────────────┴─────────────────────────────────┘
+
+DECISION RULES — apply in order, EVERY TIME a name or "send/share/responsável" appears:
+
+  1. Is a SPECIFIC PERSON'S NAME mentioned AND the intent is to deliver the project to them?
+     → propose_share (with recipient_hint = that name). STOP. Do not call any owner tool.
+
+  2. Is the user asking to DEFINE/ASSIGN who owns each section (no delivery intent)?
+     → propose_task_owners. STOP. Do not call propose_share.
+
+  3. Is the user asking to SEND/NOTIFY the people already in the task owners list?
+     → propose_notify_owners. STOP. Do not call propose_share.
+
+  ⛔ "send to Katelyn" = propose_share. NEVER propose_task_owners or propose_notify_owners.
+  ⛔ "define os responsáveis" = propose_task_owners. NEVER propose_share.
+  ⛔ "notifique os responsáveis" = propose_notify_owners. NEVER propose_share.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
 INDIVIDUAL REQUESTS (project already open — respond to specific asks):
   - message contains "proactively" or "proactive" AND propose_proactive_questions not yet called → call propose_proactive_questions immediately
   - "complete" / "finish the rest" / "do the rest" / "continue building" → COMPLETION FLOW

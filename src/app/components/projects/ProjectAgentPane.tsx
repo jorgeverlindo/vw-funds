@@ -2609,6 +2609,27 @@ export function ProjectAgentPane({ isOpen, onClose, userType, activeUserName }: 
       return;
     }
 
+    // ── Intent-based forced tool for user messages ───────────────────────────
+    // The model consistently mis-routes "send/share to [person]" to propose_task_owners.
+    // Force the correct tool client-side so this can never happen regardless of system prompt.
+    const KNOWN_CONTACTS = [
+      "Katelyn","Luke","Jenny","Sonya","Zak","Rachel","Jenni",
+      "Mike","Sarah","James","Ashley","Mallory","Jorge",
+    ];
+    const lowerText = text.toLowerCase();
+    const hasSendVerb  = /\b(send|share|manda|envia|compartilha|forward)\b/.test(lowerText);
+    const hasPersonOrMech = KNOWN_CONTACTS.some(n => text.includes(n)) ||
+                            /\b(email|platform|via\s+platform|via\s+email)\b/.test(lowerText);
+    const hasPlatformKeyword = /\b(platform|via platform|platform message|mensagem de plataforma)\b/.test(lowerText);
+
+    let userForcedTool: string | undefined;
+    if (hasSendVerb && hasPersonOrMech) {
+      // "send to X" / "share with X" / "send via platform to X" → always propose_share
+      userForcedTool = "propose_share";
+    } else if (hasSendVerb && hasPlatformKeyword) {
+      userForcedTool = "propose_share";
+    }
+
     await streamMessage(history, ctx,
       d => { accRef.current += d; setStreamingText(accRef.current); },
       handleToolResult,
@@ -2618,6 +2639,7 @@ export function ProjectAgentPane({ isOpen, onClose, userType, activeUserName }: 
         if (finalText.trim()) setMessages(prev => [...prev, { id: `a-${Date.now()}`, role: "assistant", type: "text", content: finalText } as TextMessage]);
       },
       err => { setMessages(prev => [...prev, { id: `e-${Date.now()}`, role: "assistant", type: "text", content: `⚠️ ${err}` } as TextMessage]); accRef.current = ""; setStreamingText(""); },
+      userForcedTool,
     );
   }, [streaming, projectContext, messages, streamMessage, handleToolResult]);
 

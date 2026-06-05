@@ -2722,11 +2722,14 @@ export function ProjectAgentPane({ isOpen, onClose, userType, activeUserName }: 
       const ownersAlreadyProposed = messagesRef.current.some(m => m.type === "task_owners");
       if (!ownersAlreadySet && !ownersAlreadyProposed) {
         setTimeout(() => sendInternal(
-          "Flow complete. Now call propose_task_owners with smart default owners: " +
-          "offers→Jorge Verlindo, templates→Rachel Hui, assets→Rachel Hui, " +
-          "platforms→Mallory Gonzalez, brand→Mallory Gonzalez, backgrounds→Rachel Hui, " +
-          "adshells→Jorge Verlindo, campaigns→Jorge Verlindo. " +
-          "Preface the card with: \"Based on your team and recent campaigns, I've pre-assigned task owners for you. Review and adjust as needed.\""
+          "Flow complete. " +
+          "⛔ DO NOT call setup_project, propose_offers, propose_templates, propose_backgrounds, or propose_brand — all steps are done. " +
+          "NOW call propose_task_owners ONLY, with these suggested_owners: " +
+          "[{section:'offers',name:'Jorge Verlindo'},{section:'templates',name:'Rachel Hui'}," +
+          "{section:'assets',name:'Rachel Hui'},{section:'platforms',name:'Mallory Gonzalez'}," +
+          "{section:'brand',name:'Mallory Gonzalez'},{section:'backgrounds',name:'Rachel Hui'}," +
+          "{section:'adshells',name:'Jorge Verlindo'},{section:'campaigns',name:'Jorge Verlindo'}]. " +
+          "Say: \"Based on your team and recent campaigns, I've pre-assigned task owners. Review and adjust as needed.\""
         ), 1800);
       }
 
@@ -3337,13 +3340,15 @@ export function ProjectAgentPane({ isOpen, onClose, userType, activeUserName }: 
                           onTaskOwnersApply={(owners) => {
                             dispatchAction({ action: "set_task_owners", owners });
                             setMessages(prev => prev.map(m => m.id === msg.id ? { ...m, applied: true } : m));
-                            // Notify the agent so it knows task owners are now set and can handle the next user request correctly
+                            // Tell the agent the step is done — DO NOT tell it to "continue remaining steps"
+                            // because in proactive flows that causes it to re-read the original setup message
+                            // and call setup_project again. Just mark the step as done and wait.
                             const count = Object.keys(owners).length;
                             setTimeout(() => sendInternal(
-                              `Task owners have been set for ${count} section${count !== 1 ? "s" : ""}. ` +
-                              `Check the user's original request and continue with any remaining steps. ` +
-                              `If the user asked to share/send the project after this, do that now using propose_share or propose_email. ` +
-                              `Do NOT call propose_task_owners again — that step is complete.`
+                              `Task owners confirmed for ${count} section${count !== 1 ? "s" : ""}. ` +
+                              `This step is DONE. ` +
+                              `⛔ Do NOT call setup_project, propose_task_owners, propose_offers, propose_templates, or any other tool. ` +
+                              `The flow is complete. Wait for the user's next message.`
                             ), 400);
                           }}
                           proactive={proactiveMode}

@@ -121,6 +121,45 @@ function NavItem({ icon, label, isActive = false, onClick, iconColor = '#ACABFF'
   );
 }
 
+// ─── Nav items definition for the flyout (icon + label per item) ─────────────
+// The flyout renders ALL nav items with their icons — this list drives that.
+// Icons reuse the same svgPaths so they are pixel-identical to the rail icons.
+
+const NAV_ITEMS_DEF: Array<{ id: string; label: string; icon: React.ReactNode }> = [
+  {
+    id: 'projects', label: 'Projects',
+    icon: <svg className="block size-full" fill="none" viewBox="0 0 24 24"><path d={svgPaths.p1f93db00} stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" /></svg>,
+  },
+  {
+    id: 'feeds', label: 'Feeds',
+    icon: <svg className="block size-full" fill="none" viewBox="0 0 24 24"><path clipRule="evenodd" d={svgPaths.p290cdd00} fill="currentColor" fillRule="evenodd" /><path clipRule="evenodd" d={svgPaths.p3286e280} fill="currentColor" fillRule="evenodd" /><path d={svgPaths.p3dd0de00} fill="currentColor" /></svg>,
+  },
+  {
+    id: 'design', label: 'Design',
+    icon: <svg className="block size-full" fill="none" viewBox="0 0 24 24"><path d={svgPaths.p8b9ee80} stroke="currentColor" strokeWidth="1.5" /><path d={svgPaths.p2fd4e00} fill="currentColor" /><path d={svgPaths.p23bcec00} fill="currentColor" /><path d={svgPaths.p1ed05480} fill="currentColor" /></svg>,
+  },
+  {
+    id: 'portal', label: 'Portal',
+    icon: <svg className="block size-full" fill="none" viewBox="0 0 24 24"><path d={svgPaths.p33b0c580} stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" /></svg>,
+  },
+  {
+    id: 'campaigns', label: 'Campaigns',
+    icon: <svg className="block size-full" fill="none" viewBox="0 0 24 24"><path d={svgPaths.p6a9aff2} stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" /><path d={svgPaths.p1ff36380} stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" /><path d={svgPaths.p25f77780} stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" /></svg>,
+  },
+  {
+    id: 'inventory', label: 'Inventory',
+    icon: <svg className="block size-full" fill="none" viewBox="0 0 24 24"><path d={svgPaths.pdab3700} stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" /></svg>,
+  },
+  {
+    id: 'insights', label: 'Insights',
+    icon: <svg className="block size-full" fill="none" viewBox="0 0 24 24"><path d={svgPaths.p3aea4280} stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.75" /></svg>,
+  },
+  {
+    id: 'ai-tools', label: 'AI Tools',
+    icon: <svg className="block size-full" fill="none" viewBox="0 0 24 24"><path clipRule="evenodd" d={svgPaths.pa564600} fill="currentColor" fillRule="evenodd" /><path d={svgPaths.p317531f0} fill="currentColor" /><path d={svgPaths.pd4a3b80} fill="currentColor" /></svg>,
+  },
+];
+
 // ─── Flyout sub-item row (recursive) ─────────────────────────────────────────
 
 function FlyoutSubItem({
@@ -436,80 +475,131 @@ export function AppSidebar({
         </div>
       </div>
 
-      {/* ── Flyout overlay ── */}
-      <AnimatePresence>
-        {expandedSection && (
-          <>
-            {/* Backdrop — click outside closes flyout */}
-            <motion.div
-              className="fixed inset-0 z-40"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.18 }}
-              onMouseDown={closeFlyout}
-            />
+      {/* ── Flyout panel ────────────────────────────────────────────────────────
+           Starts at left-0, covers the rail (same as PortalLeftRail).
+           z-[51] puts it above the TopNavBar (z-[49]) and the rail (z-50).
+           All nav items are shown with icon + label; the clicked section
+           is pre-expanded so its sub-items appear directly below its row.
+      ── */}
+      {expandedSection && (
+        <>
+          {/* Backdrop */}
+          <div
+            className="fixed inset-0 z-[50]"
+            onMouseDown={closeFlyout}
+          />
 
-            {/* Flyout panel — slides in from behind the rail */}
-            <div
-              className="fixed left-0 top-0 h-full z-[45] flex"
-              style={{ pointerEvents: 'none' }}
-            >
-              {/* Spacer matching rail width */}
-              <div className="w-[72px] shrink-0" />
-
-              {/* Panel */}
-              <div
-                className="h-full flex flex-col overflow-hidden"
-                style={{
-                  width: 232,
-                  backgroundColor: 'var(--rail-bg)',
-                  boxShadow: '4px 0 16px rgba(0,0,0,0.28)',
-                  transform: flyoutVisible ? 'translateX(0)' : 'translateX(-100%)',
-                  transition: 'transform 260ms cubic-bezier(0.4, 0, 0.2, 1)',
-                  pointerEvents: 'auto',
-                }}
-              >
-                {/* Header: client logo + name + Switch Client */}
-                <div className="flex items-center gap-3 px-4 pt-[10px] pb-[8px] shrink-0">
-                  <div className="shrink-0">{clientLogo}</div>
-                  <div className="flex flex-col min-w-0">
-                    <span className="font-['Roboto'] text-[14px] text-[#f9fafa] tracking-[0.15px] leading-[1.5] truncate">
-                      {clientName}
-                    </span>
-                    <button
-                      className="font-['Roboto'] text-[12px] text-[#acabff] tracking-[0.17px] text-left leading-[1.43] hover:opacity-80 transition-opacity"
-                      onClick={() => { closeFlyout(); onOpenClientSwitcher?.(); }}
-                    >
-                      Switch Client
-                    </button>
-                  </div>
-                </div>
-
-                {/* Divider */}
-                <div className="h-px mx-2 shrink-0" style={{ background: 'rgba(255,255,255,0.10)' }} />
-
-                {/* Sub-menu items */}
-                <div className="flex flex-col flex-1 overflow-y-auto py-2 px-2 gap-1">
-                  {(NAV_SUBMENU[expandedSection] ?? []).map(item => {
-                    const childKey = `${expandedSection}.${item.id}`;
-                    return (
-                      <FlyoutSubItem
-                        key={item.id}
-                        item={item}
-                        depth={1}
-                        isOpen={openSubSections.has(childKey)}
-                        onToggle={() => toggleSubSection(childKey)}
-                        onAction={handleSubItemAction}
-                      />
-                    );
-                  })}
-                </div>
+          {/* Panel — slides in from left, starts at left-0 covering the rail */}
+          <div
+            className="fixed left-0 top-0 h-full flex flex-col z-[51]"
+            style={{
+              width: 272,
+              backgroundColor: 'var(--rail-bg)',
+              boxShadow: '5px 0 24px rgba(0,0,0,0.35)',
+              transform: flyoutVisible ? 'translateX(0)' : 'translateX(-100%)',
+              transition: 'transform 260ms cubic-bezier(0.4, 0, 0.2, 1)',
+            }}
+          >
+            {/* Header: client logo + name + Switch Client */}
+            <div className="flex items-center gap-3 px-4 pt-[10px] pb-[8px] shrink-0">
+              <div className="shrink-0">{clientLogo}</div>
+              <div className="flex flex-col min-w-0">
+                <span className="font-['Roboto'] text-[14px] text-[#f9fafa] tracking-[0.15px] leading-[1.5] truncate">
+                  {clientName}
+                </span>
+                <button
+                  className="font-['Roboto'] text-[12px] text-[#acabff] tracking-[0.17px] text-left leading-[1.43] hover:opacity-80 transition-opacity"
+                  onClick={() => { closeFlyout(); onOpenClientSwitcher?.(); }}
+                >
+                  Switch Client
+                </button>
               </div>
             </div>
-          </>
-        )}
-      </AnimatePresence>
+
+            {/* Divider */}
+            <div className="h-px mx-2 shrink-0" style={{ background: 'rgba(255,255,255,0.10)' }} />
+
+            {/* All nav items — icon + label + optional sub-items below */}
+            <div className="flex flex-col flex-1 overflow-y-auto py-2 px-2 gap-1">
+              {NAV_ITEMS_DEF.map(({ id, label, icon }) => {
+                const subItems  = NAV_SUBMENU[id];
+                const hasChildren = !!subItems?.length;
+                const isOpen    = openSubSections.has(id);
+                const isActive  = activeRoute === id;
+
+                return (
+                  <div key={id} className="flex flex-col gap-[2px]">
+                    {/* Parent row */}
+                    <button
+                      onClick={() => {
+                        if (hasChildren) {
+                          toggleSubSection(id);
+                        } else {
+                          onNavigate?.(id);
+                          closeFlyout();
+                        }
+                      }}
+                      className="flex items-center gap-2 w-full px-2 py-[10px] rounded-[8px] transition-colors shrink-0"
+                      style={{ backgroundColor: isActive ? 'var(--rail-active)' : undefined }}
+                      onMouseEnter={e => { if (!isActive) (e.currentTarget as HTMLElement).style.backgroundColor = 'rgba(255,255,255,0.06)'; }}
+                      onMouseLeave={e => { if (!isActive) (e.currentTarget as HTMLElement).style.backgroundColor = ''; }}
+                    >
+                      <div className="size-6 shrink-0" style={{ color: '#ACABFF' }}>{icon}</div>
+                      <span className="flex-1 text-left font-['Roboto'] text-[16px] text-[#f9fafa] tracking-[0.15px] leading-[1.75]">
+                        {label}
+                      </span>
+                      {hasChildren && (
+                        <ChevronDown
+                          size={16}
+                          className="shrink-0 transition-transform duration-200"
+                          style={{ color: 'rgba(172,171,255,0.5)', transform: isOpen ? 'rotate(180deg)' : undefined }}
+                        />
+                      )}
+                    </button>
+
+                    {/* Sub-items — appear below the parent row when expanded */}
+                    {hasChildren && isOpen && (
+                      <div className="flex flex-col gap-[2px]">
+                        {subItems!.map(sub => {
+                          const childKey = `${id}.${sub.id}`;
+                          return (
+                            <FlyoutSubItem
+                              key={sub.id}
+                              item={sub}
+                              depth={1}
+                              isOpen={openSubSections.has(childKey)}
+                              onToggle={() => toggleSubSection(childKey)}
+                              onAction={handleSubItemAction}
+                            />
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Component Library at bottom */}
+            <div className="px-2 pb-4 shrink-0">
+              <button
+                onClick={() => { closeFlyout(); onOpenLibrary?.(); }}
+                className="flex items-center gap-2 w-full px-2 py-[10px] rounded-[8px] transition-colors"
+                style={{ color: '#ACABFF' }}
+                onMouseEnter={e => (e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.06)')}
+                onMouseLeave={e => (e.currentTarget.style.backgroundColor = '')}
+              >
+                <svg className="size-6 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5">
+                  <path d={svgPaths.p25dcf140} strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+                <span className="font-['Roboto'] text-[16px] text-[#f9fafa] tracking-[0.15px] leading-[1.75]">
+                  Component Library
+                </span>
+              </button>
+            </div>
+          </div>
+        </>
+      )}
 
       {/* ── External URL iframe overlay ── */}
       <AnimatePresence>

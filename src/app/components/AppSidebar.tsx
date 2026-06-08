@@ -178,24 +178,34 @@ function FlyoutSubItem({
         {hasChildren && (
           <ChevronDown
             size={14}
-            className={`text-[#acabff]/50 transition-transform duration-200 shrink-0 ${isOpen ? 'rotate-180' : ''}`}
+            className={`text-[#acabff]/50 transition-transform duration-[450ms] ease-out shrink-0 ${isOpen ? 'rotate-180' : ''}`}
           />
         )}
       </button>
-      {hasChildren && isOpen && (
-        <div className="flex flex-col">
-          {item.children!.map(child => (
-            <FlyoutSubItem
-              key={child.id}
-              item={child}
-              depth={depth + 1}
-              isOpen={false}
-              onToggle={() => {}}
-              onAction={onAction}
-            />
-          ))}
-        </div>
-      )}
+      <AnimatePresence initial={false}>
+        {hasChildren && isOpen && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.45, ease: [0, 0, 0.2, 1] }}
+            style={{ overflow: 'hidden' }}
+          >
+            <div className="flex flex-col">
+              {item.children!.map(child => (
+                <FlyoutSubItem
+                  key={child.id}
+                  item={child}
+                  depth={depth + 1}
+                  isOpen={false}
+                  onToggle={() => {}}
+                  onAction={onAction}
+                />
+              ))}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </>
   );
 }
@@ -486,29 +496,39 @@ export function AppSidebar({
                         <ChevronDown
                           size={16}
                           className="shrink-0 transition-transform duration-200"
-                          style={{ color: 'rgba(172,171,255,0.5)', transform: isOpen ? 'rotate(180deg)' : undefined }}
+                          style={{ color: 'rgba(172,171,255,0.5)', transform: isOpen ? 'rotate(180deg)' : undefined, transition: 'transform 450ms cubic-bezier(0,0,0.2,1)' }}
                         />
                       )}
                     </button>
 
-                    {/* Sub-items */}
-                    {hasChildren && isOpen && (
-                      <div className="flex flex-col gap-[2px] mb-[2px]">
-                        {subItems!.map(sub => {
-                          const childKey = `${id}.${sub.id}`;
-                          return (
-                            <FlyoutSubItem
-                              key={sub.id}
-                              item={sub}
-                              depth={1}
-                              isOpen={openSubSections.has(childKey)}
-                              onToggle={() => toggleSubSection(childKey)}
-                              onAction={handleSubItemAction}
-                            />
-                          );
-                        })}
-                      </div>
-                    )}
+                    {/* Sub-items — accordion with 450ms ease-out */}
+                    <AnimatePresence initial={false}>
+                      {hasChildren && isOpen && (
+                        <motion.div
+                          initial={{ height: 0, opacity: 0 }}
+                          animate={{ height: 'auto', opacity: 1 }}
+                          exit={{ height: 0, opacity: 0 }}
+                          transition={{ duration: 0.45, ease: [0, 0, 0.2, 1] }}
+                          style={{ overflow: 'hidden' }}
+                        >
+                          <div className="flex flex-col gap-[2px] mb-[2px]">
+                            {subItems!.map(sub => {
+                              const childKey = `${id}.${sub.id}`;
+                              return (
+                                <FlyoutSubItem
+                                  key={sub.id}
+                                  item={sub}
+                                  depth={1}
+                                  isOpen={openSubSections.has(childKey)}
+                                  onToggle={() => toggleSubSection(childKey)}
+                                  onAction={handleSubItemAction}
+                                />
+                              );
+                            })}
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
                   </div>
                 );
               })}

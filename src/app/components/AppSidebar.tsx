@@ -381,7 +381,9 @@ export function AppSidebar({
                 label={label}
                 isActive={activeRoute === id}
                 onClick={() => {
-                  if (hasChildren) {
+                  // Flyout with sub-menus is RideNow-only.
+                  // VW, Audi and other clients navigate directly — no flyout.
+                  if (hasChildren && client.clientId === 'ride-now') {
                     expandedSection === id ? closeFlyout() : openFlyout(id);
                   } else {
                     onNavigate?.(id);
@@ -399,7 +401,9 @@ export function AppSidebar({
             label="Help"
             isActive={activeRoute === 'help'}
             onClick={() => {
-              expandedSection === 'help' ? closeFlyout() : openFlyout('help');
+              if (client.clientId === 'ride-now') {
+                expandedSection === 'help' ? closeFlyout() : openFlyout('help');
+              }
             }}
           />
 

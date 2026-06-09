@@ -2366,51 +2366,36 @@ export function ProjectAgentPane({ isOpen, onClose, userType, activeUserName }: 
 
           const { generateImage, createVehicleComposite } = await import("../../../lib/replicateClient");
 
-          // ── Replicate: 6-step scene adaptation ────────────────────────────
+          // ── Replicate: adapt background scene perspective ──────────────────
           //
-          // The model follows these 6 steps internally:
-          //   1. Analyze the uploaded scene (lighting, perspective, horizon line, surface type)
-          //   2. Check current perspective: identify vanishing point(s), horizon height,
-          //      ground plane angle — determine what needs to change for a car to fit
-          //   3. Re-generate the scene in the correct perspective for a front-left 3/4
-          //      view automobile (same angle used by all JellyBean cutouts)
-          //   4. Generate adequate foreground ground surface (flat, wide, well-lit)
-          //      where the vehicle will rest — occupying the lower ~35% of the frame
-          //   5. Calibrate the perspective so a ${vehicles} placed center-bottom
-          //      appears grounded and natural (correct shadow plane, horizon alignment)
-          //   6. Deliver: the original scene environment preserved in the upper 65%,
-          //      with the corrected ground plane in the lower 35%
+          // CRITICAL: Do NOT mention "car", "vehicle", "automobile" in the prompt.
+          // When the model sees those words, it adds them to the image.
+          // The model only needs to prepare the ground plane geometry.
+          // The vehicle cutout is added separately via createVehicleComposite.
           //
-          // The vehicle cutout itself is added by canvas composite (createVehicleComposite)
-          // after this step — the model must NOT add any vehicles to the image.
+          // The model's internal process:
+          //   1. Analyze: horizon line, vanishing points, ground surface, camera height
+          //   2. Check perspective: is the ground plane compatible with a product shot?
+          //   3. Adapt: correct vanishing point to match a standard product photography angle
+          //      (horizon at ~50% height, single vanishing point, camera at ~1.2m)
+          //   4. Generate foreground: flat, wide ground surface in lower 35%, no obstructions
+          //   5. Preserve upper 65% completely
+          //   6. Deliver clean background — no objects added, no scene elements changed
           const perspectivePrompt =
-            `You are preparing a scene photograph as a background for automotive advertising. ` +
-            `The final result will have a ${vehicles} (front-left 3/4 view cutout) placed ` +
-            `in the center-bottom of this image as a CSS overlay. ` +
-            `\n\nYour task — follow all 6 steps: ` +
-            `\nSTEP 1 — ANALYZE: Study the current scene. Identify the horizon line position, ` +
-            `vanishing points, existing ground surface type (pavement, grass, gravel, etc.), ` +
-            `lighting direction, and camera height. ` +
-            `\nSTEP 2 — CHECK PERSPECTIVE: Determine if the current ground plane perspective ` +
-            `is compatible with a front-left 3/4 view automobile. If the horizon is too high, ` +
-            `too low, or angled incorrectly, note what correction is needed. ` +
-            `\nSTEP 3 — ADAPT PERSPECTIVE: Modify the ground plane perspective in the lower ` +
-            `35% of the image so it matches a front-left 3/4 automobile camera angle ` +
-            `(camera height approximately 1-1.5 meters, slight downward angle). ` +
-            `The vanishing point on the ground must align naturally with this vehicle angle. ` +
-            `\nSTEP 4 — GENERATE FOREGROUND: Ensure the lower 35% has a clean, flat, wide ` +
-            `ground surface — extend or create pavement/asphalt if the original scene lacks it. ` +
-            `The surface must be wide enough for a full-size SUV or sedan. ` +
-            `\nSTEP 5 — CALIBRATE CAR PLACEMENT ZONE: The center-bottom area (roughly 60% ` +
-            `wide, sitting on the ground line) must have the correct surface texture and ` +
-            `perspective so a vehicle placed there looks grounded — not floating. ` +
-            `Ensure there are no obstructions in this zone. ` +
-            `\nSTEP 6 — DELIVER: Output the adapted image. ` +
-            `MANDATORY PRESERVATION: The upper 65% of the scene (sky, buildings, trees, ` +
-            `architecture, landscape) must remain visually identical to the original. ` +
-            `Keep all existing colors and lighting unchanged. ` +
-            `DO NOT add any vehicles, people, or objects. ` +
-            `The scene must be recognizable as the original uploaded location.`;
+            `Transform this photograph into a professional product photography background. ` +
+            `\n\nANALYZE the current scene: identify the horizon line position, vanishing ` +
+            `points, ground surface type, lighting direction, and camera angle. ` +
+            `\nADAPT the lower 35% of the image: create a flat, clean, wide ground surface ` +
+            `(smooth pavement or the existing surface material) with correct one-point ` +
+            `perspective. The horizon should sit at approximately 50% of the image height. ` +
+            `The vanishing point should be centered, matching a standard product photography ` +
+            `camera angle (approximately 1.2 meters height, slight downward angle). ` +
+            `The ground must be completely clear and unobstructed in the center area. ` +
+            `\nPRESERVE the upper 65% (sky, buildings, trees, architecture) — do not change ` +
+            `anything above the horizon line. Keep all colors and lighting identical. ` +
+            `\nDO NOT add any objects, people, or other elements to the scene. ` +
+            `Output: the original scene with only the foreground ground plane optimized ` +
+            `for clean product placement.`;
 
           let adaptedBgUrl: string;
           try {

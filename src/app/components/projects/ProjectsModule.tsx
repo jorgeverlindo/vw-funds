@@ -1408,7 +1408,12 @@ function ProjectDetailView({
         const { templateIds } = payload as { templateIds: string[] };
         setRemovedTemplateIds((prev) => new Set([...prev, ...templateIds]));
       } else if (action === "set_dealer_bg_generating") {
-        setIsDealerBgGenerating((detail as { value: boolean }).value);
+        const generating = (detail as { value: boolean }).value;
+        setIsDealerBgGenerating(generating);
+        // Auto-expand the Backgrounds section so the skeleton is visible
+        if (generating) {
+          setExpandedSections((prev) => ({ ...prev, backgrounds: true }));
+        }
       } else if (action === "add_custom_background") {
         const bg = (payload as { background: CustomBackground }).background;
         setCustomBackgroundLibrary(prev => {

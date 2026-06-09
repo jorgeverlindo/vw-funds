@@ -538,7 +538,10 @@ export async function createVehicleCompositeWithCoords(
   const vW           = Math.round(vehImg.naturalWidth  * vehScale)
   const vH           = Math.round(vehImg.naturalHeight * vehScale)
   const vX           = Math.round((width - vW) / 2)
-  const groundBase   = Math.round(height * 0.78)
+  // 0.88 puts the tires closer to the camera in perspective terms — at this
+  // position a large vehicle scale (65% of width) looks natural on the ground.
+  // 0.78 was too high: in a receding-ground background the car appeared to float.
+  const groundBase   = Math.round(height * 0.88)
   const tireYInCanvas = Math.round(vH * tireFraction)
   const vY            = groundBase - tireYInCanvas
   const tireY         = vY + tireYInCanvas  // absolute Y of tire contact

@@ -181,12 +181,13 @@ async function generateCleanBackground(
     config.compositionInstruction +
     `\n\nSTEP 1 — CLEAR: Remove ALL parked vehicles, people, and objects from the ` +
     `foreground parking area. ` +
-    `\nSTEP 2 — BUILD GROUND PLANE: In the lower 35% of the image, create a clean, ` +
-    `flat asphalt/concrete surface with CORRECT ONE-POINT PERSPECTIVE. ` +
-    `The ground must recede naturally toward a single vanishing point at the horizon. ` +
-    `The surface must be WIDE, FLAT, and CLEARLY DEFINED — this is the zone where ` +
-    `a product will be placed. The ground texture should match the existing pavement ` +
-    `and blend seamlessly with the building entrance area. ` +
+    `\nSTEP 2 — BUILD GROUND PLANE: The bottom 25% of the image (below 75% height) ` +
+    `must be a FLAT, CLOSE-UP asphalt surface — as if photographed from ~1 meter height ` +
+    `looking slightly downward at the pavement directly in front of the camera. ` +
+    `This is NOT a receding perspective strip — it is a WIDE, FLAT horizontal band ` +
+    `of asphalt texture that fills the entire bottom of the frame. ` +
+    `A vehicle placed on this zone will appear to sit directly on the pavement. ` +
+    `Match the existing pavement color and texture. ` +
     `\nSTEP 3 — PRESERVE: Keep the building facade, sky, signage, trees, and all ` +
     `elements ABOVE the horizon line EXACTLY unchanged — same colors, same details. ` +
     `\nDO NOT add vehicles, people, or new objects. ` +

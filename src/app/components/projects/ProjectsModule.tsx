@@ -995,10 +995,17 @@ function JellyBeanCard({
       // Ground position from card bottom
       const groundFromBottom = Math.round(h * (1 - groundFraction));
 
-      // Set container bottom so tires land exactly on ground plane:
-      //   containerBottom + belowTires = groundFromBottom
-      const bottom = Math.max(0, Math.round(groundFromBottom - belowTires));
-      setCarBottom(bottom);
+      // Text zone height (normal layout only — wide layout has text on the left, no conflict).
+      // Exact calculation from the JSX bottom block:
+      //   paddingTop(h*0.04) + label(~12px) + price(h*0.14) + term(~12px) + paddingBottom(h*0.06) + buffer(6px)
+      // = h * 0.24 + 30px
+      const textZoneH = isWide ? 0 : Math.round(h * 0.24) + 30;
+
+      // Set container bottom so tires land on ground plane, but never inside text zone.
+      // If groundFraction puts the car in the text area, we push it up — the tires will
+      // be slightly above the background's ground line, but the composition stays clean.
+      const rawBottom = Math.max(0, Math.round(groundFromBottom - belowTires));
+      setCarBottom(Math.max(rawBottom, textZoneH));
     };
     img.onerror = () => { if (!cancelled) setCarBottom(null); };
     img.src = offer.image;
@@ -1058,6 +1065,7 @@ function JellyBeanCard({
                 right: 0,
                 // carBottom: precise pixel value from alpha-detected tire position.
                 // Falls back to ground-based estimate, then to 0.
+                // Wide layout: text is on left, car is on right — no vertical conflict.
                 bottom: carBottom ?? (groundFraction !== undefined ? Math.round(h * (1 - groundFraction)) : 0),
                 height: "90%",
                 width: carWidthFraction !== undefined ? `${Math.round(carWidthFraction * 100)}%` : "55%",
@@ -1139,10 +1147,11 @@ function JellyBeanCard({
                 // groundFraction: where tires should land in the background image.
                 // Without it (no custom bg): fixed offset h*0.26 (text box below car).
                 // With it: anchor tires to the detected ground plane, keep same car height.
-                // carBottom: pixel-precise value from alpha-detected tire position in the PNG.
-                // Falls back gracefully: ground-based estimate → fixed offset.
+                // carBottom: pixel-precise value from alpha-detected tire position in the PNG,
+                // clamped to textZoneH so the car never overlaps the price/term text.
+                // Falls back: ground-based estimate clamped to text zone → fixed offset.
                 bottom: carBottom ?? (groundFraction !== undefined
-                  ? Math.round(h * (1 - groundFraction))
+                  ? Math.max(Math.round(h * (1 - groundFraction)), Math.round(h * 0.24) + 30)
                   : Math.round(h * 0.26)),
                 left: 0, right: 0,
                 height: Math.round(h * 0.52),

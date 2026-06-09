@@ -2413,17 +2413,21 @@ export function ProjectAgentPane({ isOpen, onClose, userType, activeUserName }: 
               // Step B: Replicate enhances quality only — does NOT reposition the car
               const enhancePrompt =
                 `This is an automotive advertising composite photograph. ` +
-                `The vehicle and building are already correctly positioned. ` +
-                `ENHANCE PHOTOREALISM ONLY — do NOT move, resize, or remove the vehicle: ` +
-                `(1) SHADOW: add a natural cast shadow on the asphalt directly beneath the vehicle tires. ` +
-                `(2) EDGE BLENDING: eliminate any hard cutout edges around the vehicle — ` +
-                `blend naturally with the scene's ambient light. ` +
-                `(3) LIGHTING MATCH: adjust the vehicle's ambient lighting to match the scene's ` +
-                `sunlight direction, color temperature, and intensity. ` +
-                `(4) GROUND CONTACT: ensure the tires look physically grounded on the asphalt. ` +
-                `(5) BACKGROUND: the building and environment must remain completely unchanged. ` +
-                `Output: a photorealistic professional dealership advertising photograph ` +
-                `with the same vehicle position and scale.`;
+                `This is an automotive advertising composite. Make it photorealistic: ` +
+                `\n(1) GROUND THE VEHICLE: the vehicle tires must sit ON the asphalt. ` +
+                `If the vehicle appears to float above the ground, lower it vertically ` +
+                `until the tires contact the asphalt surface. This is the most important fix. ` +
+                `\n(2) SHADOW: add a natural cast shadow on the ground directly beneath ` +
+                `the tires and body — soft-edged, matching the sun angle of the scene. ` +
+                `\n(3) AMBIENT REFLECTION: add subtle environment reflection on the vehicle ` +
+                `body panels — the building, sky and ground should reflect softly on the paint. ` +
+                `\n(4) EDGE BLENDING: eliminate any hard cutout edges — blend the vehicle ` +
+                `into the scene lighting naturally (no white halos, no sharp cutout lines). ` +
+                `\n(5) LIGHTING MATCH: match the vehicle's exposure and color temperature ` +
+                `to the scene's natural sunlight — same direction, same warmth. ` +
+                `\n(6) PRESERVE SCALE AND BACKGROUND: keep the vehicle's scale and ` +
+                `the building unchanged. Only fix grounding, shadow, reflection, and lighting. ` +
+                `Output: a photorealistic dealership advertising photograph.`;
 
               const enhanced = await generateImage({
                 prompt: enhancePrompt,

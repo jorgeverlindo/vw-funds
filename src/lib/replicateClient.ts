@@ -319,13 +319,46 @@ export async function createVehicleComposite(
 
   ctx.drawImage(bgImg, 0, 0, width, height)
 
-  // Hero advertising scale: car fills 65% of width, roofline ~50% height, tires ~74%
-  const vehScale  = (width * 0.65) / vehImg.naturalWidth
-  const vW        = Math.round(vehImg.naturalWidth  * vehScale)
-  const vH        = Math.round(vehImg.naturalHeight * vehScale)
-  const vX        = Math.round((width - vW) / 2)
-  const groundBase = Math.round(height * 0.74)   // tires land at 74% — building fills upper 35%
-  const vY        = groundBase - vH
+  // ── Alpha detection: find actual tire bottom in the PNG ───────────────────
+  // Car PNGs have varying transparent padding — using full PNG height as anchor
+  // causes the car to float (tires end up above the calculated ground line).
+  // We scan the PNG from bottom to find the last non-transparent row (the tires),
+  // then anchor THAT to the ground line instead of the PNG's bounding box bottom.
+  const detectTireBottom = (img: HTMLImageElement): number => {
+    try {
+      const offscreen = document.createElement('canvas')
+      // Sample at reduced resolution for performance (still accurate)
+      const sW = Math.min(img.naturalWidth, 256)
+      const sH = Math.min(img.naturalHeight, 256)
+      offscreen.width  = sW
+      offscreen.height = sH
+      const octx = offscreen.getContext('2d')
+      if (!octx) return 1.0
+      octx.drawImage(img, 0, 0, sW, sH)
+      const { data } = octx.getImageData(0, 0, sW, sH)
+      // Scan rows from bottom upward; find first row with any non-transparent pixel
+      for (let y = sH - 1; y >= 0; y--) {
+        for (let x = 0; x < sW; x++) {
+          const alpha = data[(y * sW + x) * 4 + 3]
+          if (alpha > 20) return y / sH   // fraction where tires actually are
+        }
+      }
+    } catch { /* ignore — fall back */ }
+    return 0.95   // safe fallback: assume tires at 95% of PNG height
+  }
+
+  const tireFraction = detectTireBottom(vehImg)   // e.g. 0.88 for 88% down the PNG
+
+  // Scale to hero advertising proportions: 65% of canvas width
+  const vehScale   = (width * 0.65) / vehImg.naturalWidth
+  const vW         = Math.round(vehImg.naturalWidth  * vehScale)
+  const vH         = Math.round(vehImg.naturalHeight * vehScale)
+  const vX         = Math.round((width - vW) / 2)               // centered horizontally
+  const groundBase = Math.round(height * 0.78)                   // ground line at 78% of frame
+  // Anchor the ACTUAL TIRE POSITION (not the PNG bottom) to the ground line
+  const tireYInCanvas = Math.round(vH * tireFraction)
+  const vY         = groundBase - tireYInCanvas
+
   ctx.drawImage(vehImg, vX, vY, vW, vH)
 
   return canvas.toDataURL('image/jpeg', 0.92)

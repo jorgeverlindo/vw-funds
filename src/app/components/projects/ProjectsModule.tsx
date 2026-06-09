@@ -996,14 +996,13 @@ function JellyBeanCard({
       const groundFromBottom = Math.round(h * (1 - groundFraction));
 
       // Text zone height (normal layout only — wide layout has text on the left, no conflict).
-      // Exact calculation from the JSX bottom block:
-      //   paddingTop(h*0.04) + label(~12px) + price(h*0.14) + term(~12px) + paddingBottom(h*0.06) + buffer(6px)
-      // = h * 0.24 + 30px
-      const textZoneH = isWide ? 0 : Math.round(h * 0.24) + 30;
+      // Only the VISIBLE text content needs to be clear — not the paddingTop of the text block.
+      // Visible content from the bottom:
+      //   paddingBottom(h*0.06) + term(~12px) + price(h*0.14) + label(~11px) + 4px buffer
+      // = h * 0.20 + 27px
+      const textZoneH = isWide ? 0 : Math.round(h * 0.20) + 27;
 
       // Set container bottom so tires land on ground plane, but never inside text zone.
-      // If groundFraction puts the car in the text area, we push it up — the tires will
-      // be slightly above the background's ground line, but the composition stays clean.
       const rawBottom = Math.max(0, Math.round(groundFromBottom - belowTires));
       setCarBottom(Math.max(rawBottom, textZoneH));
     };
@@ -1151,7 +1150,7 @@ function JellyBeanCard({
                 // clamped to textZoneH so the car never overlaps the price/term text.
                 // Falls back: ground-based estimate clamped to text zone → fixed offset.
                 bottom: carBottom ?? (groundFraction !== undefined
-                  ? Math.max(Math.round(h * (1 - groundFraction)), Math.round(h * 0.24) + 30)
+                  ? Math.max(Math.round(h * (1 - groundFraction)), Math.round(h * 0.20) + 27)
                   : Math.round(h * 0.26)),
                 left: 0, right: 0,
                 height: Math.round(h * 0.52),

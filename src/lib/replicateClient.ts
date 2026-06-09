@@ -203,6 +203,121 @@ export async function generateImage(opts: GenerateOptions): Promise<string> {
   throw new Error('Generation timed out after 3 minutes')
 }
 
+// ─── Flux Fill Pro inpainting ────────────────────────────────────────────────
+//
+// Used for Pass 2 (shadow + ground reflection + edge blend).
+// The mask tells the model what to INPAINT:
+//   WHITE = regenerate this area (shadow zone below car)
+//   BLACK = preserve exactly as-is (car body, background)
+//
+// The car pixels are NEVER in the white zone → car identity is 100% preserved.
+// Only the ground area directly under the tires is regenerated.
+
+/**
+ * Generate a shadow/ground-reflection inpaint mask.
+ *
+ * Creates a mask image (JPEG, same dimensions as the composite) where:
+ *   WHITE = shadow zone (a soft elliptical patch below the car tires)
+ *   BLACK = everything else (preserved by flux-fill-pro)
+ *
+ * @param width  canvas width
+ * @param height canvas height
+ * @param carX   left edge of car bounding box in canvas pixels
+ * @param carW   width of car bounding box in canvas pixels
+ * @param tireY  Y coordinate where car tires touch the ground (from top)
+ */
+export function createShadowMask(
+  width: number,
+  height: number,
+  carX: number,
+  carW: number,
+  tireY: number,
+): string {
+  const canvas = document.createElement('canvas');
+  canvas.width  = width;
+  canvas.height = height;
+  const ctx = canvas.getContext('2d')!;
+
+  // Start with all black (everything preserved)
+  ctx.fillStyle = '#000000';
+  ctx.fillRect(0, 0, width, height);
+
+  // Shadow ellipse parameters
+  // Centered under the car, slightly wider than the car, soft gradient
+  const centerX = carX + carW / 2;
+  const ellipseW = carW * 1.15;          // 15% wider than the car
+  const ellipseH = height * 0.10;        // 10% of frame height tall
+  const ellipseCenterY = tireY + ellipseH * 0.3; // starts just below tire line
+
+  // Radial gradient: bright white at center, fades to black
+  const grad = ctx.createRadialGradient(
+    centerX, ellipseCenterY, 0,
+    centerX, ellipseCenterY, Math.max(ellipseW, ellipseH) / 1.5,
+  );
+  grad.addColorStop(0.0, 'rgba(255,255,255,1.0)');  // pure white — inpaint here
+  grad.addColorStop(0.6, 'rgba(255,255,255,0.7)');
+  grad.addColorStop(1.0, 'rgba(0,0,0,0.0)');        // fade to black — preserve
+
+  ctx.save();
+  ctx.beginPath();
+  ctx.ellipse(centerX, ellipseCenterY, ellipseW / 2, ellipseH / 2, 0, 0, Math.PI * 2);
+  ctx.fillStyle = grad;
+  ctx.fill();
+  ctx.restore();
+
+  return canvas.toDataURL('image/jpeg', 0.95);
+}
+
+/**
+ * Apply inpainting via flux-fill-pro.
+ *
+ * Takes a composite image + a mask and asks Flux Fill Pro to regenerate
+ * only the white areas of the mask. Used for shadow generation.
+ */
+export async function inpaintImage(opts: {
+  compositeDataUrl: string;
+  maskDataUrl: string;
+  prompt: string;
+}): Promise<string> {
+  const res = await fetch('/api/replicate/predict', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      prompt: opts.prompt,
+      model: 'black-forest-labs/flux-fill-pro',
+      inputImage: opts.compositeDataUrl,
+      maskImage:  opts.maskDataUrl,
+    }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ error: `HTTP ${res.status}` }));
+    throw new Error((err as { error?: string }).error ?? `HTTP ${res.status}`);
+  }
+
+  const prediction: PredictionResponse = await res.json();
+  // Poll until done (same pattern as generateImage)
+  if (prediction.status === 'succeeded') {
+    const url = extractUrl(prediction.output);
+    if (url) return url;
+    throw new Error('No output URL');
+  }
+
+  // Poll
+  for (let i = 0; i < 180; i++) {
+    await new Promise(r => setTimeout(r, 2000));
+    const status = await pollPrediction(prediction.id);
+    if (status.status === 'succeeded') {
+      const url = extractUrl(status.output);
+      if (url) return url;
+      throw new Error('No output URL');
+    }
+    if (status.status === 'failed' || status.status === 'canceled') {
+      throw new Error(status.error ?? `Prediction ${status.status}`);
+    }
+  }
+  throw new Error('Inpainting timed out');
+}
+
 // ─── Vehicle composite ─────────────────────────────────────────────────────────
 // ── createDualInputForReplicate ───────────────────────────────────────────────
 // Creates a side-by-side canvas showing:
@@ -362,6 +477,75 @@ export async function createVehicleComposite(
   ctx.drawImage(vehImg, vX, vY, vW, vH)
 
   return canvas.toDataURL('image/jpeg', 0.92)
+}
+
+/**
+ * createVehicleCompositeWithCoords — same as createVehicleComposite but also
+ * returns the car's bounding box coordinates in canvas pixels.
+ * Used by the inpainting pipeline to generate a precise shadow mask.
+ */
+export async function createVehicleCompositeWithCoords(
+  bgUrl: string,
+  vehicleAssetUrl: string,
+  width  = 1024,
+  height = 768,
+): Promise<{ dataUrl: string; carX: number; carW: number; tireY: number }> {
+  const loadImg = async (src: string): Promise<HTMLImageElement> => {
+    let objectUrl: string | null = null
+    try {
+      if (!src.startsWith('data:')) {
+        const res = await fetch(src)
+        if (!res.ok) throw new Error(`fetch failed (${res.status})`)
+        objectUrl = URL.createObjectURL(await res.blob())
+      }
+      return await new Promise<HTMLImageElement>((resolve, reject) => {
+        const img = new Image()
+        img.onload  = () => resolve(img)
+        img.onerror = () => reject(new Error('image decode failed'))
+        img.src = objectUrl ?? src
+      })
+    } finally {
+      if (objectUrl) URL.revokeObjectURL(objectUrl)
+    }
+  }
+
+  const [bgImg, vehImg] = await Promise.all([loadImg(bgUrl), loadImg(vehicleAssetUrl)])
+  const canvas = document.createElement('canvas')
+  canvas.width  = width
+  canvas.height = height
+  const ctx = canvas.getContext('2d')!
+
+  ctx.drawImage(bgImg, 0, 0, width, height)
+
+  // Alpha detection for tire position
+  const detectTireBottom = (img: HTMLImageElement): number => {
+    try {
+      const sW = Math.min(img.naturalWidth, 256), sH = Math.min(img.naturalHeight, 256)
+      const off = document.createElement('canvas')
+      off.width = sW; off.height = sH
+      const octx = off.getContext('2d')!
+      octx.drawImage(img, 0, 0, sW, sH)
+      const { data } = octx.getImageData(0, 0, sW, sH)
+      for (let y = sH - 1; y >= 0; y--)
+        for (let x = 0; x < sW; x++)
+          if (data[(y * sW + x) * 4 + 3] > 20) return y / sH
+    } catch { /* fallback */ }
+    return 0.95
+  }
+
+  const tireFraction = detectTireBottom(vehImg)
+  const vehScale     = (width * 0.65) / vehImg.naturalWidth
+  const vW           = Math.round(vehImg.naturalWidth  * vehScale)
+  const vH           = Math.round(vehImg.naturalHeight * vehScale)
+  const vX           = Math.round((width - vW) / 2)
+  const groundBase   = Math.round(height * 0.78)
+  const tireYInCanvas = Math.round(vH * tireFraction)
+  const vY            = groundBase - tireYInCanvas
+  const tireY         = vY + tireYInCanvas  // absolute Y of tire contact
+
+  ctx.drawImage(vehImg, vX, vY, vW, vH)
+
+  return { dataUrl: canvas.toDataURL('image/jpeg', 0.92), carX: vX, carW: vW, tireY }
 }
 
 /**

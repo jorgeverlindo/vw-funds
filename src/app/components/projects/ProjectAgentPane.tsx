@@ -2366,26 +2366,38 @@ export function ProjectAgentPane({ isOpen, onClose, userType, activeUserName }: 
 
           const { generatePreviewBackground, applyPhotorealisticFinishing } =
             await import("../../../lib/dealerBackgroundGenerator");
-          const { createVehicleComposite } =
+          const { createVehicleCompositeWithCoords } =
             await import("../../../lib/replicateClient");
 
-          // Phase 1a: Replicate Pass 1 — clean background + ground plane (~30s)
+          // Phase 1a: Flux Kontext Pro — clean background + ground plane (~30s)
           const cleanPreviewBg = await generatePreviewBackground(storedImage);
 
-          // Phase 1b: Canvas composite — place car at correct advertising position
-          // This composite is ONLY for the approval card preview
+          // Phase 1b: Canvas composite — places the EXACT car PNG at correct position
+          // Returns coordinates (carX, carW, tireY) needed for shadow mask generation
+          // Car identity 100% preserved — no AI touches the car in this step
           let canvasComposite = cleanPreviewBg;
+          let carCoords = { carX: 200, carW: 620, tireY: 570 }; // fallback estimate
+          const CANVAS_W = 1024, CANVAS_H = 768;
           if (vehicleImageUrl?.startsWith("http")) {
             try {
-              canvasComposite = await createVehicleComposite(cleanPreviewBg, vehicleImageUrl, 1024, 768);
+              const result = await createVehicleCompositeWithCoords(
+                cleanPreviewBg, vehicleImageUrl, CANVAS_W, CANVAS_H
+              );
+              canvasComposite = result.dataUrl;
+              carCoords = { carX: result.carX, carW: result.carW, tireY: result.tireY };
             } catch { /* use clean bg alone */ }
           }
 
-          // Phase 1c: Replicate Pass 2 — shadow, reflection, lighting, edge blend (~30s)
-          // Strict: only finishing, never moves/resizes the vehicle
+          // Phase 1c: Flux Fill Pro — inpaint ONLY the shadow zone below tires (~30s)
+          // The shadow mask is WHITE only under the car tires — car body is BLACK (never touched)
+          // This is the key architectural fix vs Flux Kontext Pro editing
           let previewUrl = canvasComposite;
           try {
-            previewUrl = await applyPhotorealisticFinishing(canvasComposite);
+            previewUrl = await applyPhotorealisticFinishing(
+              canvasComposite,
+              carCoords.carX, carCoords.carW, carCoords.tireY,
+              CANVAS_W, CANVAS_H,
+            );
           } catch { /* use unfinished composite */ }
 
           // Build the initial background object with just the preview bg

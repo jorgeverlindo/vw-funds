@@ -39,7 +39,12 @@ export default async function handler(request: Request): Promise<Response> {
     });
   }
 
-  let body: { prompt?: string; model?: string; inputImage?: string };
+  let body: {
+    prompt?: string;
+    model?: string;
+    inputImage?: string;  // flux-kontext-pro: image to edit
+    maskImage?: string;   // flux-fill-pro: white = inpaint, black = preserve
+  };
   try {
     body = await request.json() as typeof body;
   } catch {
@@ -53,6 +58,7 @@ export default async function handler(request: Request): Promise<Response> {
     prompt,
     model = 'black-forest-labs/flux-kontext-pro',
     inputImage,
+    maskImage,
   } = body;
 
   if (!prompt) {
@@ -62,6 +68,27 @@ export default async function handler(request: Request): Promise<Response> {
     });
   }
 
+  // Build model-specific input payload
+  // flux-fill-pro uses `image` + `mask` (inpainting)
+  // flux-kontext-pro uses `input_image` (editing)
+  const isFillModel = model.includes('flux-fill');
+  const modelInput = isFillModel
+    ? {
+        prompt,
+        output_format: 'jpg',
+        output_quality: 90,
+        steps: 28,
+        ...(inputImage ? { image: inputImage } : {}),
+        ...(maskImage  ? { mask:  maskImage  } : {}),
+      }
+    : {
+        prompt,
+        ...(!inputImage ? { aspect_ratio: '4:3' } : {}),
+        output_format: 'jpg',
+        output_quality: 90,
+        ...(inputImage ? { input_image: inputImage } : {}),
+      };
+
   const replicateRes = await fetch(
     `https://api.replicate.com/v1/models/${model}/predictions`,
     {
@@ -69,19 +96,8 @@ export default async function handler(request: Request): Promise<Response> {
       headers: {
         Authorization: `Bearer ${token}`,
         'Content-Type': 'application/json',
-        // No Prefer: wait — async submission so the Edge Function returns in < 1 s.
-        // The replicateClient polls GET /predict/:id until status === 'succeeded'.
       },
-      body: JSON.stringify({
-        input: {
-          prompt,
-          // aspect_ratio only for text-to-image; omit for img2img (Flux Kontext editing)
-          ...(!inputImage ? { aspect_ratio: '4:3' } : {}),
-          output_format: 'jpg',
-          output_quality: 90,
-          ...(inputImage ? { input_image: inputImage } : {}),
-        },
-      }),
+      body: JSON.stringify({ input: modelInput }),
     },
   );
 

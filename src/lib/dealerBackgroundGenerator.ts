@@ -237,33 +237,53 @@ export async function generatePreviewBackground(
  * This is called for the APPROVAL CARD only (one-time, best quality preview).
  * Stored per-template backgrounds are clean scenes — JellyBean handles the car overlay.
  */
+/**
+ * Apply photorealistic shadow + ground reflection using Flux Fill Pro inpainting.
+ *
+ * ARCHITECTURE — why this works and never duplicates the car:
+ *   - The composite already has the exact car PNG placed on the clean background
+ *   - We create a shadow mask: WHITE only in the ground area BELOW the tires
+ *   - Flux Fill Pro regenerates ONLY the white area → adds shadow + reflection
+ *   - The car body is ALWAYS in a BLACK mask region → never touched by AI
+ *   - Car identity is 100% preserved
+ *
+ * @param canvasCompositeDataUrl  canvas composite (bg + car PNG overlay)
+ * @param carX   left edge of car in canvas pixels
+ * @param carW   width of car in canvas pixels
+ * @param tireY  Y coordinate of tire contact line in canvas pixels
+ * @param canvasW canvas width
+ * @param canvasH canvas height
+ */
 export async function applyPhotorealisticFinishing(
   canvasCompositeDataUrl: string,
+  carX: number,
+  carW: number,
+  tireY: number,
+  canvasW: number,
+  canvasH: number,
 ): Promise<string> {
-  const { generateImage } = await import('./replicateClient');
+  const { createShadowMask, inpaintImage } = await import('./replicateClient');
 
-  const finishingPrompt =
-    `This image shows a vehicle composite on a dealership background. ` +
-    `Apply EXACTLY these four photorealistic finishing effects — nothing else: ` +
-    `\n(1) CAST SHADOW: Add a soft, natural shadow on the ground directly beneath ` +
-    `the vehicle. The shadow should follow the scene's sunlight direction, ` +
-    `be soft-edged (not hard), and fade naturally away from the vehicle. ` +
-    `\n(2) GROUND REFLECTION: Add a subtle, slightly blurred reflection of the ` +
-    `vehicle's lower body on the asphalt surface beneath it. ` +
-    `\n(3) LIGHTING MATCH: Adjust the vehicle's ambient light to match the scene — ` +
-    `same color temperature (warm/cool), same light direction, same exposure level. ` +
-    `\n(4) EDGE BLENDING: Eliminate any hard cutout halos or sharp edges around the ` +
-    `vehicle. Blend the vehicle edges naturally into the scene's ambient light. ` +
-    `\nSTRICT CONSTRAINTS: ` +
-    `Do NOT move, resize, or reposition the vehicle. ` +
-    `Do NOT change the background building, sky, or any scene element. ` +
-    `Do NOT alter the vehicle's shape, color, or scale. ` +
-    `Apply ONLY: shadow, reflection, lighting match, edge blending.`;
+  // Generate shadow mask: white ellipse below tires, black everywhere else
+  const shadowMask = createShadowMask(canvasW, canvasH, carX, carW, tireY);
+
+  // Flux Fill Pro inpaints ONLY the shadow zone
+  // The prompt guides what gets generated in the white (shadow) area
+  const shadowPrompt =
+    `Photorealistic cast shadow and ground reflection under a parked automobile. ` +
+    `The shadow should be soft-edged, following the scene's natural sunlight direction. ` +
+    `Include a subtle, slightly blurred reflection of the car's lower body on the asphalt. ` +
+    `The shadow fades naturally at its edges. Matches the lighting conditions of the scene. ` +
+    `High-quality automotive advertising photography style.`;
 
   try {
-    return await generateImage({ prompt: finishingPrompt, inputImage: canvasCompositeDataUrl });
+    return await inpaintImage({
+      compositeDataUrl: canvasCompositeDataUrl,
+      maskDataUrl: shadowMask,
+      prompt: shadowPrompt,
+    });
   } catch {
-    return canvasCompositeDataUrl; // fallback: return unfinished composite
+    return canvasCompositeDataUrl; // fallback: return composite without finishing
   }
 }
 

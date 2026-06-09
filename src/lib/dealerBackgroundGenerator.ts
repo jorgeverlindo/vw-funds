@@ -201,15 +201,79 @@ async function generateCleanBackground(
   }
 }
 
+// ─── Vehicle description type ─────────────────────────────────────────────────
+
+export interface VehicleDesc {
+  year: string;
+  make: string;
+  model: string;
+  trim: string;
+  /** offer ID — used as key in composites dict */
+  offerId: string;
+}
+
+// ─── Car placement prompt builder ─────────────────────────────────────────────
+
+/**
+ * Build the Flux Kontext prompt that adds a vehicle to a clean dealer background.
+ *
+ * Core principle: one single Flux Kontext img2img call handles EVERYTHING —
+ * correct perspective (model reads the bg), lighting harmony, shadow, ground
+ * reflection. No canvas, no masks, no second model.
+ */
+function buildCarPlacementPrompt(
+  vehicle: VehicleDesc,
+  config: TemplateFormatConfig,
+): string {
+  const car = `${vehicle.year} ${vehicle.make} ${vehicle.model} ${vehicle.trim}`;
+
+  const placement = config.carOnRight
+    ? `Position the vehicle on the RIGHT SIDE of the image in a three-quarter front-left view. ` +
+      `The LEFT ${Math.round((1 - (config.width > config.height ? 0.55 : 0.5)) * 100)}% ` +
+      `must remain completely clear — it will hold advertising text.`
+    : `Position the vehicle centered in the foreground, three-quarter front-left view. ` +
+      `The lower 30% of the image will hold text — ensure the vehicle sits above this zone.`;
+
+  return (
+    `Add a single ${car} to this cleared dealership parking area. ` +
+    `${placement} ` +
+    `\n\nVEHICLE PLACEMENT: Park it firmly on the asphalt with all four tires touching the ground. ` +
+    `Scale it naturally for this scene — it should look parked here, not pasted. ` +
+    `\n\nLIGHTING: Match the vehicle's lighting precisely to the scene. ` +
+    `Same light direction, same color temperature, same intensity. ` +
+    `The vehicle's paint and glass should reflect the environment realistically. ` +
+    `\n\nSHADOW: Cast a soft, realistic shadow on the asphalt under the vehicle, ` +
+    `following the existing light direction in the scene. ` +
+    `\n\nREFLECTIONS: Add subtle asphalt reflections of the vehicle's lower body. ` +
+    `\n\nPRESERVE EXACTLY: Building facade, sky, signage, trees, all background elements ` +
+    `must remain pixel-perfect unchanged. Only add the vehicle + shadow + reflections. ` +
+    `\n\nResult: professional automotive advertising photograph, commercial quality.`
+  );
+}
+
+// ─── Single composite generation ──────────────────────────────────────────────
+
+/**
+ * Generate ONE composite for a specific vehicle + template format.
+ *
+ * Calls Flux Kontext img2img with a descriptive prompt.
+ * The model handles perspective, lighting, shadow, and reflections in one pass.
+ */
+export async function generateOfferComposite(
+  cleanBgDataUrl: string,
+  vehicle: VehicleDesc,
+  config: TemplateFormatConfig,
+): Promise<string> {
+  const { generateImage } = await import('./replicateClient');
+  const prompt = buildCarPlacementPrompt(vehicle, config);
+  return generateImage({ prompt, inputImage: cleanBgDataUrl });
+}
+
 // ─── Phase 1 public API ───────────────────────────────────────────────────────
 
 /**
- * Phase 1 — Generate a single clean preview background (fast, ~20-30s).
- *
- * Called at tool time, before showing the approval card.
- * Returns one clean background at ~600×450 (4:3) for canvas preview compositing.
- * The caller adds the car via canvas composite for visual display only —
- * the returned URL itself has NO car baked in.
+ * Phase 1a — Generate a single clean preview background (~30s).
+ * Returns a 600×450 clean scene — no vehicle.
  */
 export async function generatePreviewBackground(
   dealerImageDataUrl: string,
@@ -218,94 +282,46 @@ export async function generatePreviewBackground(
     key: "website-600x450",
     width: 600, height: 450,
     compositionInstruction:
-      "Standard 4:3 advertising format. Center: clean empty ground plane for hero vehicle placement. " +
-      "Building fills upper 35% as atmospheric backdrop.",
+      "Standard 4:3 advertising format. Center: clean open ground for hero vehicle. " +
+      "Building fills upper 40% as atmospheric backdrop.",
     carOnRight: false,
   });
 }
 
 /**
- * Pass 2 — Apply photorealistic finishing to a canvas composite.
+ * Phase 1b — Add the primary vehicle to the clean preview background (~30s).
  *
- * Takes a canvas-composited image (clean bg + vehicle PNG already placed)
- * and adds: shadow, ground reflection, lighting match, edge blending.
- *
- * STRICT CONSTRAINTS passed to Replicate:
- *   - Do NOT move, resize, or remove the vehicle
- *   - Do NOT change building, sky, or environment
- *   - Only apply the 4 finishing effects listed
- *
- * This is called for the APPROVAL CARD only (one-time, best quality preview).
- * Stored per-template backgrounds are clean scenes — JellyBean handles the car overlay.
+ * Replaces the old canvas + Flux Fill Pro pipeline.
+ * Flux Kontext handles perspective, lighting, shadow, and reflections in one pass.
+ * Result is shown in the approval card.
  */
-/**
- * Apply photorealistic shadow + ground reflection using Flux Fill Pro inpainting.
- *
- * ARCHITECTURE — why this works and never duplicates the car:
- *   - The composite already has the exact car PNG placed on the clean background
- *   - We create a shadow mask: WHITE only in the ground area BELOW the tires
- *   - Flux Fill Pro regenerates ONLY the white area → adds shadow + reflection
- *   - The car body is ALWAYS in a BLACK mask region → never touched by AI
- *   - Car identity is 100% preserved
- *
- * @param canvasCompositeDataUrl  canvas composite (bg + car PNG overlay)
- * @param carX   left edge of car in canvas pixels
- * @param carW   width of car in canvas pixels
- * @param tireY  Y coordinate of tire contact line in canvas pixels
- * @param canvasW canvas width
- * @param canvasH canvas height
- */
-export async function applyPhotorealisticFinishing(
-  canvasCompositeDataUrl: string,
-  carX: number,
-  carW: number,
-  tireY: number,
-  canvasW: number,
-  canvasH: number,
+export async function generatePreviewComposite(
+  cleanBgDataUrl: string,
+  primaryVehicle: VehicleDesc,
 ): Promise<string> {
-  const { createShadowMask, inpaintImage } = await import('./replicateClient');
-
-  // Generate shadow mask: white ellipse below tires, black everywhere else
-  const shadowMask = createShadowMask(canvasW, canvasH, carX, carW, tireY);
-
-  // Flux Fill Pro inpaints ONLY the shadow zone
-  // The prompt guides what gets generated in the white (shadow) area
-  const shadowPrompt =
-    `Photorealistic cast shadow and ground reflection under a parked automobile. ` +
-    `The shadow should be soft-edged, following the scene's natural sunlight direction. ` +
-    `Include a subtle, slightly blurred reflection of the car's lower body on the asphalt. ` +
-    `The shadow fades naturally at its edges. Matches the lighting conditions of the scene. ` +
-    `High-quality automotive advertising photography style.`;
-
   try {
-    return await inpaintImage({
-      compositeDataUrl: canvasCompositeDataUrl,
-      maskDataUrl: shadowMask,
-      prompt: shadowPrompt,
+    return await generateOfferComposite(cleanBgDataUrl, primaryVehicle, {
+      key: "website-600x450",
+      width: 600, height: 450,
+      compositionInstruction: "",
+      carOnRight: false,
     });
   } catch {
-    return canvasCompositeDataUrl; // fallback: return composite without finishing
+    return cleanBgDataUrl; // fallback: show clean bg without car
   }
 }
 
 // ─── Phase 2 public API ───────────────────────────────────────────────────────
 
 /**
- * Phase 2 — Generate per-template clean backgrounds (called AFTER user approval).
- *
- * All formats run in parallel (Promise.allSettled).
- * Each returned URL is a CLEAN scene — no car, no duplication with JellyBean.
- *
- * @param dealerImageDataUrl  base64 data URL of dealer's uploaded photo
- * @param selectedTemplateKeys  KNOWN_SIZES keys to generate (empty = all)
- * @param onProgress  optional callback as each format completes
+ * Phase 2a — Generate per-template CLEAN backgrounds (called AFTER user approval).
+ * Same as before — returns clean scenes for use as composite inputs.
  */
 export async function generateDealerBackgroundsForTemplates(
   dealerImageDataUrl: string,
   selectedTemplateKeys: string[] = [],
   onProgress?: (key: string) => void,
 ): Promise<Record<string, string>> {
-
   const configs = selectedTemplateKeys.length > 0
     ? TEMPLATE_FORMAT_CONFIGS.filter(c => selectedTemplateKeys.includes(c.key))
     : TEMPLATE_FORMAT_CONFIGS;
@@ -327,4 +343,42 @@ export async function generateDealerBackgroundsForTemplates(
     }
   }
   return bgImages;
+}
+
+/**
+ * Phase 2b — Generate per-offer × per-template composites in parallel.
+ *
+ * For each (vehicle, template) pair: one Flux Kontext call adds the vehicle
+ * to the pre-generated clean bg with correct lighting, shadow, and perspective.
+ *
+ * Returns: Record<offerId, Record<templateKey, compositeUrl>>
+ *
+ * @param cleanBgImages  templateKey → clean bg URL (from Phase 2a)
+ * @param vehicles       list of offers to generate composites for
+ * @param onProgress     called as each composite finishes
+ */
+export async function generateAllComposites(
+  cleanBgImages: Record<string, string>,
+  vehicles: VehicleDesc[],
+  onProgress?: (offerId: string, templateKey: string) => void,
+): Promise<Record<string, Record<string, string>>> {
+  const results: Record<string, Record<string, string>> = {};
+  for (const v of vehicles) results[v.offerId] = {};
+
+  const tasks = vehicles.flatMap(vehicle =>
+    TEMPLATE_FORMAT_CONFIGS
+      .filter(c => cleanBgImages[c.key])
+      .map(config => async () => {
+        try {
+          const url = await generateOfferComposite(cleanBgImages[c.key], vehicle, config);
+          results[vehicle.offerId][config.key] = url;
+          onProgress?.(vehicle.offerId, config.key);
+        } catch {
+          results[vehicle.offerId][config.key] = cleanBgImages[config.key]; // fallback: clean bg
+        }
+      })
+  );
+
+  await Promise.allSettled(tasks.map(t => t()));
+  return results;
 }

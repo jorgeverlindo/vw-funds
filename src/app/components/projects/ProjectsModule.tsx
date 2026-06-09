@@ -86,10 +86,11 @@ function saveCustomOfferLibrary(offers: StoredOffer[]) {
 interface CustomBackground {
   id: string;
   name: string;
-  thumbnail: string;          // URL of the generated image (used everywhere)
-  images: Record<string, string>; // same key for all template sizes → same URL
-  groundFraction?: number;    // 0–1 from Depth Anything v2 — where the ground is
-  carWidthFraction?: number;  // 0–1 from Depth Anything v2 — how wide the ground zone is
+  thumbnail: string;
+  images: Record<string, string>;           // templateKey → clean bg URL (no car)
+  composites?: Record<string, Record<string, string>>; // offerId → templateKey → compositeUrl
+  groundFraction?: number;
+  carWidthFraction?: number;
 }
 
 function loadCustomBackgroundLibrary(projectId: string): CustomBackground[] {
@@ -926,25 +927,41 @@ function getBgImage(
   return images[bestKey];
 }
 
+// Template key lookup from dimensions
+function templateKey(width: number, height: number): string {
+  const KNOWN: Record<string, [number, number]> = {
+    "website-2000x500": [2000, 500], "display-970x250": [970, 250],
+    "display-300x250": [300, 250],   "social-1080x1080": [1080, 1080],
+    "website-600x450": [600, 450],   "website-600x1067": [600, 1067],
+  };
+  const ar = width / height;
+  return Object.entries(KNOWN).reduce((best, [k, [w, h]]) => {
+    const diff = Math.abs(ar - w / h);
+    return diff < best.diff ? { k, diff } : best;
+  }, { k: "display-300x250", diff: Infinity }).k;
+}
+
 function JellyBeanCard({
-  offer, template, fixedHeight = 160, bgImage, brandKit, groundFraction, carWidthFraction,
+  offer, template, fixedHeight = 160, bgImage, brandKit,
+  groundFraction, carWidthFraction, compositeUrl,
 }: {
   offer: Offer & { image?: string };
   template: Template;
   fixedHeight?: number;
   bgImage?: string;
   brandKit?: BrandKit;
-  /** Ground plane Y fraction (0–1) from Depth Anything v2. Used to anchor the car. */
   groundFraction?: number;
-  /** Car width fraction (0–1) from Depth Anything v2. Sizes car to fit the ground zone. */
   carWidthFraction?: number;
+  /** Pre-generated Flux composite (car already baked in). When provided, the car
+   *  PNG overlay is suppressed — the composite IS the complete image. */
+  compositeUrl?: string;
 }) {
   const h = fixedHeight;
   const ar = template.width / template.height;
   const w = Math.min(Math.round(h * ar), 540);
   const isWide = ar > 2.0; // 2000×500 (4:1), 970×250 (3.88:1)
 
-  // ── Canvas composite for dealer backgrounds ───────────────────────────────
+  // ── Canvas composite fallback (only when no pre-generated compositeUrl) ──
   // When groundFraction is provided (custom dealer bg), bake the car PNG directly
   // onto the background via canvas. This produces a single image that matches the
   // mockup quality — no CSS overlay seams, correct scale, text-zone aware placement.
@@ -953,7 +970,8 @@ function JellyBeanCard({
   const [carBottom,      setCarBottom]      = useState<number | null>(null);
 
   useEffect(() => {
-    if (!groundFraction || !offer.image || !bgImage) {
+    // Skip canvas composite when a pre-generated Flux composite is available
+    if (compositeUrl || !groundFraction || !offer.image || !bgImage) {
       setCompositeImage(null); setCarBottom(null); return;
     }
 
@@ -1089,10 +1107,10 @@ function JellyBeanCard({
       className="relative rounded-[10px] overflow-hidden select-none shrink-0 cursor-pointer hover:shadow-lg transition-shadow"
       style={{ width: w, height: h, background: "#e2e2e2" }}
     >
-      {/* Background — use canvas composite (car baked in) when ready, else raw bg */}
-      {(compositeImage ?? bgImage) && (
+      {/* Background — priority: Flux composite > canvas composite > clean bg */}
+      {(compositeUrl ?? compositeImage ?? bgImage) && (
         <img
-          src={compositeImage ?? bgImage!}
+          src={compositeUrl ?? compositeImage ?? bgImage!}
           alt="background"
           className="absolute inset-0 w-full h-full object-cover"
           draggable={false}
@@ -1102,8 +1120,8 @@ function JellyBeanCard({
       {/* ── WIDE layout: car on right 55%, text on left ──────────────────────── */}
       {isWide ? (
         <>
-          {/* CSS car overlay — skipped when composite image is ready (car is baked in) */}
-          {!compositeImage && offer.image && (
+          {/* CSS car overlay — skipped when Flux composite or canvas composite is ready */}
+          {!compositeUrl && !compositeImage && offer.image && (
             <img
               src={offer.image}
               alt={`${offer.year} ${offer.make} ${offer.model}`}
@@ -1185,8 +1203,8 @@ function JellyBeanCard({
       ) : (
         /* ── NORMAL/SQUARE layout ──────────────────────────────────────────── */
         <>
-          {/* CSS car overlay — skipped when composite image is ready (car is baked in) */}
-          {!compositeImage && offer.image && (
+          {/* CSS car overlay — skipped when Flux composite or canvas composite is ready */}
+          {!compositeUrl && !compositeImage && offer.image && (
             <img
               src={offer.image}
               alt={`${offer.year} ${offer.make} ${offer.model}`}
@@ -2426,6 +2444,7 @@ function ProjectDetailViewInner({
                     brandKit={brandKit}
                     groundFraction={(selectedBg as CustomBackground | null)?.groundFraction}
                     carWidthFraction={(selectedBg as CustomBackground | null)?.carWidthFraction}
+                    compositeUrl={(selectedBg as CustomBackground | null)?.composites?.[offer.id]?.[templateKey(template.width, template.height)]}
                   />
                 </motion.div>
               ))}
@@ -2480,6 +2499,7 @@ function ProjectDetailViewInner({
                       brandKit={brandKit}
                       groundFraction={(bg as CustomBackground | null)?.groundFraction}
                       carWidthFraction={(bg as CustomBackground | null)?.carWidthFraction}
+                      compositeUrl={(bg as CustomBackground | null)?.composites?.[offer.id]?.[templateKey(template.width, template.height)]}
                     />
                   </motion.div>
                 );

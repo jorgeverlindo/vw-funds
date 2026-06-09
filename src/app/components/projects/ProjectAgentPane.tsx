@@ -2364,61 +2364,41 @@ export function ProjectAgentPane({ isOpen, onClose, userType, activeUserName }: 
           );
           const vehicleImageUrl = (firstConfirmedOffer as any)?.image ?? "";
 
-          const { generatePreviewBackground, applyPhotorealisticFinishing } =
+          const { generatePreviewBackground, generatePreviewComposite } =
             await import("../../../lib/dealerBackgroundGenerator");
-          const { createVehicleCompositeWithCoords, detectGroundFraction } =
-            await import("../../../lib/replicateClient");
 
-          // Phase 1a: Flux Kontext Pro — clean background + ground plane (~30s)
+          // Resolve the primary vehicle from confirmed offers
+          const ctx2 = ctxRef.current;
+          const confirmedOffers = (ctx2?.availableOffers ?? [])
+            .filter(o => (ctx2?.currentOfferIds ?? []).includes(o.id));
+          const primaryOffer = confirmedOffers[0];
+          const primaryVehicle = primaryOffer
+            ? { year: primaryOffer.year, make: primaryOffer.make,
+                model: primaryOffer.model, trim: primaryOffer.trim,
+                offerId: primaryOffer.id }
+            : { year: new Date().getFullYear().toString(), make: vehicleContext.split(",")[0]?.trim() ?? "Vehicle",
+                model: "", trim: "", offerId: "preview" };
+
+          // Phase 1a: Flux Kontext Pro — clean background (~30s)
+          // Removes all vehicles, people, clutter. Builds clear ground plane.
           const cleanPreviewBg = await generatePreviewBackground(storedImage);
 
-          // Phase 1a.5: Depth Anything v2 — detect ground plane Y + car width from scene
-          // groundFraction [0.70–0.93]: where tires land (Y fraction of canvas height)
-          // carWidthFraction [0.35–0.75]: how wide the car should appear in JellyBeanCard
-          // Both derived from the width of the bright ground zone in the depth map.
-          // Falls back to { 0.88, 0.65 } on any error.
-          const { groundFraction, carWidthFraction } = await detectGroundFraction(cleanPreviewBg);
+          // Phase 1b: Flux Kontext Pro — add primary vehicle to clean bg (~30s)
+          // Single-pass: model handles perspective, lighting, shadow, ground contact.
+          // Replaces canvas composite + Flux Fill Pro pipeline entirely.
+          const previewUrl = await generatePreviewComposite(cleanPreviewBg, primaryVehicle);
 
-          // Phase 1b: Canvas composite — places the EXACT car PNG at correct position
-          // Returns coordinates (carX, carW, tireY) needed for shadow mask generation
-          // Car identity 100% preserved — no AI touches the car in this step
-          let canvasComposite = cleanPreviewBg;
-          let carCoords = { carX: 200, carW: 620, tireY: 570 }; // fallback estimate
-          const CANVAS_W = 1024, CANVAS_H = 768;
-          if (vehicleImageUrl?.startsWith("http")) {
-            try {
-              const result = await createVehicleCompositeWithCoords(
-                cleanPreviewBg, vehicleImageUrl, CANVAS_W, CANVAS_H, groundFraction
-              );
-              canvasComposite = result.dataUrl;
-              carCoords = { carX: result.carX, carW: result.carW, tireY: result.tireY };
-            } catch { /* use clean bg alone */ }
-          }
-
-          // Phase 1c: Flux Fill Pro — inpaint ONLY the shadow zone below tires (~30s)
-          // The shadow mask is WHITE only under the car tires — car body is BLACK (never touched)
-          // This is the key architectural fix vs Flux Kontext Pro editing
-          let previewUrl = canvasComposite;
-          try {
-            previewUrl = await applyPhotorealisticFinishing(
-              canvasComposite,
-              carCoords.carX, carCoords.carW, carCoords.tireY,
-              CANVAS_W, CANVAS_H,
-            );
-          } catch { /* use unfinished composite */ }
-
-          // Build the initial background object with just the preview bg
-          // images: {} — Phase 2 will populate per-template URLs after approval
+          // Build the initial background object
           const bgId = `dealer-bg-${Date.now()}`;
           const customBg = {
             id: bgId,
             name: "Your Scene",
-            thumbnail: cleanPreviewBg,      // clean scene, no car
-            images: { "website-600x450": cleanPreviewBg }, // preview-res only for now
-            // Phase 2 will add all template keys after approval
-            _dealerPhotoDataUrl: storedImage,  // stored for Phase 2 generation
-            groundFraction,    // from Depth Anything v2 — where tires should land (Y)
-            carWidthFraction,  // from Depth Anything v2 — how wide the car should appear
+            thumbnail: cleanPreviewBg,
+            images: { "website-600x450": cleanPreviewBg },
+            _dealerPhotoDataUrl: storedImage,
+            _confirmedOffers: confirmedOffers.map(o => ({
+              offerId: o.id, year: o.year, make: o.make, model: o.model, trim: o.trim,
+            })),
           };
 
           // Store template keys for Phase 2 use
@@ -3604,38 +3584,45 @@ export function ProjectAgentPane({ isOpen, onClose, userType, activeUserName }: 
                           onProactiveQuestionsApply={handleProactiveQuestionsSubmit}
                           dispatchAction={dispatchAction}
                           onDealerBgApprove={(bgObject) => {
-                            // Add initial background (preview-res clean bg only)
                             dispatchAction({ action: "add_custom_background", background: bgObject });
                             setMessages(prev => prev.map(m => m.id === msg.id ? { ...m, applied: true } as DealerBgProposalMsg : m));
                             setTimeout(() => fireNextStep("dealer_bg"), 300);
 
-                            // ── PHASE 2: Generate per-template clean backgrounds ──────
-                            // Runs after approval, parallel, no car baked in.
-                            // Updates the background's images dict with per-format URLs.
-                            const dealerPhoto  = (bgObject as any)._dealerPhotoDataUrl as string | undefined;
-                            const templateKeys = (bgObject as any)._templateKeys as string[] | undefined;
+                            // ── PHASE 2: Generate per-template clean bgs + per-offer composites ──
+                            const dealerPhoto = (bgObject as any)._dealerPhotoDataUrl as string | undefined;
+                            const confirmedOfferDescs = (bgObject as any)._confirmedOffers as
+                              Array<{ offerId: string; year: string; make: string; model: string; trim: string }> | undefined;
+
                             if (dealerPhoto) {
                               dispatchAction({ action: "set_dealer_bg_generating", value: true } as never);
                               (async () => {
                                 try {
-                                  const { generateDealerBackgroundsForTemplates } =
-                                    await import("../../../lib/dealerBackgroundGenerator");
-                                  const bgImages = await generateDealerBackgroundsForTemplates(
-                                    dealerPhoto,
-                                    templateKeys ?? [],
-                                  );
-                                  // Fill any missing keys with the preview-res fallback
+                                  const {
+                                    generateDealerBackgroundsForTemplates,
+                                    generateAllComposites,
+                                  } = await import("../../../lib/dealerBackgroundGenerator");
+
+                                  // Phase 2a: clean bg per template (used as inputs for compositing)
+                                  const cleanBgImages = await generateDealerBackgroundsForTemplates(dealerPhoto);
                                   const fallback = (bgObject as any).images["website-600x450"] ?? dealerPhoto;
                                   const ALL_KEYS = ["website-2000x500","display-970x250","display-300x250","social-1080x1080","website-600x450","website-600x1067"];
-                                  ALL_KEYS.forEach(k => { if (!bgImages[k]) bgImages[k] = fallback; });
+                                  ALL_KEYS.forEach(k => { if (!cleanBgImages[k]) cleanBgImages[k] = fallback; });
 
-                                  // Update the background in the project with all per-format URLs
+                                  // Phase 2b: composites per offer × template via Flux Kontext
+                                  // Each call: Flux Kontext adds the vehicle to the clean bg
+                                  // with correct perspective, lighting, shadow, and reflections.
+                                  const vehicles = (confirmedOfferDescs ?? []);
+                                  const composites = vehicles.length > 0
+                                    ? await generateAllComposites(cleanBgImages, vehicles)
+                                    : {};
+
                                   const updatedBg = {
                                     ...(bgObject as any),
-                                    images: { ...(bgObject as any).images, ...bgImages },
+                                    images: { ...(bgObject as any).images, ...cleanBgImages },
+                                    composites,
                                   };
                                   dispatchAction({ action: "add_custom_background", background: updatedBg });
-                                } catch { /* generation failed — preview-res fallback remains */ }
+                                } catch { /* fallback remains */ }
                                 finally {
                                   dispatchAction({ action: "set_dealer_bg_generating", value: false } as never);
                                 }

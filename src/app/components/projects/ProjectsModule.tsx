@@ -944,6 +944,67 @@ function JellyBeanCard({
   const w = Math.min(Math.round(h * ar), 540);
   const isWide = ar > 2.0; // 2000×500 (4:1), 970×250 (3.88:1)
 
+  // ── Precise car grounding via alpha-channel tire detection ─────────────────
+  // When a custom background provides groundFraction, we load the car PNG and
+  // detect exactly where the tires are within the image (last non-transparent row).
+  // This lets us set `bottom` so the tires land precisely on the ground plane —
+  // no hardcoded fractions, fully derived from the actual car PNG geometry.
+  const [carBottom, setCarBottom] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (!groundFraction || !offer.image) { setCarBottom(null); return; }
+
+    let cancelled = false;
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => {
+      if (cancelled) return;
+
+      // Alpha-detect tire row (last non-transparent row from bottom)
+      const sW = Math.min(img.naturalWidth, 128);
+      const sH = Math.min(img.naturalHeight, 128);
+      const off = document.createElement('canvas');
+      off.width = sW; off.height = sH;
+      const ctx = off.getContext('2d')!;
+      ctx.drawImage(img, 0, 0, sW, sH);
+      const { data } = ctx.getImageData(0, 0, sW, sH);
+
+      let tireFraction = 0.95; // fallback: tires at 95% of PNG height
+      outer: for (let y = sH - 1; y >= 0; y--) {
+        for (let x = 0; x < sW; x++) {
+          if (data[(y * sW + x) * 4 + 3] > 20) { tireFraction = y / sH; break outer; }
+        }
+      }
+
+      // Compute rendered car dimensions in this card using object-contain logic
+      const carAr = img.naturalWidth / img.naturalHeight;
+      const availW = carWidthFraction !== undefined
+        ? Math.round(w * carWidthFraction)
+        : isWide ? Math.round(w * 0.55) : Math.round(w * 0.88);
+      const availH = isWide ? Math.round(h * 0.90) : Math.round(h * 0.52);
+
+      // object-contain: scale to fit within (availW × availH), maintain AR
+      let renderedW = availH * carAr;
+      let renderedH = availH;
+      if (renderedW > availW) { renderedW = availW; renderedH = availW / carAr; }
+
+      // Tires are at tireFraction of rendered car height from the top
+      // Space below tires in rendered car = renderedH * (1 - tireFraction)
+      const belowTires = renderedH * (1 - tireFraction);
+
+      // Ground position from card bottom
+      const groundFromBottom = Math.round(h * (1 - groundFraction));
+
+      // Set container bottom so tires land exactly on ground plane:
+      //   containerBottom + belowTires = groundFromBottom
+      const bottom = Math.max(0, Math.round(groundFromBottom - belowTires));
+      setCarBottom(bottom);
+    };
+    img.onerror = () => { if (!cancelled) setCarBottom(null); };
+    img.src = offer.image;
+    return () => { cancelled = true; };
+  }, [offer.image, groundFraction, carWidthFraction, h, w, isWide]);
+
   // Fixed chip / text sizes (consistent across all card widths)
   const chipFontSize = 9.5;
   const priceFontSize = Math.round(h * 0.14); // ~22px at h=160
@@ -995,10 +1056,10 @@ function JellyBeanCard({
               className="absolute object-contain"
               style={{
                 right: 0,
-                bottom: groundFraction !== undefined ? Math.round(h * (1 - groundFraction)) : 0,
+                // carBottom: precise pixel value from alpha-detected tire position.
+                // Falls back to ground-based estimate, then to 0.
+                bottom: carBottom ?? (groundFraction !== undefined ? Math.round(h * (1 - groundFraction)) : 0),
                 height: "90%",
-                // carWidthFraction drives how much of the card the car occupies.
-                // Wide format: car on right side; default 55%, detected width if available.
                 width: carWidthFraction !== undefined ? `${Math.round(carWidthFraction * 100)}%` : "55%",
                 objectPosition: "right bottom",
                 // CSS drop-shadow on the PNG alpha channel = free realistic cast shadow
@@ -1078,17 +1139,17 @@ function JellyBeanCard({
                 // groundFraction: where tires should land in the background image.
                 // Without it (no custom bg): fixed offset h*0.26 (text box below car).
                 // With it: anchor tires to the detected ground plane, keep same car height.
-                bottom: groundFraction !== undefined
+                // carBottom: pixel-precise value from alpha-detected tire position in the PNG.
+                // Falls back gracefully: ground-based estimate → fixed offset.
+                bottom: carBottom ?? (groundFraction !== undefined
                   ? Math.round(h * (1 - groundFraction))
-                  : Math.round(h * 0.26),
+                  : Math.round(h * 0.26)),
                 left: 0, right: 0,
                 height: Math.round(h * 0.52),
-                // carWidthFraction → symmetric horizontal padding so car fills that fraction.
-                // Default: 6% padding each side (= ~88% car width). With detection: exact fit.
                 padding: carWidthFraction !== undefined
                   ? `0 ${Math.round(w * (1 - carWidthFraction) / 2)}px`
                   : `0 ${Math.round(w * 0.06)}px`,
-                objectPosition: groundFraction !== undefined ? "center bottom" : "center center",
+                objectPosition: carBottom !== null ? "center bottom" : "center center",
                 // CSS drop-shadow respects PNG alpha = realistic cast shadow for free
                 filter: hasBg
                   ? "drop-shadow(0px 6px 14px rgba(0,0,0,0.50)) drop-shadow(0px 2px 5px rgba(0,0,0,0.30))"

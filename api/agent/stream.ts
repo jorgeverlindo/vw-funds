@@ -340,6 +340,41 @@ Extraction rules:
 - For text descriptions with partial data, create one row per offer mentioned, mark unknown fields "low".
 - Be thorough — users use this flow specifically to import offers that aren't in the catalog.
 
+━━━ DEALER BACKGROUND FLOW — COMPLETE ISOLATION FROM INVENTORY ━━━
+
+This flow IS FULLY SUPPORTED and built into the platform.
+NEVER say "the platform doesn't support custom backgrounds" — it does, via this flow.
+
+This flow is ONLY active when flow_scope = "full_dealer_bg".
+It is 100% SEPARATE from the Inventory AI Config flow.
+NEVER mix these. NEVER call generate_dealer_background in any other flow.
+
+TRIGGER — you MUST start this flow immediately (no clarifying questions) when:
+  • User uploads or shares a photo of a dealership / outdoor scene AND mentions campaign or project
+  • User says anything like "use this image as background", "create a campaign with this photo",
+    "make a campaign from this dealership image", or similar
+
+WHEN TRIGGERED, do NOT explain limitations. Do NOT ask "would you like A or B?".
+IMMEDIATELY call setup_project with flow_scope: "full_dealer_bg" and a suitable project name.
+
+FULL_DEALER_BG FLOW STEPS:
+  Step 1: setup_project (flow_scope: "full_dealer_bg") → user confirms
+  Step 2: propose_offers → user confirms  ← REQUIRED before background
+         (you need the vehicle makes/models from confirmed offers for the background prompt)
+  Step 3: propose_templates → user confirms
+  Step 3.5: generate_dealer_background ← INSTEAD of propose_backgrounds
+         Pass vehicle_context = comma-separated makes+models from confirmed offers
+         The frontend handles the actual Replicate AI call and background creation.
+  Step 4: propose_brand → done
+
+GENERATE_DEALER_BACKGROUND RULES:
+  ⚠️  ONLY call after offers are confirmed — you need the vehicle context.
+  ⚠️  Do NOT call propose_backgrounds in this flow — it is replaced by generate_dealer_background.
+  ⚠️  Do NOT call this in any other flow_scope.
+  Pass vehicle_context = the makes+models of all currently confirmed offers.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
 Today's date: ${new Date().toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}.`;
 }
 
@@ -438,7 +473,31 @@ const agentTools: Anthropic.Tool[] = [
     },
   },
 
-  // ── Step 3.5: background selection ────────────────────────────────────────
+  // ── Step 3.5a: dealer custom background (full_dealer_bg flow only) ───────────
+  {
+    name: "generate_dealer_background",
+    description:
+      "Generate a custom campaign background from a dealer-uploaded scene image. " +
+      "Use ONLY in the full_dealer_bg flow, ONLY after offers have been confirmed. " +
+      "The frontend will run the Replicate AI pipeline to produce the background. " +
+      "Pass vehicle_context = comma-separated makes+models of confirmed offers.",
+    input_schema: {
+      type: "object" as const,
+      properties: {
+        vehicle_context: {
+          type: "string",
+          description: "Comma-separated makes+models from confirmed offers (e.g. 'Honda CR-V, Honda Civic')",
+        },
+        scene_description: {
+          type: "string",
+          description: "Brief description of the uploaded dealer scene (e.g. 'outdoor Honda dealership lot, daytime')",
+        },
+      },
+      required: ["vehicle_context", "scene_description"],
+    },
+  },
+
+  // ── Step 3.5b: background selection (standard flow) ───────────────────────
   {
     name: "propose_backgrounds",
     description:

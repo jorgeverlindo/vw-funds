@@ -2562,6 +2562,38 @@ export function ProjectAgentPane({ isOpen, onClose, userType, activeUserName }: 
       }
     }
 
+    // ── Pipeline state markers ────────────────────────────────────────────────
+    // Cards (offers, templates, backgrounds, brand) are filtered from history as
+    // non-text messages. The agent can't see confirmations in the history and may
+    // re-propose steps that are already done.
+    // Fix: inject a single ghost exchange RIGHT BEFORE the continuation message
+    // that explicitly lists which steps are already complete. The agent sees this
+    // as authoritative evidence and skips completed steps.
+    {
+      const markers: string[] = [];
+      if (ctx.currentOfferIds?.length)
+        markers.push(`propose_offers ✅ (${ctx.currentOfferIds.length} offers in project)`);
+      if (ctx.currentTemplateIds?.length)
+        markers.push(`propose_templates ✅ (${ctx.currentTemplateIds.length} templates in project)`);
+      if (ctx.activeBrandOem)
+        markers.push(`propose_brand ✅ (${ctx.activeBrandOem} brand kit active)`);
+      // Backgrounds/dealer_bg: not in project state → check message history
+      const bgApplied = messagesRef.current.some(
+        m => (m.type === "backgrounds" || m.type === "dealer_bg_proposal") && (m as any).applied
+      );
+      if (bgApplied) markers.push("propose_backgrounds / generate_dealer_background ✅ (background confirmed)");
+      const taskOwnersApplied = messagesRef.current.some(m => m.type === "task_owners" && (m as any).applied);
+      if (taskOwnersApplied) markers.push("propose_task_owners ✅ (task owners set)");
+
+      if (markers.length > 0) {
+        // Inject just before the continuation message (already at end of history)
+        history.splice(history.length - 1, 0,
+          { role: "user" as const,      content: `[PIPELINE STATE — steps already completed: ${markers.join(" | ")}. Do NOT re-propose any of these.]` },
+          { role: "assistant" as const, content: "Confirmed. I will not re-propose completed steps." },
+        );
+      }
+    }
+
     // Force the exact tool whenever the continuation names one.
     // This is the core guard against the agent calling setup_project or add_* tools
     // instead of the propose_* tool we asked for. tool_choice = "tool" means the model
@@ -3209,7 +3241,10 @@ export function ProjectAgentPane({ isOpen, onClose, userType, activeUserName }: 
   // ── Brand card ──────────────────────────────────────────────────────────────
   const handleBrandApply = useCallback((oem: string) => {
     dispatchAction({ action: "set_brand", oem });
-  }, [dispatchAction]);
+    // Fire next step so the flow-complete handler runs (generates assets prompt +
+    // propose_task_owners). Without this, the flow would silently end here.
+    setTimeout(() => fireNextStep("brand"), 400);
+  }, [dispatchAction, fireNextStep]);
 
   // ── Thread management ────────────────────────────────────────────────────────
   const handleNewThread = useCallback(() => {

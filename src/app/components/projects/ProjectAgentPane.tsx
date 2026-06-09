@@ -2366,27 +2366,51 @@ export function ProjectAgentPane({ isOpen, onClose, userType, activeUserName }: 
 
           const { generateImage, createVehicleComposite } = await import("../../../lib/replicateClient");
 
-          // ── Step 1: Replicate adapts the SCENE PERSPECTIVE ──────────────────
-          // The JellyBean cars are always front-left 3/4 view, positioned with
-          // bottom at ~26% from card bottom and centered horizontally.
-          // The model must adapt ONLY the ground plane / foreground to match
-          // this perspective — the rest of the scene stays exactly as uploaded.
+          // ── Replicate: 6-step scene adaptation ────────────────────────────
+          //
+          // The model follows these 6 steps internally:
+          //   1. Analyze the uploaded scene (lighting, perspective, horizon line, surface type)
+          //   2. Check current perspective: identify vanishing point(s), horizon height,
+          //      ground plane angle — determine what needs to change for a car to fit
+          //   3. Re-generate the scene in the correct perspective for a front-left 3/4
+          //      view automobile (same angle used by all JellyBean cutouts)
+          //   4. Generate adequate foreground ground surface (flat, wide, well-lit)
+          //      where the vehicle will rest — occupying the lower ~35% of the frame
+          //   5. Calibrate the perspective so a ${vehicles} placed center-bottom
+          //      appears grounded and natural (correct shadow plane, horizon alignment)
+          //   6. Deliver: the original scene environment preserved in the upper 65%,
+          //      with the corrected ground plane in the lower 35%
+          //
+          // The vehicle cutout itself is added by canvas composite (createVehicleComposite)
+          // after this step — the model must NOT add any vehicles to the image.
           const perspectivePrompt =
-            `SCENE BACKGROUND PREPARATION FOR AUTOMOTIVE ADVERTISING. ` +
-            `You are given a scene photograph. A ${vehicles} vehicle will be placed ` +
-            `in this scene as a front-left 3/4 view cutout centered horizontally ` +
-            `and resting on the ground in the lower-center of the image. ` +
-            `YOUR ONLY TASK: Adapt the ground plane and foreground perspective ` +
-            `so the scene looks natural when that vehicle is placed on it. ` +
-            `Specifically: ensure the bottom ~30% of the image has a flat, wide ` +
-            `ground surface (asphalt, pavement, or the existing surface) with a ` +
-            `vanishing point that matches a front-left 3/4 vehicle view. ` +
-            `CRITICAL PRESERVATION RULES: ` +
-            `(1) Do NOT change anything in the upper 70% of the image. ` +
-            `(2) Keep all existing colors, lighting, architecture, and environment. ` +
-            `(3) Do NOT add any vehicles, people, or objects. ` +
-            `(4) Only refine/extend the ground surface in the lower portion. ` +
-            `The scene must remain recognizable as the original uploaded photo.`;
+            `You are preparing a scene photograph as a background for automotive advertising. ` +
+            `The final result will have a ${vehicles} (front-left 3/4 view cutout) placed ` +
+            `in the center-bottom of this image as a CSS overlay. ` +
+            `\n\nYour task — follow all 6 steps: ` +
+            `\nSTEP 1 — ANALYZE: Study the current scene. Identify the horizon line position, ` +
+            `vanishing points, existing ground surface type (pavement, grass, gravel, etc.), ` +
+            `lighting direction, and camera height. ` +
+            `\nSTEP 2 — CHECK PERSPECTIVE: Determine if the current ground plane perspective ` +
+            `is compatible with a front-left 3/4 view automobile. If the horizon is too high, ` +
+            `too low, or angled incorrectly, note what correction is needed. ` +
+            `\nSTEP 3 — ADAPT PERSPECTIVE: Modify the ground plane perspective in the lower ` +
+            `35% of the image so it matches a front-left 3/4 automobile camera angle ` +
+            `(camera height approximately 1-1.5 meters, slight downward angle). ` +
+            `The vanishing point on the ground must align naturally with this vehicle angle. ` +
+            `\nSTEP 4 — GENERATE FOREGROUND: Ensure the lower 35% has a clean, flat, wide ` +
+            `ground surface — extend or create pavement/asphalt if the original scene lacks it. ` +
+            `The surface must be wide enough for a full-size SUV or sedan. ` +
+            `\nSTEP 5 — CALIBRATE CAR PLACEMENT ZONE: The center-bottom area (roughly 60% ` +
+            `wide, sitting on the ground line) must have the correct surface texture and ` +
+            `perspective so a vehicle placed there looks grounded — not floating. ` +
+            `Ensure there are no obstructions in this zone. ` +
+            `\nSTEP 6 — DELIVER: Output the adapted image. ` +
+            `MANDATORY PRESERVATION: The upper 65% of the scene (sky, buildings, trees, ` +
+            `architecture, landscape) must remain visually identical to the original. ` +
+            `Keep all existing colors and lighting unchanged. ` +
+            `DO NOT add any vehicles, people, or objects. ` +
+            `The scene must be recognizable as the original uploaded location.`;
 
           let adaptedBgUrl: string;
           try {

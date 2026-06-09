@@ -254,14 +254,19 @@ export async function createVehicleComposite(
   // Layer 1 — background, stretched to fill
   ctx.drawImage(bgImg, 0, 0, width, height)
 
-  // Layer 2 — vehicle, scaled to 72 % of canvas width and vertically centred.
-  // The vehicle PNGs are RGBA — drawImage composites the alpha channel correctly,
-  // so no manual white-pixel removal is needed here.
+  // Layer 2 — vehicle, scaled to 72% of canvas width and anchored to the ground plane.
+  // The vehicle PNGs are RGBA — drawImage composites the alpha channel correctly.
+  //
+  // Positioning: the car sits in the lower-center of the frame, its bottom edge
+  // at ~20% from the canvas bottom (matches the ground plane the Replicate-adapted
+  // background was calibrated for — lower 35% is the foreground area).
+  // This ensures the car appears grounded rather than floating or centered.
   const vehScale = (width * 0.72) / vehImg.naturalWidth
   const vW = Math.round(vehImg.naturalWidth  * vehScale)
   const vH = Math.round(vehImg.naturalHeight * vehScale)
-  const vX = Math.round((width  - vW) / 2)
-  const vY = Math.round((height - vH) / 2)
+  const vX = Math.round((width - vW) / 2)                          // centered horizontally
+  const groundBase = Math.round(height * 0.82)                      // ground line at 82% down
+  const vY = groundBase - vH                                        // car sits ON the ground
   ctx.drawImage(vehImg, vX, vY, vW, vH)
 
   return canvas.toDataURL('image/jpeg', 0.92)

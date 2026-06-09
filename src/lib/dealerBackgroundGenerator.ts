@@ -171,20 +171,26 @@ async function generateCleanBackground(
   // Flux Kontext img2img preserves input dimensions → output will match this aspect ratio
   const croppedBg = await cropToAspectRatio(dealerImageDataUrl, config.width, config.height);
 
-  // Single Replicate call: clean and prepare the background for this format
-  // DO NOT mention vehicles in the prompt — Flux Kontext will add them if prompted
+  // Pass 1 prompt: build a proper advertising ground plane, not just "clean"
+  // Key insight: Flux Kontext needs explicit instructions to BUILD the surface,
+  // not just remove objects. The ground plane is the "landing zone" for the vehicle.
+  // DO NOT mention vehicles — Flux Kontext will add them if prompted.
   const cleanPrompt =
-    `Prepare this ${config.width}×${config.height} dealership photograph as a ` +
+    `Transform this ${config.width}×${config.height} dealership photograph into a ` +
     `professional advertising background. ` +
     config.compositionInstruction +
-    ` TASKS: ` +
-    `(1) Remove ALL parked vehicles, cars, and moving objects from the foreground lot. ` +
-    `Replace the cleared area with seamless, clean ground surface (asphalt/pavement). ` +
-    `(2) The ground plane in the foreground must be flat, clean, and unobstructed. ` +
-    `(3) Fix perspective so the ground recedes naturally toward a single vanishing point. ` +
-    `(4) Preserve the building facade, sky, signage, trees EXACTLY unchanged. ` +
-    `(5) Do NOT add any objects, people, or vehicles. ` +
-    `Output: same location, clean empty foreground ready for product overlay.`;
+    `\n\nSTEP 1 — CLEAR: Remove ALL parked vehicles, people, and objects from the ` +
+    `foreground parking area. ` +
+    `\nSTEP 2 — BUILD GROUND PLANE: In the lower 35% of the image, create a clean, ` +
+    `flat asphalt/concrete surface with CORRECT ONE-POINT PERSPECTIVE. ` +
+    `The ground must recede naturally toward a single vanishing point at the horizon. ` +
+    `The surface must be WIDE, FLAT, and CLEARLY DEFINED — this is the zone where ` +
+    `a product will be placed. The ground texture should match the existing pavement ` +
+    `and blend seamlessly with the building entrance area. ` +
+    `\nSTEP 3 — PRESERVE: Keep the building facade, sky, signage, trees, and all ` +
+    `elements ABOVE the horizon line EXACTLY unchanged — same colors, same details. ` +
+    `\nDO NOT add vehicles, people, or new objects. ` +
+    `Output: same location, professionally cleared foreground with correct perspective ground plane.`;
 
   try {
     return await generateImage({ prompt: cleanPrompt, inputImage: croppedBg });
@@ -211,9 +217,54 @@ export async function generatePreviewBackground(
     key: "website-600x450",
     width: 600, height: 450,
     compositionInstruction:
-      "Clean background for preview. Empty foreground, building backdrop.",
+      "Standard 4:3 advertising format. Center: clean empty ground plane for hero vehicle placement. " +
+      "Building fills upper 35% as atmospheric backdrop.",
     carOnRight: false,
   });
+}
+
+/**
+ * Pass 2 — Apply photorealistic finishing to a canvas composite.
+ *
+ * Takes a canvas-composited image (clean bg + vehicle PNG already placed)
+ * and adds: shadow, ground reflection, lighting match, edge blending.
+ *
+ * STRICT CONSTRAINTS passed to Replicate:
+ *   - Do NOT move, resize, or remove the vehicle
+ *   - Do NOT change building, sky, or environment
+ *   - Only apply the 4 finishing effects listed
+ *
+ * This is called for the APPROVAL CARD only (one-time, best quality preview).
+ * Stored per-template backgrounds are clean scenes — JellyBean handles the car overlay.
+ */
+export async function applyPhotorealisticFinishing(
+  canvasCompositeDataUrl: string,
+): Promise<string> {
+  const { generateImage } = await import('./replicateClient');
+
+  const finishingPrompt =
+    `This image shows a vehicle composite on a dealership background. ` +
+    `Apply EXACTLY these four photorealistic finishing effects — nothing else: ` +
+    `\n(1) CAST SHADOW: Add a soft, natural shadow on the ground directly beneath ` +
+    `the vehicle. The shadow should follow the scene's sunlight direction, ` +
+    `be soft-edged (not hard), and fade naturally away from the vehicle. ` +
+    `\n(2) GROUND REFLECTION: Add a subtle, slightly blurred reflection of the ` +
+    `vehicle's lower body on the asphalt surface beneath it. ` +
+    `\n(3) LIGHTING MATCH: Adjust the vehicle's ambient light to match the scene — ` +
+    `same color temperature (warm/cool), same light direction, same exposure level. ` +
+    `\n(4) EDGE BLENDING: Eliminate any hard cutout halos or sharp edges around the ` +
+    `vehicle. Blend the vehicle edges naturally into the scene's ambient light. ` +
+    `\nSTRICT CONSTRAINTS: ` +
+    `Do NOT move, resize, or reposition the vehicle. ` +
+    `Do NOT change the background building, sky, or any scene element. ` +
+    `Do NOT alter the vehicle's shape, color, or scale. ` +
+    `Apply ONLY: shadow, reflection, lighting match, edge blending.`;
+
+  try {
+    return await generateImage({ prompt: finishingPrompt, inputImage: canvasCompositeDataUrl });
+  } catch {
+    return canvasCompositeDataUrl; // fallback: return unfinished composite
+  }
 }
 
 // ─── Phase 2 public API ───────────────────────────────────────────────────────

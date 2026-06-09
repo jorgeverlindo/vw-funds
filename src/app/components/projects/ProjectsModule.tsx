@@ -987,7 +987,13 @@ function JellyBeanCard({
               src={offer.image}
               alt={`${offer.year} ${offer.make} ${offer.model}`}
               className="absolute object-contain"
-              style={{ right: 0, bottom: 0, height: "90%", width: "55%", objectPosition: "right bottom" }}
+              style={{
+                right: 0, bottom: 0, height: "90%", width: "55%", objectPosition: "right bottom",
+                // CSS drop-shadow on the PNG alpha channel = free realistic cast shadow
+                filter: hasBg
+                  ? "drop-shadow(0px 6px 12px rgba(0,0,0,0.45)) drop-shadow(0px 2px 4px rgba(0,0,0,0.3))"
+                  : undefined,
+              }}
               draggable={false}
             />
           )}
@@ -1061,6 +1067,10 @@ function JellyBeanCard({
                 left: 0, right: 0,
                 height: Math.round(h * 0.52),
                 padding: `0 ${Math.round(w * 0.06)}px`,
+                // CSS drop-shadow respects PNG alpha = realistic cast shadow for free
+                filter: hasBg
+                  ? "drop-shadow(0px 6px 14px rgba(0,0,0,0.50)) drop-shadow(0px 2px 5px rgba(0,0,0,0.30))"
+                  : undefined,
               }}
               draggable={false}
             />

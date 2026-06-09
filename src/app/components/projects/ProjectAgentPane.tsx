@@ -2364,22 +2364,29 @@ export function ProjectAgentPane({ isOpen, onClose, userType, activeUserName }: 
           );
           const vehicleImageUrl = (firstConfirmedOffer as any)?.image ?? "";
 
-          const { generatePreviewBackground } =
+          const { generatePreviewBackground, applyPhotorealisticFinishing } =
             await import("../../../lib/dealerBackgroundGenerator");
           const { createVehicleComposite } =
             await import("../../../lib/replicateClient");
 
-          // Phase 1: ONE Replicate call for a clean 4:3 preview background
+          // Phase 1a: Replicate Pass 1 — clean background + ground plane (~30s)
           const cleanPreviewBg = await generatePreviewBackground(storedImage);
 
-          // Canvas composite for the APPROVAL CARD DISPLAY only (car visible for review)
-          // This composite is NOT stored — it's just for the user to see the composition
-          let previewUrl = cleanPreviewBg;
+          // Phase 1b: Canvas composite — place car at correct advertising position
+          // This composite is ONLY for the approval card preview
+          let canvasComposite = cleanPreviewBg;
           if (vehicleImageUrl?.startsWith("http")) {
             try {
-              previewUrl = await createVehicleComposite(cleanPreviewBg, vehicleImageUrl, 1024, 768);
+              canvasComposite = await createVehicleComposite(cleanPreviewBg, vehicleImageUrl, 1024, 768);
             } catch { /* use clean bg alone */ }
           }
+
+          // Phase 1c: Replicate Pass 2 — shadow, reflection, lighting, edge blend (~30s)
+          // Strict: only finishing, never moves/resizes the vehicle
+          let previewUrl = canvasComposite;
+          try {
+            previewUrl = await applyPhotorealisticFinishing(canvasComposite);
+          } catch { /* use unfinished composite */ }
 
           // Build the initial background object with just the preview bg
           // images: {} — Phase 2 will populate per-template URLs after approval

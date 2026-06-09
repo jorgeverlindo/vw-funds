@@ -292,8 +292,9 @@ async function generateCleanBackground(
     `Use a natural camera perspective (eye-level, ~1.5m height) so the ground recedes naturally. ` +
     `The asphalt should be wide, clean, and clearly separated from the building backdrop above. ` +
     `Match existing pavement color and texture. ` +
-    `\nSTEP 3 — PRESERVE: Keep the building facade, sky, signage, trees, and all ` +
-    `elements ABOVE the horizon line EXACTLY unchanged — same colors, same details. ` +
+    `\nSTEP 3 — PRESERVE EXACTLY: The building facade, sky, all signage, brand names, ` +
+    `logos, and text on the building must be preserved PIXEL-PERFECT — same colors, same details, ` +
+    `same spelling. Do NOT regenerate, alter, or obscure any brand name or letter on the building. ` +
     `\nDO NOT add vehicles, people, or new objects. ` +
     `Output: same location, professionally cleared foreground with correct perspective ground plane.`;
 

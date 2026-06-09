@@ -943,7 +943,7 @@ function templateKey(width: number, height: number): string {
 
 function JellyBeanCard({
   offer, template, fixedHeight = 160, bgImage, brandKit,
-  groundFraction, carWidthFraction, compositeUrl,
+  groundFraction, carWidthFraction, compositeUrl, isGenerating,
 }: {
   offer: Offer & { image?: string };
   template: Template;
@@ -952,6 +952,8 @@ function JellyBeanCard({
   brandKit?: BrandKit;
   groundFraction?: number;
   carWidthFraction?: number;
+  /** When true: Phase 2b composites are still generating. Show pulse overlay. */
+  isGenerating?: boolean;
   /** Pre-generated Flux composite (car already baked in). When provided, the car
    *  PNG overlay is suppressed — the composite IS the complete image. */
   compositeUrl?: string;
@@ -1031,10 +1033,12 @@ function JellyBeanCard({
         // which aligns with this position. groundFraction from Depth Anything is
         // used as a refinement only — clipped to never go below textZoneH.
         const tireTarget    = textZoneH + Math.round(h * 0.03);      // from card bottom
-        const belowTires    = rendH * (1 - tireFraction);
-        // groundFraction 0.65 default: background is generated with ground at ~60% from top
-        const effectiveGround = groundFraction ?? 0.65;
-        const groundFromBot = Math.round(h * (1 - effectiveGround));
+        const belowTires = rendH * (1 - tireFraction);
+        // groundFraction default varies by layout:
+        //   wide (ar>2): ground starts at ~30% from top → tires at ~78% → 22% from bottom
+        //   normal/square/portrait: ground starts at ~60% → tires at ~65% → 35% from bottom
+        const effectiveGround = groundFraction ?? (isWide ? 0.78 : 0.65);
+        const groundFromBot   = Math.round(h * (1 - effectiveGround));
         const rawBottom     = Math.max(0, Math.round(groundFromBot - belowTires));
         const bottom        = Math.max(rawBottom, tireTarget);
 
@@ -1118,6 +1122,17 @@ function JellyBeanCard({
         />
       )}
 
+      {/* Generating overlay — while Phase 2b Flux composites are still building */}
+      {isGenerating && !compositeUrl && (
+        <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-2"
+          style={{ background: "rgba(0,0,0,0.38)", backdropFilter: "blur(3px)" }}>
+          <div className="w-5 h-5 rounded-full border-2 border-white border-t-transparent animate-spin" />
+          <span style={{ fontSize: 9, fontWeight: 600, color: "rgba(255,255,255,0.80)", letterSpacing: "0.4px", textTransform: "uppercase" }}>
+            Generating
+          </span>
+        </div>
+      )}
+
       {/* ── WIDE layout: car on right 55%, text on left ──────────────────────── */}
       {isWide ? (
         <>
@@ -1148,7 +1163,7 @@ function JellyBeanCard({
           {/* Top row: dealer + primary logo (or make text fallback) */}
           <div className="absolute top-0 left-0 right-0 flex items-center justify-between"
             style={{ padding: `${barPadV}px ${barPadH}px` }}>
-            <span style={{ fontSize: 11, fontWeight: 500, color: dealerColor, whiteSpace: "nowrap" }}>
+            <span style={{ fontSize: 12, fontWeight: 600, color: dealerColor, whiteSpace: "nowrap", fontFamily: "system-ui, -apple-system, 'Helvetica Neue', Arial, sans-serif", letterSpacing: "0.1px" }}>
               {offer.make} Dealer
             </span>
             {primaryLogoSrc
@@ -1238,7 +1253,7 @@ function JellyBeanCard({
           {/* Top row: dealer + primary logo (or make text fallback) */}
           <div className="absolute top-0 left-0 right-0 flex items-center justify-between"
             style={{ padding: `${barPadV}px ${barPadH}px` }}>
-            <span style={{ fontSize: 11, fontWeight: 500, color: dealerColor, whiteSpace: "nowrap" }}>
+            <span style={{ fontSize: 12, fontWeight: 600, color: dealerColor, whiteSpace: "nowrap", fontFamily: "system-ui, -apple-system, 'Helvetica Neue', Arial, sans-serif", letterSpacing: "0.1px" }}>
               {offer.make} Dealer
             </span>
             {primaryLogoSrc
@@ -2446,6 +2461,7 @@ function ProjectDetailViewInner({
                     groundFraction={(selectedBg as CustomBackground | null)?.groundFraction}
                     carWidthFraction={(selectedBg as CustomBackground | null)?.carWidthFraction}
                     compositeUrl={(selectedBg as CustomBackground | null)?.composites?.[offer.id]?.[templateKey(template.width, template.height)]}
+                    isGenerating={isDealerBgGenerating && !!(selectedBg as CustomBackground | null)?.images}
                   />
                 </motion.div>
               ))}
@@ -2501,6 +2517,7 @@ function ProjectDetailViewInner({
                       groundFraction={(bg as CustomBackground | null)?.groundFraction}
                       carWidthFraction={(bg as CustomBackground | null)?.carWidthFraction}
                       compositeUrl={(bg as CustomBackground | null)?.composites?.[offer.id]?.[templateKey(template.width, template.height)]}
+                      isGenerating={isDealerBgGenerating && !!(bg as CustomBackground | null)?.images}
                     />
                   </motion.div>
                 );

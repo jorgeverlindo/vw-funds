@@ -944,72 +944,107 @@ function JellyBeanCard({
   const w = Math.min(Math.round(h * ar), 540);
   const isWide = ar > 2.0; // 2000×500 (4:1), 970×250 (3.88:1)
 
-  // ── Precise car grounding via alpha-channel tire detection ─────────────────
-  // When a custom background provides groundFraction, we load the car PNG and
-  // detect exactly where the tires are within the image (last non-transparent row).
-  // This lets us set `bottom` so the tires land precisely on the ground plane —
-  // no hardcoded fractions, fully derived from the actual car PNG geometry.
-  const [carBottom, setCarBottom] = useState<number | null>(null);
+  // ── Canvas composite for dealer backgrounds ───────────────────────────────
+  // When groundFraction is provided (custom dealer bg), bake the car PNG directly
+  // onto the background via canvas. This produces a single image that matches the
+  // mockup quality — no CSS overlay seams, correct scale, text-zone aware placement.
+  // Falls back to CSS overlay while the async composite is generating.
+  const [compositeImage, setCompositeImage] = useState<string | null>(null);
+  const [carBottom,      setCarBottom]      = useState<number | null>(null);
 
   useEffect(() => {
-    if (!groundFraction || !offer.image) { setCarBottom(null); return; }
+    if (!groundFraction || !offer.image || !bgImage) {
+      setCompositeImage(null); setCarBottom(null); return;
+    }
 
     let cancelled = false;
-    const img = new Image();
-    img.crossOrigin = 'anonymous';
-    img.onload = () => {
-      if (cancelled) return;
 
-      // Alpha-detect tire row (last non-transparent row from bottom)
-      const sW = Math.min(img.naturalWidth, 128);
-      const sH = Math.min(img.naturalHeight, 128);
-      const off = document.createElement('canvas');
-      off.width = sW; off.height = sH;
-      const ctx = off.getContext('2d')!;
-      ctx.drawImage(img, 0, 0, sW, sH);
-      const { data } = ctx.getImageData(0, 0, sW, sH);
-
-      let tireFraction = 0.95; // fallback: tires at 95% of PNG height
-      outer: for (let y = sH - 1; y >= 0; y--) {
-        for (let x = 0; x < sW; x++) {
-          if (data[(y * sW + x) * 4 + 3] > 20) { tireFraction = y / sH; break outer; }
-        }
-      }
-
-      // Compute rendered car dimensions in this card using object-contain logic
-      const carAr = img.naturalWidth / img.naturalHeight;
-      const availW = carWidthFraction !== undefined
-        ? Math.round(w * carWidthFraction)
-        : isWide ? Math.round(w * 0.55) : Math.round(w * 0.88);
-      const availH = isWide ? Math.round(h * 0.90) : Math.round(h * 0.52);
-
-      // object-contain: scale to fit within (availW × availH), maintain AR
-      let renderedW = availH * carAr;
-      let renderedH = availH;
-      if (renderedW > availW) { renderedW = availW; renderedH = availW / carAr; }
-
-      // Tires are at tireFraction of rendered car height from the top
-      // Space below tires in rendered car = renderedH * (1 - tireFraction)
-      const belowTires = renderedH * (1 - tireFraction);
-
-      // Ground position from card bottom
-      const groundFromBottom = Math.round(h * (1 - groundFraction));
-
-      // Text zone height (normal layout only — wide layout has text on the left, no conflict).
-      // Only the VISIBLE text content needs to be clear — not the paddingTop of the text block.
-      // Visible content from the bottom:
-      //   paddingBottom(h*0.06) + term(~12px) + price(h*0.14) + label(~11px) + 4px buffer
-      // = h * 0.20 + 27px
-      const textZoneH = isWide ? 0 : Math.round(h * 0.20) + 27;
-
-      // Set container bottom so tires land on ground plane, but never inside text zone.
-      const rawBottom = Math.max(0, Math.round(groundFromBottom - belowTires));
-      setCarBottom(Math.max(rawBottom, textZoneH));
+    // Load image via fetch+blob to avoid CORS canvas taint (Replicate CDN + local assets)
+    const loadImg = async (src: string): Promise<HTMLImageElement> => {
+      const res  = await fetch(src);
+      const blob = await res.blob();
+      const url  = URL.createObjectURL(blob);
+      return new Promise((resolve, reject) => {
+        const el = new Image();
+        el.onload  = () => { URL.revokeObjectURL(url); resolve(el); };
+        el.onerror = () => { URL.revokeObjectURL(url); reject(); };
+        el.src = url;
+      });
     };
-    img.onerror = () => { if (!cancelled) setCarBottom(null); };
-    img.src = offer.image;
+
+    (async () => {
+      try {
+        const [bgImg, carImg] = await Promise.all([loadImg(bgImage), loadImg(offer.image!)]);
+        if (cancelled) return;
+
+        // ── Alpha-detect tire position ─────────────────────────────────────────
+        const sW = Math.min(carImg.naturalWidth, 128);
+        const sH = Math.min(carImg.naturalHeight, 128);
+        const offC = document.createElement('canvas');
+        offC.width = sW; offC.height = sH;
+        const offCtx = offC.getContext('2d')!;
+        offCtx.drawImage(carImg, 0, 0, sW, sH);
+        const { data } = offCtx.getImageData(0, 0, sW, sH);
+        let tireFraction = 0.95;
+        outer: for (let y = sH - 1; y >= 0; y--) {
+          for (let x = 0; x < sW; x++) {
+            if (data[(y * sW + x) * 4 + 3] > 20) { tireFraction = y / sH; break outer; }
+          }
+        }
+
+        // ── Car dimensions — fit within available zone ─────────────────────────
+        const carAr  = carImg.naturalWidth / carImg.naturalHeight;
+        const availW = carWidthFraction !== undefined
+          ? Math.round(w * carWidthFraction)
+          : isWide ? Math.round(w * 0.55) : Math.round(w * 0.75);
+        const availH = isWide ? Math.round(h * 0.90) : Math.round(h * 0.55);
+        let rendW = availH * carAr;
+        let rendH = availH;
+        if (rendW > availW) { rendW = availW; rendH = availW / carAr; }
+        rendW = Math.round(rendW); rendH = Math.round(rendH);
+
+        // ── Vertical positioning ───────────────────────────────────────────────
+        // textZoneH: height of the visible text block from the card bottom
+        const textZoneH     = isWide ? 0 : Math.round(h * 0.20) + 27;
+        const belowTires    = rendH * (1 - tireFraction);
+        const groundFromBot = Math.round(h * (1 - groundFraction));
+        const rawBottom     = Math.max(0, Math.round(groundFromBot - belowTires));
+        const bottom        = Math.max(rawBottom, textZoneH);
+
+        // ── Horizontal positioning ─────────────────────────────────────────────
+        const carX = isWide
+          ? Math.round(w - rendW)           // wide: right-aligned
+          : Math.round((w - rendW) / 2);    // normal: centered
+
+        const carY = h - bottom - rendH;    // from top of card
+
+        // ── Composite onto canvas ──────────────────────────────────────────────
+        const canvas = document.createElement('canvas');
+        canvas.width = w; canvas.height = h;
+        const ctx = canvas.getContext('2d')!;
+
+        // Background fills the card (same as object-cover)
+        const bgAr   = bgImg.naturalWidth / bgImg.naturalHeight;
+        const cardAr = w / h;
+        let bx = 0, by = 0, bw = w, bh = h;
+        if (bgAr > cardAr) { bw = Math.round(h * bgAr); bx = -Math.round((bw - w) / 2); }
+        else                { bh = Math.round(w / bgAr); by = -Math.round((bh - h) / 2); }
+        ctx.drawImage(bgImg, bx, by, bw, bh);
+
+        // Car PNG (preserves alpha — drawn directly, no fill)
+        ctx.drawImage(carImg, carX, carY, rendW, rendH);
+
+        if (!cancelled) {
+          setCompositeImage(canvas.toDataURL('image/jpeg', 0.92));
+          setCarBottom(bottom);
+        }
+      } catch {
+        if (!cancelled) { setCompositeImage(null); setCarBottom(null); }
+      }
+    })();
+
     return () => { cancelled = true; };
-  }, [offer.image, groundFraction, carWidthFraction, h, w, isWide]);
+  }, [offer.image, bgImage, groundFraction, carWidthFraction, h, w, isWide]);
 
   // Fixed chip / text sizes (consistent across all card widths)
   const chipFontSize = 9.5;
@@ -1046,16 +1081,21 @@ function JellyBeanCard({
       className="relative rounded-[10px] overflow-hidden select-none shrink-0 cursor-pointer hover:shadow-lg transition-shadow"
       style={{ width: w, height: h, background: "#e2e2e2" }}
     >
-      {/* Background image */}
-      {bgImage && (
-        <img src={bgImage} alt="background"
-          className="absolute inset-0 w-full h-full object-cover" draggable={false} />
+      {/* Background — use canvas composite (car baked in) when ready, else raw bg */}
+      {(compositeImage ?? bgImage) && (
+        <img
+          src={compositeImage ?? bgImage!}
+          alt="background"
+          className="absolute inset-0 w-full h-full object-cover"
+          draggable={false}
+        />
       )}
 
       {/* ── WIDE layout: car on right 55%, text on left ──────────────────────── */}
       {isWide ? (
         <>
-          {offer.image && (
+          {/* CSS car overlay — skipped when composite image is ready (car is baked in) */}
+          {!compositeImage && offer.image && (
             <img
               src={offer.image}
               alt={`${offer.year} ${offer.make} ${offer.model}`}
@@ -1137,7 +1177,8 @@ function JellyBeanCard({
       ) : (
         /* ── NORMAL/SQUARE layout ──────────────────────────────────────────── */
         <>
-          {offer.image && (
+          {/* CSS car overlay — skipped when composite image is ready (car is baked in) */}
+          {!compositeImage && offer.image && (
             <img
               src={offer.image}
               alt={`${offer.year} ${offer.make} ${offer.model}`}

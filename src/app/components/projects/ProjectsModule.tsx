@@ -1196,6 +1196,8 @@ function ProjectDetailView({
   );
   // Backgrounds: additive model — only show what the agent (or user) explicitly adds
   const [agentAddedBgIds,       setAgentAddedBgIds]       = useState<string[]>(saved?.agentAddedBgIds ?? []);
+  // Dealer background generation skeleton state
+  const [isDealerBgGenerating, setIsDealerBgGenerating] = useState(false);
   // Brand/theme kit: only activated when agent explicitly confirms it (not auto-derived from OEM)
   const [agentActivatedOems, setAgentActivatedOems] = useState<string[]>(
     saved?.activatedOems ?? (saved?.activatedOem ? [saved.activatedOem] : [])
@@ -1405,6 +1407,8 @@ function ProjectDetailView({
       } else if (action === "remove_templates") {
         const { templateIds } = payload as { templateIds: string[] };
         setRemovedTemplateIds((prev) => new Set([...prev, ...templateIds]));
+      } else if (action === "set_dealer_bg_generating") {
+        setIsDealerBgGenerating((detail as { value: boolean }).value);
       } else if (action === "add_custom_background") {
         const bg = (payload as { background: CustomBackground }).background;
         setCustomBackgroundLibrary(prev => {
@@ -1551,6 +1555,7 @@ function ProjectDetailView({
       setCustomBackgroundLibrary={setCustomBackgroundLibrary}
       agentAddedBgIds={agentAddedBgIds}
       setAgentAddedBgIds={setAgentAddedBgIds}
+      isDealerBgGenerating={isDealerBgGenerating}
       agentActivatedOems={agentActivatedOems}
       setAgentActivatedOems={setAgentActivatedOems}
       combinedOfferLibrary={combinedOfferLibrary}
@@ -1611,6 +1616,7 @@ function ProjectDetailViewInner({
   setCustomBackgroundLibrary,
   agentAddedBgIds,
   setAgentAddedBgIds,
+  isDealerBgGenerating,
   agentActivatedOems,
   setAgentActivatedOems,
   combinedOfferLibrary,
@@ -1662,6 +1668,7 @@ function ProjectDetailViewInner({
   setCustomBackgroundLibrary: React.Dispatch<React.SetStateAction<CustomBackground[]>>;
   agentAddedBgIds: string[];
   setAgentAddedBgIds: React.Dispatch<React.SetStateAction<string[]>>;
+  isDealerBgGenerating: boolean;
   agentActivatedOems: string[];
   setAgentActivatedOems: React.Dispatch<React.SetStateAction<string[]>>;
   combinedOfferLibrary: Offer[];
@@ -2033,6 +2040,23 @@ function ProjectDetailViewInner({
             </button>
           }
         >
+          {isDealerBgGenerating && (
+            <div className="flex items-center gap-3 p-2">
+              <div
+                className="rounded-[8px] animate-pulse flex items-center justify-center shrink-0"
+                style={{ width: 88, height: 60, background: 'rgba(71,59,171,0.10)' }}
+              >
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" className="opacity-40">
+                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" stroke="#473bab" strokeWidth="1.5"/>
+                  <circle cx="12" cy="12" r="3" stroke="#473bab" strokeWidth="1.5"/>
+                </svg>
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <div className="h-3 w-32 rounded animate-pulse" style={{ background: 'rgba(71,59,171,0.10)' }}/>
+                <div className="h-2.5 w-24 rounded animate-pulse" style={{ background: 'rgba(71,59,171,0.06)' }}/>
+              </div>
+            </div>
+          )}
           <motion.div
             key={`bg-stagger-${visibleBackgrounds.length}-${selectedBgId}`}
             className="flex gap-3 overflow-x-auto pb-2"

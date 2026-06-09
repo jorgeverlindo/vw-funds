@@ -154,7 +154,8 @@ export type AgentActionPayload =
   | { action: "send_email";       recipient: string; message: string }
   | { action: "add_custom_offers"; offers: CustomOffer[] }
   | { action: "edit_offer"; offerId: string; patches: Partial<{ monthlyPayment: number; term: number; totalDueAtSigning: number; offerType: string; trim: string; year: string; make: string; model: string }> }
-  | { action: "set_task_owners"; owners: Record<string, string> };
+  | { action: "set_task_owners"; owners: Record<string, string> }
+  | { action: "set_dealer_bg_generating"; value: boolean };
 
 // ─── Multimodal API types ─────────────────────────────────────────────────────
 type ApiContentBlock =
@@ -2346,77 +2347,62 @@ export function ProjectAgentPane({ isOpen, onClose, userType, activeUserName }: 
         content: "Creating your scene background — adapting perspective and foreground for vehicle placement. This takes about 30 seconds…",
       } as TextMessage]);
 
-      // Run generation asynchronously — does NOT block the UI
+      dispatchAction({ action: "set_dealer_bg_generating", value: true } as never);
+
+      // Run generation asynchronously
       (async () => {
         try {
           const storedImage = pendingDealerImageRef.current;
           if (!storedImage) throw new Error("No dealer image stored. Please re-upload the image.");
 
-          const vehicles = input.vehicle_context ?? "vehicles";
-
-          // ── Improved Replicate prompt: explicit foreground plane + perspective ──
-          // Instructs Flux Kontext to create a ground plane where vehicles will be
-          // composited, with correct vanishing perspective for the scene.
-          const adaptationPrompt =
-            `Adapt this scene as a professional automotive advertising background for ${vehicles}. ` +
-            `CRITICAL: Create a clear, flat ground plane in the bottom 35% of the image. ` +
-            `The ground should recede naturally with correct one-point perspective toward the horizon. ` +
-            `The ground surface must be wide enough and well-lit for a vehicle to rest on it. ` +
-            `Keep the background/environment in the upper 65% recognizable and atmospheric. ` +
-            `Remove any objects from the foreground ground plane. ` +
-            `Result: landscape orientation, suitable for overlaying ${vehicles} on the ground plane.`;
-
-          const { generateImage, createVehicleComposite } = await import("../../../lib/replicateClient");
-
-          // Step 1 — Replicate adapts the scene
-          const generatedBgUrl = await generateImage({
-            prompt: adaptationPrompt,
-            inputImage: storedImage,
-            aspect_ratio: "4:3",
-          });
-
-          // Step 2 — Canvas composite: place first confirmed offer's vehicle on the generated bg
-          // This gives the user a realistic preview of how the final asset will look
+          // Get the first confirmed offer's vehicle image for compositing
           const ctx = ctxRef.current;
           const firstConfirmedOffer = ctx?.availableOffers.find(
             o => ctx.currentOfferIds.includes(o.id)
           );
           const vehicleImageUrl = (firstConfirmedOffer as any)?.image ?? "";
 
-          let previewUrl = generatedBgUrl; // fallback: bg alone if no vehicle image
+          // Use canvas composite directly — preserves the dealer's exact scene
+          // createVehicleComposite: background + vehicle PNG → JPEG composite
+          const { createVehicleComposite } = await import("../../../lib/replicateClient");
+
+          let previewUrl = storedImage; // fallback: dealer photo alone
           if (vehicleImageUrl?.startsWith("http")) {
             try {
-              previewUrl = await createVehicleComposite(generatedBgUrl, vehicleImageUrl, 1024, 768);
+              // Composite: dealer photo as bg, offer vehicle PNG on top
+              previewUrl = await createVehicleComposite(storedImage, vehicleImageUrl, 1024, 768);
             } catch {
-              // composite failed — use plain bg as preview
+              // composite failed — use dealer photo as-is
             }
           }
 
-          // Build CustomBackground — same generated URL for all template sizes
+          // The background stored in the project is the ORIGINAL dealer scene
+          // (not the composite — vehicles are re-composited per offer at render time)
           const bgId = `dealer-bg-${Date.now()}`;
           const allSizes = ["social-1080x1080","display-300x250","display-970x250","website-2000x500","website-600x450","website-600x1067"];
           const bgImages: Record<string, string> = {};
-          allSizes.forEach(k => { bgImages[k] = generatedBgUrl; });
-          const customBg = { id: bgId, name: "Your Scene", thumbnail: generatedBgUrl, images: bgImages };
+          allSizes.forEach(k => { bgImages[k] = storedImage; }); // dealer's original photo
+          const customBg = { id: bgId, name: "Your Scene", thumbnail: storedImage, images: bgImages };
 
-          pendingDealerImageRef.current = null; // clear stored image after use
+          pendingDealerImageRef.current = null; // clear after use
 
-          // Step 3 — Show approval card instead of auto-adding
-          // The user must confirm before the background enters the project
+          // Show approval card with the canvas composite preview
           setMessages(prev => [...prev, {
             id: `dealer-bg-${Date.now()}`,
             role: "assistant",
             type: "dealer_bg_proposal",
             bgObject: customBg,
-            previewUrl,
+            previewUrl, // canvas composite: vehicle on dealer scene
             applied: false,
           } as DealerBgProposalMsg]);
+          dispatchAction({ action: "set_dealer_bg_generating", value: false } as never);
 
         } catch (err) {
           setMessages(prev => [...prev, {
             id: `e-${Date.now()}`, role: "assistant", type: "text",
-            content: `⚠️ Background generation failed: ${String(err)}. Please try again or choose a catalog background.`,
+            content: `⚠️ Background generation failed: ${String(err)}. Please try uploading the image again.`,
           } as TextMessage]);
+          dispatchAction({ action: "set_dealer_bg_generating", value: false } as never);
         }
       })();
     } else if (toolName === "propose_parsed_offers") {
@@ -2532,6 +2518,7 @@ export function ProjectAgentPane({ isOpen, onClose, userType, activeUserName }: 
       ["Next: propose_notify_owners","propose_notify_owners"],
       ["NOW call propose_task_owners","propose_task_owners"],
       ["Call propose_parsed_offers", "propose_parsed_offers"],
+      ["generate_dealer_background", "generate_dealer_background"],
     ];
     const forcedTool = FORCED_TOOL_PATTERNS.find(([pattern]) => text.includes(pattern))?.[1];
 
@@ -2902,8 +2889,7 @@ export function ProjectAgentPane({ isOpen, onClose, userType, activeUserName }: 
         ? confirmedOffers.map(o => `${o.year} ${o.make} ${o.model}`).join(", ")
         : "vehicles";
       setTimeout(() => sendInternal(
-        `Step complete. Now call generate_dealer_background with vehicle_context="${vehicleContext}". ` +
-        `Do NOT call propose_backgrounds. This is the dealer background flow.`
+        `Step complete. generate_dealer_background vehicle_context="${vehicleContext}".`
       ), 400);
       return;
     }
@@ -3520,6 +3506,22 @@ export function ProjectAgentPane({ isOpen, onClose, userType, activeUserName }: 
                           proactive={proactiveMode}
                           onProactiveQuestionsApply={handleProactiveQuestionsSubmit}
                           dispatchAction={dispatchAction}
+                          onDealerBgApprove={(bgObject) => {
+                            dispatchAction({ action: "add_custom_background", background: bgObject });
+                            setMessages(prev => prev.map(m => m.id === msg.id ? { ...m, applied: true } as DealerBgProposalMsg : m));
+                            setTimeout(() => fireNextStep("dealer_bg"), 300);
+                          }}
+                          onDealerBgSkip={() => {
+                            setMessages(prev => prev.map(m =>
+                              m.id === msg.id ? { ...m, applied: true } as DealerBgProposalMsg : m
+                            ));
+                            setTimeout(() => {
+                              setMessages(prev => [...prev, {
+                                id: `a-${Date.now()}`, role: "assistant", type: "text",
+                                content: "No problem! You can upload a different image, and I'll pick a background from the catalog.",
+                              } as TextMessage]);
+                            }, 200);
+                          }}
                         />
                       ))}
 
@@ -3579,6 +3581,8 @@ function MessageBubble({
   proactive,
   onProactiveQuestionsApply,
   dispatchAction,
+  onDealerBgApprove,
+  onDealerBgSkip,
 }: {
   message: Message;
   context: ProjectContextPayload | null;
@@ -3607,6 +3611,8 @@ function MessageBubble({
   proactive?: boolean;
   onProactiveQuestionsApply?: (goal: string, timeline: string, offerFocus: string) => void;
   dispatchAction?: (a: AgentActionPayload) => void;
+  onDealerBgApprove?: (bgObject: { id: string; name: string; thumbnail: string; images: Record<string, string> }) => void;
+  onDealerBgSkip?: () => void;
 }) {
   if (message.type === "continuation") {
     return null;
@@ -3696,30 +3702,14 @@ function MessageBubble({
         {/* Actions */}
         <div className="flex items-center gap-[8px] px-[14px] py-[12px]">
           <button
-            onClick={() => {
-              // Mark as applied
-              setMessages(prev => prev.map(m =>
-                m.id === msg.id ? { ...m, applied: true } as DealerBgProposalMsg : m
-              ));
-              // Add background to project
-              dispatchAction({ action: "add_custom_background", background: msg.bgObject });
-              // Continue flow to brand step
-              setTimeout(() => fireNextStep("dealer_bg"), 300);
-            }}
+            onClick={() => onDealerBgApprove?.(msg.bgObject)}
             className="flex-1 py-[8px] rounded-full text-[13px] font-medium tracking-[0.46px] text-white cursor-pointer"
             style={{ background: "linear-gradient(99deg, var(--brand-accent) 0%, var(--brand-mid) 100%)" }}
           >
             ✓ Use this background
           </button>
           <button
-            onClick={() => {
-              // Reset so user can try again by re-uploading or describing
-              setMessages(prev => prev.filter(m => m.id !== msg.id));
-              setMessages(prev => [...prev, {
-                id: `a-${Date.now()}`, role: "assistant", type: "text",
-                content: "No problem! You can upload a different image or I'll select a background from the catalog.",
-              } as TextMessage]);
-            }}
+            onClick={() => onDealerBgSkip?.()}
             className="px-[14px] py-[8px] rounded-full text-[13px] text-[var(--ink-secondary)] hover:bg-black/5 transition-colors cursor-pointer"
           >
             Skip

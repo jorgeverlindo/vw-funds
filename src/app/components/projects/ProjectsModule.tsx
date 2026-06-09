@@ -971,7 +971,8 @@ function JellyBeanCard({
 
   useEffect(() => {
     // Skip canvas composite when a pre-generated Flux composite is available
-    if (compositeUrl || !groundFraction || !offer.image || !bgImage) {
+    // Also skip for static catalog backgrounds (no bgImage or no offer.image)
+    if (compositeUrl || !offer.image || !bgImage) {
       setCompositeImage(null); setCarBottom(null); return;
     }
 
@@ -1031,9 +1032,9 @@ function JellyBeanCard({
         // used as a refinement only — clipped to never go below textZoneH.
         const tireTarget    = textZoneH + Math.round(h * 0.03);      // from card bottom
         const belowTires    = rendH * (1 - tireFraction);
-        const groundFromBot = groundFraction !== undefined
-          ? Math.round(h * (1 - groundFraction))
-          : tireTarget + Math.round(belowTires);                      // fallback
+        // groundFraction 0.65 default: background is generated with ground at ~60% from top
+        const effectiveGround = groundFraction ?? 0.65;
+        const groundFromBot = Math.round(h * (1 - effectiveGround));
         const rawBottom     = Math.max(0, Math.round(groundFromBot - belowTires));
         const bottom        = Math.max(rawBottom, tireTarget);
 

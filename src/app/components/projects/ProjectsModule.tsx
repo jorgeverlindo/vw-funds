@@ -88,6 +88,7 @@ interface CustomBackground {
   name: string;
   thumbnail: string;          // URL of the generated image (used everywhere)
   images: Record<string, string>; // same key for all template sizes → same URL
+  groundFraction?: number;    // 0–1 from Depth Anything v2 — where the ground is
 }
 
 function loadCustomBackgroundLibrary(projectId: string): CustomBackground[] {
@@ -925,13 +926,15 @@ function getBgImage(
 }
 
 function JellyBeanCard({
-  offer, template, fixedHeight = 160, bgImage, brandKit,
+  offer, template, fixedHeight = 160, bgImage, brandKit, groundFraction,
 }: {
   offer: Offer & { image?: string };
   template: Template;
   fixedHeight?: number;
   bgImage?: string;
   brandKit?: BrandKit;
+  /** Ground plane Y fraction (0–1) from Depth Anything v2. Used to anchor the car. */
+  groundFraction?: number;
 }) {
   const h = fixedHeight;
   const ar = template.width / template.height;
@@ -988,7 +991,12 @@ function JellyBeanCard({
               alt={`${offer.year} ${offer.make} ${offer.model}`}
               className="absolute object-contain"
               style={{
-                right: 0, bottom: 0, height: "90%", width: "55%", objectPosition: "right bottom",
+                right: 0,
+                // When groundFraction is known, anchor the car to the actual ground plane.
+                // Otherwise fall back to bottom: 0 (tires at card edge).
+                bottom: groundFraction !== undefined ? Math.round(h * (1 - groundFraction)) : 0,
+                height: "90%", width: "55%",
+                objectPosition: "right bottom",
                 // CSS drop-shadow on the PNG alpha channel = free realistic cast shadow
                 filter: hasBg
                   ? "drop-shadow(0px 6px 12px rgba(0,0,0,0.45)) drop-shadow(0px 2px 4px rgba(0,0,0,0.3))"
@@ -1063,10 +1071,16 @@ function JellyBeanCard({
               alt={`${offer.year} ${offer.make} ${offer.model}`}
               className="absolute w-full object-contain"
               style={{
-                bottom: Math.round(h * 0.26),
+                // groundFraction: where tires should land in the background image.
+                // Without it (no custom bg): fixed offset h*0.26 (text box below car).
+                // With it: anchor tires to the detected ground plane, keep same car height.
+                bottom: groundFraction !== undefined
+                  ? Math.round(h * (1 - groundFraction))
+                  : Math.round(h * 0.26),
                 left: 0, right: 0,
                 height: Math.round(h * 0.52),
                 padding: `0 ${Math.round(w * 0.06)}px`,
+                objectPosition: groundFraction !== undefined ? "center bottom" : "center center",
                 // CSS drop-shadow respects PNG alpha = realistic cast shadow for free
                 filter: hasBg
                   ? "drop-shadow(0px 6px 14px rgba(0,0,0,0.50)) drop-shadow(0px 2px 5px rgba(0,0,0,0.30))"
@@ -1243,7 +1257,9 @@ function ProjectDetailView({
     theme:     agentActivatedOems.length > 0 && !isAgentCreated,
   });
   const [selectedBgId, setSelectedBgId] = useState<string | null>(saved?.bgId ?? null);
-  const selectedBg = backgroundCollections.find(b => b.id === selectedBgId) ?? null;
+  const selectedBg = backgroundCollections.find(b => b.id === selectedBgId)
+    ?? customBackgroundLibrary.find(b => b.id === selectedBgId)
+    ?? null;
 
   // Edit Project dialog
   const [showEditProject, setShowEditProject] = useState(false);
@@ -1437,6 +1453,8 @@ function ProjectDetailView({
           saveCustomBackgroundLibrary(project.id, next);
           return next;
         });
+        // Auto-select so Preview section immediately shows the custom background
+        setSelectedBgId(bg.id);
       } else if (action === "add_backgrounds") {
         const { backgroundIds } = payload as { backgroundIds: string[] };
         setExpandedSections((prev) => ({ ...prev, backgrounds: true, preview: true }));
@@ -1781,7 +1799,9 @@ function ProjectDetailViewInner({
 
   const visibleOffersCount    = visibleOffers.length    > 0 ? visibleOffers.length    : undefined;
   const visibleTemplateCount  = visibleTemplates.length > 0 ? visibleTemplates.length : undefined;
-  const selectedBg = backgroundCollections.find(b => b.id === selectedBgId) ?? null;
+  const selectedBg = backgroundCollections.find(b => b.id === selectedBgId)
+    ?? customBackgroundLibrary.find(b => b.id === selectedBgId)
+    ?? null;
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const handleConfirmDelete = () => {
@@ -2278,6 +2298,7 @@ function ProjectDetailViewInner({
                     fixedHeight={160}
                     bgImage={getBgImage(selectedBg, template)}
                     brandKit={brandKit}
+                    groundFraction={(selectedBg as CustomBackground | null)?.groundFraction}
                   />
                 </motion.div>
               ))}
@@ -2330,6 +2351,7 @@ function ProjectDetailViewInner({
                       fixedHeight={160}
                       bgImage={getBgImage(bg, template)}
                       brandKit={brandKit}
+                      groundFraction={(bg as CustomBackground | null)?.groundFraction}
                     />
                   </motion.div>
                 );

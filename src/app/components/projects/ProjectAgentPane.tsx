@@ -2416,6 +2416,7 @@ export function ProjectAgentPane({ isOpen, onClose, userType, activeUserName }: 
             images: { "website-600x450": cleanPreviewBg }, // preview-res only for now
             // Phase 2 will add all template keys after approval
             _dealerPhotoDataUrl: storedImage,  // stored for Phase 2 generation
+            groundFraction,  // from Depth Anything v2 — where tires should land
           };
 
           // Store template keys for Phase 2 use

@@ -2364,73 +2364,82 @@ export function ProjectAgentPane({ isOpen, onClose, userType, activeUserName }: 
           );
           const vehicleImageUrl = (firstConfirmedOffer as any)?.image ?? "";
 
-          const { generateImage, createDualInputForReplicate, createVehicleComposite } = await import("../../../lib/replicateClient");
+          const { generateImage, createVehicleComposite } = await import("../../../lib/replicateClient");
 
-          // ── FULL COMPOSITE via Replicate (single call, two images) ──────────
+          // ── TWO-PASS REPLICATE APPROACH ────────────────────────────────────
           //
-          // Strategy: build a side-by-side canvas (background LEFT | car reference RIGHT)
-          // and send it as a single input_image to Flux Kontext.
-          // The model sees both images simultaneously and handles:
-          //   1. Clearing existing vehicles from the foreground
-          //   2. Correct perspective/vanishing point for the ground plane
-          //   3. Proportional scale relative to the scene
-          //   4. Ground contact and shadow
-          //   5. Outputting only the LEFT scene with the car integrated
+          // PASS 1 — Background preparation:
+          //   inputImage = dealer photo
+          //   → removes existing cars, fixes perspective, cleans foreground
+          //   → output: clean_bg_url
           //
-          // The stored background = Replicate's output (LEFT panel only — cropped).
-          // JellyBeanCards overlay the actual offer car via CSS on top.
-          const fullCompositePrompt =
-            `This image has TWO PANELS separated by a dark vertical divider: ` +
-            `LEFT PANEL = outdoor dealership/location scene. ` +
-            `RIGHT PANEL = the exact vehicle to place as the HERO SUBJECT. ` +
-            `\n\nPRODUCE THE LEFT SCENE ONLY with the RIGHT vehicle integrated as follows: ` +
-            `\n\n(1) CLEAR FOREGROUND: erase ALL existing parked vehicles from the lot/ground area. ` +
-            `Replace with the same clean asphalt/ground surface, seamlessly extended. ` +
-            `\n\n(2) HERO VEHICLE PLACEMENT — this is the most important step: ` +
-            `The vehicle is the STAR of this automotive advertising photograph — NOT a car parked in the distance. ` +
-            `Place it as if it was driven to 8-12 meters in front of the camera for a photo shoot. ` +
-            `SCALE: the vehicle roofline must reach 50-55% of the total frame height. ` +
-            `The vehicle tires must touch the ground between 70-80% of the frame height. ` +
-            `WIDTH: the vehicle should span 55-65% of the frame width, centered horizontally. ` +
-            `This creates the large, dominant, close-up automotive advertising look — ` +
-            `NOT a tiny car in the background. ` +
-            `\n\n(3) SHADOW & GROUND CONTACT: add a realistic shadow/reflection ` +
-            `directly under the tires on the ground surface. The vehicle must look grounded, ` +
-            `not floating. ` +
-            `\n\n(4) BACKGROUND PRESERVATION: keep the building facade, sky, signage, trees ` +
-            `completely unchanged. The building fills the UPPER 35-40% as atmospheric backdrop. ` +
-            `\n\n(5) OUTPUT: the LEFT scene panel ONLY — crop out the reference panel and divider. ` +
-            `Final result: a professional automotive advertising hero photograph.`;
+          // PASS 2 — Quality enhancement of the composite:
+          //   Canvas pre-composite: clean_bg + vehicle PNG at hero advertising scale
+          //   inputImage = that canvas composite
+          //   → Replicate adds shadow, blends edges, matches lighting
+          //   → output: photorealistic advertising quality
+          //
+          // This separates GEOMETRY (canvas) from QUALITY (Replicate),
+          // which avoids the dual-panel crop issue entirely.
 
-          // Build the dual-input image (background + car reference side by side)
-          let dualInput: string | null = null;
-          if (vehicleImageUrl?.startsWith("http")) {
-            try {
-              dualInput = await createDualInputForReplicate(storedImage, vehicleImageUrl, 1280, 768);
-            } catch {
-              // failed to create dual input — will fall back to bg-only path
-            }
-          }
+          // ── PASS 1: Clean the background ────────────────────────────────────
+          const bgCleanPrompt =
+            `Convert this dealership photograph into a clean advertising background. ` +
+            `Remove ALL parked vehicles from the foreground lot — replace with seamless asphalt. ` +
+            `The lower 35% must be empty, flat, clean ground surface with correct perspective. ` +
+            `Preserve the building facade, sky, signage, and landscape EXACTLY unchanged. ` +
+            `Do NOT add any objects. Output: same location, empty foreground, ready for product placement.`;
 
-          // Call Replicate with the combined image
-          let adaptedBgUrl: string;
+          let cleanBgUrl: string = storedImage;
           try {
-            adaptedBgUrl = await generateImage({
-              prompt: fullCompositePrompt,
-              inputImage: dualInput ?? storedImage,
+            cleanBgUrl = await generateImage({
+              prompt: bgCleanPrompt,
+              inputImage: storedImage,
               aspect_ratio: "4:3",
             });
-          } catch {
-            adaptedBgUrl = storedImage; // last-resort fallback
-          }
+          } catch { /* fallback to original */ }
 
-          // Preview = Replicate output (already has the car composited in)
-          // If Replicate failed / returned bg-only, fall back to canvas composite
-          let previewUrl = adaptedBgUrl;
-          if (!dualInput && vehicleImageUrl?.startsWith("http")) {
+          // ── PASS 2: Canvas hero composite → Replicate quality enhancement ──
+          // Canvas places the car at hero advertising scale and position.
+          // Replicate then adds shadow, blends edges, matches scene lighting.
+          let previewUrl = cleanBgUrl;
+          let adaptedBgUrl = cleanBgUrl;
+
+          if (vehicleImageUrl?.startsWith("http")) {
             try {
-              previewUrl = await createVehicleComposite(adaptedBgUrl, vehicleImageUrl, 1024, 768);
-            } catch { /* ignore */ }
+              // Step A: canvas composite (geometry — hero scale 65% width, tires at 74%)
+              const canvasComposite = await createVehicleComposite(cleanBgUrl, vehicleImageUrl, 1024, 768);
+
+              // Step B: Replicate enhances quality only — does NOT reposition the car
+              const enhancePrompt =
+                `This is an automotive advertising composite photograph. ` +
+                `The vehicle and building are already correctly positioned. ` +
+                `ENHANCE PHOTOREALISM ONLY — do NOT move, resize, or remove the vehicle: ` +
+                `(1) SHADOW: add a natural cast shadow on the asphalt directly beneath the vehicle tires. ` +
+                `(2) EDGE BLENDING: eliminate any hard cutout edges around the vehicle — ` +
+                `blend naturally with the scene's ambient light. ` +
+                `(3) LIGHTING MATCH: adjust the vehicle's ambient lighting to match the scene's ` +
+                `sunlight direction, color temperature, and intensity. ` +
+                `(4) GROUND CONTACT: ensure the tires look physically grounded on the asphalt. ` +
+                `(5) BACKGROUND: the building and environment must remain completely unchanged. ` +
+                `Output: a photorealistic professional dealership advertising photograph ` +
+                `with the same vehicle position and scale.`;
+
+              const enhanced = await generateImage({
+                prompt: enhancePrompt,
+                inputImage: canvasComposite,
+                aspect_ratio: "4:3",
+              });
+
+              previewUrl  = enhanced;
+              adaptedBgUrl = cleanBgUrl; // stored bg = clean scene (no baked-in car)
+            } catch {
+              // If pass 2 fails, use the canvas composite as preview, clean bg as stored
+              try {
+                previewUrl = await createVehicleComposite(cleanBgUrl, vehicleImageUrl, 1024, 768);
+              } catch { /* ignore */ }
+              adaptedBgUrl = cleanBgUrl;
+            }
           }
 
           // The stored background is the Replicate composite output.

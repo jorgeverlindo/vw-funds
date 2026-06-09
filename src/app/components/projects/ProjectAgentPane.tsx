@@ -2339,41 +2339,61 @@ export function ProjectAgentPane({ isOpen, onClose, userType, activeUserName }: 
         input: toolInput as ProactiveQuestionsInput, applied: false,
       } as ProactiveQuestionsMsg]);
     } else if (toolName === "generate_dealer_background") {
-      const input = toolInput as { vehicle_context?: string; scene_intent?: string };
+      // ── PHASE 1: Fast preview (runs now, ~30s) ───────────────────────────
+      // One Replicate call → clean background → canvas composite for visual preview.
+      // The approval card shows the canvas composite so the user can judge composition.
+      // The STORED background has NO car baked in — duplication is impossible.
+      //
+      // PHASE 2 runs AFTER user approves (see onDealerBgApprove below):
+      // Per-template clean backgrounds generated in parallel, then dispatched.
 
-      // Show skeleton loading message while generating
       setMessages(prev => [...prev, {
         id: `a-${Date.now()}`, role: "assistant", type: "text",
-        content: "Creating your scene background — adapting perspective and foreground for vehicle placement. This takes about 30 seconds…",
+        content: "Preparing your dealership scene — adapting perspective and clearing the foreground. This takes about 30 seconds…",
       } as TextMessage]);
-
       dispatchAction({ action: "set_dealer_bg_generating", value: true } as never);
 
-      // Run generation asynchronously
       (async () => {
         try {
           const storedImage = pendingDealerImageRef.current;
           if (!storedImage) throw new Error("No dealer image stored. Please re-upload the image.");
 
           const ctx = ctxRef.current;
-          const vehicles = input.vehicle_context ?? "vehicles";
-
-          // Get the first confirmed offer's vehicle image for the preview composite
           const firstConfirmedOffer = ctx?.availableOffers.find(
             o => ctx.currentOfferIds.includes(o.id)
           );
           const vehicleImageUrl = (firstConfirmedOffer as any)?.image ?? "";
 
-          // ── PER-TEMPLATE BACKGROUND GENERATION ───────────────────────────
-          // Uses dealerBackgroundGenerator.ts — ISOLATED from Inventory AI Config
-          // and RideNow catalog flows. Each selected template format gets its own
-          // purpose-built background (correct aspect ratio + advertising composition).
-          const { generateDealerBackgroundsForTemplates } =
+          const { generatePreviewBackground } =
             await import("../../../lib/dealerBackgroundGenerator");
           const { createVehicleComposite } =
             await import("../../../lib/replicateClient");
 
-          // Map selected templates to KNOWN_SIZES keys for getBgImage() lookup
+          // Phase 1: ONE Replicate call for a clean 4:3 preview background
+          const cleanPreviewBg = await generatePreviewBackground(storedImage);
+
+          // Canvas composite for the APPROVAL CARD DISPLAY only (car visible for review)
+          // This composite is NOT stored — it's just for the user to see the composition
+          let previewUrl = cleanPreviewBg;
+          if (vehicleImageUrl?.startsWith("http")) {
+            try {
+              previewUrl = await createVehicleComposite(cleanPreviewBg, vehicleImageUrl, 1024, 768);
+            } catch { /* use clean bg alone */ }
+          }
+
+          // Build the initial background object with just the preview bg
+          // images: {} — Phase 2 will populate per-template URLs after approval
+          const bgId = `dealer-bg-${Date.now()}`;
+          const customBg = {
+            id: bgId,
+            name: "Your Scene",
+            thumbnail: cleanPreviewBg,      // clean scene, no car
+            images: { "website-600x450": cleanPreviewBg }, // preview-res only for now
+            // Phase 2 will add all template keys after approval
+            _dealerPhotoDataUrl: storedImage,  // stored for Phase 2 generation
+          };
+
+          // Store template keys for Phase 2 use
           const selectedTemplates = (ctx?.availableTemplates ?? []).filter(
             t => (ctx?.currentTemplateIds ?? []).includes(t.id)
           );
@@ -2393,45 +2413,17 @@ export function ProjectAgentPane({ isOpen, onClose, userType, activeUserName }: 
             selectedTemplates.map(t => findBestSizeKey(t.width, t.height))
           )];
 
-          // Generate per-template backgrounds in parallel (all formats independent)
-          const bgImages = await generateDealerBackgroundsForTemplates(
-            storedImage,
-            vehicleImageUrl,
-            templateKeys,
-          );
+          // Store template keys on the bg object for Phase 2
+          (customBg as any)._templateKeys = templateKeys;
 
-          // Pick best available bg for the approval card preview composite
-          const previewBgKey = templateKeys.find(k =>
-            ["website-600x450","social-1080x1080","display-300x250"].includes(k)
-          ) ?? templateKeys[0] ?? "website-600x450";
-          const previewBgUrl = bgImages[previewBgKey] ?? storedImage;
+          pendingDealerImageRef.current = null;
 
-          let previewUrl = previewBgUrl;
-          if (vehicleImageUrl?.startsWith("http")) {
-            try {
-              previewUrl = await createVehicleComposite(previewBgUrl, vehicleImageUrl, 1024, 768);
-            } catch { /* use bg alone */ }
-          }
-
-          // If some template keys had no generated background, fill them from the closest
-          const allSizes = Object.keys(KNOWN_SIZES_MAP);
-          const fallback = bgImages[previewBgKey] ?? storedImage;
-          allSizes.forEach(k => { if (!bgImages[k]) bgImages[k] = fallback; });
-
-          // thumbnail = the preview background (any available format)
-          const adaptedBgUrl = previewBgUrl;
-          const bgId = `dealer-bg-${Date.now()}`;
-          const customBg = { id: bgId, name: "Your Scene", thumbnail: adaptedBgUrl, images: bgImages };
-
-          pendingDealerImageRef.current = null; // clear after use
-
-          // Show approval card with the canvas composite preview
           setMessages(prev => [...prev, {
             id: `dealer-bg-${Date.now()}`,
             role: "assistant",
             type: "dealer_bg_proposal",
-            bgObject: customBg,
-            previewUrl, // canvas composite: vehicle on dealer scene
+            bgObject: customBg as any,
+            previewUrl,
             applied: false,
           } as DealerBgProposalMsg]);
           dispatchAction({ action: "set_dealer_bg_generating", value: false } as never);
@@ -3549,9 +3541,43 @@ export function ProjectAgentPane({ isOpen, onClose, userType, activeUserName }: 
                           onProactiveQuestionsApply={handleProactiveQuestionsSubmit}
                           dispatchAction={dispatchAction}
                           onDealerBgApprove={(bgObject) => {
+                            // Add initial background (preview-res clean bg only)
                             dispatchAction({ action: "add_custom_background", background: bgObject });
                             setMessages(prev => prev.map(m => m.id === msg.id ? { ...m, applied: true } as DealerBgProposalMsg : m));
                             setTimeout(() => fireNextStep("dealer_bg"), 300);
+
+                            // ── PHASE 2: Generate per-template clean backgrounds ──────
+                            // Runs after approval, parallel, no car baked in.
+                            // Updates the background's images dict with per-format URLs.
+                            const dealerPhoto  = (bgObject as any)._dealerPhotoDataUrl as string | undefined;
+                            const templateKeys = (bgObject as any)._templateKeys as string[] | undefined;
+                            if (dealerPhoto) {
+                              dispatchAction({ action: "set_dealer_bg_generating", value: true } as never);
+                              (async () => {
+                                try {
+                                  const { generateDealerBackgroundsForTemplates } =
+                                    await import("../../../lib/dealerBackgroundGenerator");
+                                  const bgImages = await generateDealerBackgroundsForTemplates(
+                                    dealerPhoto,
+                                    templateKeys ?? [],
+                                  );
+                                  // Fill any missing keys with the preview-res fallback
+                                  const fallback = (bgObject as any).images["website-600x450"] ?? dealerPhoto;
+                                  const ALL_KEYS = ["website-2000x500","display-970x250","display-300x250","social-1080x1080","website-600x450","website-600x1067"];
+                                  ALL_KEYS.forEach(k => { if (!bgImages[k]) bgImages[k] = fallback; });
+
+                                  // Update the background in the project with all per-format URLs
+                                  const updatedBg = {
+                                    ...(bgObject as any),
+                                    images: { ...(bgObject as any).images, ...bgImages },
+                                  };
+                                  dispatchAction({ action: "add_custom_background", background: updatedBg });
+                                } catch { /* generation failed — preview-res fallback remains */ }
+                                finally {
+                                  dispatchAction({ action: "set_dealer_bg_generating", value: false } as never);
+                                }
+                              })();
+                            }
                           }}
                           onDealerBgSkip={() => {
                             setMessages(prev => prev.map(m =>

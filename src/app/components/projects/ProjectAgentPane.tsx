@@ -2558,6 +2558,7 @@ export function ProjectAgentPane({ isOpen, onClose, userType, activeUserName }: 
     // instead of the propose_* tool we asked for. tool_choice = "tool" means the model
     // HAS to call that specific tool and nothing else.
     const FORCED_TOOL_PATTERNS: Array<[string, string]> = [
+      ["Next: setup_project",        "setup_project"],       // ← forces project creation, prevents multi-tool responses
       ["Next: propose_offers",       "propose_offers"],
       ["Next: propose_templates",    "propose_templates"],
       ["Next: propose_backgrounds",  "propose_backgrounds"],
@@ -3166,11 +3167,13 @@ export function ProjectAgentPane({ isOpen, onClose, userType, activeUserName }: 
       // Extract email recipient from the original user text if present
       const emailMatch = originalText.match(/(?:send|email|share)(?:\s+(?:it|this|project))?(?:\s+(?:to|with))?\s+([A-Z][a-z]+)/);
       const recipientClue = emailMatch?.[1] ?? "";
-      let setupMsg = `Create a new ${oem} project.`;
+      // IMPORTANT: force setup_project tool so the agent cannot call add_offers_to_project
+      // or any other tool in the same response turn — which would cause the "X offers added" loop.
+      let setupMsg = `Next: setup_project for a new ${oem} campaign.`;
       if (recipientClue) {
-        setupMsg += ` Then send by email to ${recipientClue}.`;
+        setupMsg += ` After setup, send by email to ${recipientClue}.`;
       } else if (/template/i.test(originalText)) {
-        setupMsg += ` Then add templates.`;
+        setupMsg += ` After setup, add templates.`;
       }
       sendInternal(setupMsg);
       return;

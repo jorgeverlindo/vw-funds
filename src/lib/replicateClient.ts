@@ -203,6 +203,118 @@ export async function generateImage(opts: GenerateOptions): Promise<string> {
   throw new Error('Generation timed out after 3 minutes')
 }
 
+// ─── Depth Anything v2 — ground plane detection ──────────────────────────────
+//
+// Calls Depth Anything v2 to produce a disparity map (bright = near, dark = far).
+// We then analyze the map to find the Y coordinate of the ground plane transition:
+// the row where the scene changes from "distant building/sky" to "near asphalt".
+// That transition + a small offset = where to anchor the vehicle's tires.
+
+/**
+ * Analyze a depth map URL and return the ground fraction (0–1).
+ *
+ * Algorithm:
+ *   1. Downsample depth map to 128px for speed
+ *   2. Average brightness per row in the center 60% of width
+ *   3. Find the row with the steepest brightness increase going downward
+ *      (= transition from distant scene to near ground)
+ *   4. Add 8% of height below that transition → tire contact Y
+ *
+ * Returns a clamped value in [0.70, 0.93].
+ * Falls back to 0.88 on any error.
+ */
+async function analyzeGroundFromDepthMap(depthMapUrl: string): Promise<number> {
+  try {
+    const res = await fetch(depthMapUrl)
+    const blob = await res.blob()
+    const objectUrl = URL.createObjectURL(blob)
+
+    const img = await new Promise<HTMLImageElement>((resolve, reject) => {
+      const el = new Image()
+      el.onload  = () => { URL.revokeObjectURL(objectUrl); resolve(el) }
+      el.onerror = () => { URL.revokeObjectURL(objectUrl); reject() }
+      el.src = objectUrl
+    })
+
+    // Downsample to 128×128 for fast pixel analysis
+    const W = 128, H = 128
+    const canvas = document.createElement('canvas')
+    canvas.width = W; canvas.height = H
+    const ctx = canvas.getContext('2d')!
+    ctx.drawImage(img, 0, 0, W, H)
+    const { data } = ctx.getImageData(0, 0, W, H)
+
+    // Average R-channel brightness per row (center 60% of width)
+    const x0 = Math.floor(W * 0.2), x1 = Math.floor(W * 0.8)
+    const rowAvg: number[] = new Array(H).fill(0)
+    for (let y = 0; y < H; y++) {
+      let sum = 0
+      for (let x = x0; x < x1; x++) sum += data[(y * W + x) * 4]
+      rowAvg[y] = sum / (x1 - x0)
+    }
+
+    // Find row with steepest brightness increase (central difference, rows 35%–85%)
+    // This is the scene-to-ground transition (disparity jumps as surface gets closer)
+    let maxGradient = 0
+    let transitionRow = Math.floor(H * 0.75) // safe default
+    for (let y = Math.floor(H * 0.35) + 1; y < Math.floor(H * 0.85) - 1; y++) {
+      const grad = rowAvg[y + 1] - rowAvg[y - 1]
+      if (grad > maxGradient) { maxGradient = grad; transitionRow = y }
+    }
+
+    // Tires sit just below the detected transition (8% offset into near-ground zone)
+    const groundFraction = Math.min(0.93, Math.max(0.70, transitionRow / H + 0.08))
+    return groundFraction
+  } catch {
+    return 0.88 // always fallback gracefully
+  }
+}
+
+/**
+ * Estimate the ground plane Y fraction for a background image using Depth Anything v2.
+ *
+ * Returns a value in [0.70, 0.93] representing where the car's tires should be
+ * anchored as a fraction of the canvas height. Falls back to 0.88 on any error.
+ *
+ * Typical latency: ~3–5s (Depth Anything v2 Large via Replicate async).
+ */
+export async function detectGroundFraction(bgDataUrl: string): Promise<number> {
+  try {
+    const res = await fetch('/api/replicate/depth', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ image: bgDataUrl }),
+    })
+    if (!res.ok) return 0.88
+
+    const prediction: PredictionResponse = await res.json()
+
+    // Immediate success (Prefer: wait or fast model)
+    if (prediction.status === 'succeeded') {
+      const url = extractUrl(prediction.output)
+      if (url) return analyzeGroundFromDepthMap(url)
+    }
+
+    if (!prediction.id) return 0.88
+
+    // Poll (depth models typically finish in 3–8s)
+    for (let i = 0; i < 30; i++) {
+      await new Promise(r => setTimeout(r, 2000))
+      const status = await pollPrediction(prediction.id)
+      if (status.status === 'succeeded') {
+        const url = extractUrl(status.output)
+        if (url) return analyzeGroundFromDepthMap(url)
+        break
+      }
+      if (status.status === 'failed' || status.status === 'canceled') break
+    }
+
+    return 0.88 // timeout or failure fallback
+  } catch {
+    return 0.88
+  }
+}
+
 // ─── Flux Fill Pro inpainting ────────────────────────────────────────────────
 //
 // Used for Pass 2 (shadow + ground reflection + edge blend).
@@ -489,6 +601,8 @@ export async function createVehicleCompositeWithCoords(
   vehicleAssetUrl: string,
   width  = 1024,
   height = 768,
+  /** Ground plane Y fraction from detectGroundFraction(). Defaults to 0.88. */
+  groundFraction = 0.88,
 ): Promise<{ dataUrl: string; carX: number; carW: number; tireY: number }> {
   const loadImg = async (src: string): Promise<HTMLImageElement> => {
     let objectUrl: string | null = null
@@ -538,10 +652,10 @@ export async function createVehicleCompositeWithCoords(
   const vW           = Math.round(vehImg.naturalWidth  * vehScale)
   const vH           = Math.round(vehImg.naturalHeight * vehScale)
   const vX           = Math.round((width - vW) / 2)
-  // 0.88 puts the tires closer to the camera in perspective terms — at this
-  // position a large vehicle scale (65% of width) looks natural on the ground.
-  // 0.78 was too high: in a receding-ground background the car appeared to float.
-  const groundBase   = Math.round(height * 0.88)
+  // groundFraction is detected by Depth Anything v2 — it's the Y position where
+  // the scene transitions from distant (building/sky) to near ground in the depth map.
+  // Falls back to 0.88 if depth estimation was skipped or failed.
+  const groundBase   = Math.round(height * groundFraction)
   const tireYInCanvas = Math.round(vH * tireFraction)
   const vY            = groundBase - tireYInCanvas
   const tireY         = vY + tireYInCanvas  // absolute Y of tire contact

@@ -2366,11 +2366,17 @@ export function ProjectAgentPane({ isOpen, onClose, userType, activeUserName }: 
 
           const { generatePreviewBackground, applyPhotorealisticFinishing } =
             await import("../../../lib/dealerBackgroundGenerator");
-          const { createVehicleCompositeWithCoords } =
+          const { createVehicleCompositeWithCoords, detectGroundFraction } =
             await import("../../../lib/replicateClient");
 
           // Phase 1a: Flux Kontext Pro — clean background + ground plane (~30s)
           const cleanPreviewBg = await generatePreviewBackground(storedImage);
+
+          // Phase 1a.5: Depth Anything v2 — detect where the ground plane actually is
+          // Returns Y fraction [0.70–0.93] for tire contact. Falls back to 0.88 on error.
+          // Runs in ~3–5s and ensures the car lands on the real asphalt surface
+          // regardless of camera angle or perspective in the dealer's photo.
+          const groundFraction = await detectGroundFraction(cleanPreviewBg);
 
           // Phase 1b: Canvas composite — places the EXACT car PNG at correct position
           // Returns coordinates (carX, carW, tireY) needed for shadow mask generation
@@ -2381,7 +2387,7 @@ export function ProjectAgentPane({ isOpen, onClose, userType, activeUserName }: 
           if (vehicleImageUrl?.startsWith("http")) {
             try {
               const result = await createVehicleCompositeWithCoords(
-                cleanPreviewBg, vehicleImageUrl, CANVAS_W, CANVAS_H
+                cleanPreviewBg, vehicleImageUrl, CANVAS_W, CANVAS_H, groundFraction
               );
               canvasComposite = result.dataUrl;
               carCoords = { carX: result.carX, carW: result.carW, tireY: result.tireY };

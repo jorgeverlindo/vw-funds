@@ -97,6 +97,32 @@ function replicatePlugin(token: string) {
             return
           }
 
+          // ── POST /api/replicate/depth — Depth Anything v2 ─────────────────
+          if (req.method === 'POST' && req.url === '/depth') {
+            const body = await readBody(req)
+            const { image } = JSON.parse(body) as { image?: string }
+            if (!image) {
+              res.statusCode = 400
+              res.end(JSON.stringify({ error: 'image is required' }))
+              return
+            }
+            const replicateRes = await fetch(
+              'https://api.replicate.com/v1/models/depth-anything/depth-anything-v2-large/predictions',
+              {
+                method: 'POST',
+                headers: {
+                  Authorization: `Bearer ${token}`,
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ input: { image } }),
+              },
+            )
+            const data = await replicateRes.json()
+            res.statusCode = replicateRes.status
+            res.end(JSON.stringify(data))
+            return
+          }
+
           // ── GET /api/replicate/poll?id=<id> — poll status (flat route) ───────
           if (req.method === 'GET' && req.url?.startsWith('/poll')) {
             const urlObj = new URL(req.url, 'http://localhost')

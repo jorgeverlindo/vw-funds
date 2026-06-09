@@ -908,12 +908,18 @@ function getBgImage(
     "website-600x1067":  [600, 1067],
   };
   const targetAr = template.width / template.height;
-  let bestKey = "display-300x250";
+  let bestKey: string | null = null;
   let bestDiff = Infinity;
   for (const [key, [w, h]] of Object.entries(KNOWN_SIZES)) {
     if (!images[key]) continue;
     const diff = Math.abs(targetAr - w / h);
     if (diff < bestDiff) { bestDiff = diff; bestKey = key; }
+  }
+  // If no KNOWN_SIZE key matched, try ANY value in images as last resort
+  if (!bestKey) {
+    const anyKey = Object.keys(images).find(k => !!images[k]);
+    if (anyKey) return images[anyKey];
+    return undefined;
   }
   return images[bestKey];
 }
@@ -2415,7 +2421,17 @@ function ProjectDetailViewInner({
             : `${visibleOffers.length} offer${visibleOffers.length > 1 ? "s" : ""} × ${visibleTemplates.length} template${visibleTemplates.length > 1 ? "s" : ""}`;
 
         const handleGenerate = () => {
-          const bgsToUse = visibleBackgrounds.length > 0 ? visibleBackgrounds.map(b => b.id) : [null as null];
+          // visibleBackgrounds is derived from useMemo — in rare timing cases it may
+          // not yet include recently-added custom dealer backgrounds.
+          // Explicitly merge customBackgroundLibrary here as a safety net.
+          const allBgs = [
+            ...visibleBackgrounds,
+            // Add any custom backgrounds not already included (dedup by id)
+            ...customBackgroundLibrary.filter(
+              cb => !removedBgIds.has(cb.id) && !visibleBackgrounds.some(vb => vb.id === cb.id)
+            ),
+          ];
+          const bgsToUse = allBgs.length > 0 ? allBgs.map(b => b.id) : [null as null];
           const assets: GeneratedAsset[] = [];
           bgsToUse.forEach(bgId => {
             visibleTemplates.forEach(template => {

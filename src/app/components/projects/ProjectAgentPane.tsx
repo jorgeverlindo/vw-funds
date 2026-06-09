@@ -2372,11 +2372,12 @@ export function ProjectAgentPane({ isOpen, onClose, userType, activeUserName }: 
           // Phase 1a: Flux Kontext Pro — clean background + ground plane (~30s)
           const cleanPreviewBg = await generatePreviewBackground(storedImage);
 
-          // Phase 1a.5: Depth Anything v2 — detect where the ground plane actually is
-          // Returns Y fraction [0.70–0.93] for tire contact. Falls back to 0.88 on error.
-          // Runs in ~3–5s and ensures the car lands on the real asphalt surface
-          // regardless of camera angle or perspective in the dealer's photo.
-          const groundFraction = await detectGroundFraction(cleanPreviewBg);
+          // Phase 1a.5: Depth Anything v2 — detect ground plane Y + car width from scene
+          // groundFraction [0.70–0.93]: where tires land (Y fraction of canvas height)
+          // carWidthFraction [0.35–0.75]: how wide the car should appear in JellyBeanCard
+          // Both derived from the width of the bright ground zone in the depth map.
+          // Falls back to { 0.88, 0.65 } on any error.
+          const { groundFraction, carWidthFraction } = await detectGroundFraction(cleanPreviewBg);
 
           // Phase 1b: Canvas composite — places the EXACT car PNG at correct position
           // Returns coordinates (carX, carW, tireY) needed for shadow mask generation
@@ -2416,7 +2417,8 @@ export function ProjectAgentPane({ isOpen, onClose, userType, activeUserName }: 
             images: { "website-600x450": cleanPreviewBg }, // preview-res only for now
             // Phase 2 will add all template keys after approval
             _dealerPhotoDataUrl: storedImage,  // stored for Phase 2 generation
-            groundFraction,  // from Depth Anything v2 — where tires should land
+            groundFraction,    // from Depth Anything v2 — where tires should land (Y)
+            carWidthFraction,  // from Depth Anything v2 — how wide the car should appear
           };
 
           // Store template keys for Phase 2 use

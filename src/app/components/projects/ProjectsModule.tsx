@@ -89,6 +89,7 @@ interface CustomBackground {
   thumbnail: string;          // URL of the generated image (used everywhere)
   images: Record<string, string>; // same key for all template sizes → same URL
   groundFraction?: number;    // 0–1 from Depth Anything v2 — where the ground is
+  carWidthFraction?: number;  // 0–1 from Depth Anything v2 — how wide the ground zone is
 }
 
 function loadCustomBackgroundLibrary(projectId: string): CustomBackground[] {
@@ -926,7 +927,7 @@ function getBgImage(
 }
 
 function JellyBeanCard({
-  offer, template, fixedHeight = 160, bgImage, brandKit, groundFraction,
+  offer, template, fixedHeight = 160, bgImage, brandKit, groundFraction, carWidthFraction,
 }: {
   offer: Offer & { image?: string };
   template: Template;
@@ -935,6 +936,8 @@ function JellyBeanCard({
   brandKit?: BrandKit;
   /** Ground plane Y fraction (0–1) from Depth Anything v2. Used to anchor the car. */
   groundFraction?: number;
+  /** Car width fraction (0–1) from Depth Anything v2. Sizes car to fit the ground zone. */
+  carWidthFraction?: number;
 }) {
   const h = fixedHeight;
   const ar = template.width / template.height;
@@ -992,10 +995,11 @@ function JellyBeanCard({
               className="absolute object-contain"
               style={{
                 right: 0,
-                // When groundFraction is known, anchor the car to the actual ground plane.
-                // Otherwise fall back to bottom: 0 (tires at card edge).
                 bottom: groundFraction !== undefined ? Math.round(h * (1 - groundFraction)) : 0,
-                height: "90%", width: "55%",
+                height: "90%",
+                // carWidthFraction drives how much of the card the car occupies.
+                // Wide format: car on right side; default 55%, detected width if available.
+                width: carWidthFraction !== undefined ? `${Math.round(carWidthFraction * 100)}%` : "55%",
                 objectPosition: "right bottom",
                 // CSS drop-shadow on the PNG alpha channel = free realistic cast shadow
                 filter: hasBg
@@ -1079,7 +1083,11 @@ function JellyBeanCard({
                   : Math.round(h * 0.26),
                 left: 0, right: 0,
                 height: Math.round(h * 0.52),
-                padding: `0 ${Math.round(w * 0.06)}px`,
+                // carWidthFraction → symmetric horizontal padding so car fills that fraction.
+                // Default: 6% padding each side (= ~88% car width). With detection: exact fit.
+                padding: carWidthFraction !== undefined
+                  ? `0 ${Math.round(w * (1 - carWidthFraction) / 2)}px`
+                  : `0 ${Math.round(w * 0.06)}px`,
                 objectPosition: groundFraction !== undefined ? "center bottom" : "center center",
                 // CSS drop-shadow respects PNG alpha = realistic cast shadow for free
                 filter: hasBg
@@ -2299,6 +2307,7 @@ function ProjectDetailViewInner({
                     bgImage={getBgImage(selectedBg, template)}
                     brandKit={brandKit}
                     groundFraction={(selectedBg as CustomBackground | null)?.groundFraction}
+                    carWidthFraction={(selectedBg as CustomBackground | null)?.carWidthFraction}
                   />
                 </motion.div>
               ))}
@@ -2352,6 +2361,7 @@ function ProjectDetailViewInner({
                       bgImage={getBgImage(bg, template)}
                       brandKit={brandKit}
                       groundFraction={(bg as CustomBackground | null)?.groundFraction}
+                      carWidthFraction={(bg as CustomBackground | null)?.carWidthFraction}
                     />
                   </motion.div>
                 );

@@ -210,20 +210,24 @@ export async function generateImage(opts: GenerateOptions): Promise<string> {
 // the row where the scene changes from "distant building/sky" to "near asphalt".
 // That transition + a small offset = where to anchor the vehicle's tires.
 
+export interface GroundAnalysis {
+  /** Y fraction (0–1) where tires should land. Clamped [0.70, 0.93]. */
+  groundFraction: number
+  /** Width fraction (0–1) the car should occupy within the card. Clamped [0.35, 0.75]. */
+  carWidthFraction: number
+}
+
+const GROUND_FALLBACK: GroundAnalysis = { groundFraction: 0.88, carWidthFraction: 0.65 }
+
 /**
- * Analyze a depth map URL and return the ground fraction (0–1).
+ * Analyze a depth map and return both ground Y and car width for the JellyBeanCard.
  *
- * Algorithm:
- *   1. Downsample depth map to 128px for speed
- *   2. Average brightness per row in the center 60% of width
- *   3. Find the row with the steepest brightness increase going downward
- *      (= transition from distant scene to near ground)
- *   4. Add 8% of height below that transition → tire contact Y
- *
- * Returns a clamped value in [0.70, 0.93].
- * Falls back to 0.88 on any error.
+ * groundFraction — steepest row brightness increase → scene-to-ground transition + 8% offset.
+ * carWidthFraction — at the tire line, measure the horizontal span of the bright ground zone.
+ *   A wide asphalt zone → wide car. A narrow or compressed zone → narrower car.
+ *   Car fills 70% of the detected ground zone width, clamped [0.35, 0.75].
  */
-async function analyzeGroundFromDepthMap(depthMapUrl: string): Promise<number> {
+async function analyzeGroundFromDepthMap(depthMapUrl: string): Promise<GroundAnalysis> {
   try {
     const res = await fetch(depthMapUrl)
     const blob = await res.blob()
@@ -244,6 +248,7 @@ async function analyzeGroundFromDepthMap(depthMapUrl: string): Promise<number> {
     ctx.drawImage(img, 0, 0, W, H)
     const { data } = ctx.getImageData(0, 0, W, H)
 
+    // ── groundFraction: steepest row brightness increase ─────────────────────
     // Average R-channel brightness per row (center 60% of width)
     const x0 = Math.floor(W * 0.2), x1 = Math.floor(W * 0.8)
     const rowAvg: number[] = new Array(H).fill(0)
@@ -253,39 +258,65 @@ async function analyzeGroundFromDepthMap(depthMapUrl: string): Promise<number> {
       rowAvg[y] = sum / (x1 - x0)
     }
 
-    // Find row with steepest brightness increase (central difference, rows 35%–85%)
-    // This is the scene-to-ground transition (disparity jumps as surface gets closer)
     let maxGradient = 0
-    let transitionRow = Math.floor(H * 0.75) // safe default
+    let transitionRow = Math.floor(H * 0.75)
     for (let y = Math.floor(H * 0.35) + 1; y < Math.floor(H * 0.85) - 1; y++) {
       const grad = rowAvg[y + 1] - rowAvg[y - 1]
       if (grad > maxGradient) { maxGradient = grad; transitionRow = y }
     }
-
-    // Tires sit just below the detected transition (8% offset into near-ground zone)
     const groundFraction = Math.min(0.93, Math.max(0.70, transitionRow / H + 0.08))
-    return groundFraction
+
+    // ── carWidthFraction: width of bright ground zone at the tire line ────────
+    // Sample a ±4-row band around the tire Y for stability
+    const tireRow = Math.min(H - 1, Math.round(groundFraction * H))
+    const colBright: number[] = new Array(W).fill(0)
+    const band = 4
+    for (let x = 0; x < W; x++) {
+      let sum = 0, count = 0
+      for (let dy = -band; dy <= band; dy++) {
+        const y = tireRow + dy
+        if (y >= 0 && y < H) { sum += data[(y * W + x) * 4]; count++ }
+      }
+      colBright[x] = count > 0 ? sum / count : 0
+    }
+
+    const maxCol = Math.max(...colBright)
+    const colThreshold = maxCol * 0.50   // pixels brighter than 50% of peak = ground zone
+
+    let zoneLeft = 0, zoneRight = W - 1
+    for (let x = 0; x < W; x++) {
+      if (colBright[x] >= colThreshold) { zoneLeft = x; break }
+    }
+    for (let x = W - 1; x >= 0; x--) {
+      if (colBright[x] >= colThreshold) { zoneRight = x; break }
+    }
+
+    const groundZoneWidth = (zoneRight - zoneLeft) / W
+    // Car fills 70% of the detected ground zone; clamp to [0.35, 0.75]
+    const carWidthFraction = Math.min(0.75, Math.max(0.35, groundZoneWidth * 0.70))
+
+    return { groundFraction, carWidthFraction }
   } catch {
-    return 0.88 // always fallback gracefully
+    return GROUND_FALLBACK
   }
 }
 
 /**
- * Estimate the ground plane Y fraction for a background image using Depth Anything v2.
+ * Run Depth Anything v2 on a background image and return ground plane layout.
  *
- * Returns a value in [0.70, 0.93] representing where the car's tires should be
- * anchored as a fraction of the canvas height. Falls back to 0.88 on any error.
+ * groundFraction  — Y fraction [0.70–0.93] for car tire contact
+ * carWidthFraction — width fraction [0.35–0.75] for car sizing in JellyBeanCard
  *
- * Typical latency: ~3–5s (Depth Anything v2 Large via Replicate async).
+ * Falls back to { 0.88, 0.65 } on any error. Typical latency: ~3–5s.
  */
-export async function detectGroundFraction(bgDataUrl: string): Promise<number> {
+export async function detectGroundFraction(bgDataUrl: string): Promise<GroundAnalysis> {
   try {
     const res = await fetch('/api/replicate/depth', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ image: bgDataUrl }),
     })
-    if (!res.ok) return 0.88
+    if (!res.ok) return GROUND_FALLBACK
 
     const prediction: PredictionResponse = await res.json()
 
@@ -295,7 +326,7 @@ export async function detectGroundFraction(bgDataUrl: string): Promise<number> {
       if (url) return analyzeGroundFromDepthMap(url)
     }
 
-    if (!prediction.id) return 0.88
+    if (!prediction.id) return GROUND_FALLBACK
 
     // Poll (depth models typically finish in 3–8s)
     for (let i = 0; i < 30; i++) {
@@ -309,9 +340,9 @@ export async function detectGroundFraction(bgDataUrl: string): Promise<number> {
       if (status.status === 'failed' || status.status === 'canceled') break
     }
 
-    return 0.88 // timeout or failure fallback
+    return GROUND_FALLBACK
   } catch {
-    return 0.88
+    return GROUND_FALLBACK
   }
 }
 

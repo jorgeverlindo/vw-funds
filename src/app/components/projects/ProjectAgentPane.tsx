@@ -2380,20 +2380,27 @@ export function ProjectAgentPane({ isOpen, onClose, userType, activeUserName }: 
           // The stored background = Replicate's output (LEFT panel only — cropped).
           // JellyBeanCards overlay the actual offer car via CSS on top.
           const fullCompositePrompt =
-            `This image has TWO PANELS separated by a dark divider: ` +
-            `LEFT PANEL = outdoor scene (dealership/parking area). ` +
-            `RIGHT PANEL = vehicle reference (the car to be placed in the scene). ` +
-            `\n\nYOUR TASK — produce the LEFT scene only, with the RIGHT vehicle naturally ` +
-            `composited into it: ` +
-            `(1) CLEAR FOREGROUND: remove any existing vehicles from the parking area. ` +
-            `(2) PLACE VEHICLE: position the RIGHT vehicle at center-bottom of the LEFT scene, ` +
-            `sitting on the ground surface. Match the scene's perspective (horizon line, ` +
-            `vanishing point). Scale the vehicle proportionally to the building size. ` +
-            `(3) SHADOW: add a realistic shadow/ground reflection under the vehicle. ` +
-            `(4) PRESERVE BACKGROUND: keep the building facade, sky, signage, and all ` +
-            `elements above the horizon line completely unchanged. ` +
-            `(5) OUTPUT: the LEFT scene only — no reference panel, no divider. ` +
-            `Result must look like a professional automotive advertising photograph.`;
+            `This image has TWO PANELS separated by a dark vertical divider: ` +
+            `LEFT PANEL = outdoor dealership/location scene. ` +
+            `RIGHT PANEL = the exact vehicle to place as the HERO SUBJECT. ` +
+            `\n\nPRODUCE THE LEFT SCENE ONLY with the RIGHT vehicle integrated as follows: ` +
+            `\n\n(1) CLEAR FOREGROUND: erase ALL existing parked vehicles from the lot/ground area. ` +
+            `Replace with the same clean asphalt/ground surface, seamlessly extended. ` +
+            `\n\n(2) HERO VEHICLE PLACEMENT — this is the most important step: ` +
+            `The vehicle is the STAR of this automotive advertising photograph — NOT a car parked in the distance. ` +
+            `Place it as if it was driven to 8-12 meters in front of the camera for a photo shoot. ` +
+            `SCALE: the vehicle roofline must reach 50-55% of the total frame height. ` +
+            `The vehicle tires must touch the ground between 70-80% of the frame height. ` +
+            `WIDTH: the vehicle should span 55-65% of the frame width, centered horizontally. ` +
+            `This creates the large, dominant, close-up automotive advertising look — ` +
+            `NOT a tiny car in the background. ` +
+            `\n\n(3) SHADOW & GROUND CONTACT: add a realistic shadow/reflection ` +
+            `directly under the tires on the ground surface. The vehicle must look grounded, ` +
+            `not floating. ` +
+            `\n\n(4) BACKGROUND PRESERVATION: keep the building facade, sky, signage, trees ` +
+            `completely unchanged. The building fills the UPPER 35-40% as atmospheric backdrop. ` +
+            `\n\n(5) OUTPUT: the LEFT scene panel ONLY — crop out the reference panel and divider. ` +
+            `Final result: a professional automotive advertising hero photograph.`;
 
           // Build the dual-input image (background + car reference side by side)
           let dualInput: string | null = null;

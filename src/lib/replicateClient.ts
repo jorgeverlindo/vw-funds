@@ -319,11 +319,12 @@ export async function createVehicleComposite(
 
   ctx.drawImage(bgImg, 0, 0, width, height)
 
-  const vehScale  = (width * 0.55) / vehImg.naturalWidth   // smaller scale, more proportional
+  // Hero advertising scale: car fills 65% of width, roofline ~50% height, tires ~74%
+  const vehScale  = (width * 0.65) / vehImg.naturalWidth
   const vW        = Math.round(vehImg.naturalWidth  * vehScale)
   const vH        = Math.round(vehImg.naturalHeight * vehScale)
   const vX        = Math.round((width - vW) / 2)
-  const groundBase = Math.round(height * 0.74)
+  const groundBase = Math.round(height * 0.74)   // tires land at 74% — building fills upper 35%
   const vY        = groundBase - vH
   ctx.drawImage(vehImg, vX, vY, vW, vH)
 

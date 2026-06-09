@@ -1343,7 +1343,10 @@ function ProjectDetailView({
       activeBrandOem:     brandKit?.oem,
       // First 4 generated asset previews — bg image URLs are public Cloudinary links
       generatedAssetPreviews: generatedAssets.slice(0, 4).flatMap(({ offer, template, bgId }) => {
-        const bg = bgId ? backgroundCollections.find(b => b.id === bgId) ?? null : null;
+        // Check static catalog first, then custom dealer backgrounds
+        const bg = bgId
+          ? (backgroundCollections.find(b => b.id === bgId) ?? customBackgroundLibrary.find(b => b.id === bgId) ?? null)
+          : null;
         const bgUrl = getBgImage(bg, template);
         if (!bgUrl || !bgUrl.startsWith('http')) return [];
         const vehicleUrl = (offer as any).image ?? "";
@@ -2266,7 +2269,10 @@ function ProjectDetailViewInner({
               animate="show"
             >
               {generatedAssets.map(({ key, offer, template, bgId }) => {
-                const bg = bgId ? backgroundCollections.find(b => b.id === bgId) ?? null : null;
+                // Check static catalog first, then custom dealer backgrounds
+                const bg = bgId
+                  ? (backgroundCollections.find(b => b.id === bgId) ?? customBackgroundLibrary.find(b => b.id === bgId) ?? null)
+                  : null;
                 return (
                   <motion.div
                     key={key}

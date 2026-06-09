@@ -2355,34 +2355,70 @@ export function ProjectAgentPane({ isOpen, onClose, userType, activeUserName }: 
           const storedImage = pendingDealerImageRef.current;
           if (!storedImage) throw new Error("No dealer image stored. Please re-upload the image.");
 
-          // Get the first confirmed offer's vehicle image for compositing
           const ctx = ctxRef.current;
+          const vehicles = input.vehicle_context ?? "vehicles";
+
+          // Get the first confirmed offer's vehicle image for the preview composite
           const firstConfirmedOffer = ctx?.availableOffers.find(
             o => ctx.currentOfferIds.includes(o.id)
           );
           const vehicleImageUrl = (firstConfirmedOffer as any)?.image ?? "";
 
-          // Use canvas composite directly — preserves the dealer's exact scene
-          // createVehicleComposite: background + vehicle PNG → JPEG composite
-          const { createVehicleComposite } = await import("../../../lib/replicateClient");
+          const { generateImage, createVehicleComposite } = await import("../../../lib/replicateClient");
 
-          let previewUrl = storedImage; // fallback: dealer photo alone
+          // ── Step 1: Replicate adapts the SCENE PERSPECTIVE ──────────────────
+          // The JellyBean cars are always front-left 3/4 view, positioned with
+          // bottom at ~26% from card bottom and centered horizontally.
+          // The model must adapt ONLY the ground plane / foreground to match
+          // this perspective — the rest of the scene stays exactly as uploaded.
+          const perspectivePrompt =
+            `SCENE BACKGROUND PREPARATION FOR AUTOMOTIVE ADVERTISING. ` +
+            `You are given a scene photograph. A ${vehicles} vehicle will be placed ` +
+            `in this scene as a front-left 3/4 view cutout centered horizontally ` +
+            `and resting on the ground in the lower-center of the image. ` +
+            `YOUR ONLY TASK: Adapt the ground plane and foreground perspective ` +
+            `so the scene looks natural when that vehicle is placed on it. ` +
+            `Specifically: ensure the bottom ~30% of the image has a flat, wide ` +
+            `ground surface (asphalt, pavement, or the existing surface) with a ` +
+            `vanishing point that matches a front-left 3/4 vehicle view. ` +
+            `CRITICAL PRESERVATION RULES: ` +
+            `(1) Do NOT change anything in the upper 70% of the image. ` +
+            `(2) Keep all existing colors, lighting, architecture, and environment. ` +
+            `(3) Do NOT add any vehicles, people, or objects. ` +
+            `(4) Only refine/extend the ground surface in the lower portion. ` +
+            `The scene must remain recognizable as the original uploaded photo.`;
+
+          let adaptedBgUrl: string;
+          try {
+            adaptedBgUrl = await generateImage({
+              prompt: perspectivePrompt,
+              inputImage: storedImage,
+              aspect_ratio: "4:3",
+            });
+          } catch {
+            // Replicate failed — fall back to original dealer photo
+            adaptedBgUrl = storedImage;
+          }
+
+          // ── Step 2: Canvas composite for PREVIEW only ───────────────────────
+          // Overlay the specific offer vehicle on the adapted scene so the user
+          // can see exactly how the final JellyBean will look before approving.
+          let previewUrl = adaptedBgUrl;
           if (vehicleImageUrl?.startsWith("http")) {
             try {
-              // Composite: dealer photo as bg, offer vehicle PNG on top
-              previewUrl = await createVehicleComposite(storedImage, vehicleImageUrl, 1024, 768);
+              previewUrl = await createVehicleComposite(adaptedBgUrl, vehicleImageUrl, 1024, 768);
             } catch {
-              // composite failed — use dealer photo as-is
+              // composite failed — show adapted bg alone
             }
           }
 
-          // The background stored in the project is the ORIGINAL dealer scene
-          // (not the composite — vehicles are re-composited per offer at render time)
+          // The stored background is the Replicate-adapted scene (public HTTPS URL).
+          // JellyBeanCards will CSS-composite vehicles on top of it at render time.
           const bgId = `dealer-bg-${Date.now()}`;
           const allSizes = ["social-1080x1080","display-300x250","display-970x250","website-2000x500","website-600x450","website-600x1067"];
           const bgImages: Record<string, string> = {};
-          allSizes.forEach(k => { bgImages[k] = storedImage; }); // dealer's original photo
-          const customBg = { id: bgId, name: "Your Scene", thumbnail: storedImage, images: bgImages };
+          allSizes.forEach(k => { bgImages[k] = adaptedBgUrl; });
+          const customBg = { id: bgId, name: "Your Scene", thumbnail: adaptedBgUrl, images: bgImages };
 
           pendingDealerImageRef.current = null; // clear after use
 

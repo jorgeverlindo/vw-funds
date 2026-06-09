@@ -121,6 +121,35 @@ export const agentTools: Anthropic.Tool[] = [
     },
   },
 
+  // ── Dealer background generation (RideNow campaign flow — ISOLATED from Inventory AI Config) ──
+  {
+    name: "generate_dealer_background",
+    description:
+      "Generate a custom campaign background from a dealer-uploaded scene image. " +
+      "Use ONLY in the full_dealer_bg flow, ONLY after offers have been confirmed (you need " +
+      "the vehicle makes/models from the selected offers to craft the right scene prompt). " +
+      "NEVER call this in any other flow. This is 100% isolated from the Inventory AI Config — " +
+      "do not mix these two systems. The frontend will handle the actual image generation.",
+    input_schema: {
+      type: "object" as const,
+      properties: {
+        vehicle_context: {
+          type: "string",
+          description:
+            "Comma-separated list of vehicle makes+models from the confirmed offers " +
+            "(e.g. 'Honda CR-V, Honda HR-V, Honda Odyssey'). Used to craft the scene prompt.",
+        },
+        scene_intent: {
+          type: "string",
+          description:
+            "Brief description of the mood/context of the uploaded image so the AI can " +
+            "adapt it appropriately (e.g. 'outdoor dealership lot, daytime, suburban setting').",
+        },
+      },
+      required: ["vehicle_context"],
+    },
+  },
+
   // ── Step 4: brand / theme kit ──────────────────────────────────────────────
   {
     name: "propose_brand",
@@ -434,6 +463,13 @@ export function executeTool(
         success: true,
         backgrounds: input,
         message: "Backgrounds proposal ready for user review.",
+      };
+
+    case "generate_dealer_background":
+      return {
+        success: true,
+        dealer_background: input,
+        message: "Dealer background generation initiated. The frontend will process the uploaded image.",
       };
 
     case "propose_brand":

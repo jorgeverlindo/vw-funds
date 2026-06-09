@@ -16,6 +16,13 @@ export const STORAGE_KEYS = {
   /** User-defined offer library (custom offers created in the UI) */
   CUSTOM_OFFER_LIBRARY: 'constellation_custom_offer_library',
 
+  /**
+   * Dealer-uploaded backgrounds for the RideNow campaign flow.
+   * Stored per project as { projectId → CustomBackground[] }.
+   * ISOLATED from Inventory AI Config — do not use in that flow.
+   */
+  CUSTOM_BACKGROUND_LIBRARY: 'constellation_custom_background_library',
+
   /** Agent thread history per-project */
   AGENT_THREADS: 'constellation_agent_threads',
 

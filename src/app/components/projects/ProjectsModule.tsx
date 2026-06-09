@@ -82,6 +82,31 @@ function saveCustomOfferLibrary(offers: StoredOffer[]) {
   try { localStorage.setItem(STORAGE_KEYS.CUSTOM_OFFER_LIBRARY, JSON.stringify(offers)); } catch {}
 }
 
+// ─── Custom background library (dealer-uploaded backgrounds — RideNow flow only) ─
+interface CustomBackground {
+  id: string;
+  name: string;
+  thumbnail: string;          // URL of the generated image (used everywhere)
+  images: Record<string, string>; // same key for all template sizes → same URL
+}
+
+function loadCustomBackgroundLibrary(projectId: string): CustomBackground[] {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEYS.CUSTOM_BACKGROUND_LIBRARY);
+    const all: Record<string, CustomBackground[]> = raw ? JSON.parse(raw) : {};
+    return all[projectId] ?? [];
+  } catch { return []; }
+}
+
+function saveCustomBackgroundLibrary(projectId: string, bgs: CustomBackground[]): void {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEYS.CUSTOM_BACKGROUND_LIBRARY);
+    const all: Record<string, CustomBackground[]> = raw ? JSON.parse(raw) : {};
+    all[projectId] = bgs;
+    localStorage.setItem(STORAGE_KEYS.CUSTOM_BACKGROUND_LIBRARY, JSON.stringify(all));
+  } catch { /* quota exceeded */ }
+}
+
 // Convert a CustomOffer (from ParsedOffersCard) to a StoredOffer with defaults
 function customOfferToStored(co: import("@projects/ProjectAgentPane").CustomOffer): StoredOffer {
   return {
@@ -1165,6 +1190,10 @@ function ProjectDetailView({
   const [agentAddedTemplateIds, setAgentAddedTemplateIds] = useState<string[]>(saved?.addedTemplateIds ?? []);
   // Custom offer library — persisted to localStorage, merged with static offerLibrary
   const [customOfferLibrary, setCustomOfferLibrary] = useState<StoredOffer[]>(() => loadCustomOfferLibrary());
+  // Custom background library (dealer-uploaded backgrounds — isolated from catalog)
+  const [customBackgroundLibrary, setCustomBackgroundLibrary] = useState<CustomBackground[]>(
+    () => loadCustomBackgroundLibrary(project.id)
+  );
   // Backgrounds: additive model — only show what the agent (or user) explicitly adds
   const [agentAddedBgIds,       setAgentAddedBgIds]       = useState<string[]>(saved?.agentAddedBgIds ?? []);
   // Brand/theme kit: only activated when agent explicitly confirms it (not auto-derived from OEM)
@@ -1290,7 +1319,10 @@ function ProjectDetailView({
   ].filter((t, i, arr) => !removedTemplateIds.has(t.id) && arr.findIndex((x) => x.id === t.id) === i);
 
   // Only show backgrounds the agent (or user) has explicitly added — additive model
-  const visibleBackgrounds = sceneBackgrounds.filter(b => agentAddedBgIds.includes(b.id) && !removedBgIds.has(b.id));
+  const visibleBackgrounds = [
+    ...sceneBackgrounds.filter(b => agentAddedBgIds.includes(b.id) && !removedBgIds.has(b.id)),
+    ...customBackgroundLibrary.filter(b => !removedBgIds.has(b.id)),
+  ];
 
   const visibleOffersCount   = visibleOffers.length    > 0 ? visibleOffers.length    : undefined;
   const visibleTemplateCount = visibleTemplates.length > 0 ? visibleTemplates.length : undefined;
@@ -1370,6 +1402,13 @@ function ProjectDetailView({
       } else if (action === "remove_templates") {
         const { templateIds } = payload as { templateIds: string[] };
         setRemovedTemplateIds((prev) => new Set([...prev, ...templateIds]));
+      } else if (action === "add_custom_background") {
+        const bg = (payload as { background: CustomBackground }).background;
+        setCustomBackgroundLibrary(prev => {
+          const next = [...prev.filter(b => b.id !== bg.id), bg];
+          saveCustomBackgroundLibrary(project.id, next);
+          return next;
+        });
       } else if (action === "add_backgrounds") {
         const { backgroundIds } = payload as { backgroundIds: string[] };
         setExpandedSections((prev) => ({ ...prev, backgrounds: true, preview: true }));
@@ -1505,6 +1544,8 @@ function ProjectDetailView({
       setAgentAddedTemplateIds={setAgentAddedTemplateIds}
       customOfferLibrary={customOfferLibrary}
       setCustomOfferLibrary={setCustomOfferLibrary}
+      customBackgroundLibrary={customBackgroundLibrary}
+      setCustomBackgroundLibrary={setCustomBackgroundLibrary}
       agentAddedBgIds={agentAddedBgIds}
       setAgentAddedBgIds={setAgentAddedBgIds}
       agentActivatedOems={agentActivatedOems}
@@ -1563,6 +1604,8 @@ function ProjectDetailViewInner({
   setAgentAddedTemplateIds,
   customOfferLibrary,
   setCustomOfferLibrary,
+  customBackgroundLibrary,
+  setCustomBackgroundLibrary,
   agentAddedBgIds,
   setAgentAddedBgIds,
   agentActivatedOems,
@@ -1612,6 +1655,8 @@ function ProjectDetailViewInner({
   setAgentAddedTemplateIds: React.Dispatch<React.SetStateAction<string[]>>;
   customOfferLibrary: StoredOffer[];
   setCustomOfferLibrary: React.Dispatch<React.SetStateAction<StoredOffer[]>>;
+  customBackgroundLibrary: CustomBackground[];
+  setCustomBackgroundLibrary: React.Dispatch<React.SetStateAction<CustomBackground[]>>;
   agentAddedBgIds: string[];
   setAgentAddedBgIds: React.Dispatch<React.SetStateAction<string[]>>;
   agentActivatedOems: string[];
@@ -1695,11 +1740,13 @@ function ProjectDetailViewInner({
   }, [templates, agentAddedTemplateIds, removedTemplateIds]);
 
   const visibleBackgrounds = useMemo(() => {
-    return agentAddedBgIds
+    const catalogBgs = agentAddedBgIds
       .map((id) => backgroundCollections.find((b) => b.id === id))
       .filter((b): b is NonNullable<typeof b> => !!b)
       .filter((b) => !removedBgIds.has(b.id));
-  }, [agentAddedBgIds, removedBgIds]);
+    const customBgs = customBackgroundLibrary.filter(b => !removedBgIds.has(b.id));
+    return [...catalogBgs, ...customBgs];
+  }, [agentAddedBgIds, removedBgIds, customBackgroundLibrary]);
 
   const visibleOffersCount    = visibleOffers.length    > 0 ? visibleOffers.length    : undefined;
   const visibleTemplateCount  = visibleTemplates.length > 0 ? visibleTemplates.length : undefined;

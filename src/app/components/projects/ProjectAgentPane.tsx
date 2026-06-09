@@ -150,6 +150,7 @@ export type AgentActionPayload =
   | { action: "create_project";   name: string; account: string; oem: string; startDate: string; endDate: string; owner?: string; platforms?: string[] }
   | { action: "set_brand";        oem: string }
   | { action: "add_backgrounds";  backgroundIds: string[] }
+  | { action: "add_custom_background"; background: { id: string; name: string; thumbnail: string; images: Record<string, string> } }
   | { action: "send_email";       recipient: string; message: string }
   | { action: "add_custom_offers"; offers: CustomOffer[] }
   | { action: "edit_offer"; offerId: string; patches: Partial<{ monthlyPayment: number; term: number; totalDueAtSigning: number; offerType: string; trim: string; year: string; make: string; model: string }> }
@@ -216,7 +217,7 @@ interface SetupInput {
   start_date: string;
   end_date: string;
   /** Enum set by the agent based on user intent — drives continuation messages */
-  flow_scope?: "full" | "offers_only" | "templates_only" | "offers_and_templates" | "templates_and_email" | "offers_and_email";
+  flow_scope?: "full" | "offers_only" | "templates_only" | "offers_and_templates" | "templates_and_email" | "offers_and_email" | "full_dealer_bg";
   /** Legacy field — kept for backward compat with old sessions */
   flow_steps?: string[];
   owner?: string;
@@ -2208,6 +2209,9 @@ export function ProjectAgentPane({ isOpen, onClose, userType, activeUserName }: 
   const pendingParsedOffersRef = useRef<CustomOffer[] | null>(null);
   // Stores the original user text from a file upload so pipeline intent survives the extraction step
   const pendingPipelineTextRef = useRef<string>("");
+  // Dealer background image — stores base64 dataURL of dealer-uploaded image for the full_dealer_bg flow.
+  // ISOLATED from Inventory AI Config. Cleared after background is generated.
+  const pendingDealerImageRef = useRef<string | null>(null);
   // Set to true right before create_project is dispatched so the project-ID-change effect
   // doesn't wipe the conversation history (the project was created BY this conversation).
   const projectCreatedByConversationRef = useRef(false);
@@ -2325,6 +2329,71 @@ export function ProjectAgentPane({ isOpen, onClose, userType, activeUserName }: 
         id: `proactive-${Date.now()}`, role: "assistant", type: "proactive_questions",
         input: toolInput as ProactiveQuestionsInput, applied: false,
       } as ProactiveQuestionsMsg]);
+    } else if (toolName === "generate_dealer_background") {
+      const input = toolInput as { vehicle_context?: string; scene_intent?: string };
+      // Kick off async generation — do not block the tool handler
+      setMessages(prev => [...prev, {
+        id: `a-${Date.now()}`, role: "assistant", type: "text",
+        content: "Generating your custom background — this takes about 30 seconds…",
+      } as TextMessage]);
+
+      // Run generation asynchronously
+      (async () => {
+        try {
+          const storedImage = pendingDealerImageRef.current;
+          if (!storedImage) throw new Error("No dealer image stored. Please re-upload the image.");
+
+          const vehicles = input.vehicle_context ?? "vehicles";
+          const sceneIntent = input.scene_intent ?? "outdoor scene";
+
+          // Craft the adaptation prompt — instruct AI to leave foreground space for vehicles
+          const adaptationPrompt =
+            `Transform this scene into a professional automotive advertising background. ` +
+            `The scene should have clear open foreground space at the bottom center where ${vehicles} will be placed. ` +
+            `Maintain natural perspective so vehicles appear grounded in the scene. ` +
+            `Keep the environment recognizable (${sceneIntent}) but optimized for vehicle placement. ` +
+            `The final image should work as a wide landscape advertising background.`;
+
+          // Call Replicate via existing generateImage utility
+          const { generateImage } = await import("../../../lib/replicateClient");
+          const generatedUrl = await generateImage({
+            prompt: adaptationPrompt,
+            inputImage: storedImage,
+            aspect_ratio: "4:3",
+          });
+
+          // Build the CustomBackground object — same URL for all template sizes
+          const bgId = `dealer-bg-${Date.now()}`;
+          const allSizes = ["social-1080x1080","display-300x250","display-970x250","website-2000x500","website-600x450","website-600x1067"];
+          const bgImages: Record<string, string> = {};
+          allSizes.forEach(k => { bgImages[k] = generatedUrl; });
+
+          const customBg = {
+            id: bgId,
+            name: "Your Scene",
+            thumbnail: generatedUrl,
+            images: bgImages,
+          };
+
+          // Add to project via dispatch
+          dispatchAction({ action: "add_custom_background", background: customBg });
+          pendingDealerImageRef.current = null; // clear after use
+
+          // Notify user + advance the flow
+          setMessages(prev => [...prev, {
+            id: `a-${Date.now()}`, role: "assistant", type: "text",
+            content: "✅ Background created from your image and added to the project. You can see it in the campaign preview.",
+          } as TextMessage]);
+
+          // Advance flow to the next step (brand)
+          fireNextStep("dealer_bg");
+        } catch (err) {
+          setMessages(prev => [...prev, {
+            id: `e-${Date.now()}`, role: "assistant", type: "text",
+            content: `⚠️ Background generation failed: ${String(err)}. Please try again or choose a catalog background.`,
+          } as TextMessage]);
+        }
+      })();
     } else if (toolName === "propose_parsed_offers") {
       // Normalize flat confidence_* fields back into a field_confidence Record
       const rawInput = toolInput as Record<string, unknown>;
@@ -2562,7 +2631,36 @@ export function ProjectAgentPane({ isOpen, onClose, userType, activeUserName }: 
     // That endpoint has ONLY propose_parsed_offers as a tool with tool_choice forced,
     // so the model MUST extract offers. No system-prompt games needed.
     const isFileUpload = userMsg.type === "user_file";
-    const isImageOrDocument = isFileUpload && (
+
+    // ── Dealer background intent detection (full_dealer_bg flow — isolated from inventory) ──
+    // If user uploads an image while explicitly mentioning project/campaign/background intent,
+    // store the image for later use at the backgrounds step instead of routing to offer extraction.
+    const isImageUpload = isFileUpload && (userMsg as UserFileMsg).files.some(f => f.type.startsWith("image/"));
+    const lowerTextForBg = text.toLowerCase();
+    const hasBgIntent = isImageUpload && (
+      lowerTextForBg.includes("background") || lowerTextForBg.includes("project") ||
+      lowerTextForBg.includes("campaign") || lowerTextForBg.includes("include") ||
+      lowerTextForBg.includes("usar") || lowerTextForBg.includes("usar essa") ||
+      lowerTextForBg.includes("scene") || lowerTextForBg.includes("cena") ||
+      lowerTextForBg.includes("dealer") || lowerTextForBg.includes("foto")
+    );
+    if (hasBgIntent) {
+      // Convert the image file to base64 dataURL and store for later use
+      const imageFile = attachments.find(f => f.type.startsWith("image/"));
+      if (imageFile) {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          if (typeof reader.result === "string") {
+            pendingDealerImageRef.current = reader.result;
+          }
+        };
+        reader.readAsDataURL(imageFile);
+      }
+      // Do NOT route to /api/agent/extract — let the agent handle this as a new project request
+      // The image will be used when the backgrounds step is reached
+    }
+
+    const isImageOrDocument = isFileUpload && !hasBgIntent && (
       (userMsg as UserFileMsg).files.some(f =>
         f.type.startsWith("image/") ||
         f.type === "application/pdf" ||
@@ -2656,6 +2754,7 @@ export function ProjectAgentPane({ isOpen, onClose, userType, activeUserName }: 
       offers_and_templates:   ["offers", "templates"],
       templates_and_email:    ["templates", "email"],
       offers_and_email:       ["offers", "email"],
+      full_dealer_bg:         ["offers", "templates", "dealer_bg", "brand"],
     };
     const scope = setupMsg?.input.flow_scope;
     if (scope && SCOPE_STEPS[scope]) return SCOPE_STEPS[scope];
@@ -2769,6 +2868,21 @@ export function ProjectAgentPane({ isOpen, onClose, userType, activeUserName }: 
       return;
     }
 
+    if (effectiveNext === "dealer_bg") {
+      // Instead of proposing catalog backgrounds, trigger dealer background generation
+      const ctx = ctxRef.current;
+      const confirmedOffers = (ctx?.availableOffers ?? [])
+        .filter(o => (ctx?.currentOfferIds ?? []).includes(o.id));
+      const vehicleContext = confirmedOffers.length > 0
+        ? confirmedOffers.map(o => `${o.year} ${o.make} ${o.model}`).join(", ")
+        : "vehicles";
+      setTimeout(() => sendInternal(
+        `Step complete. Now call generate_dealer_background with vehicle_context="${vehicleContext}". ` +
+        `Do NOT call propose_backgrounds. This is the dealer background flow.`
+      ), 400);
+      return;
+    }
+
     if (effectiveNext === "offers") {
       const setupMsg = messagesRef.current.filter((m): m is SetupMsg => m.type === "setup").at(-1);
       const oem = setupMsg?.input.oem ?? ctxRef.current?.oem ?? "";
@@ -2781,6 +2895,7 @@ export function ProjectAgentPane({ isOpen, onClose, userType, activeUserName }: 
       backgrounds: "Step complete. Next: propose_backgrounds",
       brand:       "Step complete. Next: propose_brand",
       email:       "Step complete. Next: propose_email",
+      dealer_bg:   "Step complete. Next: propose_brand",
     };
     const msg = continuations[effectiveNext];
     if (msg) setTimeout(() => sendInternal(msg), 400);

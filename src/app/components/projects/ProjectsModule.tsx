@@ -1013,32 +1013,29 @@ function JellyBeanCard({
           }
         }
 
-        // ── Car dimensions — fit within available zone ─────────────────────────
+        // ── Vertical positioning — compute FIRST so availH derives from it ────────
+        const textZoneH = isWide ? 0 : Math.round(h * 0.20) + 27;
+        const tireTarget = textZoneH + Math.round(h * 0.03);
+        // groundFraction defaults: wide 0.78 (low horizon banner), normal 0.65
+        const effectiveGround = groundFraction ?? (isWide ? 0.78 : 0.65);
+        const groundFromBot   = Math.round(h * (1 - effectiveGround));
+
+        // ── Car dimensions — constrained to fit between top bar and tire line ───
+        // For wide: car height = space from topBar (8%) to tireY, never overflows.
+        // For normal: 55% of card height (car overlaps text zone slightly, CSS clips).
         const carAr  = carImg.naturalWidth / carImg.naturalHeight;
         const availW = carWidthFraction !== undefined
           ? Math.round(w * carWidthFraction)
           : isWide ? Math.round(w * 0.55) : Math.round(w * 0.75);
-        const availH = isWide ? Math.round(h * 0.90) : Math.round(h * 0.55);
+        const availH = isWide
+          ? Math.max(20, Math.round(h * (effectiveGround - 0.08)))  // topBar ~8%
+          : Math.round(h * 0.55);
         let rendW = availH * carAr;
         let rendH = availH;
         if (rendW > availW) { rendW = availW; rendH = availW / carAr; }
         rendW = Math.round(rendW); rendH = Math.round(rendH);
 
-        // ── Vertical positioning ───────────────────────────────────────────────
-        // textZoneH: height of the visible text block from the card bottom
-        const textZoneH = isWide ? 0 : Math.round(h * 0.20) + 27;
-
-        // Primary anchor: place tires just above the text zone (+ 3% visual gap).
-        // The background is generated with ground starting at ~60% from the top,
-        // which aligns with this position. groundFraction from Depth Anything is
-        // used as a refinement only — clipped to never go below textZoneH.
-        const tireTarget    = textZoneH + Math.round(h * 0.03);      // from card bottom
-        const belowTires = rendH * (1 - tireFraction);
-        // groundFraction default varies by layout:
-        //   wide (ar>2): ground starts at ~30% from top → tires at ~78% → 22% from bottom
-        //   normal/square/portrait: ground starts at ~60% → tires at ~65% → 35% from bottom
-        const effectiveGround = groundFraction ?? (isWide ? 0.78 : 0.65);
-        const groundFromBot   = Math.round(h * (1 - effectiveGround));
+        const belowTires    = rendH * (1 - tireFraction);
         const rawBottom     = Math.max(0, Math.round(groundFromBot - belowTires));
         const bottom        = Math.max(rawBottom, tireTarget);
 
@@ -1147,8 +1144,9 @@ function JellyBeanCard({
                 // carBottom: precise pixel value from alpha-detected tire position.
                 // Falls back to ground-based estimate, then to 0.
                 // Wide layout: text is on left, car is on right — no vertical conflict.
-                bottom: carBottom ?? (groundFraction !== undefined ? Math.round(h * (1 - groundFraction)) : 0),
-                height: "90%",
+                bottom: carBottom ?? Math.round(h * (1 - (groundFraction ?? 0.78))),
+                // Height = space from topBar to tireY so the car never overflows above the card
+                height: `${Math.round(((groundFraction ?? 0.78) - 0.08) * 100)}%`,
                 width: carWidthFraction !== undefined ? `${Math.round(carWidthFraction * 100)}%` : "55%",
                 objectPosition: "right bottom",
                 // CSS drop-shadow on the PNG alpha channel = free realistic cast shadow

@@ -2367,10 +2367,19 @@ export function ProjectAgentPane({ isOpen, onClose, userType, activeUserName }: 
           const { generatePreviewBackground, generatePreviewComposite } =
             await import("../../../lib/dealerBackgroundGenerator");
 
-          // Resolve the primary vehicle from confirmed offers
+          // Resolve confirmed offers — primary source: currentOfferIds from context.
+          // Fallback: match vehicleContext string against availableOffers (handles
+          // timing gap where ctx may not have latest currentOfferIds yet).
           const ctx2 = ctxRef.current;
-          const confirmedOffers = (ctx2?.availableOffers ?? [])
-            .filter(o => (ctx2?.currentOfferIds ?? []).includes(o.id));
+          const confirmedOffers = (() => {
+            const fromIds = (ctx2?.availableOffers ?? [])
+              .filter(o => (ctx2?.currentOfferIds ?? []).includes(o.id));
+            if (fromIds.length > 0) return fromIds;
+            // Fallback: match vehicleContext tokens against offer make/model
+            const vcLower = vehicleContext.toLowerCase();
+            return (ctx2?.availableOffers ?? [])
+              .filter(o => vcLower.includes(o.model.toLowerCase()) || vcLower.includes(o.make.toLowerCase()));
+          })();
           const primaryOffer = confirmedOffers[0];
           const primaryVehicle = primaryOffer
             ? { year: primaryOffer.year, make: primaryOffer.make,

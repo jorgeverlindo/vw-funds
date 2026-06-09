@@ -257,16 +257,16 @@ export async function createVehicleComposite(
   // Layer 2 — vehicle, scaled to 72% of canvas width and anchored to the ground plane.
   // The vehicle PNGs are RGBA — drawImage composites the alpha channel correctly.
   //
-  // Positioning: the car sits in the lower-center of the frame, its bottom edge
-  // at ~20% from the canvas bottom (matches the ground plane the Replicate-adapted
-  // background was calibrated for — lower 35% is the foreground area).
-  // This ensures the car appears grounded rather than floating or centered.
+  // Positioning: mirror JellyBeanCard's layout exactly so the preview matches.
+  // JellyBeanCard NORMAL layout: car bottom at (height - h*0.26) = h*0.74 from top,
+  // car height = h*0.52. We reproduce the same anchor here.
+  // This ensures the preview composite matches what the user will see in the campaign.
   const vehScale = (width * 0.72) / vehImg.naturalWidth
   const vW = Math.round(vehImg.naturalWidth  * vehScale)
   const vH = Math.round(vehImg.naturalHeight * vehScale)
   const vX = Math.round((width - vW) / 2)                          // centered horizontally
-  const groundBase = Math.round(height * 0.82)                      // ground line at 82% down
-  const vY = groundBase - vH                                        // car sits ON the ground
+  const groundBase = Math.round(height * 0.74)                      // bottom of car at 74% (matches JellyBean h*0.74)
+  const vY = groundBase - vH                                        // car sits ON the ground plane
   ctx.drawImage(vehImg, vX, vY, vW, vH)
 
   return canvas.toDataURL('image/jpeg', 0.92)

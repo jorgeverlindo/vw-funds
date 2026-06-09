@@ -2382,20 +2382,19 @@ export function ProjectAgentPane({ isOpen, onClose, userType, activeUserName }: 
           //   5. Preserve upper 65% completely
           //   6. Deliver clean background — no objects added, no scene elements changed
           const perspectivePrompt =
-            `Transform this photograph into a professional product photography background. ` +
-            `\n\nANALYZE the current scene: identify the horizon line position, vanishing ` +
-            `points, ground surface type, lighting direction, and camera angle. ` +
-            `\nADAPT the lower 35% of the image: create a flat, clean, wide ground surface ` +
-            `(smooth pavement or the existing surface material) with correct one-point ` +
-            `perspective. The horizon should sit at approximately 50% of the image height. ` +
-            `The vanishing point should be centered, matching a standard product photography ` +
-            `camera angle (approximately 1.2 meters height, slight downward angle). ` +
-            `The ground must be completely clear and unobstructed in the center area. ` +
-            `\nPRESERVE the upper 65% (sky, buildings, trees, architecture) — do not change ` +
-            `anything above the horizon line. Keep all colors and lighting identical. ` +
-            `\nDO NOT add any objects, people, or other elements to the scene. ` +
-            `Output: the original scene with only the foreground ground plane optimized ` +
-            `for clean product placement.`;
+            `Convert this photograph into a clean product photography background. ` +
+            `\n\nSTEP 1 — CLEAR FOREGROUND: Remove ALL vehicles, cars, and objects from ` +
+            `the foreground parking area or ground level. Replace the cleared area with ` +
+            `the same surface material (asphalt, pavement, concrete) extended seamlessly. ` +
+            `The result must be an empty, unobstructed ground surface in the lower 35%. ` +
+            `\nSTEP 2 — FIX PERSPECTIVE: The empty ground surface must use correct ` +
+            `one-point perspective. Place the vanishing point at the center-horizon. ` +
+            `Horizon line at approximately 50% image height. Camera angle approx 1.2m high. ` +
+            `The ground must recede naturally from the bottom edge toward the horizon. ` +
+            `\nSTEP 3 — PRESERVE BACKGROUND: Keep the upper 65% of the scene (building ` +
+            `facades, sky, signage, trees) completely unchanged — same colors and details. ` +
+            `\nDO NOT add any new objects. DO NOT add vehicles. Output: same location, ` +
+            `empty foreground, correct perspective for product placement.`;
 
           let adaptedBgUrl: string;
           try {

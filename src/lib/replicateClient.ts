@@ -217,7 +217,9 @@ export interface GroundAnalysis {
   carWidthFraction: number
 }
 
-const GROUND_FALLBACK: GroundAnalysis = { groundFraction: 0.88, carWidthFraction: 0.65 }
+// groundFraction 0.65 = tires at 65% of image height, matching the background
+// composition instruction that puts visible asphalt starting at ~60% from the top.
+const GROUND_FALLBACK: GroundAnalysis = { groundFraction: 0.65, carWidthFraction: 0.65 }
 
 /**
  * Analyze a depth map and return both ground Y and car width for the JellyBeanCard.
@@ -683,9 +685,9 @@ export async function createVehicleCompositeWithCoords(
   const vW           = Math.round(vehImg.naturalWidth  * vehScale)
   const vH           = Math.round(vehImg.naturalHeight * vehScale)
   const vX           = Math.round((width - vW) / 2)
-  // groundFraction is detected by Depth Anything v2 — it's the Y position where
-  // the scene transitions from distant (building/sky) to near ground in the depth map.
-  // Falls back to 0.88 if depth estimation was skipped or failed.
+  // 0.65 = tires land at 65% of canvas height — matches the background composition
+  // where the ground plane starts at ~60% from the top (STEP 2 prompt instruction).
+  // groundFraction from Depth Anything fine-tunes this; fallback is 0.65.
   const groundBase   = Math.round(height * groundFraction)
   const tireYInCanvas = Math.round(vH * tireFraction)
   const vY            = groundBase - tireYInCanvas

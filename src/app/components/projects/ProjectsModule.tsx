@@ -1005,11 +1005,19 @@ function JellyBeanCard({
 
         // ── Vertical positioning ───────────────────────────────────────────────
         // textZoneH: height of the visible text block from the card bottom
-        const textZoneH     = isWide ? 0 : Math.round(h * 0.20) + 27;
+        const textZoneH = isWide ? 0 : Math.round(h * 0.20) + 27;
+
+        // Primary anchor: place tires just above the text zone (+ 3% visual gap).
+        // The background is generated with ground starting at ~60% from the top,
+        // which aligns with this position. groundFraction from Depth Anything is
+        // used as a refinement only — clipped to never go below textZoneH.
+        const tireTarget    = textZoneH + Math.round(h * 0.03);      // from card bottom
         const belowTires    = rendH * (1 - tireFraction);
-        const groundFromBot = Math.round(h * (1 - groundFraction));
+        const groundFromBot = groundFraction !== undefined
+          ? Math.round(h * (1 - groundFraction))
+          : tireTarget + Math.round(belowTires);                      // fallback
         const rawBottom     = Math.max(0, Math.round(groundFromBot - belowTires));
-        const bottom        = Math.max(rawBottom, textZoneH);
+        const bottom        = Math.max(rawBottom, tireTarget);
 
         // ── Horizontal positioning ─────────────────────────────────────────────
         const carX = isWide

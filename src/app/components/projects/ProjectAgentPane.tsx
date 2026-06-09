@@ -3602,11 +3602,18 @@ export function ProjectAgentPane({ isOpen, onClose, userType, activeUserName }: 
                                     generateAllComposites,
                                   } = await import("../../../lib/dealerBackgroundGenerator");
 
-                                  // Phase 2a: clean bg per template (used as inputs for compositing)
-                                  const cleanBgImages = await generateDealerBackgroundsForTemplates(dealerPhoto);
+                                  // Phase 2a: clean bg per SELECTED template only.
+                                  // Bug fix: previously passed no keys → generated all 6 regardless of selection.
+                                  const selectedKeys = (bgObject as any)._templateKeys as string[] | undefined;
+                                  const cleanBgImages = await generateDealerBackgroundsForTemplates(
+                                    dealerPhoto,
+                                    selectedKeys ?? [],  // empty = all → falls back to all configs
+                                  );
+                                  // Fill any ungenerated keys with the preview fallback
                                   const fallback = (bgObject as any).images["website-600x450"] ?? dealerPhoto;
-                                  const ALL_KEYS = ["website-2000x500","display-970x250","display-300x250","social-1080x1080","website-600x450","website-600x1067"];
-                                  ALL_KEYS.forEach(k => { if (!cleanBgImages[k]) cleanBgImages[k] = fallback; });
+                                  (selectedKeys ?? Object.keys(cleanBgImages)).forEach(
+                                    k => { if (!cleanBgImages[k]) cleanBgImages[k] = fallback; }
+                                  );
 
                                   // Phase 2b: composites per offer × template via Flux Kontext
                                   // Each call: Flux Kontext adds the vehicle to the clean bg

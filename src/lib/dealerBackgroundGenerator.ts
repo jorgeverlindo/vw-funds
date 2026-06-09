@@ -25,68 +25,172 @@
  */
 
 // ─── Template format configuration ───────────────────────────────────────────
+//
+// TemplateZones encodes the EXACT layout of each JellyBeanCard format so Flux
+// Kontext can generate backgrounds that are already composition-aware:
+//   • groundStartPct  — where the asphalt must start being visible (from top)
+//   • textHeightPct   — bottom text block height (price / term / label)
+//   • textWidthPct    — text block width (full width for normal; left ~48% for wide)
+//   • carWidthPct     — fraction of width reserved for the vehicle
+//   • topBarPct       — top bar height (Make Dealer + OEM logo)
+//
+// Values are derived from JellyBeanCard layout constants:
+//   isWide = ar > 2.0
+//   barPadV = h * 0.045  → top bar total ≈ h * 0.26
+//   Normal text block = h * 0.04 + label + h * 0.14 + term + h * 0.06 ≈ h * 0.38
+//   Wide text block (left 48%) ≈ h * 0.30
+//   Car zone normal: width = 75%, height = 52%, bottom ≈ 26%
+//   Car zone wide:   width = 55%, height = 90%, right-aligned
+
+interface TemplateZones {
+  /** Y fraction from top where flat asphalt must begin. */
+  groundStartPct: number;
+  /** Fraction of height for the bottom price/term text block. */
+  textHeightPct: number;
+  /** Fraction of width the text block occupies (1.0 = full width; 0.48 = left side for wide). */
+  textWidthPct: number;
+  /** Fraction of width for the vehicle landing zone. */
+  carWidthPct: number;
+  /** Fraction of height used by the top bar (Make Dealer + logo). */
+  topBarPct: number;
+}
 
 interface TemplateFormatConfig {
-  /** KNOWN_SIZES key used by getBgImage() */
   key: string;
   width: number;
   height: number;
-  /** Composition guidance for this ad format's clean background */
+  /** Derived from zones — passed directly to the Flux Kontext prompt. */
   compositionInstruction: string;
-  /** Whether the car will sit on the RIGHT side (JellyBeanCard isWide) */
+  /** true = car on the RIGHT (wide banners); false = car centred (normal/square/portrait). */
   carOnRight: boolean;
+  zones: TemplateZones;
 }
 
+// ─── Zone → prompt builder ────────────────────────────────────────────────────
+
+function pct(n: number): string { return `${Math.round(n * 100)}%`; }
+
+function buildZoneInstruction(
+  width: number,
+  height: number,
+  carOnRight: boolean,
+  z: TemplateZones,
+): string {
+  const ar  = width / height;
+  const fmt = `${width}×${height}`;
+
+  if (carOnRight) {
+    // Wide layout: car RIGHT, text BOTTOM-LEFT
+    return (
+      `${fmt} ultra-wide banner (${ar.toFixed(1)}:1 aspect ratio). ` +
+      `ZONE MAP — follow precisely: ` +
+
+      `TOP BAR (top ${pct(z.topBarPct)} of height, full width): ` +
+      `must be open sky, light clouds, or neutral gradient — ` +
+      `white dealer name and OEM logo overlay this band. ` +
+
+      `BACKDROP ZONE (upper ${pct(1 - z.textHeightPct)} of LEFT ${pct(1 - z.carWidthPct)} width): ` +
+      `building facade, atmospheric depth, receding perspective — ` +
+      `no strong dark vertical elements that clash with white text at bottom-left. ` +
+
+      `PRICE ZONE (bottom-left ${pct(z.textWidthPct)} width × bottom ${pct(z.textHeightPct)} height): ` +
+      `COMPLETELY CLEAR — no pavement markings, no poles, no visual clutter; ` +
+      `white offer price and terms overlay this exact area. ` +
+
+      `CAR ZONE (right ${pct(z.carWidthPct)} width, bottom ${pct(1 - z.topBarPct)} height): ` +
+      `FLAT OPEN ASPHALT, no objects, no parked cars, no obstacles — ` +
+      `a vehicle will be placed on this ground plane. ` +
+
+      `HORIZON: must sit at or below ${pct(z.groundStartPct)} from top — ` +
+      `the compressed height of this format requires a clearly readable ground band.`
+    );
+  } else {
+    // Normal / square / portrait: car CENTRED, text at bottom full-width
+    return (
+      `${fmt} advertising format (${ar.toFixed(2)}:1 aspect ratio). ` +
+      `ZONE MAP — follow precisely: ` +
+
+      `TOP BAR (top ${pct(z.topBarPct)} of height, full width): ` +
+      `open sky or neutral gradient — white dealer name and OEM logo appear here. ` +
+
+      `BACKDROP ZONE (top ${pct(z.groundStartPct)} of full width): ` +
+      `building facade with architectural detail and signage preserved; ` +
+      `sky above the horizon line. ` +
+
+      `CAR ZONE (centre ${pct(z.carWidthPct)} width, ` +
+      `${pct(z.groundStartPct)}–${pct(1 - z.textHeightPct)} of height): ` +
+      `FLAT OPEN ASPHALT, completely clear for vehicle placement — ` +
+      `no parked cars, no obstacles, no kerbs, no bollards. ` +
+
+      `PRICE ZONE (bottom ${pct(z.textHeightPct)} of height, full width): ` +
+      `COMPLETELY CLEAR — no objects, no strong colour gradients; ` +
+      `white price text and lease terms overlay this entire bottom band. ` +
+
+      `GROUND PLANE: continuous flat asphalt from ${pct(z.groundStartPct)} down to the price zone boundary; ` +
+      `this is the visual surface the vehicle will sit on.`
+    );
+  }
+}
+
+// ─── Helper: create a config entry ───────────────────────────────────────────
+
+function cfg(
+  key: string,
+  width: number,
+  height: number,
+  carOnRight: boolean,
+  zones: TemplateZones,
+): TemplateFormatConfig {
+  return { key, width, height, carOnRight, zones,
+    compositionInstruction: buildZoneInstruction(width, height, carOnRight, zones) };
+}
+
+// ─── Config table ─────────────────────────────────────────────────────────────
+//
+// groundStartPct calibration:
+//   Wide (compressed height): 0.30 — horizon must be very low
+//   Normal 1.2:1, 4:3, 1:1  : 0.60 — building fills upper 60%, asphalt lower 40%
+//   Portrait 9:16             : 0.55 — taller format, generous sky above the ground
+
 const TEMPLATE_FORMAT_CONFIGS: TemplateFormatConfig[] = [
-  {
-    key: "website-2000x500",
-    width: 2000, height: 500,
-    compositionInstruction:
-      "ULTRA-WIDE BANNER (4:1). RIGHT HALF must have clean empty ground for vehicle. " +
-      "LEFT 55% completely clear for advertising text — no objects, poles, clutter. " +
-      "Building extends full width as low backdrop. Very low horizon (bottom 30%).",
-    carOnRight: true,
-  },
-  {
-    key: "display-970x250",
-    width: 970, height: 250,
-    compositionInstruction:
-      "LEADERBOARD (3.9:1). RIGHT THIRD: clean empty ground for vehicle. " +
-      "LEFT TWO-THIRDS open for text. Building as compressed full-width backdrop.",
-    carOnRight: true,
-  },
-  {
-    key: "social-1080x1080",
-    width: 1080, height: 1080,
-    compositionInstruction:
-      "SQUARE SOCIAL (1:1). CENTER: clean empty ground for hero vehicle. " +
-      "Building fills upper 40% as atmospheric backdrop. Lower 60%: flat clean ground.",
-    carOnRight: false,
-  },
-  {
-    key: "display-300x250",
-    width: 300, height: 250,
-    compositionInstruction:
-      "MEDIUM RECTANGLE (1.2:1). CENTER: clean empty foreground for vehicle. " +
-      "Building backdrop. Clean asphalt in lower third.",
-    carOnRight: false,
-  },
-  {
-    key: "website-600x450",
-    width: 600, height: 450,
-    compositionInstruction:
-      "STANDARD 4:3. CENTER: clean ground for hero vehicle. " +
-      "Building fills upper 35% as atmospheric backdrop.",
-    carOnRight: false,
-  },
-  {
-    key: "website-600x1067",
-    width: 600, height: 1067,
-    compositionInstruction:
-      "PORTRAIT / STORY (9:16). CENTER: clean wide ground for large vehicle. " +
-      "Building in upper quarter as backdrop. More foreground ground visible.",
-    carOnRight: false,
-  },
+
+  // ── Wide banners (car RIGHT, text BOTTOM-LEFT) ──────────────────────────────
+  cfg("website-2000x500", 2000, 500, true, {
+    groundStartPct: 0.30, textHeightPct: 0.30, textWidthPct: 0.48,
+    carWidthPct: 0.55, topBarPct: 0.10,
+  }),
+  cfg("display-970x250", 970, 250, true, {
+    groundStartPct: 0.30, textHeightPct: 0.30, textWidthPct: 0.48,
+    carWidthPct: 0.55, topBarPct: 0.10,
+  }),
+
+  // ── Normal / square (car CENTRED) ───────────────────────────────────────────
+  cfg("display-300x250", 300, 250, false, {
+    groundStartPct: 0.60, textHeightPct: 0.38, textWidthPct: 1.0,
+    carWidthPct: 0.75, topBarPct: 0.26,
+  }),
+  cfg("social-1080x1080", 1080, 1080, false, {
+    groundStartPct: 0.60, textHeightPct: 0.38, textWidthPct: 1.0,
+    carWidthPct: 0.75, topBarPct: 0.26,
+  }),
+  cfg("website-600x450", 600, 450, false, {
+    groundStartPct: 0.60, textHeightPct: 0.38, textWidthPct: 1.0,
+    carWidthPct: 0.75, topBarPct: 0.26,
+  }),
+
+  // ── Portrait / story (car CENTRED, more ground visible) ─────────────────────
+  cfg("website-600x1067", 600, 1067, false, {
+    groundStartPct: 0.55, textHeightPct: 0.28, textWidthPct: 1.0,
+    carWidthPct: 0.80, topBarPct: 0.12,
+  }),
+
+  // ── Multi-product (3 vehicles side-by-side) ──────────────────────────────────
+  // These use a different JellyBeanCard variant — the ground must be wide and flat
+  // so three vehicles can be placed across the frame simultaneously.
+  cfg("website-1969x1080", 1969, 1080, false, {
+    groundStartPct: 0.65, textHeightPct: 0.28, textWidthPct: 1.0,
+    carWidthPct: 0.95, topBarPct: 0.10,
+  }),
 ];
 
 // ─── Load image helper ────────────────────────────────────────────────────────

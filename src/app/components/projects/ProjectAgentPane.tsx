@@ -2364,94 +2364,63 @@ export function ProjectAgentPane({ isOpen, onClose, userType, activeUserName }: 
           );
           const vehicleImageUrl = (firstConfirmedOffer as any)?.image ?? "";
 
-          const { generateImage, createVehicleComposite } = await import("../../../lib/replicateClient");
+          // ── PER-TEMPLATE BACKGROUND GENERATION ───────────────────────────
+          // Uses dealerBackgroundGenerator.ts — ISOLATED from Inventory AI Config
+          // and RideNow catalog flows. Each selected template format gets its own
+          // purpose-built background (correct aspect ratio + advertising composition).
+          const { generateDealerBackgroundsForTemplates } =
+            await import("../../../lib/dealerBackgroundGenerator");
+          const { createVehicleComposite } =
+            await import("../../../lib/replicateClient");
 
-          // ── TWO-PASS REPLICATE APPROACH ────────────────────────────────────
-          //
-          // PASS 1 — Background preparation:
-          //   inputImage = dealer photo
-          //   → removes existing cars, fixes perspective, cleans foreground
-          //   → output: clean_bg_url
-          //
-          // PASS 2 — Quality enhancement of the composite:
-          //   Canvas pre-composite: clean_bg + vehicle PNG at hero advertising scale
-          //   inputImage = that canvas composite
-          //   → Replicate adds shadow, blends edges, matches lighting
-          //   → output: photorealistic advertising quality
-          //
-          // This separates GEOMETRY (canvas) from QUALITY (Replicate),
-          // which avoids the dual-panel crop issue entirely.
+          // Map selected templates to KNOWN_SIZES keys for getBgImage() lookup
+          const selectedTemplates = (ctx?.availableTemplates ?? []).filter(
+            t => (ctx?.currentTemplateIds ?? []).includes(t.id)
+          );
+          const KNOWN_SIZES_MAP: Record<string, [number, number]> = {
+            "website-2000x500": [2000, 500], "display-970x250": [970, 250],
+            "display-300x250":  [300,  250], "social-1080x1080": [1080, 1080],
+            "website-600x450":  [600,  450], "website-600x1067":  [600, 1067],
+          };
+          const findBestSizeKey = (w: number, h: number) => {
+            const ar = w / h;
+            return Object.entries(KNOWN_SIZES_MAP).reduce((best, [key, [kw, kh]]) => {
+              const diff = Math.abs(ar - kw / kh);
+              return diff < best.diff ? { key, diff } : best;
+            }, { key: "display-300x250", diff: Infinity }).key;
+          };
+          const templateKeys = [...new Set(
+            selectedTemplates.map(t => findBestSizeKey(t.width, t.height))
+          )];
 
-          // ── PASS 1: Clean the background ────────────────────────────────────
-          const bgCleanPrompt =
-            `Convert this dealership photograph into a clean advertising background. ` +
-            `Remove ALL parked vehicles from the foreground lot — replace with seamless asphalt. ` +
-            `The lower 35% must be empty, flat, clean ground surface with correct perspective. ` +
-            `Preserve the building facade, sky, signage, and landscape EXACTLY unchanged. ` +
-            `Do NOT add any objects. Output: same location, empty foreground, ready for product placement.`;
+          // Generate per-template backgrounds in parallel (all formats independent)
+          const bgImages = await generateDealerBackgroundsForTemplates(
+            storedImage,
+            vehicleImageUrl,
+            templateKeys,
+          );
 
-          let cleanBgUrl: string = storedImage;
-          try {
-            cleanBgUrl = await generateImage({
-              prompt: bgCleanPrompt,
-              inputImage: storedImage,
-              aspect_ratio: "4:3",
-            });
-          } catch { /* fallback to original */ }
+          // Pick best available bg for the approval card preview composite
+          const previewBgKey = templateKeys.find(k =>
+            ["website-600x450","social-1080x1080","display-300x250"].includes(k)
+          ) ?? templateKeys[0] ?? "website-600x450";
+          const previewBgUrl = bgImages[previewBgKey] ?? storedImage;
 
-          // ── PASS 2: Canvas hero composite → Replicate quality enhancement ──
-          // Canvas places the car at hero advertising scale and position.
-          // Replicate then adds shadow, blends edges, matches scene lighting.
-          let previewUrl = cleanBgUrl;
-          let adaptedBgUrl = cleanBgUrl;
-
+          let previewUrl = previewBgUrl;
           if (vehicleImageUrl?.startsWith("http")) {
             try {
-              // Step A: canvas composite (geometry — hero scale 65% width, tires at 74%)
-              const canvasComposite = await createVehicleComposite(cleanBgUrl, vehicleImageUrl, 1024, 768);
-
-              // Step B: Replicate enhances quality only — does NOT reposition the car
-              const enhancePrompt =
-                `This is an automotive advertising composite photograph. ` +
-                `This is an automotive advertising composite. Make it photorealistic: ` +
-                `\n(1) GROUND THE VEHICLE: the vehicle tires must sit ON the asphalt. ` +
-                `If the vehicle appears to float above the ground, lower it vertically ` +
-                `until the tires contact the asphalt surface. This is the most important fix. ` +
-                `\n(2) SHADOW: add a natural cast shadow on the ground directly beneath ` +
-                `the tires and body — soft-edged, matching the sun angle of the scene. ` +
-                `\n(3) AMBIENT REFLECTION: add subtle environment reflection on the vehicle ` +
-                `body panels — the building, sky and ground should reflect softly on the paint. ` +
-                `\n(4) EDGE BLENDING: eliminate any hard cutout edges — blend the vehicle ` +
-                `into the scene lighting naturally (no white halos, no sharp cutout lines). ` +
-                `\n(5) LIGHTING MATCH: match the vehicle's exposure and color temperature ` +
-                `to the scene's natural sunlight — same direction, same warmth. ` +
-                `\n(6) PRESERVE SCALE AND BACKGROUND: keep the vehicle's scale and ` +
-                `the building unchanged. Only fix grounding, shadow, reflection, and lighting. ` +
-                `Output: a photorealistic dealership advertising photograph.`;
-
-              const enhanced = await generateImage({
-                prompt: enhancePrompt,
-                inputImage: canvasComposite,
-                aspect_ratio: "4:3",
-              });
-
-              previewUrl  = enhanced;
-              adaptedBgUrl = cleanBgUrl; // stored bg = clean scene (no baked-in car)
-            } catch {
-              // If pass 2 fails, use the canvas composite as preview, clean bg as stored
-              try {
-                previewUrl = await createVehicleComposite(cleanBgUrl, vehicleImageUrl, 1024, 768);
-              } catch { /* ignore */ }
-              adaptedBgUrl = cleanBgUrl;
-            }
+              previewUrl = await createVehicleComposite(previewBgUrl, vehicleImageUrl, 1024, 768);
+            } catch { /* use bg alone */ }
           }
 
-          // The stored background is the Replicate composite output.
-          // JellyBeanCards overlay the exact offer vehicle PNG via CSS on top.
+          // If some template keys had no generated background, fill them from the closest
+          const allSizes = Object.keys(KNOWN_SIZES_MAP);
+          const fallback = bgImages[previewBgKey] ?? storedImage;
+          allSizes.forEach(k => { if (!bgImages[k]) bgImages[k] = fallback; });
+
+          // thumbnail = the preview background (any available format)
+          const adaptedBgUrl = previewBgUrl;
           const bgId = `dealer-bg-${Date.now()}`;
-          const allSizes = ["social-1080x1080","display-300x250","display-970x250","website-2000x500","website-600x450","website-600x1067"];
-          const bgImages: Record<string, string> = {};
-          allSizes.forEach(k => { bgImages[k] = adaptedBgUrl; });
           const customBg = { id: bgId, name: "Your Scene", thumbnail: adaptedBgUrl, images: bgImages };
 
           pendingDealerImageRef.current = null; // clear after use

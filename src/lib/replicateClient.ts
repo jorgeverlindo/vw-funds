@@ -204,25 +204,92 @@ export async function generateImage(opts: GenerateOptions): Promise<string> {
 }
 
 // ─── Vehicle composite ─────────────────────────────────────────────────────────
-// Browser-side canvas composite: draws a background image and composites the
-// vehicle cutout on top using the cutout's native RGBA alpha channel.
-// Used when a background is already available — the composite is sent to
-// Flux Kontext with a "seamlessly blend" prompt instead of a "change background"
-// prompt, which produces more reliable and higher-quality results.
+// ── createDualInputForReplicate ───────────────────────────────────────────────
+// Creates a side-by-side canvas showing:
+//   LEFT (2/3): the dealer background scene
+//   RIGHT (1/3): the vehicle reference on a neutral gray panel
 //
-// bgUrl          — any fetchable URL: blob:, https://, or data:
-// vehicleAssetUrl — same-origin Vite asset path for the vehicle cutout PNG
-// width / height — output canvas size (default 1024×768 = 4:3)
+// This combined image is sent to Replicate so the model can see BOTH images
+// simultaneously and produce a fully composited result (correct perspective,
+// scale, shadow — all handled by the model, not by manual canvas math).
 //
-// Returns a JPEG base64 data URL of the composite.
+export async function createDualInputForReplicate(
+  bgUrl: string,
+  vehicleUrl: string,
+  totalWidth = 1280,
+  height = 768,
+): Promise<string> {
+  const loadImg = async (src: string): Promise<HTMLImageElement> => {
+    let objectUrl: string | null = null
+    try {
+      if (!src.startsWith('data:')) {
+        const res = await fetch(src)
+        if (!res.ok) throw new Error(`fetch failed (${res.status}) for "${src.substring(0, 60)}"`)
+        objectUrl = URL.createObjectURL(await res.blob())
+      }
+      return await new Promise<HTMLImageElement>((resolve, reject) => {
+        const img = new Image()
+        img.onload  = () => resolve(img)
+        img.onerror = () => reject(new Error('image decode failed'))
+        img.src = objectUrl ?? src
+      })
+    } finally {
+      if (objectUrl) URL.revokeObjectURL(objectUrl)
+    }
+  }
+
+  const [bgImg, vehImg] = await Promise.all([loadImg(bgUrl), loadImg(vehicleUrl)])
+
+  const canvas = document.createElement('canvas')
+  canvas.width  = totalWidth
+  canvas.height = height
+  const ctx = canvas.getContext('2d')
+  if (!ctx) throw new Error('Canvas 2D unavailable')
+
+  const bgW  = Math.round(totalWidth * 0.68)   // background occupies left 68%
+  const refW = totalWidth - bgW                 // reference panel is right 32%
+
+  // LEFT — background scene stretched to fill its zone
+  ctx.drawImage(bgImg, 0, 0, bgW, height)
+
+  // Thin separator
+  ctx.fillStyle = '#222222'
+  ctx.fillRect(bgW, 0, 3, height)
+
+  // RIGHT — neutral panel for vehicle reference
+  ctx.fillStyle = '#e8e8e8'
+  ctx.fillRect(bgW + 3, 0, refW - 3, height)
+
+  // Vehicle centered in the reference panel, fitted to 90% of the panel
+  const maxVW = (refW - 3) * 0.88
+  const maxVH = height * 0.72
+  const vScale = Math.min(maxVW / vehImg.naturalWidth, maxVH / vehImg.naturalHeight)
+  const vW = Math.round(vehImg.naturalWidth  * vScale)
+  const vH = Math.round(vehImg.naturalHeight * vScale)
+  const vX = bgW + 3 + Math.round(((refW - 3) - vW) / 2)
+  const vY = Math.round((height - vH) / 2)
+  ctx.drawImage(vehImg, vX, vY, vW, vH)
+
+  // Label
+  ctx.fillStyle = 'rgba(0,0,0,0.45)'
+  ctx.font = 'bold 13px sans-serif'
+  ctx.fillText('VEHICLE REFERENCE', bgW + 10, height - 12)
+
+  return canvas.toDataURL('image/jpeg', 0.92)
+}
+
+// ── createVehicleComposite ────────────────────────────────────────────────────
+// Simple canvas overlay: places vehicle PNG directly on background.
+// Used as a FALLBACK when the full Replicate compositing call fails.
+// For the dealer background flow, createDualInputForReplicate + Replicate
+// handles the compositing with correct perspective, scale and shadow.
+//
 export async function createVehicleComposite(
   bgUrl: string,
   vehicleAssetUrl: string,
   width  = 1024,
   height = 768,
 ): Promise<string> {
-  // Load an image from any URL type without CORS taint.
-  // data: URLs are loaded directly; everything else is fetched → blob → objectURL.
   const loadImg = async (src: string): Promise<HTMLImageElement> => {
     let objectUrl: string | null = null
     try {
@@ -244,29 +311,20 @@ export async function createVehicleComposite(
 
   const [bgImg, vehImg] = await Promise.all([loadImg(bgUrl), loadImg(vehicleAssetUrl)])
 
-  // ── Composite canvas ──────────────────────────────────────────────────────────
   const canvas = document.createElement('canvas')
   canvas.width  = width
   canvas.height = height
   const ctx = canvas.getContext('2d')
   if (!ctx) throw new Error('Canvas 2D unavailable')
 
-  // Layer 1 — background, stretched to fill
   ctx.drawImage(bgImg, 0, 0, width, height)
 
-  // Layer 2 — vehicle, scaled to 72% of canvas width and anchored to the ground plane.
-  // The vehicle PNGs are RGBA — drawImage composites the alpha channel correctly.
-  //
-  // Positioning: mirror JellyBeanCard's layout exactly so the preview matches.
-  // JellyBeanCard NORMAL layout: car bottom at (height - h*0.26) = h*0.74 from top,
-  // car height = h*0.52. We reproduce the same anchor here.
-  // This ensures the preview composite matches what the user will see in the campaign.
-  const vehScale = (width * 0.72) / vehImg.naturalWidth
-  const vW = Math.round(vehImg.naturalWidth  * vehScale)
-  const vH = Math.round(vehImg.naturalHeight * vehScale)
-  const vX = Math.round((width - vW) / 2)                          // centered horizontally
-  const groundBase = Math.round(height * 0.74)                      // bottom of car at 74% (matches JellyBean h*0.74)
-  const vY = groundBase - vH                                        // car sits ON the ground plane
+  const vehScale  = (width * 0.55) / vehImg.naturalWidth   // smaller scale, more proportional
+  const vW        = Math.round(vehImg.naturalWidth  * vehScale)
+  const vH        = Math.round(vehImg.naturalHeight * vehScale)
+  const vX        = Math.round((width - vW) / 2)
+  const groundBase = Math.round(height * 0.74)
+  const vY        = groundBase - vH
   ctx.drawImage(vehImg, vX, vY, vW, vH)
 
   return canvas.toDataURL('image/jpeg', 0.92)

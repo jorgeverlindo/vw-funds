@@ -2364,64 +2364,70 @@ export function ProjectAgentPane({ isOpen, onClose, userType, activeUserName }: 
           );
           const vehicleImageUrl = (firstConfirmedOffer as any)?.image ?? "";
 
-          const { generateImage, createVehicleComposite } = await import("../../../lib/replicateClient");
+          const { generateImage, createDualInputForReplicate, createVehicleComposite } = await import("../../../lib/replicateClient");
 
-          // ── Replicate: adapt background scene perspective ──────────────────
+          // ── FULL COMPOSITE via Replicate (single call, two images) ──────────
           //
-          // CRITICAL: Do NOT mention "car", "vehicle", "automobile" in the prompt.
-          // When the model sees those words, it adds them to the image.
-          // The model only needs to prepare the ground plane geometry.
-          // The vehicle cutout is added separately via createVehicleComposite.
+          // Strategy: build a side-by-side canvas (background LEFT | car reference RIGHT)
+          // and send it as a single input_image to Flux Kontext.
+          // The model sees both images simultaneously and handles:
+          //   1. Clearing existing vehicles from the foreground
+          //   2. Correct perspective/vanishing point for the ground plane
+          //   3. Proportional scale relative to the scene
+          //   4. Ground contact and shadow
+          //   5. Outputting only the LEFT scene with the car integrated
           //
-          // The model's internal process:
-          //   1. Analyze: horizon line, vanishing points, ground surface, camera height
-          //   2. Check perspective: is the ground plane compatible with a product shot?
-          //   3. Adapt: correct vanishing point to match a standard product photography angle
-          //      (horizon at ~50% height, single vanishing point, camera at ~1.2m)
-          //   4. Generate foreground: flat, wide ground surface in lower 35%, no obstructions
-          //   5. Preserve upper 65% completely
-          //   6. Deliver clean background — no objects added, no scene elements changed
-          const perspectivePrompt =
-            `Convert this photograph into a clean product photography background. ` +
-            `\n\nSTEP 1 — CLEAR FOREGROUND: Remove ALL vehicles, cars, and objects from ` +
-            `the foreground parking area or ground level. Replace the cleared area with ` +
-            `the same surface material (asphalt, pavement, concrete) extended seamlessly. ` +
-            `The result must be an empty, unobstructed ground surface in the lower 35%. ` +
-            `\nSTEP 2 — FIX PERSPECTIVE: The empty ground surface must use correct ` +
-            `one-point perspective. Place the vanishing point at the center-horizon. ` +
-            `Horizon line at approximately 50% image height. Camera angle approx 1.2m high. ` +
-            `The ground must recede naturally from the bottom edge toward the horizon. ` +
-            `\nSTEP 3 — PRESERVE BACKGROUND: Keep the upper 65% of the scene (building ` +
-            `facades, sky, signage, trees) completely unchanged — same colors and details. ` +
-            `\nDO NOT add any new objects. DO NOT add vehicles. Output: same location, ` +
-            `empty foreground, correct perspective for product placement.`;
+          // The stored background = Replicate's output (LEFT panel only — cropped).
+          // JellyBeanCards overlay the actual offer car via CSS on top.
+          const fullCompositePrompt =
+            `This image has TWO PANELS separated by a dark divider: ` +
+            `LEFT PANEL = outdoor scene (dealership/parking area). ` +
+            `RIGHT PANEL = vehicle reference (the car to be placed in the scene). ` +
+            `\n\nYOUR TASK — produce the LEFT scene only, with the RIGHT vehicle naturally ` +
+            `composited into it: ` +
+            `(1) CLEAR FOREGROUND: remove any existing vehicles from the parking area. ` +
+            `(2) PLACE VEHICLE: position the RIGHT vehicle at center-bottom of the LEFT scene, ` +
+            `sitting on the ground surface. Match the scene's perspective (horizon line, ` +
+            `vanishing point). Scale the vehicle proportionally to the building size. ` +
+            `(3) SHADOW: add a realistic shadow/ground reflection under the vehicle. ` +
+            `(4) PRESERVE BACKGROUND: keep the building facade, sky, signage, and all ` +
+            `elements above the horizon line completely unchanged. ` +
+            `(5) OUTPUT: the LEFT scene only — no reference panel, no divider. ` +
+            `Result must look like a professional automotive advertising photograph.`;
 
-          let adaptedBgUrl: string;
-          try {
-            adaptedBgUrl = await generateImage({
-              prompt: perspectivePrompt,
-              inputImage: storedImage,
-              aspect_ratio: "4:3",
-            });
-          } catch {
-            // Replicate failed — fall back to original dealer photo
-            adaptedBgUrl = storedImage;
-          }
-
-          // ── Step 2: Canvas composite for PREVIEW only ───────────────────────
-          // Overlay the specific offer vehicle on the adapted scene so the user
-          // can see exactly how the final JellyBean will look before approving.
-          let previewUrl = adaptedBgUrl;
+          // Build the dual-input image (background + car reference side by side)
+          let dualInput: string | null = null;
           if (vehicleImageUrl?.startsWith("http")) {
             try {
-              previewUrl = await createVehicleComposite(adaptedBgUrl, vehicleImageUrl, 1024, 768);
+              dualInput = await createDualInputForReplicate(storedImage, vehicleImageUrl, 1280, 768);
             } catch {
-              // composite failed — show adapted bg alone
+              // failed to create dual input — will fall back to bg-only path
             }
           }
 
-          // The stored background is the Replicate-adapted scene (public HTTPS URL).
-          // JellyBeanCards will CSS-composite vehicles on top of it at render time.
+          // Call Replicate with the combined image
+          let adaptedBgUrl: string;
+          try {
+            adaptedBgUrl = await generateImage({
+              prompt: fullCompositePrompt,
+              inputImage: dualInput ?? storedImage,
+              aspect_ratio: "4:3",
+            });
+          } catch {
+            adaptedBgUrl = storedImage; // last-resort fallback
+          }
+
+          // Preview = Replicate output (already has the car composited in)
+          // If Replicate failed / returned bg-only, fall back to canvas composite
+          let previewUrl = adaptedBgUrl;
+          if (!dualInput && vehicleImageUrl?.startsWith("http")) {
+            try {
+              previewUrl = await createVehicleComposite(adaptedBgUrl, vehicleImageUrl, 1024, 768);
+            } catch { /* ignore */ }
+          }
+
+          // The stored background is the Replicate composite output.
+          // JellyBeanCards overlay the exact offer vehicle PNG via CSS on top.
           const bgId = `dealer-bg-${Date.now()}`;
           const allSizes = ["social-1080x1080","display-300x250","display-970x250","website-2000x500","website-600x450","website-600x1067"];
           const bgImages: Record<string, string> = {};

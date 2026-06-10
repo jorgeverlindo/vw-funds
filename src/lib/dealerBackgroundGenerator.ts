@@ -259,50 +259,115 @@ async function cropToAspectRatio(
 // ─── Single clean background generation ──────────────────────────────────────
 
 /**
+ * Build the Flux Kontext Pro prompt for a specific template format.
+ *
+ * Based on the Gemini visual guide:
+ *   Wide (4:1, 3.9:1) → extend WALLS LATERALLY, keep anchor tower unchanged
+ *   Tall portrait (9:16) → extend SKY above and GROUND below, walls unchanged
+ *   Square / standard → moderate extension of sky and ground
+ *
+ * The blue tower with the brand logo is an UNALTERABLE ANCHOR in every format.
+ * Brand text modules (e.g. "Chapman", "HONDA") stay on their walls at original size.
+ */
+function buildKontextPrompt(config: TemplateFormatConfig): string {
+  const { width, height, zones: z } = config;
+  const ar = width / height;
+
+  const anchor =
+    `UNALTERABLE ANCHOR — the central brand tower (cylindrical pillar, brand logo, brand name below it) ` +
+    `must remain EXACTLY as shown: same position, same size, same colours, same logo, ` +
+    `same text. Do NOT distort, resize, or alter any part of this anchor element. `;
+
+  const wallText =
+    `Brand text modules on the walls (dealer name left, brand name right, any wave or stripe graphics) ` +
+    `must keep their original size and relative wall position. ` +
+    `If walls extend, the text modules stay in place — the wall gets longer, not the text bigger. `;
+
+  const clearForeground =
+    `Remove ALL parked vehicles, people, and objects from the foreground. ` +
+    `Do NOT add new vehicles, people, or objects. `;
+
+  const preserveSignage =
+    `Preserve ALL signage text exactly: same spelling, same colours, same font style. ` +
+    `Do NOT alter, blur, or regenerate any text or logo on the building. `;
+
+  if (ar > 2.0) {
+    // ── WIDE BANNERS (2000×500, 970×250) ──────────────────────────────────
+    // Strategy: extend white walls LATERALLY — building appears wider, not stretched
+    return (
+      `Professional ${width}×${height} automotive advertising background. ` +
+      `Adapt this dealership photograph to an ultra-wide format by EXTENDING THE WALLS LATERALLY: ` +
+      `the white building facade walls extend further left and right to fill the wider frame. ` +
+      `The building must appear to have LONGER WALLS, not to be stretched or zoomed out. ` +
+      anchor +
+      wallText +
+      `Sky fills the upper ${Math.round(z.groundStartPct * 100)}% of the frame, continuous and natural. ` +
+      `The concrete/asphalt parking lot extends uniformly across the full width. ` +
+      `The right ${Math.round(z.carWidthPct * 100)}% of the frame has wide open flat ground — completely empty. ` +
+      `The bottom-left ${Math.round(z.textWidthPct * 100)}% × bottom ${Math.round(z.textHeightPct * 100)}% is clean ground — no objects. ` +
+      clearForeground +
+      preserveSignage
+    );
+  } else if (ar < 0.7) {
+    // ── PORTRAIT / STORY (9:16) ────────────────────────────────────────────
+    // Strategy: extend SKY above and GROUND below — walls do NOT extend
+    return (
+      `Professional ${width}×${height} automotive advertising background. ` +
+      `Adapt this dealership photograph to a tall portrait format by EXTENDING SKY ABOVE and GROUND BELOW: ` +
+      `the building remains as a horizontal element in the centre of the frame. ` +
+      `ABOVE the building: extend the existing sky — same blue tone, same cloud style, no new objects. ` +
+      `BELOW the building: extend the concrete/asphalt parking lot dramatically downward. ` +
+      `The lower ${Math.round((1 - z.groundStartPct) * 100)}% of the frame must be a vast, flat, ` +
+      `completely empty concrete surface — uniform texture, no cars, no poles, no markings. ` +
+      `The building walls do NOT extend — only sky and ground are added. ` +
+      anchor +
+      wallText +
+      clearForeground +
+      preserveSignage
+    );
+  } else {
+    // ── SQUARE / STANDARD (1:1, 4:3, 1.2:1) ──────────────────────────────
+    // Strategy: moderate extension of sky above and ground below
+    return (
+      `Professional ${width}×${height} automotive advertising background. ` +
+      `Adapt this dealership photograph to fill the frame: ` +
+      `extend the sky above the building and the concrete/asphalt parking lot below. ` +
+      `The building is positioned in the upper portion of the frame. ` +
+      `The lower ${Math.round((1 - z.groundStartPct) * 100)}% of the frame must be flat, ` +
+      `empty concrete/asphalt — no objects, no parked cars. ` +
+      anchor +
+      wallText +
+      clearForeground +
+      preserveSignage
+    );
+  }
+}
+
+/**
  * Generate ONE clean background for a specific template format.
  *
- * IMPORTANT: Returns a clean scene with NO vehicle baked in.
- * JellyBeanCard handles the car overlay via CSS — this function must NOT
- * add any car to the image, or duplication will occur.
+ * Uses Flux Kontext Pro (img2img) — the same model as Phase 1a.
+ * The input is cropped to the target aspect ratio, then Flux Kontext
+ * recomposes the scene according to the format-specific prompt.
+ *
+ * Wide formats: walls extend laterally (building appears wider, not stretched).
+ * Tall formats: sky and ground extend (building stays centred).
+ * This matches the composition guide produced by Gemini/Imagen.
  */
 async function generateCleanBackground(
-  dealerImageDataUrl: string,
+  cleanBaseBgDataUrl: string,
   config: TemplateFormatConfig,
 ): Promise<string> {
   const { generateImage } = await import('./replicateClient');
 
-  // Crop dealer photo to this format's aspect ratio
-  // Flux Kontext img2img preserves input dimensions → output will match this aspect ratio
-  const croppedBg = await cropToAspectRatio(dealerImageDataUrl, config.width, config.height);
-
-  // Pass 1 prompt: build a proper advertising ground plane, not just "clean"
-  // Key insight: Flux Kontext needs explicit instructions to BUILD the surface,
-  // not just remove objects. The ground plane is the "landing zone" for the vehicle.
-  // DO NOT mention vehicles — Flux Kontext will add them if prompted.
-  const cleanPrompt =
-    `Transform this ${config.width}×${config.height} dealership photograph into a ` +
-    `professional advertising background. ` +
-    config.compositionInstruction +
-    `\n\nSTEP 1 — CLEAR: Remove ALL parked vehicles, people, and objects from the ` +
-    `foreground parking area. ` +
-    `\nSTEP 2 — BUILD GROUND PLANE: The lower 40% of the image (from 60% height to the bottom) ` +
-    `must be a CLEAR, OPEN asphalt or concrete surface with NO objects, NO parked cars, NO clutter. ` +
-    `The ground plane must start visibly at approximately 60% from the top of the frame — ` +
-    `this is where the vehicle's tires will land in the final advertisement. ` +
-    `Use a natural camera perspective (eye-level, ~1.5m height) so the ground recedes naturally. ` +
-    `The asphalt should be wide, clean, and clearly separated from the building backdrop above. ` +
-    `Match existing pavement color and texture. ` +
-    `\nSTEP 3 — PRESERVE EXACTLY: The building facade, sky, all signage, brand names, ` +
-    `logos, and text on the building must be preserved PIXEL-PERFECT — same colors, same details, ` +
-    `same spelling. Do NOT regenerate, alter, or obscure any brand name or letter on the building. ` +
-    `\nDO NOT add vehicles, people, or new objects. ` +
-    `Output: same location, professionally cleared foreground with correct perspective ground plane.`;
+  // Crop to target aspect ratio — Flux Kontext img2img preserves input dimensions
+  const croppedBg = await cropToAspectRatio(cleanBaseBgDataUrl, config.width, config.height);
+  const prompt    = buildKontextPrompt(config);
 
   try {
-    return await generateImage({ prompt: cleanPrompt, inputImage: croppedBg });
+    return await generateImage({ prompt, inputImage: croppedBg });
   } catch {
-    // Fallback: return the cropped original (some templates might fail)
-    return croppedBg;
+    return croppedBg; // fallback: original crop
   }
 }
 
@@ -721,13 +786,15 @@ async function outpaintForFormat(
 // ─── Phase 2 public API ───────────────────────────────────────────────────────
 
 /**
- * Phase 2a — Outpaint the clean base background for every selected template.
+ * Phase 2a — Generate per-template backgrounds using Flux Kontext Pro.
  *
- * Takes the ALREADY-CLEAN 4:3 background (from Phase 1a) and outpaints it
- * to the correct aspect ratio for each template using Flux Fill Pro.
- * Each output is a full-scene background ready for vehicle compositing.
+ * Uses the same model as Phase 1a (Flux Kontext img2img), now with
+ * format-specific composition prompts based on the Gemini visual guide:
+ *   Wide: walls extend laterally (building gets wider walls, not stretched)
+ *   Tall: sky and ground extend (building stays centred)
+ *   Square/standard: moderate sky+ground extension
  *
- * @param cleanBaseBgDataUrl  Clean 4:3 background URL from Phase 1a
+ * @param cleanBaseBgDataUrl  Clean 4:3 background from Phase 1a
  * @param selectedTemplateKeys  KNOWN_SIZES keys to generate (empty = all)
  * @param onProgress  optional callback as each format completes
  */
@@ -744,7 +811,7 @@ export async function generateDealerBackgroundsForTemplates(
 
   const results = await Promise.allSettled(
     configs.map(async (config) => {
-      const url = await outpaintForFormat(cleanBaseBgDataUrl, config);
+      const url = await generateCleanBackground(cleanBaseBgDataUrl, config);
       onProgress?.(config.key);
       return { key: config.key, url };
     }),

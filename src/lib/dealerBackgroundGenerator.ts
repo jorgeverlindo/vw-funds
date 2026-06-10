@@ -419,10 +419,41 @@ export async function generatePreviewComposite(
 // ─── Outpainting helpers (dealer bg flow only) ───────────────────────────────
 
 /**
- * Pad a clean 4:3 background to the target aspect ratio using edge-stretch fill.
- * Returns the padded JPEG and a binary mask (white = generate, black = keep).
+ * Sample the average colour of a rectangular region in a canvas.
+ */
+function sampleRegionColor(
+  ctx: CanvasRenderingContext2D,
+  x: number, y: number, w: number, h: number,
+): string {
+  const d = ctx.getImageData(Math.round(x), Math.round(y), Math.max(1, Math.round(w)), Math.max(1, Math.round(h))).data;
+  let r = 0, g = 0, b = 0;
+  const n = d.length / 4;
+  for (let i = 0; i < d.length; i += 4) { r += d[i]; g += d[i+1]; b += d[i+2]; }
+  return `rgb(${Math.round(r/n)},${Math.round(g/n)},${Math.round(b/n)})`;
+}
+
+/**
+ * Pad a clean 4:3 background to the target aspect ratio.
  *
- * Used by outpaintForFormat — NEVER called outside the dealer bg flow.
+ * KEY IMPROVEMENTS over the previous edge-stretch approach:
+ *
+ * 1. SCALE-DOWN — building occupies only a fraction of the target frame height
+ *    instead of trying to fill it. This matches how Gemini "zooms out" the
+ *    building to leave generous sky and foreground space.
+ *    • Wide (4:1): building at 40% of frame height
+ *    • Portrait (9:16): building at 32% of frame height (lots of sky + asphalt)
+ *    • Square / standard: building at 55% of frame height
+ *
+ * 2. SMART VERTICAL POSITIONING
+ *    • Wide: building vertically centred
+ *    • Portrait: building starts at 33% from top → sky above, foreground below
+ *    • Square: building starts at 20% from top
+ *
+ * 3. COLOUR-SAMPLED FILL instead of edge-stretch
+ *    Sky area above the building → sampled sky colour from source top
+ *    Asphalt area below the building → sampled asphalt colour from source bottom
+ *    Side areas → gradient blend from the sampled edge
+ *    This gives Flux Fill Pro a coherent "blank canvas" to paint over.
  */
 async function padToTargetRatio(
   cleanBgDataUrl: string,
@@ -432,64 +463,100 @@ async function padToTargetRatio(
   const img = await loadImg(cleanBgDataUrl);
   const srcW = img.naturalWidth;
   const srcH = img.naturalHeight;
+  const ar   = targetW / targetH;
 
-  // Scale source to fit inside target (letterbox / pillarbox)
-  const maxDim = 1280;
-  const scaleFactor = Math.min(1, maxDim / Math.max(targetW, targetH));
-  const outW = Math.round(targetW * scaleFactor);
-  const outH = Math.round(targetH * scaleFactor);
+  // ── Output dimensions (capped at 1280px longest side) ────────────────────
+  const maxDim    = 1280;
+  const sf        = Math.min(1, maxDim / Math.max(targetW, targetH));
+  const outW      = Math.round(targetW * sf);
+  const outH      = Math.round(targetH * sf);
 
-  const fitScale = Math.min(outW / srcW, outH / srcH);
-  const imgW = Math.round(srcW * fitScale);
-  const imgH = Math.round(srcH * fitScale);
+  // ── Building fill-fraction and vertical anchor per format ─────────────────
+  // fillH: what fraction of outH the building occupies
+  // imgY: where the building starts (from top of canvas)
+  let fillH: number;
+  let imgY: number;
+  if (ar > 2.0) {
+    // Ultra-wide — building takes 40% of height, centred vertically
+    fillH = 0.40;
+    imgY  = Math.round((outH - outH * fillH) / 2);
+  } else if (ar < 0.7) {
+    // Portrait — building takes 32% of height, placed at 33% from top
+    fillH = 0.32;
+    imgY  = Math.round(outH * 0.33);
+  } else {
+    // Square / standard — building takes 55%, placed at 20% from top
+    fillH = 0.55;
+    imgY  = Math.round(outH * 0.20);
+  }
+
+  const targetImgH = Math.round(outH * fillH);
+  const targetImgW = Math.round(targetImgH * srcW / srcH);
+  const imgW = Math.min(targetImgW, outW);
+  const imgH = Math.round(imgW * srcH / srcW);
   const imgX = Math.round((outW - imgW) / 2);
-  const imgY = Math.round((outH - imgH) / 2);
 
-  // ── Padded image: edge-stretched fill + original centered ────────────────
-  const pc = document.createElement('canvas');
-  pc.width = outW; pc.height = outH;
+  // ── Sample colours from the source image ─────────────────────────────────
+  const sampleC = document.createElement('canvas');
+  sampleC.width = srcW; sampleC.height = srcH;
+  const sCtx = sampleC.getContext('2d')!;
+  sCtx.drawImage(img, 0, 0, srcW, srcH);
+
+  const skyColor      = sampleRegionColor(sCtx, srcW * 0.2, 0,          srcW * 0.6, srcH * 0.15);
+  const asphaltColor  = sampleRegionColor(sCtx, srcW * 0.2, srcH * 0.8, srcW * 0.6, srcH * 0.15);
+  const leftEdgeColor = sampleRegionColor(sCtx, 0,          srcH * 0.3, srcW * 0.05, srcH * 0.4);
+  const rightEdgeColor = sampleRegionColor(sCtx, srcW * 0.95, srcH * 0.3, srcW * 0.05, srcH * 0.4);
+
+  // ── Build padded image ────────────────────────────────────────────────────
+  const pc   = document.createElement('canvas');
+  pc.width   = outW; pc.height = outH;
   const pCtx = pc.getContext('2d')!;
 
-  // Base: neutral mid-gray so any unsampled corners are inconspicuous
-  pCtx.fillStyle = '#888888';
-  pCtx.fillRect(0, 0, outW, outH);
+  // Sky fill (above the building area, plus top of side bands)
+  pCtx.fillStyle = skyColor;
+  pCtx.fillRect(0, 0, outW, imgY + Math.round(imgH * 0.15));
 
-  // Left / Right edge stretch
+  // Asphalt fill (below the building area)
+  pCtx.fillStyle = asphaltColor;
+  pCtx.fillRect(0, imgY + Math.round(imgH * 0.85), outW, outH - imgY - Math.round(imgH * 0.85));
+
+  // Building zone sides: gradient from sky→asphalt vertically
   if (imgX > 0) {
-    // Left: stretch left column of source
-    const lc = document.createElement('canvas');
-    lc.width = imgX; lc.height = imgH;
-    lc.getContext('2d')!.drawImage(img, 0, 0, 1, srcH, 0, 0, imgX, imgH);
-    pCtx.drawImage(lc, 0, imgY);
-
-    // Right: stretch right column
-    const rc = document.createElement('canvas');
-    rc.width = outW - imgX - imgW; rc.height = imgH;
-    if (rc.width > 0)
-      rc.getContext('2d')!.drawImage(img, srcW - 1, 0, 1, srcH, 0, 0, rc.width, imgH);
-    pCtx.drawImage(rc, imgX + imgW, imgY);
-  }
-  // Top / Bottom edge stretch
-  if (imgY > 0) {
-    const tc = document.createElement('canvas');
-    tc.width = outW; tc.height = imgY;
-    tc.getContext('2d')!.drawImage(img, 0, 0, srcW, 1, 0, 0, outW, imgY);
-    pCtx.drawImage(tc, 0, 0);
-
-    const bc = document.createElement('canvas');
-    bc.width = outW; bc.height = outH - imgY - imgH;
-    if (bc.height > 0)
-      bc.getContext('2d')!.drawImage(img, 0, srcH - 1, srcW, 1, 0, 0, outW, bc.height);
-    pCtx.drawImage(bc, 0, imgY + imgH);
+    // Left band
+    const lg = pCtx.createLinearGradient(0, imgY, 0, imgY + imgH);
+    lg.addColorStop(0, skyColor); lg.addColorStop(1, asphaltColor);
+    pCtx.fillStyle = lg;
+    pCtx.fillRect(0, imgY, imgX, imgH);
+    // Right band
+    const rg = pCtx.createLinearGradient(0, imgY, 0, imgY + imgH);
+    rg.addColorStop(0, skyColor); rg.addColorStop(1, asphaltColor);
+    pCtx.fillStyle = rg;
+    pCtx.fillRect(imgX + imgW, imgY, outW - imgX - imgW, imgH);
   }
 
-  // Place original in center
+  // Subtle edge bleed: draw 8px of the actual source along each edge
+  // so Flux has a colour-accurate starting point at the seams
+  const bleed = 8;
+  // Top of building → sky transition
+  const topBleed = document.createElement('canvas');
+  topBleed.width = imgW; topBleed.height = bleed;
+  topBleed.getContext('2d')!.drawImage(img, 0, 0, srcW, 1, 0, 0, imgW, bleed);
+  pCtx.globalAlpha = 0.5; pCtx.drawImage(topBleed, imgX, imgY - bleed); pCtx.globalAlpha = 1;
+
+  // Bottom of building → asphalt transition
+  const botBleed = document.createElement('canvas');
+  botBleed.width = imgW; botBleed.height = bleed;
+  botBleed.getContext('2d')!.drawImage(img, 0, srcH - 1, srcW, 1, 0, 0, imgW, bleed);
+  pCtx.globalAlpha = 0.5; pCtx.drawImage(botBleed, imgX, imgY + imgH); pCtx.globalAlpha = 1;
+
+  // Draw the source image
   pCtx.drawImage(img, imgX, imgY, imgW, imgH);
+
   const paddedDataUrl = pc.toDataURL('image/jpeg', 0.90);
 
-  // ── Mask: white = fill (padding), black = keep (original) ────────────────
-  const mc = document.createElement('canvas');
-  mc.width = outW; mc.height = outH;
+  // ── Mask: white = generate, black = preserve original ─────────────────────
+  const mc   = document.createElement('canvas');
+  mc.width   = outW; mc.height = outH;
   const mCtx = mc.getContext('2d')!;
 
   mCtx.fillStyle = '#ffffff';
@@ -497,24 +564,28 @@ async function padToTargetRatio(
   mCtx.fillStyle = '#000000';
   mCtx.fillRect(imgX, imgY, imgW, imgH);
 
-  // Soft feather 12px around the original to help Flux blend seams
-  const feather = Math.min(12, Math.round(Math.min(imgW, imgH) * 0.015));
-  if (feather > 0) {
-    const grad = mCtx.createLinearGradient(imgX, 0, imgX + feather, 0);
-    grad.addColorStop(0, '#ffffff'); grad.addColorStop(1, '#000000');
-    mCtx.fillStyle = grad; mCtx.fillRect(imgX, imgY, feather, imgH);
+  // Soft 16px feather so Flux blends the edges seamlessly
+  const feather = 16;
+  const edges = [
+    [imgX, imgY, feather, imgH, true, false],           // left edge
+    [imgX + imgW - feather, imgY, feather, imgH, false, false], // right edge (inverted)
+    [imgX, imgY, imgW, feather, false, true],            // top edge
+    [imgX, imgY + imgH - feather, imgW, feather, false, false], // bottom edge (inverted)
+  ] as Array<[number, number, number, number, boolean, boolean]>;
 
-    const grad2 = mCtx.createLinearGradient(imgX + imgW - feather, 0, imgX + imgW, 0);
-    grad2.addColorStop(0, '#000000'); grad2.addColorStop(1, '#ffffff');
-    mCtx.fillStyle = grad2; mCtx.fillRect(imgX + imgW - feather, imgY, feather, imgH);
-
-    const grad3 = mCtx.createLinearGradient(0, imgY, 0, imgY + feather);
-    grad3.addColorStop(0, '#ffffff'); grad3.addColorStop(1, '#000000');
-    mCtx.fillStyle = grad3; mCtx.fillRect(imgX, imgY, imgW, feather);
-
-    const grad4 = mCtx.createLinearGradient(0, imgY + imgH - feather, 0, imgY + imgH);
-    grad4.addColorStop(0, '#000000'); grad4.addColorStop(1, '#ffffff');
-    mCtx.fillStyle = grad4; mCtx.fillRect(imgX, imgY + imgH - feather, imgW, feather);
+  for (const [ex, ey, ew, eh, invert, isTop] of edges) {
+    const g = isTop
+      ? mCtx.createLinearGradient(ex, ey, ex, ey + eh)
+      : ew < eh
+        ? mCtx.createLinearGradient(ex, ey, ex + ew, ey)
+        : mCtx.createLinearGradient(ex, ey, ex, ey + eh);
+    if (invert) {
+      g.addColorStop(0, '#ffffff'); g.addColorStop(1, '#000000');
+    } else {
+      g.addColorStop(0, '#000000'); g.addColorStop(1, '#ffffff');
+    }
+    mCtx.fillStyle = g;
+    mCtx.fillRect(ex, ey, ew, eh);
   }
 
   const maskDataUrl = mc.toDataURL('image/jpeg', 0.95);
@@ -523,47 +594,63 @@ async function padToTargetRatio(
 
 /**
  * Build the Flux Fill Pro outpainting prompt for a specific template format.
- * Tells the model how to extend the scene to fill the new aspect ratio.
+ *
+ * KEY CHANGE: prompt is written as "the building is small in this frame, fill the
+ * surrounding space naturally" rather than "expand from the edges". This matches
+ * how Gemini produces clean results — the model understands it must generate
+ * large areas of sky and asphalt around the existing building.
  */
 function buildOutpaintPrompt(config: TemplateFormatConfig): string {
-  const { width, height, zones, carOnRight } = config;
+  const { width, height, zones: z } = config;
   const ar = width / height;
-  const z = zones;
 
   const preserve =
-    `Preserve ALL building signage, brand names, logos and architectural details EXACTLY as shown. ` +
-    `Match existing lighting direction, sky colour, and pavement texture seamlessly. ` +
-    `Photorealistic automotive advertising scene, no people, no parked cars in foreground.`;
+    `The building in the centre of the image is real — preserve it EXACTLY: ` +
+    `same signage, brand names, logos, colours, architectural details, pixel-perfect. ` +
+    `Do NOT alter, regenerate or remove any text or logo on the building. ` +
+    `Match the existing sky colour, light direction, and pavement texture seamlessly. ` +
+    `No people. No parked cars in foreground. Photorealistic automotive advertising quality.`;
+
+  const asphaltRule =
+    `The foreground must be a wide, flat, empty asphalt or concrete surface — ` +
+    `the same material visible at the bottom of the building — ` +
+    `completely clear, no curbs, no bollards, no markings. ` +
+    `A vehicle will be placed here in post-production.`;
 
   if (ar > 2.0) {
-    // Ultra-wide: expand horizontally
     return (
-      `Extend this dealership exterior scene to fill an ultra-wide ${width}×${height} advertising banner. ` +
-      `Expand horizontally: continue the building facade and sky naturally on both sides. ` +
-      `The bottom ${Math.round(z.textHeightPct * 100)}% of the LEFT ${Math.round(z.textWidthPct * 100)}% ` +
-      `must be clear flat asphalt — no clutter — price text overlays this zone. ` +
-      `The RIGHT ${Math.round(z.carWidthPct * 100)}% must have wide open flat asphalt for vehicle placement. ` +
-      `Horizon line at or below ${Math.round(z.groundStartPct * 100)}% from the top. ` +
+      `Automotive advertising background. The dealership building appears small ` +
+      `in the centre of this ultra-wide ${width}×${height} frame. ` +
+      `Fill the large empty areas: ` +
+      `LEFT and RIGHT of the building — continue the building facade and parking-lot ` +
+      `asphalt horizontally, keeping the same architectural style and lighting. ` +
+      `The sky occupies the upper ~${Math.round(z.groundStartPct * 100)}% of the frame, ` +
+      `continuous and photorealistic. ` +
+      asphaltRule + ` ` +
+      `The right ${Math.round(z.carWidthPct * 100)}% of the frame must be an open flat ground surface. ` +
       preserve
     );
   } else if (ar < 0.7) {
-    // Portrait / story: expand vertically — more sky above, LARGE foreground below
     return (
-      `Extend this dealership exterior scene to fill a tall portrait ${width}×${height} advertising format. ` +
-      `Above: add more sky matching the existing sky colour and cloud pattern. ` +
-      `Below: MASSIVELY expand the concrete or asphalt parking lot downward. ` +
-      `The bottom ${Math.round((1 - z.groundStartPct) * 100)}% of the frame must be a wide, ` +
-      `completely flat asphalt surface — clean, no cars, no poles — a vehicle will park here. ` +
-      `The building should appear in the centre-upper portion of the frame. ` +
+      `Automotive advertising background. The dealership building appears small ` +
+      `in the centre of this tall portrait ${width}×${height} frame. ` +
+      `Fill the large empty areas: ` +
+      `ABOVE the building — continue the clear blue sky, matching the existing sky colour exactly. ` +
+      `BELOW the building — generate a very large, wide, flat concrete or asphalt parking lot ` +
+      `that fills the lower ~${Math.round((1 - z.groundStartPct) * 100)}% of the frame completely. ` +
+      `The ground surface must be perfectly flat, uniform, and extend to all edges. ` +
+      asphaltRule + ` ` +
       preserve
     );
   } else {
-    // Square or standard 4:3 — moderate expansion
     return (
-      `Extend this dealership exterior scene to fill a ${width}×${height} advertising frame. ` +
-      `Expand sky above and concrete/asphalt below as needed to fill the frame. ` +
-      `The lower ${Math.round((1 - z.groundStartPct) * 100)}% must be a flat, empty asphalt surface ` +
-      `— no parked cars, no obstacles — this is the vehicle landing zone. ` +
+      `Automotive advertising background. The dealership building appears in the ` +
+      `upper portion of this ${width}×${height} frame. ` +
+      `Fill the surrounding empty areas: ` +
+      `SKY above the building — continue the existing sky naturally. ` +
+      `ASPHALT below — a wide flat parking lot fills the lower ` +
+      `~${Math.round((1 - z.groundStartPct) * 100)}% of the frame. ` +
+      asphaltRule + ` ` +
       preserve
     );
   }

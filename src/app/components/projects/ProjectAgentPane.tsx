@@ -491,7 +491,7 @@ function TemplatesProposalCard({ input, context, onApply, onDismiss, proactive }
         </div>
       </div>
       {proactive && !manualMode && !applied && (
-        <ProactiveAutoApplyBar delay={2000} onCancel={() => { if (autoApplyRef.current) clearTimeout(autoApplyRef.current); setManualMode(true); }} />
+        <ProactiveAutoApplyBar delay={5000} onCancel={() => { if (autoApplyRef.current) clearTimeout(autoApplyRef.current); setManualMode(true); }} />
       )}
       </div>
     </motion.div>
@@ -591,7 +591,7 @@ function BrandProposalCard({ input, projectName, onApply, onDismiss, proactive }
           </div>
         </div>
         {proactive && !manualMode && !applied && (
-          <ProactiveAutoApplyBar delay={2000} onCancel={() => { if (autoApplyRef.current) clearTimeout(autoApplyRef.current); setManualMode(true); }} />
+          <ProactiveAutoApplyBar delay={5000} onCancel={() => { if (autoApplyRef.current) clearTimeout(autoApplyRef.current); setManualMode(true); }} />
         )}
       </div>
     </motion.div>

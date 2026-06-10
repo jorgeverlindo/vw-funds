@@ -2405,6 +2405,10 @@ export function ProjectAgentPane({ isOpen, onClose, userType, activeUserName }: 
             thumbnail: cleanPreviewBg,
             images: { "website-600x450": cleanPreviewBg },
             _dealerPhotoDataUrl: storedImage,
+            // Store clean 4:3 base for Phase 2a outpainting.
+            // Phase 2a uses this (already car-free) to outpaint each template AR
+            // via Flux Fill Pro — avoids re-cleaning the dealer photo per template.
+            _cleanBaseBg: cleanPreviewBg,
             _confirmedOffers: confirmedOffers.map(o => ({
               offerId: o.id, year: o.year, make: o.make, model: o.model, trim: o.trim,
             })),
@@ -3614,12 +3618,16 @@ export function ProjectAgentPane({ isOpen, onClose, userType, activeUserName }: 
                                   // Phase 2a: clean bg per SELECTED template only.
                                   // Bug fix: previously passed no keys → generated all 6 regardless of selection.
                                   const selectedKeys = (bgObject as any)._templateKeys as string[] | undefined;
+                                  // Phase 2a: outpaint the CLEAN BASE (already cleared of cars)
+                                  // to each template's aspect ratio using Flux Fill Pro.
+                                  // Using cleanBaseBg (not raw dealerPhoto) avoids re-running
+                                  // the cleaning step — the base is already car-free from Phase 1a.
+                                  const cleanBase = (bgObject as any)._cleanBaseBg as string | undefined ?? dealerPhoto;
                                   const cleanBgImages = await generateDealerBackgroundsForTemplates(
-                                    dealerPhoto,
-                                    selectedKeys ?? [],  // empty = all → falls back to all configs
+                                    cleanBase,
+                                    selectedKeys ?? [],
                                   );
-                                  // Fill any ungenerated keys with the preview fallback
-                                  const fallback = (bgObject as any).images["website-600x450"] ?? dealerPhoto;
+                                  const fallback = (bgObject as any).images["website-600x450"] ?? cleanBase;
                                   (selectedKeys ?? Object.keys(cleanBgImages)).forEach(
                                     k => { if (!cleanBgImages[k]) cleanBgImages[k] = fallback; }
                                   );

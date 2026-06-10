@@ -416,14 +416,199 @@ export async function generatePreviewComposite(
   }
 }
 
+// ─── Outpainting helpers (dealer bg flow only) ───────────────────────────────
+
+/**
+ * Pad a clean 4:3 background to the target aspect ratio using edge-stretch fill.
+ * Returns the padded JPEG and a binary mask (white = generate, black = keep).
+ *
+ * Used by outpaintForFormat — NEVER called outside the dealer bg flow.
+ */
+async function padToTargetRatio(
+  cleanBgDataUrl: string,
+  targetW: number,
+  targetH: number,
+): Promise<{ paddedDataUrl: string; maskDataUrl: string }> {
+  const img = await loadImg(cleanBgDataUrl);
+  const srcW = img.naturalWidth;
+  const srcH = img.naturalHeight;
+
+  // Scale source to fit inside target (letterbox / pillarbox)
+  const maxDim = 1280;
+  const scaleFactor = Math.min(1, maxDim / Math.max(targetW, targetH));
+  const outW = Math.round(targetW * scaleFactor);
+  const outH = Math.round(targetH * scaleFactor);
+
+  const fitScale = Math.min(outW / srcW, outH / srcH);
+  const imgW = Math.round(srcW * fitScale);
+  const imgH = Math.round(srcH * fitScale);
+  const imgX = Math.round((outW - imgW) / 2);
+  const imgY = Math.round((outH - imgH) / 2);
+
+  // ── Padded image: edge-stretched fill + original centered ────────────────
+  const pc = document.createElement('canvas');
+  pc.width = outW; pc.height = outH;
+  const pCtx = pc.getContext('2d')!;
+
+  // Base: neutral mid-gray so any unsampled corners are inconspicuous
+  pCtx.fillStyle = '#888888';
+  pCtx.fillRect(0, 0, outW, outH);
+
+  // Left / Right edge stretch
+  if (imgX > 0) {
+    // Left: stretch left column of source
+    const lc = document.createElement('canvas');
+    lc.width = imgX; lc.height = imgH;
+    lc.getContext('2d')!.drawImage(img, 0, 0, 1, srcH, 0, 0, imgX, imgH);
+    pCtx.drawImage(lc, 0, imgY);
+
+    // Right: stretch right column
+    const rc = document.createElement('canvas');
+    rc.width = outW - imgX - imgW; rc.height = imgH;
+    if (rc.width > 0)
+      rc.getContext('2d')!.drawImage(img, srcW - 1, 0, 1, srcH, 0, 0, rc.width, imgH);
+    pCtx.drawImage(rc, imgX + imgW, imgY);
+  }
+  // Top / Bottom edge stretch
+  if (imgY > 0) {
+    const tc = document.createElement('canvas');
+    tc.width = outW; tc.height = imgY;
+    tc.getContext('2d')!.drawImage(img, 0, 0, srcW, 1, 0, 0, outW, imgY);
+    pCtx.drawImage(tc, 0, 0);
+
+    const bc = document.createElement('canvas');
+    bc.width = outW; bc.height = outH - imgY - imgH;
+    if (bc.height > 0)
+      bc.getContext('2d')!.drawImage(img, 0, srcH - 1, srcW, 1, 0, 0, outW, bc.height);
+    pCtx.drawImage(bc, 0, imgY + imgH);
+  }
+
+  // Place original in center
+  pCtx.drawImage(img, imgX, imgY, imgW, imgH);
+  const paddedDataUrl = pc.toDataURL('image/jpeg', 0.90);
+
+  // ── Mask: white = fill (padding), black = keep (original) ────────────────
+  const mc = document.createElement('canvas');
+  mc.width = outW; mc.height = outH;
+  const mCtx = mc.getContext('2d')!;
+
+  mCtx.fillStyle = '#ffffff';
+  mCtx.fillRect(0, 0, outW, outH);
+  mCtx.fillStyle = '#000000';
+  mCtx.fillRect(imgX, imgY, imgW, imgH);
+
+  // Soft feather 12px around the original to help Flux blend seams
+  const feather = Math.min(12, Math.round(Math.min(imgW, imgH) * 0.015));
+  if (feather > 0) {
+    const grad = mCtx.createLinearGradient(imgX, 0, imgX + feather, 0);
+    grad.addColorStop(0, '#ffffff'); grad.addColorStop(1, '#000000');
+    mCtx.fillStyle = grad; mCtx.fillRect(imgX, imgY, feather, imgH);
+
+    const grad2 = mCtx.createLinearGradient(imgX + imgW - feather, 0, imgX + imgW, 0);
+    grad2.addColorStop(0, '#000000'); grad2.addColorStop(1, '#ffffff');
+    mCtx.fillStyle = grad2; mCtx.fillRect(imgX + imgW - feather, imgY, feather, imgH);
+
+    const grad3 = mCtx.createLinearGradient(0, imgY, 0, imgY + feather);
+    grad3.addColorStop(0, '#ffffff'); grad3.addColorStop(1, '#000000');
+    mCtx.fillStyle = grad3; mCtx.fillRect(imgX, imgY, imgW, feather);
+
+    const grad4 = mCtx.createLinearGradient(0, imgY + imgH - feather, 0, imgY + imgH);
+    grad4.addColorStop(0, '#000000'); grad4.addColorStop(1, '#ffffff');
+    mCtx.fillStyle = grad4; mCtx.fillRect(imgX, imgY + imgH - feather, imgW, feather);
+  }
+
+  const maskDataUrl = mc.toDataURL('image/jpeg', 0.95);
+  return { paddedDataUrl, maskDataUrl };
+}
+
+/**
+ * Build the Flux Fill Pro outpainting prompt for a specific template format.
+ * Tells the model how to extend the scene to fill the new aspect ratio.
+ */
+function buildOutpaintPrompt(config: TemplateFormatConfig): string {
+  const { width, height, zones, carOnRight } = config;
+  const ar = width / height;
+  const z = zones;
+
+  const preserve =
+    `Preserve ALL building signage, brand names, logos and architectural details EXACTLY as shown. ` +
+    `Match existing lighting direction, sky colour, and pavement texture seamlessly. ` +
+    `Photorealistic automotive advertising scene, no people, no parked cars in foreground.`;
+
+  if (ar > 2.0) {
+    // Ultra-wide: expand horizontally
+    return (
+      `Extend this dealership exterior scene to fill an ultra-wide ${width}×${height} advertising banner. ` +
+      `Expand horizontally: continue the building facade and sky naturally on both sides. ` +
+      `The bottom ${Math.round(z.textHeightPct * 100)}% of the LEFT ${Math.round(z.textWidthPct * 100)}% ` +
+      `must be clear flat asphalt — no clutter — price text overlays this zone. ` +
+      `The RIGHT ${Math.round(z.carWidthPct * 100)}% must have wide open flat asphalt for vehicle placement. ` +
+      `Horizon line at or below ${Math.round(z.groundStartPct * 100)}% from the top. ` +
+      preserve
+    );
+  } else if (ar < 0.7) {
+    // Portrait / story: expand vertically — more sky above, LARGE foreground below
+    return (
+      `Extend this dealership exterior scene to fill a tall portrait ${width}×${height} advertising format. ` +
+      `Above: add more sky matching the existing sky colour and cloud pattern. ` +
+      `Below: MASSIVELY expand the concrete or asphalt parking lot downward. ` +
+      `The bottom ${Math.round((1 - z.groundStartPct) * 100)}% of the frame must be a wide, ` +
+      `completely flat asphalt surface — clean, no cars, no poles — a vehicle will park here. ` +
+      `The building should appear in the centre-upper portion of the frame. ` +
+      preserve
+    );
+  } else {
+    // Square or standard 4:3 — moderate expansion
+    return (
+      `Extend this dealership exterior scene to fill a ${width}×${height} advertising frame. ` +
+      `Expand sky above and concrete/asphalt below as needed to fill the frame. ` +
+      `The lower ${Math.round((1 - z.groundStartPct) * 100)}% must be a flat, empty asphalt surface ` +
+      `— no parked cars, no obstacles — this is the vehicle landing zone. ` +
+      preserve
+    );
+  }
+}
+
+/**
+ * Generate one background for a specific template by outpainting the clean base.
+ *
+ * Flow: clean 4:3 base → pad to target AR → Flux Fill Pro fills new areas.
+ * The model extends sky, building, and asphalt coherently for each aspect ratio.
+ */
+async function outpaintForFormat(
+  cleanBaseBgDataUrl: string,
+  config: TemplateFormatConfig,
+): Promise<string> {
+  const { inpaintImage } = await import('./replicateClient');
+  const { paddedDataUrl, maskDataUrl } = await padToTargetRatio(
+    cleanBaseBgDataUrl, config.width, config.height,
+  );
+  try {
+    return await inpaintImage({
+      compositeDataUrl: paddedDataUrl,
+      maskDataUrl,
+      prompt: buildOutpaintPrompt(config),
+    });
+  } catch {
+    return paddedDataUrl; // fallback: padded image without Fill Pro
+  }
+}
+
 // ─── Phase 2 public API ───────────────────────────────────────────────────────
 
 /**
- * Phase 2a — Generate per-template CLEAN backgrounds (called AFTER user approval).
- * Same as before — returns clean scenes for use as composite inputs.
+ * Phase 2a — Outpaint the clean base background for every selected template.
+ *
+ * Takes the ALREADY-CLEAN 4:3 background (from Phase 1a) and outpaints it
+ * to the correct aspect ratio for each template using Flux Fill Pro.
+ * Each output is a full-scene background ready for vehicle compositing.
+ *
+ * @param cleanBaseBgDataUrl  Clean 4:3 background URL from Phase 1a
+ * @param selectedTemplateKeys  KNOWN_SIZES keys to generate (empty = all)
+ * @param onProgress  optional callback as each format completes
  */
 export async function generateDealerBackgroundsForTemplates(
-  dealerImageDataUrl: string,
+  cleanBaseBgDataUrl: string,
   selectedTemplateKeys: string[] = [],
   onProgress?: (key: string) => void,
 ): Promise<Record<string, string>> {
@@ -435,7 +620,7 @@ export async function generateDealerBackgroundsForTemplates(
 
   const results = await Promise.allSettled(
     configs.map(async (config) => {
-      const url = await generateCleanBackground(dealerImageDataUrl, config);
+      const url = await outpaintForFormat(cleanBaseBgDataUrl, config);
       onProgress?.(config.key);
       return { key: config.key, url };
     }),

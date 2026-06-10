@@ -270,8 +270,16 @@ async function cropToAspectRatio(
  * Brand text modules (e.g. "Chapman", "HONDA") stay on their walls at original size.
  */
 function buildKontextPrompt(config: TemplateFormatConfig): string {
-  const { width, height, zones: z } = config;
+  const { width, height } = config;
   const ar = width / height;
+  // Safe fallback zones when config is created inline without calling cfg()
+  const z = config.zones ?? {
+    groundStartPct: ar > 2.0 ? 0.30 : ar < 0.7 ? 0.55 : 0.60,
+    textHeightPct: ar > 2.0 ? 0.30 : 0.38,
+    textWidthPct: ar > 2.0 ? 0.48 : 1.0,
+    carWidthPct: ar > 2.0 ? 0.55 : 0.75,
+    topBarPct: ar > 2.0 ? 0.10 : 0.26,
+  };
 
   const anchor =
     `UNALTERABLE ANCHOR — the central brand tower (cylindrical pillar, brand logo, brand name below it) ` +
@@ -448,14 +456,11 @@ export async function generateOfferComposite(
 export async function generatePreviewBackground(
   dealerImageDataUrl: string,
 ): Promise<string> {
-  return generateCleanBackground(dealerImageDataUrl, {
-    key: "website-600x450",
-    width: 600, height: 450,
-    compositionInstruction:
-      "Standard 4:3 advertising format. Center: clean open ground for hero vehicle. " +
-      "Building fills upper 40% as atmospheric backdrop.",
-    carOnRight: false,
-  });
+  // Use cfg() so the config includes zones (required by buildKontextPrompt)
+  return generateCleanBackground(dealerImageDataUrl, cfg("website-600x450", 600, 450, false, {
+    groundStartPct: 0.60, textHeightPct: 0.38, textWidthPct: 1.0,
+    carWidthPct: 0.75, topBarPct: 0.26,
+  }));
 }
 
 /**

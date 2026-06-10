@@ -751,7 +751,9 @@ export async function generateAllComposites(
           results[vehicle.offerId][config.key] = url;
           onProgress?.(vehicle.offerId, config.key);
         } catch {
-          results[vehicle.offerId][config.key] = cleanBgImages[config.key]; // fallback: clean bg
+          // Do NOT store a fallback here. If Flux Kontext fails, leave this
+          // key undefined in composites so JellyBeanCard falls back to the
+          // CSS car overlay instead of showing a car-free background.
         }
       })
   );

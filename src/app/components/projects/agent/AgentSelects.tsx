@@ -93,37 +93,72 @@ export function AgentAddSelect({
 }
 
 // ─── "Why these?" expandable rationale box — accordion animation ──────────────
+// ─── Why Accordion trigger button ─────────────────────────────────────────────
+// Matches Figma "Why Accordion" — Default state: pill button, 13px Roboto Medium
+// Expanded state: card bg #fafaff, border 1px #6356e1, radius 14px
+function WhyTrigger({ open, onClick }: { open: boolean; onClick: () => void }) {
+  return (
+    <button
+      onClick={onClick}
+      className="flex items-center cursor-pointer hover:opacity-75 transition-opacity"
+      style={{ gap: 8, padding: "4px 5px 0 16px", borderRadius: 100 }}
+    >
+      {/* ⓘ circle-info icon — stroke rgb(71,59,171) sw 1.5 */}
+      <svg width="18" height="18" viewBox="0 0 18 18" fill="none" style={{ flexShrink: 0 }}>
+        <circle cx="9" cy="9" r="7" stroke="#473BAB" strokeWidth="1.5"/>
+        <path d="M9 8.5v4" stroke="#473BAB" strokeWidth="1.5" strokeLinecap="round"/>
+        <circle cx="9" cy="6.5" r="0.8" fill="#473BAB"/>
+      </svg>
+      {/* Label — 13px Roboto Medium, brand, ls 0.46px, lh 22px */}
+      <span style={{
+        fontSize: 13, fontWeight: 500, color: "#473BAB",
+        letterSpacing: "0.46px", lineHeight: "22px",
+      }}>
+        Why these?
+      </span>
+      {/* Chevron right — rotates to down when open, stroke brand sw 1.5 */}
+      <motion.svg
+        width="18" height="18" viewBox="0 0 18 18" fill="none"
+        animate={{ rotate: open ? 90 : 0 }}
+        transition={{ duration: 0.22, ease: [0.25, 0.1, 0.25, 1] }}
+      >
+        <path d="M7 6.5l3.5 3-3.5 3" stroke="#473BAB" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+      </motion.svg>
+    </button>
+  );
+}
+
 export function WhyThese({ content }: { content: React.ReactNode }) {
   const [open, setOpen] = useState(false);
 
   return (
     <div className="mt-[6px]">
-      <button
-        onClick={() => setOpen(o => !o)}
-        className="flex items-center gap-[4px] text-[11px] text-[var(--brand-accent)] cursor-pointer transition-colors hover:opacity-75"
-      >
-        <motion.span
-          animate={{ rotate: open ? 90 : 0 }}
-          transition={{ duration: 0.22, ease: [0.25, 0.1, 0.25, 1] }}
-          style={{ display: "inline-block", lineHeight: 1, fontSize: 13 }}
-        >
-          ›
-        </motion.span>
-        Why these?
-      </button>
+      {/* Collapsed — just the trigger button */}
+      {!open && <WhyTrigger open={false} onClick={() => setOpen(true)} />}
+
+      {/* Expanded — card wrapping trigger + content */}
       <AnimatePresence initial={false}>
         {open && (
           <motion.div
-            key="why-content"
+            key="why-card"
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: "auto", opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
             transition={{ duration: 0.28, ease: [0.25, 0.1, 0.25, 1] }}
             style={{ overflow: "hidden" }}
           >
-            <div className="mt-[6px] px-[10px] py-[9px] rounded-[10px] border border-[rgba(71,59,171,0.14)]"
-              style={{ background: "rgba(71,59,171,0.04)" }}>
-              {content}
+            {/* Wrappas — bg #fafaff, border 1px #6356e1, radius 14 */}
+            <div style={{
+              background: "rgb(250,250,255)",
+              border: "1px solid #6356e1",
+              borderRadius: 14,
+              paddingTop: 8, paddingRight: 16, paddingBottom: 16, paddingLeft: 0,
+            }}>
+              <WhyTrigger open={true} onClick={() => setOpen(false)} />
+              {/* Text content — paddingLeft 17, gap 8, 12px Roboto Regular ink, lh 143%, ls 0.17px */}
+              <div style={{ paddingLeft: 17, paddingTop: 8, display: "flex", flexDirection: "column", gap: 8 }}>
+                {content}
+              </div>
             </div>
           </motion.div>
         )}

@@ -407,7 +407,7 @@ function TemplatesProposalCard({ input, context, onApply, onDismiss, proactive }
       className="ml-[32px] mt-[4px] flex flex-col gap-[8px]">
       {/* Rationale — free text, no outer box */}
       <div className="pl-[2px]">
-        <p style={{ fontSize: 14, color: "var(--ink-secondary)", lineHeight: 1.6, letterSpacing: "0.17px" }}>{input.rationale}</p>
+        <p style={{ fontSize: 12, color: "rgb(31,29,37)", lineHeight: 1.43, letterSpacing: "0.17px" }}>{input.rationale}</p>
         <WhyThese content={
           <div style={{ fontSize: 11, color: "var(--brand-accent)", lineHeight: 1.6 }}>
             <p style={{ fontWeight: 600, marginBottom: 4 }}>How I picked these</p>
@@ -553,7 +553,7 @@ function BrandProposalCard({ input, projectName, onApply, onDismiss, proactive }
       className="ml-[32px] mt-[4px] flex flex-col gap-[8px]">
       {/* Rationale — free text, no outer box */}
       <div className="pl-[2px]">
-        <p style={{ fontSize: 14, color: "var(--ink-secondary)", lineHeight: 1.6, letterSpacing: "0.17px" }}>{input.rationale}</p>
+        <p style={{ fontSize: 12, color: "rgb(31,29,37)", lineHeight: 1.43, letterSpacing: "0.17px" }}>{input.rationale}</p>
         <WhyThese content={
           <div style={{ fontSize: 11, color: "var(--brand-accent)", lineHeight: 1.6 }}>
             <p style={{ fontWeight: 600, marginBottom: 4 }}>How I picked this</p>
@@ -655,7 +655,7 @@ function BackgroundsProposalCard({ input, onApply, onDismiss }: BackgroundsCardP
       className="ml-[32px] mt-[4px] flex flex-col gap-[8px]">
       {/* Rationale — free text, no outer box */}
       <div className="pl-[2px]">
-        <p style={{ fontSize: 14, color: "var(--ink-secondary)", lineHeight: 1.6, letterSpacing: "0.17px" }}>{input.rationale}</p>
+        <p style={{ fontSize: 12, color: "rgb(31,29,37)", lineHeight: 1.43, letterSpacing: "0.17px" }}>{input.rationale}</p>
         <WhyThese content={
           <div style={{ fontSize: 11, color: "var(--brand-accent)", lineHeight: 1.6 }}>
             <p style={{ fontWeight: 600, marginBottom: 4 }}>How I picked these</p>

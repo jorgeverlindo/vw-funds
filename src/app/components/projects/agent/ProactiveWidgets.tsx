@@ -5,6 +5,18 @@ import { motion } from "motion/react";
 import { ConfirmedChip } from "./AgentSelects";
 
 // ─── Proactive Auto-Apply Progress Bar ───────────────────────────────────────
+// Matches Figma "Auto-apply-Loader" component exactly:
+//   Top: Loader Accordion — arc mark (24px brand) + caption (11px ink2) + chevron-down
+//        Steps list (paddingLeft 21) — 2× circle-check rows + 1× dot row (10px ink2)
+//   Bottom: "Applying automatically…" (11px ink2) + "Edit Manually" button (13px brand Medium)
+//           <Progress> Linear — 4px track (white), fill brand purple at {progress}%
+
+const STEPS = [
+  { type: "check" as const, label: "Ranking by priority and ROI" },
+  { type: "check" as const, label: "Scoring aging and Turn Rate" },
+  { type: "dot"   as const, label: "Formatting report output" },
+];
+
 export function ProactiveAutoApplyBar({ delay, onCancel }: { delay: number; onCancel: () => void }) {
   const [progress, setProgress] = useState(0);
   const startRef = useRef(Date.now());
@@ -22,15 +34,85 @@ export function ProactiveAutoApplyBar({ delay, onCancel }: { delay: number; onCa
   }, [delay]);
 
   return (
-    <div className="px-[14px] py-[8px] border-t border-[rgba(71,59,171,0.1)] bg-[#f8f7ff]">
-      <div className="flex items-center justify-between mb-[5px]">
-        <span style={{ fontSize: 10, color: "var(--ink-secondary)" }}>Applying automatically…</span>
-        <button onClick={onCancel} style={{ fontSize: 10, color: "var(--brand-accent)", fontWeight: 500 }} className="cursor-pointer hover:text-[var(--brand-mid)] transition-colors">
-          Edit manually
-        </button>
+    <div style={{ display: "flex", flexDirection: "column", gap: 11 }}>
+
+      {/* ── Loader Accordion ──────────────────────────────────────────── */}
+      <div style={{ paddingTop: 10, paddingBottom: 10, display: "flex", flexDirection: "column", gap: 4 }}>
+
+        {/* Loading Element row — arc mark + label + chevron-down */}
+        <div style={{ display: "flex", alignItems: "center", gap: 0 }}>
+          {/* Arc mark / Loader icon — 24×24, brand fill */}
+          <div style={{ width: 24, height: 24, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <svg width="14" height="24" viewBox="0 0 14 24" fill="none">
+              {/* Constellation arc mark — 3 arcs, brand purple */}
+              <path d="M1 12C1 5.925 5.925 1 12 1" stroke="#473BAB" strokeWidth="2" strokeLinecap="round"/>
+              <path d="M3.5 12C3.5 7.306 7.306 3.5 12 3.5" stroke="#6356e1" strokeWidth="2" strokeLinecap="round"/>
+              <path d="M6 12C6 8.686 8.686 6 12 6" stroke="#8c86fc" strokeWidth="2" strokeLinecap="round"/>
+            </svg>
+          </div>
+          {/* Caption — 11px Roboto Regular, rgb(104,101,118), ls 0.4px, lh 166% */}
+          <span style={{ flex: 1, fontSize: 11, color: "rgb(104,101,118)", letterSpacing: "0.4px", lineHeight: "166%" }}>
+            Applying your selections…
+          </span>
+          {/* Chevron down — 8×4 stroke rgba(17,16,20,0.56) sw 1.5 */}
+          <div style={{ width: 24, height: 24, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+            <svg width="8" height="5" viewBox="0 0 8 5" fill="none">
+              <path d="M1 1l3 3 3-3" stroke="rgba(17,16,20,0.56)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+          </div>
+        </div>
+
+        {/* Steps list — paddingLeft 21, gap 3 */}
+        <div style={{ paddingLeft: 21, display: "flex", flexDirection: "column", gap: 3 }}>
+          {STEPS.map((s, i) => (
+            <div key={i} style={{ display: "flex", alignItems: "center", gap: 4, height: s.type === "dot" ? 10 : 16 }}>
+              {s.type === "check" ? (
+                /* circle-check — 16×16, stroke rgb(99,86,225) sw 1 */
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style={{ flexShrink: 0 }}>
+                  <circle cx="8" cy="8" r="6" stroke="#6356e1" strokeWidth="1"/>
+                  <path d="M5.5 8l1.5 1.5L10.5 6" stroke="#6356e1" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+              ) : (
+                /* dot — 8×8 filled circle rgb(99,86,225) */
+                <div style={{ width: 8, height: 8, borderRadius: "50%", background: "#6356e1", flexShrink: 0 }} />
+              )}
+              {/* 10px Roboto Regular rgb(104,101,118), lh 10px */}
+              <span style={{ fontSize: 10, color: "rgb(104,101,118)", lineHeight: "10px" }}>{s.label}</span>
+            </div>
+          ))}
+        </div>
       </div>
-      <div className="h-[3px] bg-[rgba(71,59,171,0.12)] rounded-full overflow-hidden">
-        <div className="h-full rounded-full" style={{ width: `${progress}%`, background: "linear-gradient(90deg, var(--brand-accent), var(--brand-mid))", transition: "none" }} />
+
+      {/* ── Loader footer — paddingLeft 7, gap 10 ──────────────────────── */}
+      <div style={{ paddingLeft: 7, display: "flex", flexDirection: "column", gap: 10 }}>
+
+        {/* Title and Button — SPACE_BETWEEN, crossAxis CENTER */}
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          {/* "Applying automatically…" — 11px Roboto Regular rgb(104,101,118) ls 0.4px lh 166% */}
+          <span style={{ fontSize: 11, color: "rgb(104,101,118)", letterSpacing: "0.4px", lineHeight: "166%" }}>
+            Applying automatically…
+          </span>
+          {/* "Edit Manually" button — 13px Roboto Medium rgb(71,59,171) ls 0.46px lh 22px */}
+          <button
+            onClick={onCancel}
+            style={{ fontSize: 13, fontWeight: 500, color: "#473BAB", letterSpacing: "0.46px", lineHeight: "22px", cursor: "pointer" }}
+            className="hover:opacity-75 transition-opacity"
+          >
+            Edit Manually
+          </button>
+        </div>
+
+        {/* <Progress> Linear — 4px, white track, brand fill at {progress}% */}
+        <div style={{ height: 4, background: "white", borderRadius: 2, overflow: "hidden", width: "100%" }}>
+          <div style={{
+            height: "100%",
+            width: `${progress}%`,
+            background: "#473BAB",
+            borderRadius: 2,
+            transition: "none",
+          }} />
+        </div>
+
       </div>
     </div>
   );

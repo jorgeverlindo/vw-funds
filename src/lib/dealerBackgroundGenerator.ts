@@ -619,66 +619,103 @@ function buildOutpaintPrompt(config: TemplateFormatConfig): string {
 
   if (ar > 2.0) {
     return (
-      `Automotive advertising background. The dealership building appears small ` +
-      `in the centre of this ultra-wide ${width}×${height} frame. ` +
-      `Fill the large empty areas: ` +
-      `LEFT and RIGHT of the building — continue the building facade and parking-lot ` +
-      `asphalt horizontally, keeping the same architectural style and lighting. ` +
-      `The sky occupies the upper ~${Math.round(z.groundStartPct * 100)}% of the frame, ` +
-      `continuous and photorealistic. ` +
+      `Professional automotive advertising background, ultra-wide ${width}×${height} format. ` +
+      `Photorealistic exterior scene of the same dealership shown in the input image, ` +
+      `photographed from a greater distance with a wider angle lens. ` +
+      `The dealership building is centred and proportionally small in this wide frame. ` +
+      `Clear sky fills the upper ${Math.round(z.groundStartPct * 100)}% of the frame. ` +
+      `Wide, flat, empty concrete or asphalt parking lot fills the lower ${Math.round((1 - z.groundStartPct) * 100)}% of the frame. ` +
+      `The right ${Math.round(z.carWidthPct * 100)}% of the frame is open flat ground — no objects. ` +
       asphaltRule + ` ` +
-      `The right ${Math.round(z.carWidthPct * 100)}% of the frame must be an open flat ground surface. ` +
       preserve
     );
   } else if (ar < 0.7) {
     return (
-      `Automotive advertising background. The dealership building appears small ` +
-      `in the centre of this tall portrait ${width}×${height} frame. ` +
-      `Fill the large empty areas: ` +
-      `ABOVE the building — continue the clear blue sky, matching the existing sky colour exactly. ` +
-      `BELOW the building — generate a very large, wide, flat concrete or asphalt parking lot ` +
-      `that fills the lower ~${Math.round((1 - z.groundStartPct) * 100)}% of the frame completely. ` +
-      `The ground surface must be perfectly flat, uniform, and extend to all edges. ` +
+      `Professional automotive advertising background, tall portrait ${width}×${height} format. ` +
+      `Photorealistic exterior scene of the same dealership shown in the input image, ` +
+      `photographed from a greater distance showing more sky and foreground. ` +
+      `Clear blue sky fills the upper ${Math.round(z.groundStartPct * 100)}% of the frame. ` +
+      `The dealership building appears centred in the middle section of the frame. ` +
+      `Wide, flat, empty concrete or asphalt parking lot fills the lower ` +
+      `${Math.round((1 - z.groundStartPct) * 100)}% of the frame — perfectly uniform, no cars, no poles. ` +
       asphaltRule + ` ` +
       preserve
     );
   } else {
     return (
-      `Automotive advertising background. The dealership building appears in the ` +
-      `upper portion of this ${width}×${height} frame. ` +
-      `Fill the surrounding empty areas: ` +
-      `SKY above the building — continue the existing sky naturally. ` +
-      `ASPHALT below — a wide flat parking lot fills the lower ` +
-      `~${Math.round((1 - z.groundStartPct) * 100)}% of the frame. ` +
+      `Professional automotive advertising background, ${width}×${height} format. ` +
+      `Photorealistic dealership exterior, same location as the input image. ` +
+      `Sky fills the upper ${Math.round(z.groundStartPct * 100)}% of the frame. ` +
+      `The lower ${Math.round((1 - z.groundStartPct) * 100)}% is a wide, flat, empty asphalt surface. ` +
       asphaltRule + ` ` +
       preserve
     );
   }
 }
 
+/** Single outpaint pass: pad source → Flux Fill Pro. */
+async function outpaintPass(
+  sourceBgDataUrl: string,
+  targetW: number,
+  targetH: number,
+  prompt: string,
+): Promise<string> {
+  const { inpaintImage } = await import('./replicateClient');
+  const { paddedDataUrl, maskDataUrl } = await padToTargetRatio(sourceBgDataUrl, targetW, targetH);
+  try {
+    return await inpaintImage({ compositeDataUrl: paddedDataUrl, maskDataUrl, prompt });
+  } catch {
+    return paddedDataUrl;
+  }
+}
+
 /**
  * Generate one background for a specific template by outpainting the clean base.
  *
- * Flow: clean 4:3 base → pad to target AR → Flux Fill Pro fills new areas.
- * The model extends sky, building, and asphalt coherently for each aspect ratio.
+ * Uses a 2-PASS approach for extreme aspect ratio changes (AR ratio > 2×):
+ *   Pass 1 → intermediate AR (geometric mean between source and target)
+ *   Pass 2 → final target AR
+ *
+ * Each pass expands by ≤ 2× — manageable for Flux Fill Pro.
+ * Single pass for moderate expansions (square, standard 4:3, mild portrait).
+ *
+ * This matches how Gemini produces high-quality results: multiple steps of
+ * coherent expansion rather than one huge jump.
  */
 async function outpaintForFormat(
   cleanBaseBgDataUrl: string,
   config: TemplateFormatConfig,
 ): Promise<string> {
-  const { inpaintImage } = await import('./replicateClient');
-  const { paddedDataUrl, maskDataUrl } = await padToTargetRatio(
-    cleanBaseBgDataUrl, config.width, config.height,
-  );
-  try {
-    return await inpaintImage({
-      compositeDataUrl: paddedDataUrl,
-      maskDataUrl,
-      prompt: buildOutpaintPrompt(config),
-    });
-  } catch {
-    return paddedDataUrl; // fallback: padded image without Fill Pro
+  const targetAr = config.width / config.height;
+  const sourceAr = 4 / 3; // clean base is always 4:3 (Phase 1a output)
+  const arRatio   = Math.max(targetAr, sourceAr) / Math.min(targetAr, sourceAr);
+
+  const finalPrompt = buildOutpaintPrompt(config);
+
+  if (arRatio <= 2.0) {
+    // Single pass — moderate expansion
+    return outpaintPass(cleanBaseBgDataUrl, config.width, config.height, finalPrompt);
   }
+
+  // ── 2-pass for extreme expansions (wide banners, portrait 9:16) ───────────
+  // Intermediate AR = geometric mean → each step expands by ≈ √arRatio (<= 2×)
+  const intAr  = Math.sqrt(sourceAr * targetAr);
+  const intH   = 450; // matches clean base height
+  const intW   = Math.round(intH * intAr);
+
+  // Intermediate config — same zones as target but at the halfway AR
+  const intConfig: TemplateFormatConfig = {
+    ...config,
+    width: intW, height: intH,
+    compositionInstruction: buildZoneInstruction(intW, intH, config.carOnRight, config.zones),
+  };
+  const intPrompt = buildOutpaintPrompt(intConfig);
+
+  // Pass 1: source (4:3) → intermediate AR
+  const intermediate = await outpaintPass(cleanBaseBgDataUrl, intW, intH, intPrompt);
+
+  // Pass 2: intermediate → final target AR
+  return outpaintPass(intermediate, config.width, config.height, finalPrompt);
 }
 
 // ─── Phase 2 public API ───────────────────────────────────────────────────────

@@ -972,9 +972,10 @@ function JellyBeanCard({
   const [carBottom,      setCarBottom]      = useState<number | null>(null);
 
   useEffect(() => {
-    // Skip canvas composite when a pre-generated Flux composite is available
-    // Also skip for static catalog backgrounds (no bgImage or no offer.image)
-    if (compositeUrl || !offer.image || !bgImage) {
+    // Canvas composite only runs for DEALER backgrounds (groundFraction defined).
+    // For catalog/static backgrounds (groundFraction undefined) → CSS overlay uses
+    // original positions (h*0.26 normal, bottom:0/height:90% wide), no change.
+    if (compositeUrl || !groundFraction || !offer.image || !bgImage) {
       setCompositeImage(null); setCarBottom(null); return;
     }
 
@@ -1144,9 +1145,14 @@ function JellyBeanCard({
                 // carBottom: precise pixel value from alpha-detected tire position.
                 // Falls back to ground-based estimate, then to 0.
                 // Wide layout: text is on left, car is on right — no vertical conflict.
-                bottom: carBottom ?? Math.round(h * (1 - (groundFraction ?? 0.78))),
-                // Height = space from topBar to tireY so the car never overflows above the card
-                height: `${Math.round(((groundFraction ?? 0.78) - 0.08) * 100)}%`,
+                // Dealer bg (groundFraction set): tires at groundFraction, height derived.
+                // Catalog bg (no groundFraction): restore original bottom:0 / height:90%.
+                bottom: carBottom ?? (groundFraction !== undefined
+                  ? Math.round(h * (1 - groundFraction))
+                  : 0),
+                height: groundFraction !== undefined
+                  ? `${Math.round((groundFraction - 0.08) * 100)}%`
+                  : "90%",
                 width: carWidthFraction !== undefined ? `${Math.round(carWidthFraction * 100)}%` : "55%",
                 objectPosition: "right bottom",
                 // CSS drop-shadow on the PNG alpha channel = free realistic cast shadow
@@ -1230,6 +1236,8 @@ function JellyBeanCard({
                 // carBottom: pixel-precise value from alpha-detected tire position in the PNG,
                 // clamped to textZoneH so the car never overlaps the price/term text.
                 // Falls back: ground-based estimate clamped to text zone → fixed offset.
+                // Dealer bg: anchor to groundFraction (clamped above text zone).
+                // Catalog bg (no groundFraction): restore original h*0.26 positioning.
                 bottom: carBottom ?? (groundFraction !== undefined
                   ? Math.max(Math.round(h * (1 - groundFraction)), Math.round(h * 0.20) + 27)
                   : Math.round(h * 0.26)),

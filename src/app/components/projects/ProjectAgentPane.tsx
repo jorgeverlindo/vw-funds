@@ -409,7 +409,7 @@ function TemplatesProposalCard({ input, context, onApply, onDismiss, proactive }
       <div className="pl-[2px]">
         <p style={{ fontSize: 12, color: "rgb(31,29,37)", lineHeight: 1.43, letterSpacing: "0.17px" }}>{input.rationale}</p>
         <WhyThese content={
-          <div style={{ fontSize: 11, color: "var(--brand-accent)", lineHeight: 1.6 }}>
+          <div style={{ fontSize: 12, color: "rgb(31,29,37)", lineHeight: 1.43, letterSpacing: "0.17px" }}>
             <p style={{ fontWeight: 600, marginBottom: 4 }}>How I picked these</p>
             <p style={{ marginBottom: 4 }}>I select templates based on two priorities:</p>
             <p style={{ marginBottom: 2 }}>• <strong>Format coverage</strong> — I aim to cover website banner, display leaderboard, and social square formats for maximum reach across placements.</p>
@@ -555,7 +555,7 @@ function BrandProposalCard({ input, projectName, onApply, onDismiss, proactive }
       <div className="pl-[2px]">
         <p style={{ fontSize: 12, color: "rgb(31,29,37)", lineHeight: 1.43, letterSpacing: "0.17px" }}>{input.rationale}</p>
         <WhyThese content={
-          <div style={{ fontSize: 11, color: "var(--brand-accent)", lineHeight: 1.6 }}>
+          <div style={{ fontSize: 12, color: "rgb(31,29,37)", lineHeight: 1.43, letterSpacing: "0.17px" }}>
             <p style={{ fontWeight: 600, marginBottom: 4 }}>How I picked this</p>
             <p>• <strong>Brand consistency</strong> — the kit matches the OEM on your project, ensuring logos, colours, and typography align with the manufacturer's guidelines across all ad formats.</p>
           </div>
@@ -657,7 +657,7 @@ function BackgroundsProposalCard({ input, onApply, onDismiss }: BackgroundsCardP
       <div className="pl-[2px]">
         <p style={{ fontSize: 12, color: "rgb(31,29,37)", lineHeight: 1.43, letterSpacing: "0.17px" }}>{input.rationale}</p>
         <WhyThese content={
-          <div style={{ fontSize: 11, color: "var(--brand-accent)", lineHeight: 1.6 }}>
+          <div style={{ fontSize: 12, color: "rgb(31,29,37)", lineHeight: 1.43, letterSpacing: "0.17px" }}>
             <p style={{ fontWeight: 600, marginBottom: 4 }}>How I picked these</p>
             <p style={{ marginBottom: 2 }}>• <strong>Environment variety</strong> — different lighting conditions and settings keep the creative fresh across placements and avoid visual repetition.</p>
             <p>• <strong>Vehicle framing</strong> — I avoid overly generic or cluttered scenes, favouring open roads, urban vistas, and scenic backdrops that naturally frame the vehicle as the hero.</p>

@@ -759,6 +759,203 @@
     width: 60px;
     height: 40px;
   }
+
+  /* ── WHY-BOX (reasoning panel — opened state) ── */
+  .why-box {
+    margin-left: 32px;
+    border: 1px solid rgba(71,59,171,0.20);
+    border-radius: 12px;
+    background: rgba(71,59,171,0.025);
+    overflow: hidden;
+  }
+  .why-box-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 13px 9px;
+    border-bottom: 1px solid rgba(71,59,171,0.09);
+    background: rgba(71,59,171,0.04);
+  }
+  .why-box-title {
+    font-size: 11.5px;
+    font-weight: 600;
+    color: var(--brand);
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    letter-spacing: 0.05px;
+  }
+  .why-box-close {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    border: none;
+    background: rgba(71,59,171,0.10);
+    color: var(--brand);
+    font-size: 9px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--font);
+    line-height: 1;
+  }
+  .why-box-body {
+    padding: 11px 13px 13px;
+    display: flex;
+    flex-direction: column;
+    gap: 9px;
+  }
+  .why-box-text {
+    font-size: 12px;
+    color: var(--ink);
+    line-height: 1.6;
+  }
+  .why-box-text em {
+    font-style: normal;
+    color: var(--brand);
+    font-weight: 500;
+  }
+  .why-stats-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+  }
+  .why-stat {
+    display: inline-flex;
+    flex-direction: column;
+    gap: 1px;
+    background: white;
+    border: 1px solid rgba(71,59,171,0.13);
+    border-radius: 7px;
+    padding: 5px 9px;
+    min-width: 64px;
+  }
+  .why-stat-label {
+    font-size: 9.5px;
+    color: var(--ink-3);
+    letter-spacing: 0.3px;
+    text-transform: uppercase;
+  }
+  .why-stat-value {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--brand);
+    line-height: 1.2;
+  }
+  .why-rule {
+    height: 1px;
+    background: rgba(71,59,171,0.08);
+  }
+  .why-signal-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+  }
+  .why-signal-dot {
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: var(--brand);
+    margin-top: 5px;
+    flex-shrink: 0;
+    opacity: 0.5;
+  }
+  .why-signal-text {
+    font-size: 11.5px;
+    color: var(--ink-2);
+    line-height: 1.5;
+  }
+  .why-signal-text strong { color: var(--ink); font-weight: 500; }
+
+  /* ── PROACTIVE TIMER ── */
+  .proactive-block {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .proactive-timer {
+    margin-left: 32px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: rgba(71,59,171,0.04);
+    border: 1px solid rgba(71,59,171,0.14);
+    border-radius: 12px;
+    padding: 10px 13px;
+  }
+  .timer-spinner-wrap {
+    position: relative;
+    width: 28px;
+    height: 28px;
+    flex-shrink: 0;
+  }
+  .timer-ring-bg {
+    fill: none;
+    stroke: rgba(71,59,171,0.12);
+    stroke-width: 2.4;
+  }
+  .timer-ring-fill {
+    fill: none;
+    stroke: var(--brand);
+    stroke-width: 2.4;
+    stroke-linecap: round;
+    stroke-dasharray: 69.1;
+    stroke-dashoffset: 17;
+    transform: rotate(-90deg);
+    transform-origin: center;
+  }
+  .timer-info { flex: 1; }
+  .timer-label { font-size: 12px; font-weight: 500; color: var(--ink); }
+  .timer-sub { font-size: 10.5px; color: var(--ink-3); margin-top: 1px; }
+  .timer-elapsed {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--brand);
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.3px;
+  }
+
+  .scan-log {
+    margin-left: 32px;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+  }
+  .scan-line {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+  }
+  .scan-icon {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 8px;
+    font-weight: 700;
+  }
+  .scan-icon.done { background: rgba(35,150,90,0.10); color: #1e7a48; }
+  .scan-icon.active { background: rgba(71,59,171,0.10); color: var(--brand); }
+  .scan-icon.pending { background: rgba(0,0,0,0.05); color: var(--ink-3); }
+  .scan-text {
+    font-size: 11.5px;
+    color: var(--ink-2);
+  }
+  .scan-text.done strong { color: #1e7a48; font-weight: 500; }
+  .scan-text.active strong { color: var(--brand); font-weight: 500; }
+  .scan-text.pending { color: var(--ink-3); }
+  .scan-value {
+    margin-left: auto;
+    font-size: 10.5px;
+    font-weight: 600;
+    color: var(--ink-3);
+    font-variant-numeric: tabular-nums;
+  }
+  .scan-value.found { color: var(--brand); }
 </style>
 </head>
 <body>
@@ -815,6 +1012,85 @@
 
   <!-- ── CONVERSATION ── -->
   <div class="conversation">
+
+    <!-- ═══════════════════════════════════════════════════════════════════ -->
+    <!-- PROACTIVE FLOW — Timer + Scan log                                  -->
+    <!-- Shown when the agent proactively scans inventory before the user   -->
+    <!-- makes a request (triggered by "Proactively" keyword or auto-mode). -->
+    <!-- ═══════════════════════════════════════════════════════════════════ -->
+
+    <!-- Agent opening line -->
+    <div class="turn">
+      <div class="agent-row">
+        <svg class="agent-avatar" viewBox="0 0 18 33" fill="none">
+          <path d="M2.22422 16.0471C2.22422 7.57204 8.61025 0.631495 16.6988 0.0413128C16.332 0.0118036 15.9594 0 15.5867 0C6.97648 0 0 7.18252 0 16.0471C0 24.9116 6.97648 32.0941 15.5867 32.0941C15.9594 32.0941 16.332 32.0823 16.6988 32.0528C8.61025 31.4626 2.22422 24.5221 2.22422 16.0471Z" fill="#473BAB"/>
+          <path d="M6.12227 16.047C6.12227 9.69073 10.9089 4.48533 16.9796 4.04269C16.7045 4.02498 16.4236 4.01318 16.1427 4.01318C9.6879 4.01318 4.4541 9.40154 4.4541 16.047C4.4541 22.6924 9.6879 28.0808 16.1427 28.0808C16.4236 28.0808 16.7045 28.069 16.9796 28.0513C10.9146 27.6086 6.12227 22.4032 6.12227 16.047Z" fill="#6356e1"/>
+          <path d="M17.2605 8.04407C17.0771 8.03227 16.8937 8.02637 16.7045 8.02637C12.3994 8.02637 8.9082 11.6206 8.9082 16.0529C8.9082 20.4851 12.3994 24.0793 16.7045 24.0793C16.8937 24.0793 17.0771 24.0734 17.2605 24.0557C13.2134 23.7606 10.0261 20.2904 10.0261 16.0529C10.0261 11.8154 13.2191 8.34507 17.2605 8.04998V8.04407Z" fill="#8c86fc"/>
+        </svg>
+        <div class="agent-bubble">Scanning your Honda inventory and funds data to build the campaign brief…</div>
+      </div>
+
+      <!-- ── TIMER ────────────────────────────────────────────────────── -->
+      <div class="proactive-timer">
+        <!-- Circular progress ring (75% filled = 0:24 of ~0:32 estimated) -->
+        <div class="timer-spinner-wrap">
+          <svg width="28" height="28" viewBox="0 0 28 28">
+            <circle class="timer-ring-bg" cx="14" cy="14" r="11"/>
+            <circle class="timer-ring-fill" cx="14" cy="14" r="11"/>
+          </svg>
+        </div>
+        <div class="timer-info">
+          <div class="timer-label">Scanning inventory</div>
+          <div class="timer-sub">Honda of Anywhere · June 2026</div>
+        </div>
+        <div class="timer-elapsed">0:24</div>
+      </div>
+
+      <!-- ── SCAN LOG ─────────────────────────────────────────────────── -->
+      <div class="scan-log">
+
+        <div class="scan-line">
+          <div class="scan-icon done">✓</div>
+          <span class="scan-text done"><strong>Aging data loaded</strong></span>
+          <span class="scan-value found">18 units</span>
+        </div>
+
+        <div class="scan-line">
+          <div class="scan-icon done">✓</div>
+          <span class="scan-text done"><strong>PVI scores calculated</strong></span>
+          <span class="scan-value found">avg 93</span>
+        </div>
+
+        <div class="scan-line">
+          <div class="scan-icon done">✓</div>
+          <span class="scan-text done"><strong>Co-op funds verified</strong></span>
+          <span class="scan-value found">$12,400</span>
+        </div>
+
+        <div class="scan-line">
+          <div class="scan-icon done">✓</div>
+          <span class="scan-text done"><strong>Past campaigns reviewed</strong></span>
+          <span class="scan-value found">Q1 2026</span>
+        </div>
+
+        <div class="scan-line">
+          <div class="scan-icon active">→</div>
+          <span class="scan-text active"><strong>Selecting offers &amp; templates…</strong></span>
+          <span class="scan-value">—</span>
+        </div>
+
+        <div class="scan-line">
+          <div class="scan-icon pending">·</div>
+          <span class="scan-text pending">Creating project draft</span>
+          <span class="scan-value">—</span>
+        </div>
+
+      </div>
+    </div>
+    <!-- /Proactive block -->
+
+    <!-- Divider label -->
+    <div style="text-align:center; font-size:10px; color:var(--ink-3); letter-spacing:0.5px; text-transform:uppercase; padding: 4px 0 8px;">— Standard Flow below —</div>
 
     <!-- ─────────────────────────────────────── -->
     <!-- TURN 0 — User opens                    -->
@@ -958,6 +1234,54 @@
         <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><circle cx="6" cy="6" r="5" stroke="#473bab" stroke-width="1.3"/><path d="M6 5.5V8.5" stroke="#473bab" stroke-width="1.3" stroke-linecap="round"/><circle cx="6" cy="3.8" r="0.7" fill="#473bab"/></svg>
         Why these?
       </a>
+
+      <!-- ── WHY-BOX: OFFERS (opened state) ──────────────────────────── -->
+      <div class="why-box">
+        <div class="why-box-header">
+          <span class="why-box-title">
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><circle cx="6" cy="6" r="5" stroke="#473bab" stroke-width="1.3"/><path d="M6 5.5V8.5" stroke="#473bab" stroke-width="1.3" stroke-linecap="round"/><circle cx="6" cy="3.8" r="0.7" fill="#473bab"/></svg>
+            Why these offers?
+          </span>
+          <button class="why-box-close">✕</button>
+        </div>
+        <div class="why-box-body">
+          <div class="why-box-text">
+            I ranked Honda's current lease inventory using <em>3 signals</em>: aging days (units sitting longest generate highest co-op eligibility), PVI score (models with the strongest pull-through rate), and available funds (campaigns with higher co-op allocations are prioritized first).
+          </div>
+          <div class="why-stats-row">
+            <div class="why-stat">
+              <span class="why-stat-label">Avg Aging</span>
+              <span class="why-stat-value">58d</span>
+            </div>
+            <div class="why-stat">
+              <span class="why-stat-label">Avg PVI</span>
+              <span class="why-stat-value">93</span>
+            </div>
+            <div class="why-stat">
+              <span class="why-stat-label">Co-op Pool</span>
+              <span class="why-stat-value">$12.4k</span>
+            </div>
+            <div class="why-stat">
+              <span class="why-stat-label">Selected</span>
+              <span class="why-stat-value">5 / 18</span>
+            </div>
+          </div>
+          <div class="why-rule"></div>
+          <div class="why-signal-row">
+            <div class="why-signal-dot"></div>
+            <div class="why-signal-text"><strong>CR-V LX</strong> — highest aging (91 days) + PVI 92. Co-op eligibility fully unlocked for June window.</div>
+          </div>
+          <div class="why-signal-row">
+            <div class="why-signal-dot"></div>
+            <div class="why-signal-text"><strong>Odyssey EX-L</strong> — 77 days aging, PVI 96. Minivan segment historically over-performs in Jun–Aug lease periods.</div>
+          </div>
+          <div class="why-signal-row">
+            <div class="why-signal-dot"></div>
+            <div class="why-signal-text"><strong>Civic Sport Hybrid</strong> — HEV badge drives CTR uplift (+18% Q1 data). Aging 71d, PVI 92.</div>
+          </div>
+        </div>
+      </div>
+      <!-- /WHY-BOX: OFFERS -->
 
       <!-- Offers Card -->
       <div class="smart-card" style="padding-bottom:0;">
@@ -1191,6 +1515,55 @@
         <div class="agent-bubble">I selected the 4 highest-performing creative formats for Honda lease campaigns based on Q1 benchmark data. Coverage spans web hero, display, and social.</div>
       </div>
 
+      <a href="#" class="why-link">
+        <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><circle cx="6" cy="6" r="5" stroke="#473bab" stroke-width="1.3"/><path d="M6 5.5V8.5" stroke="#473bab" stroke-width="1.3" stroke-linecap="round"/><circle cx="6" cy="3.8" r="0.7" fill="#473bab"/></svg>
+        Why these templates?
+      </a>
+
+      <!-- ── WHY-BOX: TEMPLATES (opened state) ───────────────────────── -->
+      <div class="why-box">
+        <div class="why-box-header">
+          <span class="why-box-title">
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><circle cx="6" cy="6" r="5" stroke="#473bab" stroke-width="1.3"/><path d="M6 5.5V8.5" stroke="#473bab" stroke-width="1.3" stroke-linecap="round"/><circle cx="6" cy="3.8" r="0.7" fill="#473bab"/></svg>
+            Why these templates?
+          </span>
+          <button class="why-box-close">✕</button>
+        </div>
+        <div class="why-box-body">
+          <div class="why-box-text">
+            Based on <em>Q1 2026 Honda benchmark data</em>, these 4 formats delivered the highest combined CTR for lease campaigns in your market. Together they cover the full funnel: hero awareness, display retargeting, and social engagement.
+          </div>
+          <div class="why-stats-row">
+            <div class="why-stat">
+              <span class="why-stat-label">CTR Lift</span>
+              <span class="why-stat-value">+22%</span>
+            </div>
+            <div class="why-stat">
+              <span class="why-stat-label">Formats</span>
+              <span class="why-stat-value">4</span>
+            </div>
+            <div class="why-stat">
+              <span class="why-stat-label">Channels</span>
+              <span class="why-stat-value">3</span>
+            </div>
+          </div>
+          <div class="why-rule"></div>
+          <div class="why-signal-row">
+            <div class="why-signal-dot"></div>
+            <div class="why-signal-text"><strong>2000×500 hero banner</strong> — drives 38% of tracked clicks in Honda web campaigns. Placed above the fold on inventory pages.</div>
+          </div>
+          <div class="why-signal-row">
+            <div class="why-signal-dot"></div>
+            <div class="why-signal-text"><strong>300×250 + 970×250</strong> — standard IAB display units with the widest publisher reach for retargeting audiences.</div>
+          </div>
+          <div class="why-signal-row">
+            <div class="why-signal-dot"></div>
+            <div class="why-signal-text"><strong>1080×1080 social</strong> — square format anchors Meta and Instagram feed placements; best VTR in lease creative mix.</div>
+          </div>
+        </div>
+      </div>
+      <!-- /WHY-BOX: TEMPLATES -->
+
       <!-- Templates Card -->
       <div class="smart-card">
         <div class="card-header">
@@ -1326,6 +1699,55 @@
         </svg>
         <div class="agent-bubble">I matched scenes to Summer 2026 brand mood: warm lighting, outdoor settings, lifestyle-led. Dirt Road is pre-selected as the primary hero.</div>
       </div>
+
+      <a href="#" class="why-link">
+        <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><circle cx="6" cy="6" r="5" stroke="#473bab" stroke-width="1.3"/><path d="M6 5.5V8.5" stroke="#473bab" stroke-width="1.3" stroke-linecap="round"/><circle cx="6" cy="3.8" r="0.7" fill="#473bab"/></svg>
+        Why these backgrounds?
+      </a>
+
+      <!-- ── WHY-BOX: BACKGROUNDS (opened state) ─────────────────────── -->
+      <div class="why-box">
+        <div class="why-box-header">
+          <span class="why-box-title">
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><circle cx="6" cy="6" r="5" stroke="#473bab" stroke-width="1.3"/><path d="M6 5.5V8.5" stroke="#473bab" stroke-width="1.3" stroke-linecap="round"/><circle cx="6" cy="3.8" r="0.7" fill="#473bab"/></svg>
+            Why these backgrounds?
+          </span>
+          <button class="why-box-close">✕</button>
+        </div>
+        <div class="why-box-body">
+          <div class="why-box-text">
+            Summer 2026 Honda campaigns are brand-governed to a <em>warm outdoor mood</em>. I matched scenes to your regional market benchmarks and Honda's Q2 creative guidelines — then ranked by engagement rate from similar past campaigns.
+          </div>
+          <div class="why-stats-row">
+            <div class="why-stat">
+              <span class="why-stat-label">Brand Match</span>
+              <span class="why-stat-value">High</span>
+            </div>
+            <div class="why-stat">
+              <span class="why-stat-label">Season</span>
+              <span class="why-stat-value">Jun–Aug</span>
+            </div>
+            <div class="why-stat">
+              <span class="why-stat-label">Top Scene</span>
+              <span class="why-stat-value">Dirt Rd</span>
+            </div>
+          </div>
+          <div class="why-rule"></div>
+          <div class="why-signal-row">
+            <div class="why-signal-dot"></div>
+            <div class="why-signal-text"><strong>Dirt Road</strong> — adventure-lifestyle scene. Highest CTR engagement in outdoor/adventurous segments for your market (+31% vs avg).</div>
+          </div>
+          <div class="why-signal-row">
+            <div class="why-signal-dot"></div>
+            <div class="why-signal-text"><strong>Gold Flare</strong> — Honda's preferred sunset palette for summer creative. Warm tone aligns with June energy guidelines.</div>
+          </div>
+          <div class="why-signal-row">
+            <div class="why-signal-dot"></div>
+            <div class="why-signal-text"><strong>Purple City</strong> — top performer for <em>evening social</em> placements. Strong contrast ratio for 1080×1080 feed format.</div>
+          </div>
+        </div>
+      </div>
+      <!-- /WHY-BOX: BACKGROUNDS -->
 
       <!-- Backgrounds Card -->
       <div class="smart-card" style="padding-bottom:0;">

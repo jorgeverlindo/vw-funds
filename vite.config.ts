@@ -97,6 +97,64 @@ function replicatePlugin(token: string) {
             return
           }
 
+          // ── POST /api/anthropic/identify — vehicle identification ────────────
+          if (req.method === 'POST' && req.url?.startsWith('/anthropic/identify')) {
+            const body = await readBody(req)
+            const { imageBase64, mediaType } = JSON.parse(body) as { imageBase64: string; mediaType: string }
+            const anthropicKey = process.env.ANTHROPIC_KEY || ''
+            if (!anthropicKey) {
+              res.statusCode = 500
+              res.end(JSON.stringify({ error: 'ANTHROPIC_KEY not set in .env.local' }))
+              return
+            }
+            const anthropicRes = await fetch('https://api.anthropic.com/v1/messages', {
+              method: 'POST',
+              headers: {
+                'x-api-key': anthropicKey,
+                'anthropic-version': '2023-06-01',
+                'content-type': 'application/json',
+              },
+              body: JSON.stringify({
+                model: 'claude-opus-4-5',
+                max_tokens: 1024,
+                messages: [{ role: 'user', content: [
+                  { type: 'image', source: { type: 'base64', media_type: mediaType, data: imageBase64 } },
+                  { type: 'text', text: `Analyze this image and identify all vehicles present. For each vehicle return: year (string or null), make, model, trim (string or null), confidence ("high"|"medium"|"low"). Return ONLY a valid JSON array, no markdown. Example: [{"year":"2026","make":"Honda","model":"CR-V","trim":"TrailSport","confidence":"high"}]` },
+                ]}],
+              }),
+            })
+            const data = await anthropicRes.json()
+            const text = data.content?.[0]?.type === 'text' ? data.content[0].text.trim() : '[]'
+            const match = text.match(/\[[\s\S]*\]/)
+            const vehicles = match ? JSON.parse(match[0]) : []
+            res.statusCode = 200
+            res.end(JSON.stringify(vehicles))
+            return
+          }
+
+          // ── POST /api/replicate/optimize — image optimization ─────────────
+          if (req.method === 'POST' && req.url === '/optimize') {
+            const body = await readBody(req)
+            const { imageDataUrl } = JSON.parse(body) as { imageDataUrl: string }
+            const replicateRes = await fetch(
+              'https://api.replicate.com/v1/models/black-forest-labs/flux-kontext-pro/predictions',
+              {
+                method: 'POST',
+                headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+                body: JSON.stringify({ input: {
+                  prompt: 'Photorealistic automotive advertisement background composite. Blend the background scene seamlessly. Do not alter the vehicle or any text/logos.',
+                  input_image: imageDataUrl,
+                  output_format: 'png',
+                  output_quality: 90,
+                } }),
+              },
+            )
+            const data = await replicateRes.json()
+            res.statusCode = replicateRes.status
+            res.end(JSON.stringify(data))
+            return
+          }
+
           // ── POST /api/replicate/depth — Depth Anything v2 ─────────────────
           if (req.method === 'POST' && req.url === '/depth') {
             const body = await readBody(req)

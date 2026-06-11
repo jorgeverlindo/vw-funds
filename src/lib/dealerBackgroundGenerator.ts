@@ -494,9 +494,11 @@ function buildCarPlacementPrompt(
   const car = `${vehicle.year} ${vehicle.make} ${vehicle.model} ${vehicle.trim}`;
 
   const subject = hasCarReference
-    ? `Place the EXACT vehicle shown in the second image (a ${car}) into the dealership scene ` +
-      `from the first image. Reproduce the vehicle faithfully: same body, same colour, ` +
-      `same wheels, same trim details — do not redesign or substitute it. `
+    ? `The FIRST image is the scene: a dealership exterior. The SECOND image is only a ` +
+      `vehicle reference (a ${car}) — use it solely to copy the vehicle's exact body, ` +
+      `colour, wheels, and trim details. Do NOT copy the second image's framing or scale. ` +
+      `Render the final image with the SCENE's framing: the full dealership building and ` +
+      `sky must remain visible exactly as in the first image. `
     : `Add a single ${car} to this cleared dealership parking area. `;
 
   const placement = config.carOnRight
@@ -509,8 +511,13 @@ function buildCarPlacementPrompt(
   return (
     subject +
     `${placement} ` +
-    `\n\nVEHICLE PLACEMENT: Park it firmly on the asphalt with all four tires touching the ground. ` +
-    `Scale it naturally for this scene — it should look parked here, not pasted. ` +
+    `\n\nSCALE — CRITICAL: The vehicle is parked in the lot IN FRONT of the building, ` +
+    `at a realistic distance from the camera. It occupies roughly 35–45% of the image width — ` +
+    `clearly smaller than the building behind it. The building remains the dominant backdrop; ` +
+    `its roofline and signage stay fully visible above the vehicle. ` +
+    `A real parked car never fills the frame in a dealership wide shot. ` +
+    `\n\nVEHICLE PLACEMENT: Park it firmly on the asphalt with all four tires touching the ground ` +
+    `in the lower third of the frame — no gap between tires and pavement. ` +
     `\n\nLIGHTING: Match the vehicle's lighting precisely to the scene. ` +
     `Same light direction, same color temperature, same intensity. ` +
     `The vehicle's paint and glass should reflect the environment realistically. ` +

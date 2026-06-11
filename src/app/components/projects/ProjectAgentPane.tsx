@@ -3611,18 +3611,15 @@ export function ProjectAgentPane({ isOpen, onClose, userType, activeUserName }: 
                               dispatchAction({ action: "set_dealer_bg_generating", value: true } as never);
                               (async () => {
                                 try {
-                                  const {
-                                    generateDealerBackgroundsForTemplates,
-                                    generateAllComposites,
-                                  } = await import("../../../lib/dealerBackgroundGenerator");
+                                  const { generateDealerBackgroundsForTemplates } =
+                                    await import("../../../lib/dealerBackgroundGenerator");
 
-                                  // Phase 2a: clean bg per SELECTED template only.
-                                  // Bug fix: previously passed no keys → generated all 6 regardless of selection.
+                                  // Phase 2a: per-template CLEAN backgrounds via nano-banana
+                                  // (full scene + aspect_ratio recompose). Only the SELECTED
+                                  // template keys are generated.
+                                  // The clean base (car-free, from Phase 1a) is the input —
+                                  // no re-cleaning per template.
                                   const selectedKeys = (bgObject as any)._templateKeys as string[] | undefined;
-                                  // Phase 2a: outpaint the CLEAN BASE (already cleared of cars)
-                                  // to each template's aspect ratio using Flux Fill Pro.
-                                  // Using cleanBaseBg (not raw dealerPhoto) avoids re-running
-                                  // the cleaning step — the base is already car-free from Phase 1a.
                                   const cleanBase = (bgObject as any)._cleanBaseBg as string | undefined ?? dealerPhoto;
                                   const cleanBgImages = await generateDealerBackgroundsForTemplates(
                                     cleanBase,
@@ -3633,18 +3630,12 @@ export function ProjectAgentPane({ isOpen, onClose, userType, activeUserName }: 
                                     k => { if (!cleanBgImages[k]) cleanBgImages[k] = fallback; }
                                   );
 
-                                  // Phase 2b: composites per offer × template via Flux Kontext
-                                  // Each call: Flux Kontext adds the vehicle to the clean bg
-                                  // with correct perspective, lighting, shadow, and reflections.
-                                  const vehicles = (confirmedOfferDescs ?? []);
-                                  const composites = vehicles.length > 0
-                                    ? await generateAllComposites(cleanBgImages, vehicles)
-                                    : {};
-
+                                  // NO Phase 2b — car placement is deterministic canvas math in
+                                  // JellyBeanCard (dealerCarPlacement): alpha-detected tires on a
+                                  // known ground line + contact shadow. Zero model calls per offer.
                                   const updatedBg = {
                                     ...(bgObject as any),
                                     images: { ...(bgObject as any).images, ...cleanBgImages },
-                                    composites,
                                   };
                                   dispatchAction({ action: "add_custom_background", background: updatedBg });
                                 } catch { /* fallback remains */ }

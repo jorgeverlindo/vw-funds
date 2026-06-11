@@ -2531,7 +2531,6 @@ function ProjectDetailViewInner({
                     groundFraction={dealerCarPlacement(selectedBg as CustomBackground | null, template).ground}
                     carWidthFraction={dealerCarPlacement(selectedBg as CustomBackground | null, template).carWidth ?? (selectedBg as CustomBackground | null)?.carWidthFraction}
                     carAnchorX={dealerCarPlacement(selectedBg as CustomBackground | null, template).anchorX}
-                    compositeUrl={(selectedBg as CustomBackground | null)?.composites?.[offer.id]?.[templateKey(template.width, template.height)]}
                     isGenerating={isDealerBgGenerating && !!(selectedBg as CustomBackground | null)?.images}
                   />
                 </motion.div>
@@ -2588,7 +2587,6 @@ function ProjectDetailViewInner({
                       groundFraction={dealerCarPlacement(bg as CustomBackground | null, template).ground}
                       carWidthFraction={dealerCarPlacement(bg as CustomBackground | null, template).carWidth ?? (bg as CustomBackground | null)?.carWidthFraction}
                       carAnchorX={dealerCarPlacement(bg as CustomBackground | null, template).anchorX}
-                      compositeUrl={(bg as CustomBackground | null)?.composites?.[offer.id]?.[templateKey(template.width, template.height)]}
                       isGenerating={isDealerBgGenerating && !!(bg as CustomBackground | null)?.images}
                     />
                   </motion.div>

@@ -2865,14 +2865,14 @@ function ProjectDetailViewInner({
                   projectId={project.id}
                   projectName={project.name}
                   generatedAssets={generatedAssets}
-                  onClose={() => setDetailPage(null)}
+                  onNavigateTo={setDetailPage}
                 />
               )}
               {detailPage === "campaigns" && (
                 <CampaignsPage
                   projectId={project.id}
                   projectName={project.name}
-                  onClose={() => setDetailPage(null)}
+                  onNavigateTo={setDetailPage}
                 />
               )}
             </div>

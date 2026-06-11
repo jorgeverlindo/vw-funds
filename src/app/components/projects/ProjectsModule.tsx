@@ -1104,6 +1104,26 @@ function JellyBeanCard({
         else                { bh = Math.round(w / bgAr); by = -Math.round((bh - h) / 2); }
         ctx.drawImage(bgImg, bx, by, bw, bh);
 
+        // Soft elliptical contact shadow at the tire line — without it the car
+        // reads as floating even when the tires sit exactly on the ground.
+        const tireLineY = carY + rendH * tireFraction;
+        const shadowCx  = carX + rendW / 2;
+        const shadowRx  = rendW * 0.46;
+        const shadowRy  = Math.max(3, rendW * 0.05);
+        const shadowGrad = ctx.createRadialGradient(shadowCx, tireLineY, 0, shadowCx, tireLineY, shadowRx);
+        shadowGrad.addColorStop(0,   'rgba(0,0,0,0.38)');
+        shadowGrad.addColorStop(0.6, 'rgba(0,0,0,0.18)');
+        shadowGrad.addColorStop(1,   'rgba(0,0,0,0)');
+        ctx.save();
+        ctx.translate(shadowCx, tireLineY);
+        ctx.scale(1, shadowRy / shadowRx); // flatten the radial gradient into an ellipse
+        ctx.translate(-shadowCx, -tireLineY);
+        ctx.fillStyle = shadowGrad;
+        ctx.beginPath();
+        ctx.arc(shadowCx, tireLineY, shadowRx, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+
         // Car PNG (preserves alpha — drawn directly, no fill)
         ctx.drawImage(carImg, carX, carY, rendW, rendH);
 

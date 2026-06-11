@@ -5,7 +5,7 @@
 import React, { useState, useMemo, useEffect, useRef, useCallback } from "react";
 import { STORAGE_KEYS } from "../../constants/storageKeys";
 import {
-  ChevronDown, ChevronRight, Check, Plus,
+  ChevronDown, ChevronRight, ChevronLeft, Check, Plus,
   Search, MoreVertical, History,
   Loader2, Hourglass, CheckCircle2,
   FileText, Palette, Image as ImageIcon, Layers,
@@ -13,6 +13,12 @@ import {
   ChevronsUpDown, Trash2,
   Eye, Wand2,
 } from "lucide-react";
+import { OffersPage } from "./OffersPage";
+import { TemplatesPage } from "./TemplatesPage";
+import { LogosBackgroundsPage } from "./LogosBackgroundsPage";
+import { PreviewPage } from "./PreviewPage";
+import { AdShellsPage } from "./AdShellsPage";
+import { CampaignsPage } from "./CampaignsPage";
 import { motion, AnimatePresence } from "motion/react";
 import { ProjectAccordionSection } from "@projects/ui/ProjectAccordionSection";
 import { SingleDatePicker } from "../ui/SingleDatePicker";
@@ -1961,6 +1967,9 @@ function ProjectDetailViewInner({
   // Access comments context (we're inside CommentsProvider now)
   const commentsCtx = useComments();
 
+  // ── Detail page overlay state ──────────────────────────────────────────────
+  const [detailPage, setDetailPage] = useState<string | null>(null);
+
   // Re-derive helpers from props (previously local vars in ProjectDetailView)
   const setTaskOwner = (section: string, ownerId: string) =>
     setTaskOwners((prev) => ({ ...prev, [section]: ownerId }));
@@ -2056,7 +2065,7 @@ function ProjectDetailViewInner({
   const actnBtn = "flex items-center gap-1 text-[12px] text-[var(--brand-accent)] font-medium cursor-pointer hover:opacity-75 transition";
 
   return (
-    <div className="flex flex-row h-full bg-white overflow-hidden">
+    <div className="relative flex flex-row h-full bg-white overflow-hidden">
     {/* ── Main content column ───────────────────────────────────────── */}
     <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
     <div className="flex flex-col h-full bg-white overflow-hidden">
@@ -2177,7 +2186,7 @@ function ProjectDetailViewInner({
           title="Offers"
           count={visibleOffersCount}
           statusSlot={visibleOffersCount ? <ProjectStatusChip status="Done" /> : undefined}
-          onDetails={visibleOffersCount ? () => {} : undefined}
+          onDetails={visibleOffersCount ? () => setDetailPage("offers") : undefined}
           expanded={expandedSections["offers"]}
           onExpandedChange={(v) => toggleSection("offers", v)}
           ownerSlot={<TaskOwner ownerId={taskOwners["offers"]} onChange={(id) => setTaskOwner("offers", id)} />}
@@ -2222,7 +2231,7 @@ function ProjectDetailViewInner({
           title="Templates"
           count={visibleTemplateCount}
           statusSlot={visibleTemplateCount ? <ProjectStatusChip status="Done" /> : undefined}
-          onDetails={visibleTemplateCount ? () => {} : undefined}
+          onDetails={visibleTemplateCount ? () => setDetailPage("templates") : undefined}
           expanded={expandedSections["templates"]}
           onExpandedChange={(v) => toggleSection("templates", v)}
           ownerSlot={<TaskOwner ownerId={taskOwners["templates"]} onChange={(id) => setTaskOwner("templates", id)} />}
@@ -2301,6 +2310,7 @@ function ProjectDetailViewInner({
         <ProjectAccordionSection
           title="Backgrounds"
           count={visibleBackgrounds.length > 0 ? visibleBackgrounds.length : undefined}
+          onDetails={visibleBackgrounds.length > 0 ? () => setDetailPage("logos-backgrounds") : undefined}
           expanded={expandedSections["backgrounds"]}
           onExpandedChange={(v) => toggleSection("backgrounds", v)}
           ownerSlot={<TaskOwner ownerId={taskOwners["backgrounds"]} onChange={(id) => setTaskOwner("backgrounds", id)} />}
@@ -2403,6 +2413,7 @@ function ProjectDetailViewInner({
           title="Theme & Logos"
           count={activeBrandKits.length > 0 ? activeBrandKits.length : undefined}
           statusSlot={activeBrandKits.length > 0 ? <ProjectStatusChip status="Done" /> : undefined}
+          onDetails={activeBrandKits.length > 0 ? () => setDetailPage("logos-backgrounds") : undefined}
           expanded={expandedSections["theme"]}
           onExpandedChange={(v) => toggleSection("theme", v)}
           ownerSlot={<TaskOwner ownerId={taskOwners["brand"]} onChange={(id) => setTaskOwner("brand", id)} />}
@@ -2601,6 +2612,8 @@ function ProjectDetailViewInner({
         <div data-agent-section="adshells">
         <ProjectAccordionSection
           title="Ad Shells"
+          count={generatedAssets.length > 0 ? generatedAssets.length : 0}
+          onDetails={() => setDetailPage("adshells")}
           ownerSlot={<TaskOwner ownerId={taskOwners["adshells"]} onChange={(id) => setTaskOwner("adshells", id)} />}
           expanded={expandedSections["adshells"]}
           onExpandedChange={(v) => toggleSection("adshells", v)}
@@ -2616,6 +2629,8 @@ function ProjectDetailViewInner({
         {/* Campaigns */}
         <ProjectAccordionSection
           title="Campaigns"
+          count={0}
+          onDetails={() => setDetailPage("campaigns")}
           ownerSlot={<TaskOwner ownerId={taskOwners["campaigns"]} onChange={(id) => setTaskOwner("campaigns", id)} />}
           expanded={expandedSections["campaigns"]}
           onExpandedChange={(v) => toggleSection("campaigns", v)}
@@ -2805,6 +2820,66 @@ function ProjectDetailViewInner({
           emitSnackbar("Project updated");
         }}
       />
+
+      {/* ── Detail page slide-over ──────────────────────────────────── */}
+      <AnimatePresence>
+        {detailPage && (
+          <motion.div
+            key="detail-overlay"
+            initial={{ x: "100%" }}
+            animate={{ x: 0 }}
+            exit={{ x: "100%" }}
+            transition={{ duration: 0.28, ease: [0.16, 1, 0.3, 1] }}
+            className="absolute inset-0 z-[200] bg-white flex flex-col overflow-hidden"
+          >
+            {/* Back nav */}
+            <div className="flex items-center gap-2 px-4 py-2.5 border-b border-[var(--border)] shrink-0 bg-white">
+              <button
+                onClick={() => setDetailPage(null)}
+                className="flex items-center gap-1.5 text-[12px] text-[var(--ink-secondary)] hover:text-[var(--ink)] transition cursor-pointer"
+              >
+                <ChevronLeft size={14} strokeWidth={2} />
+                {project.name}
+              </button>
+              <span className="text-[var(--ink-tertiary)] text-[12px]">/</span>
+              <span className="text-[12px] font-medium text-[var(--ink)] capitalize">
+                {detailPage === "logos-backgrounds" ? "Styles & Backgrounds" : detailPage.replace("-", " ")}
+              </span>
+            </div>
+            {/* Page content */}
+            <div className="flex-1 min-h-0 overflow-hidden">
+              {detailPage === "offers" && (
+                <OffersPage projectId={project.id} onNavigateTo={setDetailPage} />
+              )}
+              {detailPage === "templates" && (
+                <TemplatesPage projectId={project.id} onNavigateTo={setDetailPage} />
+              )}
+              {detailPage === "logos-backgrounds" && (
+                <LogosBackgroundsPage projectId={project.id} onNavigateTo={setDetailPage} />
+              )}
+              {detailPage === "preview" && (
+                <PreviewPage projectId={project.id} onNavigateTo={setDetailPage} />
+              )}
+              {detailPage === "adshells" && (
+                <AdShellsPage
+                  projectId={project.id}
+                  projectName={project.name}
+                  generatedAssets={generatedAssets}
+                  onClose={() => setDetailPage(null)}
+                />
+              )}
+              {detailPage === "campaigns" && (
+                <CampaignsPage
+                  projectId={project.id}
+                  projectName={project.name}
+                  onClose={() => setDetailPage(null)}
+                />
+              )}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
     </div>
     </div>
     </div>

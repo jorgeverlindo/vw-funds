@@ -42,8 +42,10 @@ export default async function handler(request: Request): Promise<Response> {
   let body: {
     prompt?: string;
     model?: string;
-    inputImage?: string;  // flux-kontext-pro: image to edit
-    maskImage?: string;   // flux-fill-pro: white = inpaint, black = preserve
+    inputImage?: string;    // flux-kontext-pro: image to edit
+    maskImage?: string;     // flux-fill-pro: white = inpaint, black = preserve
+    imageInputs?: string[]; // nano-banana: reference images (scene, vehicle, …)
+    aspectRatio?: string;   // nano-banana: target aspect ratio (e.g. "21:9", "9:16")
   };
   try {
     body = await request.json() as typeof body;
@@ -59,6 +61,8 @@ export default async function handler(request: Request): Promise<Response> {
     model = 'black-forest-labs/flux-kontext-pro',
     inputImage,
     maskImage,
+    imageInputs,
+    aspectRatio,
   } = body;
 
   if (!prompt) {
@@ -69,10 +73,20 @@ export default async function handler(request: Request): Promise<Response> {
   }
 
   // Build model-specific input payload
+  // google/nano-banana uses `image_input` (array) + `aspect_ratio` (recompose)
   // flux-fill-pro uses `image` + `mask` (inpainting)
   // flux-kontext-pro uses `input_image` (editing)
-  const isFillModel = model.includes('flux-fill');
-  const modelInput = isFillModel
+  const isNanoBanana = model.includes('nano-banana');
+  const isFillModel  = model.includes('flux-fill');
+  const nanoImages   = imageInputs?.length ? imageInputs : inputImage ? [inputImage] : [];
+  const modelInput = isNanoBanana
+    ? {
+        prompt,
+        ...(nanoImages.length ? { image_input: nanoImages } : {}),
+        aspect_ratio: aspectRatio ?? 'match_input_image',
+        output_format: 'jpg',
+      }
+    : isFillModel
     ? {
         prompt,
         output_format: 'jpg',

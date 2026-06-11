@@ -11,6 +11,7 @@
 
 // Maps the app's AI model id → Replicate model path
 const MODEL_MAP: Record<string, string> = {
+  'nano-banana':         'google/nano-banana', // Gemini 2.5 Flash Image — scene recompose
   'flux-kontext-max':    'black-forest-labs/flux-kontext-pro',
   'flux-kontext-pro':    'black-forest-labs/flux-kontext-pro',
   'flux-one-depth':      'black-forest-labs/flux-1.1-pro',
@@ -123,6 +124,10 @@ interface GenerateOptions {
   modelId?: string
   /** Optional image URL or data-URL to pass as input_image (for img2img) */
   inputImage?: string
+  /** nano-banana only: multiple reference images (scene first, then subjects) */
+  imageInputs?: string[]
+  /** nano-banana only: target aspect ratio, e.g. "21:9", "9:16", "1:1" */
+  aspectRatio?: string
   /** Called with interim status strings while polling */
   onStatus?: (status: string) => void
   /** AbortSignal to cancel mid-flight */
@@ -139,6 +144,8 @@ async function startPrediction(opts: GenerateOptions): Promise<PredictionRespons
       prompt: opts.prompt,
       model,
       inputImage: opts.inputImage,
+      imageInputs: opts.imageInputs,
+      aspectRatio: opts.aspectRatio,
     }),
   })
   if (!res.ok) {

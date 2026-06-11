@@ -47,11 +47,46 @@ function replicatePlugin(token: string) {
           // ── POST /api/replicate/predict — start prediction ────────────────
           if (req.method === 'POST' && req.url === '/predict') {
             const body = await readBody(req)
-            const { prompt, model = 'black-forest-labs/flux-kontext-pro', inputImage } = JSON.parse(body) as {
+            const { prompt, model = 'black-forest-labs/flux-kontext-pro', inputImage, maskImage, imageInputs, aspectRatio } = JSON.parse(body) as {
               prompt: string
               model?: string
               inputImage?: string
+              maskImage?: string
+              imageInputs?: string[]
+              aspectRatio?: string
             }
+
+            // Mirror api/replicate/predict.ts model-specific payloads
+            const isNanoBanana = model.includes('nano-banana')
+            const isFillModel  = model.includes('flux-fill')
+            const nanoImages   = imageInputs?.length ? imageInputs : inputImage ? [inputImage] : []
+            const modelInput = isNanoBanana
+              ? {
+                  prompt,
+                  ...(nanoImages.length ? { image_input: nanoImages } : {}),
+                  aspect_ratio: aspectRatio ?? 'match_input_image',
+                  output_format: 'jpg',
+                }
+              : isFillModel
+              ? {
+                  prompt,
+                  output_format: 'jpg',
+                  output_quality: 90,
+                  steps: 28,
+                  ...(inputImage ? { image: inputImage } : {}),
+                  ...(maskImage  ? { mask:  maskImage  } : {}),
+                }
+              : {
+                  prompt,
+                  // aspect_ratio is only sent for text-to-image (no inputImage).
+                  // For img2img (Flux Kontext editing), the output dimensions
+                  // follow the input image — forcing a ratio here can cause
+                  // the model to ignore or distort the input_image.
+                  ...(!inputImage ? { aspect_ratio: '4:3' } : {}),
+                  output_format: 'jpg',
+                  output_quality: 90,
+                  ...(inputImage ? { input_image: inputImage } : {}),
+                }
 
             const replicateRes = await fetch(
               `https://api.replicate.com/v1/models/${model}/predictions`,
@@ -62,19 +97,7 @@ function replicatePlugin(token: string) {
                   'Content-Type': 'application/json',
                   Prefer: 'wait=60', // synchronous wait — result in one shot if < 60s
                 },
-                body: JSON.stringify({
-                  input: {
-                    prompt,
-                    // aspect_ratio is only sent for text-to-image (no inputImage).
-                    // For img2img (Flux Kontext editing), the output dimensions
-                    // follow the input image — forcing a ratio here can cause
-                    // the model to ignore or distort the input_image.
-                    ...(!inputImage ? { aspect_ratio: '4:3' } : {}),
-                    output_format: 'jpg',
-                    output_quality: 90,
-                    ...(inputImage ? { input_image: inputImage } : {}),
-                  },
-                }),
+                body: JSON.stringify({ input: modelInput }),
               },
             )
 

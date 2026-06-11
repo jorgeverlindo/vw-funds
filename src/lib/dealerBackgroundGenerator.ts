@@ -379,6 +379,90 @@ async function generateCleanBackground(
   }
 }
 
+// ─── Vertical center-crop (post-processing for ultra-wide formats) ───────────
+
+/**
+ * Crop an image vertically to a wider aspect ratio, keeping the full width.
+ * Used after nano-banana generates 21:9 (its widest ratio) to reach 4:1 / 3.9:1:
+ * the full width is preserved and excess sky/foreground is trimmed top+bottom.
+ * Crop window is biased slightly downward (55%) to keep building + ground visible.
+ */
+async function cropVerticalToAR(
+  srcUrl: string,
+  targetW: number,
+  targetH: number,
+): Promise<string> {
+  const img = await loadImg(srcUrl);
+  const srcW = img.naturalWidth;
+  const srcH = img.naturalHeight;
+  const targetAr = targetW / targetH;
+
+  const cropH = Math.round(srcW / targetAr);
+  if (cropH >= srcH) return srcUrl; // already wide enough — nothing to trim
+
+  const cropY = Math.round((srcH - cropH) * 0.55); // slight downward bias
+
+  const canvas = document.createElement('canvas');
+  canvas.width  = srcW;
+  canvas.height = cropH;
+  canvas.getContext('2d')!.drawImage(img, 0, cropY, srcW, cropH, 0, 0, srcW, cropH);
+  return canvas.toDataURL('image/jpeg', 0.90);
+}
+
+// ─── Per-format scene recompose (nano-banana / Gemini 2.5 Flash Image) ───────
+
+/** Map a template aspect ratio to the closest nano-banana aspect_ratio enum value. */
+function nanoAspectFor(width: number, height: number): string {
+  const ar = width / height;
+  if (ar > 2.0)  return '21:9';  // widest supported — post-crop to 4:1 client-side
+  if (ar < 0.7)  return '9:16';
+  if (ar > 1.7)  return '16:9';
+  if (Math.abs(ar - 1) < 0.08) return '1:1';
+  if (ar > 1.15 && ar < 1.3)   return '5:4';  // 300×250 (1.2)
+  return ar >= 1 ? '4:3' : '3:4';
+}
+
+/**
+ * Recompose the clean 4:3 base scene at a template's aspect ratio using
+ * google/nano-banana (Gemini 2.5 Flash Image) — the model that produces
+ * Gemini-quality scene extensions.
+ *
+ * Unlike crop+img2img (which destroys lateral content) or padded-canvas
+ * inpainting (which invents unrelated content), nano-banana receives the FULL
+ * original scene plus a target aspect_ratio and synthesizes the extension:
+ * wide → walls extend laterally; tall → sky above and ground below.
+ *
+ * For ultra-wide templates (4:1, 3.9:1 — beyond nano's 21:9 max) the result
+ * is generated at 21:9 and centre-cropped vertically, keeping full width.
+ */
+async function recomposeForFormat(
+  cleanBaseBgDataUrl: string,
+  config: TemplateFormatConfig,
+): Promise<string> {
+  const ar = config.width / config.height;
+
+  // 4:3 templates match the clean base — no generation needed (zero cost)
+  if (Math.abs(ar - 4 / 3) < 0.04) return cleanBaseBgDataUrl;
+
+  const { generateImage } = await import('./replicateClient');
+  const prompt = buildKontextPrompt(config);
+
+  try {
+    const result = await generateImage({
+      modelId: 'nano-banana',
+      prompt,
+      imageInputs: [cleanBaseBgDataUrl],
+      aspectRatio: nanoAspectFor(config.width, config.height),
+    });
+    // Ultra-wide: nano maxes at 21:9 (2.33:1) — trim vertically to the real AR
+    if (ar > 2.4) return await cropVerticalToAR(result, config.width, config.height);
+    return result;
+  } catch {
+    // Fallback: plain crop of the base (never blocks the flow)
+    return cropToAspectRatio(cleanBaseBgDataUrl, config.width, config.height);
+  }
+}
+
 // ─── Vehicle description type ─────────────────────────────────────────────────
 
 export interface VehicleDesc {
@@ -388,6 +472,8 @@ export interface VehicleDesc {
   trim: string;
   /** offer ID — used as key in composites dict */
   offerId: string;
+  /** Catalog cutout PNG (https URL) — passed to nano-banana as the vehicle reference */
+  imageUrl?: string;
 }
 
 // ─── Car placement prompt builder ─────────────────────────────────────────────
@@ -402,8 +488,16 @@ export interface VehicleDesc {
 function buildCarPlacementPrompt(
   vehicle: VehicleDesc,
   config: TemplateFormatConfig,
+  /** true when the vehicle's catalog PNG is supplied as a second reference image */
+  hasCarReference: boolean,
 ): string {
   const car = `${vehicle.year} ${vehicle.make} ${vehicle.model} ${vehicle.trim}`;
+
+  const subject = hasCarReference
+    ? `Place the EXACT vehicle shown in the second image (a ${car}) into the dealership scene ` +
+      `from the first image. Reproduce the vehicle faithfully: same body, same colour, ` +
+      `same wheels, same trim details — do not redesign or substitute it. `
+    : `Add a single ${car} to this cleared dealership parking area. `;
 
   const placement = config.carOnRight
     ? `Position the vehicle on the RIGHT SIDE of the image in a three-quarter front-left view. ` +
@@ -413,7 +507,7 @@ function buildCarPlacementPrompt(
       `The lower 30% of the image will hold text — ensure the vehicle sits above this zone.`;
 
   return (
-    `Add a single ${car} to this cleared dealership parking area. ` +
+    subject +
     `${placement} ` +
     `\n\nVEHICLE PLACEMENT: Park it firmly on the asphalt with all four tires touching the ground. ` +
     `Scale it naturally for this scene — it should look parked here, not pasted. ` +
@@ -434,8 +528,13 @@ function buildCarPlacementPrompt(
 /**
  * Generate ONE composite for a specific vehicle + template format.
  *
- * Calls Flux Kontext img2img with a descriptive prompt.
- * The model handles perspective, lighting, shadow, and reflections in one pass.
+ * Uses google/nano-banana (Gemini 2.5 Flash Image) with multi-image input:
+ *   image 1 = the clean per-format background (scene)
+ *   image 2 = the vehicle's catalog cutout PNG (subject reference)
+ * The model places the exact reference vehicle into the scene with correct
+ * perspective, lighting, shadow, and reflections — preserving car identity.
+ *
+ * Output matches the scene image's aspect ratio (aspect_ratio: match_input_image).
  */
 export async function generateOfferComposite(
   cleanBgDataUrl: string,
@@ -443,8 +542,14 @@ export async function generateOfferComposite(
   config: TemplateFormatConfig,
 ): Promise<string> {
   const { generateImage } = await import('./replicateClient');
-  const prompt = buildCarPlacementPrompt(vehicle, config);
-  return generateImage({ prompt, inputImage: cleanBgDataUrl });
+  const hasCarRef = !!vehicle.imageUrl?.startsWith('http');
+  const prompt = buildCarPlacementPrompt(vehicle, config, hasCarRef);
+  return generateImage({
+    modelId: 'nano-banana',
+    prompt,
+    imageInputs: hasCarRef ? [cleanBgDataUrl, vehicle.imageUrl!] : [cleanBgDataUrl],
+    aspectRatio: 'match_input_image',
+  });
 }
 
 // ─── Phase 1 public API ───────────────────────────────────────────────────────
@@ -486,308 +591,6 @@ export async function generatePreviewComposite(
   }
 }
 
-// ─── Outpainting helpers (dealer bg flow only) ───────────────────────────────
-
-/**
- * Sample the average colour of a rectangular region in a canvas.
- */
-function sampleRegionColor(
-  ctx: CanvasRenderingContext2D,
-  x: number, y: number, w: number, h: number,
-): string {
-  const d = ctx.getImageData(Math.round(x), Math.round(y), Math.max(1, Math.round(w)), Math.max(1, Math.round(h))).data;
-  let r = 0, g = 0, b = 0;
-  const n = d.length / 4;
-  for (let i = 0; i < d.length; i += 4) { r += d[i]; g += d[i+1]; b += d[i+2]; }
-  return `rgb(${Math.round(r/n)},${Math.round(g/n)},${Math.round(b/n)})`;
-}
-
-/**
- * Pad a clean 4:3 background to the target aspect ratio.
- *
- * KEY IMPROVEMENTS over the previous edge-stretch approach:
- *
- * 1. SCALE-DOWN — building occupies only a fraction of the target frame height
- *    instead of trying to fill it. This matches how Gemini "zooms out" the
- *    building to leave generous sky and foreground space.
- *    • Wide (4:1): building at 40% of frame height
- *    • Portrait (9:16): building at 32% of frame height (lots of sky + asphalt)
- *    • Square / standard: building at 55% of frame height
- *
- * 2. SMART VERTICAL POSITIONING
- *    • Wide: building vertically centred
- *    • Portrait: building starts at 33% from top → sky above, foreground below
- *    • Square: building starts at 20% from top
- *
- * 3. COLOUR-SAMPLED FILL instead of edge-stretch
- *    Sky area above the building → sampled sky colour from source top
- *    Asphalt area below the building → sampled asphalt colour from source bottom
- *    Side areas → gradient blend from the sampled edge
- *    This gives Flux Fill Pro a coherent "blank canvas" to paint over.
- */
-async function padToTargetRatio(
-  cleanBgDataUrl: string,
-  targetW: number,
-  targetH: number,
-): Promise<{ paddedDataUrl: string; maskDataUrl: string }> {
-  const img = await loadImg(cleanBgDataUrl);
-  const srcW = img.naturalWidth;
-  const srcH = img.naturalHeight;
-  const ar   = targetW / targetH;
-
-  // ── Output dimensions (capped at 1280px longest side) ────────────────────
-  const maxDim    = 1280;
-  const sf        = Math.min(1, maxDim / Math.max(targetW, targetH));
-  const outW      = Math.round(targetW * sf);
-  const outH      = Math.round(targetH * sf);
-
-  // ── Building fill-fraction and vertical anchor per format ─────────────────
-  // fillH: what fraction of outH the building occupies
-  // imgY: where the building starts (from top of canvas)
-  let fillH: number;
-  let imgY: number;
-  if (ar > 2.0) {
-    // Ultra-wide — building takes 40% of height, centred vertically
-    fillH = 0.40;
-    imgY  = Math.round((outH - outH * fillH) / 2);
-  } else if (ar < 0.7) {
-    // Portrait — building takes 32% of height, placed at 33% from top
-    fillH = 0.32;
-    imgY  = Math.round(outH * 0.33);
-  } else {
-    // Square / standard — building takes 55%, placed at 20% from top
-    fillH = 0.55;
-    imgY  = Math.round(outH * 0.20);
-  }
-
-  const targetImgH = Math.round(outH * fillH);
-  const targetImgW = Math.round(targetImgH * srcW / srcH);
-  const imgW = Math.min(targetImgW, outW);
-  const imgH = Math.round(imgW * srcH / srcW);
-  const imgX = Math.round((outW - imgW) / 2);
-
-  // ── Sample colours from the source image ─────────────────────────────────
-  const sampleC = document.createElement('canvas');
-  sampleC.width = srcW; sampleC.height = srcH;
-  const sCtx = sampleC.getContext('2d')!;
-  sCtx.drawImage(img, 0, 0, srcW, srcH);
-
-  const skyColor      = sampleRegionColor(sCtx, srcW * 0.2, 0,          srcW * 0.6, srcH * 0.15);
-  const asphaltColor  = sampleRegionColor(sCtx, srcW * 0.2, srcH * 0.8, srcW * 0.6, srcH * 0.15);
-  const leftEdgeColor = sampleRegionColor(sCtx, 0,          srcH * 0.3, srcW * 0.05, srcH * 0.4);
-  const rightEdgeColor = sampleRegionColor(sCtx, srcW * 0.95, srcH * 0.3, srcW * 0.05, srcH * 0.4);
-
-  // ── Build padded image ────────────────────────────────────────────────────
-  const pc   = document.createElement('canvas');
-  pc.width   = outW; pc.height = outH;
-  const pCtx = pc.getContext('2d')!;
-
-  // Sky fill (above the building area, plus top of side bands)
-  pCtx.fillStyle = skyColor;
-  pCtx.fillRect(0, 0, outW, imgY + Math.round(imgH * 0.15));
-
-  // Asphalt fill (below the building area)
-  pCtx.fillStyle = asphaltColor;
-  pCtx.fillRect(0, imgY + Math.round(imgH * 0.85), outW, outH - imgY - Math.round(imgH * 0.85));
-
-  // Building zone sides: gradient from sky→asphalt vertically
-  if (imgX > 0) {
-    // Left band
-    const lg = pCtx.createLinearGradient(0, imgY, 0, imgY + imgH);
-    lg.addColorStop(0, skyColor); lg.addColorStop(1, asphaltColor);
-    pCtx.fillStyle = lg;
-    pCtx.fillRect(0, imgY, imgX, imgH);
-    // Right band
-    const rg = pCtx.createLinearGradient(0, imgY, 0, imgY + imgH);
-    rg.addColorStop(0, skyColor); rg.addColorStop(1, asphaltColor);
-    pCtx.fillStyle = rg;
-    pCtx.fillRect(imgX + imgW, imgY, outW - imgX - imgW, imgH);
-  }
-
-  // Subtle edge bleed: draw 8px of the actual source along each edge
-  // so Flux has a colour-accurate starting point at the seams
-  const bleed = 8;
-  // Top of building → sky transition
-  const topBleed = document.createElement('canvas');
-  topBleed.width = imgW; topBleed.height = bleed;
-  topBleed.getContext('2d')!.drawImage(img, 0, 0, srcW, 1, 0, 0, imgW, bleed);
-  pCtx.globalAlpha = 0.5; pCtx.drawImage(topBleed, imgX, imgY - bleed); pCtx.globalAlpha = 1;
-
-  // Bottom of building → asphalt transition
-  const botBleed = document.createElement('canvas');
-  botBleed.width = imgW; botBleed.height = bleed;
-  botBleed.getContext('2d')!.drawImage(img, 0, srcH - 1, srcW, 1, 0, 0, imgW, bleed);
-  pCtx.globalAlpha = 0.5; pCtx.drawImage(botBleed, imgX, imgY + imgH); pCtx.globalAlpha = 1;
-
-  // Draw the source image
-  pCtx.drawImage(img, imgX, imgY, imgW, imgH);
-
-  const paddedDataUrl = pc.toDataURL('image/jpeg', 0.90);
-
-  // ── Mask: white = generate, black = preserve original ─────────────────────
-  const mc   = document.createElement('canvas');
-  mc.width   = outW; mc.height = outH;
-  const mCtx = mc.getContext('2d')!;
-
-  mCtx.fillStyle = '#ffffff';
-  mCtx.fillRect(0, 0, outW, outH);
-  mCtx.fillStyle = '#000000';
-  mCtx.fillRect(imgX, imgY, imgW, imgH);
-
-  // Soft 16px feather so Flux blends the edges seamlessly
-  const feather = 16;
-  const edges = [
-    [imgX, imgY, feather, imgH, true, false],           // left edge
-    [imgX + imgW - feather, imgY, feather, imgH, false, false], // right edge (inverted)
-    [imgX, imgY, imgW, feather, false, true],            // top edge
-    [imgX, imgY + imgH - feather, imgW, feather, false, false], // bottom edge (inverted)
-  ] as Array<[number, number, number, number, boolean, boolean]>;
-
-  for (const [ex, ey, ew, eh, invert, isTop] of edges) {
-    const g = isTop
-      ? mCtx.createLinearGradient(ex, ey, ex, ey + eh)
-      : ew < eh
-        ? mCtx.createLinearGradient(ex, ey, ex + ew, ey)
-        : mCtx.createLinearGradient(ex, ey, ex, ey + eh);
-    if (invert) {
-      g.addColorStop(0, '#ffffff'); g.addColorStop(1, '#000000');
-    } else {
-      g.addColorStop(0, '#000000'); g.addColorStop(1, '#ffffff');
-    }
-    mCtx.fillStyle = g;
-    mCtx.fillRect(ex, ey, ew, eh);
-  }
-
-  const maskDataUrl = mc.toDataURL('image/jpeg', 0.95);
-  return { paddedDataUrl, maskDataUrl };
-}
-
-/**
- * Build the Flux Fill Pro outpainting prompt for a specific template format.
- *
- * KEY CHANGE: prompt is written as "the building is small in this frame, fill the
- * surrounding space naturally" rather than "expand from the edges". This matches
- * how Gemini produces clean results — the model understands it must generate
- * large areas of sky and asphalt around the existing building.
- */
-function buildOutpaintPrompt(config: TemplateFormatConfig): string {
-  const { width, height, zones: z } = config;
-  const ar = width / height;
-
-  const preserve =
-    `The building in the centre of the image is real — preserve it EXACTLY: ` +
-    `same signage, brand names, logos, colours, architectural details, pixel-perfect. ` +
-    `Do NOT alter, regenerate or remove any text or logo on the building. ` +
-    `Match the existing sky colour, light direction, and pavement texture seamlessly. ` +
-    `No people. No parked cars in foreground. Photorealistic automotive advertising quality.`;
-
-  const asphaltRule =
-    `The foreground must be a wide, flat, empty asphalt or concrete surface — ` +
-    `the same material visible at the bottom of the building — ` +
-    `completely clear, no curbs, no bollards, no markings. ` +
-    `A vehicle will be placed here in post-production.`;
-
-  if (ar > 2.0) {
-    return (
-      `Professional automotive advertising background, ultra-wide ${width}×${height} format. ` +
-      `Photorealistic exterior scene of the same dealership shown in the input image, ` +
-      `photographed from a greater distance with a wider angle lens. ` +
-      `The dealership building is centred and proportionally small in this wide frame. ` +
-      `Clear sky fills the upper ${Math.round(z.groundStartPct * 100)}% of the frame. ` +
-      `Wide, flat, empty concrete or asphalt parking lot fills the lower ${Math.round((1 - z.groundStartPct) * 100)}% of the frame. ` +
-      `The right ${Math.round(z.carWidthPct * 100)}% of the frame is open flat ground — no objects. ` +
-      asphaltRule + ` ` +
-      preserve
-    );
-  } else if (ar < 0.7) {
-    return (
-      `Professional automotive advertising background, tall portrait ${width}×${height} format. ` +
-      `Photorealistic exterior scene of the same dealership shown in the input image, ` +
-      `photographed from a greater distance showing more sky and foreground. ` +
-      `Clear blue sky fills the upper ${Math.round(z.groundStartPct * 100)}% of the frame. ` +
-      `The dealership building appears centred in the middle section of the frame. ` +
-      `Wide, flat, empty concrete or asphalt parking lot fills the lower ` +
-      `${Math.round((1 - z.groundStartPct) * 100)}% of the frame — perfectly uniform, no cars, no poles. ` +
-      asphaltRule + ` ` +
-      preserve
-    );
-  } else {
-    return (
-      `Professional automotive advertising background, ${width}×${height} format. ` +
-      `Photorealistic dealership exterior, same location as the input image. ` +
-      `Sky fills the upper ${Math.round(z.groundStartPct * 100)}% of the frame. ` +
-      `The lower ${Math.round((1 - z.groundStartPct) * 100)}% is a wide, flat, empty asphalt surface. ` +
-      asphaltRule + ` ` +
-      preserve
-    );
-  }
-}
-
-/** Single outpaint pass: pad source → Flux Fill Pro. */
-async function outpaintPass(
-  sourceBgDataUrl: string,
-  targetW: number,
-  targetH: number,
-  prompt: string,
-): Promise<string> {
-  const { inpaintImage } = await import('./replicateClient');
-  const { paddedDataUrl, maskDataUrl } = await padToTargetRatio(sourceBgDataUrl, targetW, targetH);
-  try {
-    return await inpaintImage({ compositeDataUrl: paddedDataUrl, maskDataUrl, prompt });
-  } catch {
-    return paddedDataUrl;
-  }
-}
-
-/**
- * Generate one background for a specific template by outpainting the clean base.
- *
- * Uses a 2-PASS approach for extreme aspect ratio changes (AR ratio > 2×):
- *   Pass 1 → intermediate AR (geometric mean between source and target)
- *   Pass 2 → final target AR
- *
- * Each pass expands by ≤ 2× — manageable for Flux Fill Pro.
- * Single pass for moderate expansions (square, standard 4:3, mild portrait).
- *
- * This matches how Gemini produces high-quality results: multiple steps of
- * coherent expansion rather than one huge jump.
- */
-async function outpaintForFormat(
-  cleanBaseBgDataUrl: string,
-  config: TemplateFormatConfig,
-): Promise<string> {
-  const targetAr = config.width / config.height;
-  const sourceAr = 4 / 3; // clean base is always 4:3 (Phase 1a output)
-  const arRatio   = Math.max(targetAr, sourceAr) / Math.min(targetAr, sourceAr);
-
-  const finalPrompt = buildOutpaintPrompt(config);
-
-  if (arRatio <= 2.0) {
-    // Single pass — moderate expansion
-    return outpaintPass(cleanBaseBgDataUrl, config.width, config.height, finalPrompt);
-  }
-
-  // ── 2-pass for extreme expansions (wide banners, portrait 9:16) ───────────
-  // Intermediate AR = geometric mean → each step expands by ≈ √arRatio (<= 2×)
-  const intAr  = Math.sqrt(sourceAr * targetAr);
-  const intH   = 450; // matches clean base height
-  const intW   = Math.round(intH * intAr);
-
-  // Intermediate config — same zones as target but at the halfway AR
-  const intConfig: TemplateFormatConfig = {
-    ...config,
-    width: intW, height: intH,
-    compositionInstruction: buildZoneInstruction(intW, intH, config.carOnRight, config.zones),
-  };
-  const intPrompt = buildOutpaintPrompt(intConfig);
-
-  // Pass 1: source (4:3) → intermediate AR
-  const intermediate = await outpaintPass(cleanBaseBgDataUrl, intW, intH, intPrompt);
-
-  // Pass 2: intermediate → final target AR
-  return outpaintPass(intermediate, config.width, config.height, finalPrompt);
-}
-
 // ─── Phase 2 public API ───────────────────────────────────────────────────────
 
 /**
@@ -816,7 +619,7 @@ export async function generateDealerBackgroundsForTemplates(
 
   const results = await Promise.allSettled(
     configs.map(async (config) => {
-      const url = await generateCleanBackground(cleanBaseBgDataUrl, config);
+      const url = await recomposeForFormat(cleanBaseBgDataUrl, config);
       onProgress?.(config.key);
       return { key: config.key, url };
     }),

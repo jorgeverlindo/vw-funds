@@ -2384,7 +2384,8 @@ export function ProjectAgentPane({ isOpen, onClose, userType, activeUserName }: 
           const primaryVehicle = primaryOffer
             ? { year: primaryOffer.year, make: primaryOffer.make,
                 model: primaryOffer.model, trim: primaryOffer.trim,
-                offerId: primaryOffer.id }
+                offerId: primaryOffer.id,
+                imageUrl: (primaryOffer as { image?: string }).image }
             : { year: new Date().getFullYear().toString(), make: vehicleContext.split(",")[0]?.trim() ?? "Vehicle",
                 model: "", trim: "", offerId: "preview" };
 
@@ -2392,9 +2393,9 @@ export function ProjectAgentPane({ isOpen, onClose, userType, activeUserName }: 
           // Removes all vehicles, people, clutter. Builds clear ground plane.
           const cleanPreviewBg = await generatePreviewBackground(storedImage);
 
-          // Phase 1b: Flux Kontext Pro — add primary vehicle to clean bg (~30s)
-          // Single-pass: model handles perspective, lighting, shadow, ground contact.
-          // Replaces canvas composite + Flux Fill Pro pipeline entirely.
+          // Phase 1b: nano-banana (Gemini 2.5 Flash Image) — place the primary
+          // vehicle into the clean bg using the catalog cutout as a reference
+          // image. Preserves car identity; model handles perspective/lighting/shadow.
           const previewUrl = await generatePreviewComposite(cleanPreviewBg, primaryVehicle);
 
           // Build the initial background object
@@ -2405,12 +2406,12 @@ export function ProjectAgentPane({ isOpen, onClose, userType, activeUserName }: 
             thumbnail: cleanPreviewBg,
             images: { "website-600x450": cleanPreviewBg },
             _dealerPhotoDataUrl: storedImage,
-            // Store clean 4:3 base for Phase 2a outpainting.
-            // Phase 2a uses this (already car-free) to outpaint each template AR
-            // via Flux Fill Pro — avoids re-cleaning the dealer photo per template.
+            // Clean 4:3 base for Phase 2a — nano-banana recomposes this scene
+            // at each template's aspect ratio (no re-cleaning per template).
             _cleanBaseBg: cleanPreviewBg,
             _confirmedOffers: confirmedOffers.map(o => ({
               offerId: o.id, year: o.year, make: o.make, model: o.model, trim: o.trim,
+              imageUrl: (o as { image?: string }).image,
             })),
           };
 
@@ -3604,7 +3605,7 @@ export function ProjectAgentPane({ isOpen, onClose, userType, activeUserName }: 
                             // ── PHASE 2: Generate per-template clean bgs + per-offer composites ──
                             const dealerPhoto = (bgObject as any)._dealerPhotoDataUrl as string | undefined;
                             const confirmedOfferDescs = (bgObject as any)._confirmedOffers as
-                              Array<{ offerId: string; year: string; make: string; model: string; trim: string }> | undefined;
+                              Array<{ offerId: string; year: string; make: string; model: string; trim: string; imageUrl?: string }> | undefined;
 
                             if (dealerPhoto) {
                               dispatchAction({ action: "set_dealer_bg_generating", value: true } as never);

@@ -1128,56 +1128,82 @@ function JellyBeanCard({
         // float the car on some generations. The generated asphalt is a uniform
         // light region — walk rows bottom-up in the centre band and find where
         // brightness departs from the bottom reference (building/ground junction).
-        let detectedGround: number | null = null;
-        try {
-          const bandX = Math.round(w * 0.25);
-          const bandW = Math.max(8, Math.round(w * 0.5));
-          const px = ctx.getImageData(bandX, 0, bandW, h).data;
-          const rowMean: number[] = new Array(h);
-          for (let y = 0; y < h; y++) {
-            let s = 0;
-            for (let x = 0; x < bandW; x++) {
-              const i = (y * bandW + x) * 4;
-              s += px[i] + px[i + 1] + px[i + 2];
+        const detectGroundStart = (): number | null => {
+          try {
+            const bandX = Math.round(w * 0.25);
+            const bandW = Math.max(8, Math.round(w * 0.5));
+            const px = ctx.getImageData(bandX, 0, bandW, h).data;
+            const rowMean: number[] = new Array(h);
+            for (let y = 0; y < h; y++) {
+              let s = 0;
+              for (let x = 0; x < bandW; x++) {
+                const i = (y * bandW + x) * 4;
+                s += px[i] + px[i + 1] + px[i + 2];
+              }
+              rowMean[y] = s / (bandW * 3);
             }
-            rowMean[y] = s / (bandW * 3);
-          }
-          // Reference: average of the bottom 7% of rows (pure asphalt)
-          const refStart = Math.round(h * 0.93);
-          let ref = 0;
-          for (let y = refStart; y < h; y++) ref += rowMean[y];
-          ref /= (h - refStart);
+            // Reference: average of the bottom 7% of rows (pure asphalt)
+            const refStart = Math.round(h * 0.93);
+            let ref = 0;
+            for (let y = refStart; y < h; y++) ref += rowMean[y];
+            ref /= (h - refStart);
 
-          // Walk up: ground continues while rows stay close to the reference
-          // and have no sharp local jump. First break = building/ground junction.
-          let groundY = refStart;
-          for (let y = refStart; y >= Math.round(h * 0.30); y--) {
-            const localJump = Math.abs(rowMean[y] - rowMean[Math.min(h - 1, y + 2)]);
-            if (Math.abs(rowMean[y] - ref) > 32 || localJump > 15) { groundY = y + 2; break; }
-            groundY = y;
+            // Walk up: ground continues while rows stay close to the reference
+            // and have no sharp local jump. First break = building/ground junction.
+            let groundY = refStart;
+            for (let y = refStart; y >= Math.round(h * 0.30); y--) {
+              const localJump = Math.abs(rowMean[y] - rowMean[Math.min(h - 1, y + 2)]);
+              if (Math.abs(rowMean[y] - ref) > 32 || localJump > 15) { groundY = y + 2; break; }
+              groundY = y;
+            }
+            const gf = groundY / h;
+            return (gf > 0.30 && gf < 0.92) ? gf : null;
+          } catch { return null; }
+        };
+
+        let groundStart = detectGroundStart();
+
+        // ── Ground normalization — bottom-anchored zoom ────────────────────────
+        // If the generation gave a thin ground band (asphalt starting too deep),
+        // zoom the background about the bottom edge (cropping expendable sky) so
+        // the asphalt band is lifted toward the canonical line. This makes the
+        // ground sit "always around the same place" regardless of generation.
+        const targetStart = isWide ? 0.55 : 0.62;
+        if (groundStart !== null && groundStart > targetStart + 0.03) {
+          const f = Math.min(1.3, (1 - targetStart) / (1 - groundStart));
+          if (f > 1.01) {
+            // Re-draw bg scaled uniformly about the bottom-centre anchor
+            const nx = w / 2 + (bx - w / 2) * f;
+            const ny = h + (by - h) * f;
+            ctx.clearRect(0, 0, w, h);
+            ctx.drawImage(bgImg, nx, ny, bw * f, bh * f);
+            groundStart = 1 - (1 - groundStart) * f;
           }
-          const gFrac = groundY / h;
-          if (gFrac > 0.30 && gFrac < 0.90) {
-            // Tires land 45% into the visible ground band — mid-foreground,
-            // clearly on the asphalt, leaving depth in front of the car.
-            detectedGround = gFrac + 0.45 * (1 - gFrac);
-          }
-        } catch { /* taint or read failure — fall back to the table */ }
+        }
+
+        // Tire line: 45% into the visible ground band — mid-foreground, clearly
+        // on the asphalt, leaving depth in front of the car.
+        const detectedGround = groundStart !== null
+          ? groundStart + 0.45 * (1 - groundStart)
+          : null;
 
         // ── Vertical positioning ────────────────────────────────────────────────
         const textZoneH = isWide ? 0 : Math.round(h * 0.20) + 27;
-        // Explicit/detected ground (dealer flow) → relaxed clamp: the car's
-        // transparent PNG corners may graze the label line, tires reach real ground.
+        // Explicit/detected ground (dealer flow) → deep clamp: tires may reach
+        // ~0.80 of card height; the car's lower body coexists with the label line
+        // (already the case visually) — floating was the real problem.
         const tireTarget = (detectedGround ?? groundFraction) !== undefined
-          ? (isWide ? Math.round(h * 0.03) : Math.round(textZoneH * 0.50))
+          ? (isWide ? Math.round(h * 0.03) : Math.round(textZoneH * 0.35))
           : textZoneH + Math.round(h * 0.03);
-        // Plausibility guard: pixel detection only REFINES the table value (±0.10).
-        // A wild estimate (e.g. white wall ≈ light asphalt → junction missed)
-        // must never beat the anatomy-aligned table line.
+        // ASYMMETRIC plausibility guard:
+        //   • detection DEEPER than the table → trusted (thin ground band; placing
+        //     deeper is safe — more asphalt below), capped at 0.90;
+        //   • detection SHALLOWER by more than 0.05 → rejected (white-wall failure
+        //     mode pushes cars UP — never allow that direction).
         const trustedDetection =
           detectedGround !== null && groundFraction !== undefined &&
-          Math.abs(detectedGround - groundFraction) <= 0.10
-            ? detectedGround
+          detectedGround >= groundFraction - 0.05
+            ? Math.min(detectedGround, 0.90)
             : null;
         // Priority: trusted detection > per-format table > legacy defaults
         const effectiveGround = trustedDetection ?? groundFraction ?? (isWide ? 0.78 : 0.65);

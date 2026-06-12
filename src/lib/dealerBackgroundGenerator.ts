@@ -314,6 +314,10 @@ function buildKontextPrompt(config: TemplateFormatConfig): string {
       : { sky: 25, buildingEnd: 60 };// square/standard: ground = bottom 40%
 
   const anatomy =
+    `CAMERA: photographed as a WIDE SHOT from far across an empty parking lot — ` +
+    `the camera stands well back on open asphalt, so a VAST empty asphalt foreground ` +
+    `stretches between the camera and the building. The building appears compact in the ` +
+    `middle distance, never filling the frame. ` +
     `COMPOSITION — exactly three horizontal bands, in this order: ` +
     `(1) SKY: the top ${bands.sky}% of the frame is clear open sky — ` +
     `uncluttered, no objects; the dealer name and brand logo will overlay this band. ` +
@@ -323,7 +327,8 @@ function buildKontextPrompt(config: TemplateFormatConfig): string {
     `is a wide, flat, completely EMPTY asphalt/concrete forecourt spanning the full width. ` +
     `A vehicle will be parked on this band and price text will overlay it: ` +
     `no cars, no poles, no markings, no clutter, uniform surface. ` +
-    `The ground band is NON-NEGOTIABLE: it must visibly start at ${bands.buildingEnd}% from the top. `;
+    `The ground band is NON-NEGOTIABLE: it must visibly start at ${bands.buildingEnd}% from the top — ` +
+    `if in doubt, show MORE asphalt foreground, never less. `;
 
   if (ar > 2.0) {
     // ── WIDE BANNERS (2000×500, 970×250) ──────────────────────────────────

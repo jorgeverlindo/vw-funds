@@ -974,19 +974,20 @@ function dealerCarPlacement(
   template: Template,
 ): DealerPlacement {
   if (!bg?.id?.startsWith("dealer-bg-")) return { ground: bg?.groundFraction };
+  // Tire lines aligned to the 3-band anatomy enforced in the generation prompt
+  // (SKY / DEALERSHIP / GROUND): wide ground band = bottom 50%, others = bottom 40%.
+  // One consistent line per format class — cars sit visibly ON the asphalt.
   const ar = template.width / template.height;
   if (ar > 2.0) {
-    // Wide banners: ground band 30%→100%. Car low in frame (close to camera),
-    // centre-right so the left text zone stays clear, realistic modest scale.
-    return { ground: 0.84, carWidth: 0.40, anchorX: 0.62 };
+    // Wide banners (2000×500, 970×250): ground band 50%→100% → tires deep at 86%.
+    return { ground: 0.86, carWidth: 0.40, anchorX: 0.62 };
   }
   if (ar < 0.7) {
-    // Portrait: large generated foreground — car centred, tires well down.
+    // Portrait: ground band 60%→100% → tires at 76%.
     return { ground: 0.76, carWidth: 0.70, anchorX: 0.5 };
   }
-  // Square / standard: ground starts at 60% — tires at 70%, slightly smaller car
-  // so it reads as parked in front of the building, not pasted over it.
-  return { ground: 0.70, carWidth: 0.62, anchorX: 0.5 };
+  // Square / standard: ground band 60%→100% → tires at 74%.
+  return { ground: 0.74, carWidth: 0.62, anchorX: 0.5 };
 }
 
 // Template key lookup from dimensions
@@ -1138,10 +1139,18 @@ function JellyBeanCard({
         // Explicit/detected ground (dealer flow) → relaxed clamp: the car's
         // transparent PNG corners may graze the label line, tires reach real ground.
         const tireTarget = (detectedGround ?? groundFraction) !== undefined
-          ? (isWide ? Math.round(h * 0.03) : Math.round(textZoneH * 0.70))
+          ? (isWide ? Math.round(h * 0.03) : Math.round(textZoneH * 0.50))
           : textZoneH + Math.round(h * 0.03);
-        // Priority: detected from pixels > per-format table > legacy defaults
-        const effectiveGround = detectedGround ?? groundFraction ?? (isWide ? 0.78 : 0.65);
+        // Plausibility guard: pixel detection only REFINES the table value (±0.10).
+        // A wild estimate (e.g. white wall ≈ light asphalt → junction missed)
+        // must never beat the anatomy-aligned table line.
+        const trustedDetection =
+          detectedGround !== null && groundFraction !== undefined &&
+          Math.abs(detectedGround - groundFraction) <= 0.10
+            ? detectedGround
+            : null;
+        // Priority: trusted detection > per-format table > legacy defaults
+        const effectiveGround = trustedDetection ?? groundFraction ?? (isWide ? 0.78 : 0.65);
         const groundFromBot   = Math.round(h * (1 - effectiveGround));
 
         // ── Car dimensions — constrained to fit between top bar and tire line ───

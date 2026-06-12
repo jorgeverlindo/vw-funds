@@ -299,50 +299,65 @@ function buildKontextPrompt(config: TemplateFormatConfig): string {
     `Preserve ALL signage text exactly: same spelling, same colours, same font style. ` +
     `Do NOT alter, blur, or regenerate any text or logo on the building. `;
 
+  // ── UNIFORM 3-BAND ANATOMY (every format) ────────────────────────────────
+  // SKY (top)      → overlay zone for dealer name + brand logo
+  // DEALERSHIP     → the building band, signage preserved
+  // GROUND (bottom)→ wide open asphalt: the vehicle parks here AND the price
+  //                  text overlays here. This band must be GENEROUS and start
+  //                  at a consistent height so the client-side tire line
+  //                  (wide 0.86 / normal 0.74 / portrait 0.76) always lands
+  //                  on asphalt regardless of generation variation.
+  const bands = ar > 2.0
+    ? { sky: 25, buildingEnd: 50 }   // wide banners: ground = bottom 50%
+    : ar < 0.7
+      ? { sky: 35, buildingEnd: 60 } // portrait: ground = bottom 40%
+      : { sky: 25, buildingEnd: 60 };// square/standard: ground = bottom 40%
+
+  const anatomy =
+    `COMPOSITION — exactly three horizontal bands, in this order: ` +
+    `(1) SKY: the top ${bands.sky}% of the frame is clear open sky — ` +
+    `uncluttered, no objects; the dealer name and brand logo will overlay this band. ` +
+    `(2) DEALERSHIP: the building occupies the band between ${bands.sky}% and ${bands.buildingEnd}% ` +
+    `of the frame height — full facade visible with all signage. ` +
+    `(3) GROUND: everything below ${bands.buildingEnd}% — the bottom ${100 - bands.buildingEnd}% of the frame — ` +
+    `is a wide, flat, completely EMPTY asphalt/concrete forecourt spanning the full width. ` +
+    `A vehicle will be parked on this band and price text will overlay it: ` +
+    `no cars, no poles, no markings, no clutter, uniform surface. ` +
+    `The ground band is NON-NEGOTIABLE: it must visibly start at ${bands.buildingEnd}% from the top. `;
+
   if (ar > 2.0) {
     // ── WIDE BANNERS (2000×500, 970×250) ──────────────────────────────────
-    // Strategy: extend white walls LATERALLY — building appears wider, not stretched
     return (
       `Professional ${width}×${height} automotive advertising background. ` +
       `Adapt this dealership photograph to an ultra-wide format by EXTENDING THE WALLS LATERALLY: ` +
-      `the white building facade walls extend further left and right to fill the wider frame. ` +
-      `The building must appear to have LONGER WALLS, not to be stretched or zoomed out. ` +
+      `the building facade extends further left and right to fill the wider frame — ` +
+      `LONGER WALLS, not stretched, not zoomed. ` +
+      anatomy +
+      `The right ${Math.round(z.carWidthPct * 100)}% of the ground band stays fully open for the vehicle; ` +
+      `the bottom-left stays clean for price text. ` +
       anchor +
       wallText +
-      `Sky fills the upper ${Math.round(z.groundStartPct * 100)}% of the frame, continuous and natural. ` +
-      `The concrete/asphalt parking lot extends uniformly across the full width. ` +
-      `The right ${Math.round(z.carWidthPct * 100)}% of the frame has wide open flat ground — completely empty. ` +
-      `The bottom-left ${Math.round(z.textWidthPct * 100)}% × bottom ${Math.round(z.textHeightPct * 100)}% is clean ground — no objects. ` +
       clearForeground +
       preserveSignage
     );
   } else if (ar < 0.7) {
     // ── PORTRAIT / STORY (9:16) ────────────────────────────────────────────
-    // Strategy: extend SKY above and GROUND below — walls do NOT extend
     return (
       `Professional ${width}×${height} automotive advertising background. ` +
-      `Adapt this dealership photograph to a tall portrait format by EXTENDING SKY ABOVE and GROUND BELOW: ` +
-      `the building remains as a horizontal element in the centre of the frame. ` +
-      `ABOVE the building: extend the existing sky — same blue tone, same cloud style, no new objects. ` +
-      `BELOW the building: extend the concrete/asphalt parking lot dramatically downward. ` +
-      `The lower ${Math.round((1 - z.groundStartPct) * 100)}% of the frame must be a vast, flat, ` +
-      `completely empty concrete surface — uniform texture, no cars, no poles, no markings. ` +
-      `The building walls do NOT extend — only sky and ground are added. ` +
+      `Adapt this dealership photograph to a tall portrait format by EXTENDING SKY ABOVE ` +
+      `and GROUND BELOW — the building walls do NOT extend. ` +
+      anatomy +
       anchor +
       wallText +
       clearForeground +
       preserveSignage
     );
   } else {
-    // ── SQUARE / STANDARD (1:1, 4:3, 1.2:1) ──────────────────────────────
-    // Strategy: moderate extension of sky above and ground below
+    // ── SQUARE / STANDARD (1:1, 5:4, 4:3) ─────────────────────────────────
     return (
       `Professional ${width}×${height} automotive advertising background. ` +
-      `Adapt this dealership photograph to fill the frame: ` +
-      `extend the sky above the building and the concrete/asphalt parking lot below. ` +
-      `The building is positioned in the upper portion of the frame. ` +
-      `The lower ${Math.round((1 - z.groundStartPct) * 100)}% of the frame must be flat, ` +
-      `empty concrete/asphalt — no objects, no parked cars. ` +
+      `Adapt this dealership photograph to fill the frame, keeping the full facade visible. ` +
+      anatomy +
       anchor +
       wallText +
       clearForeground +

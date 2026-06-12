@@ -1007,6 +1007,7 @@ function templateKey(width: number, height: number): string {
 function JellyBeanCard({
   offer, template, fixedHeight = 160, bgImage, brandKit,
   groundFraction, carWidthFraction, carAnchorX, compositeUrl, isGenerating,
+  bgExactFormat = true,
 }: {
   offer: Offer & { image?: string };
   template: Template;
@@ -1017,6 +1018,10 @@ function JellyBeanCard({
   carWidthFraction?: number;
   /** Horizontal centre of the car (0–1 of card width). Dealer flow only. */
   carAnchorX?: number;
+  /** False when bgImage is a wrong-aspect-ratio fallback (the per-format bg is
+   *  still generating). While generating, the card holds the skeleton instead
+   *  of compositing a weirdly-cropped fallback. */
+  bgExactFormat?: boolean;
   /** When true: Phase 2b composites are still generating. Show pulse overlay. */
   isGenerating?: boolean;
   /** Pre-generated Flux composite (car already baked in). When provided, the car
@@ -1042,11 +1047,17 @@ function JellyBeanCard({
     () => !!(groundFraction && offer.image && bgImage && !compositeUrl)
   );
 
+  // The per-format bg hasn't arrived yet (Phase 2a running) — bgImage is a
+  // wrong-ratio fallback. Hold the skeleton; never composite a weird crop.
+  // When generation finishes without an exact bg (failure), render the fallback
+  // anyway — better than an infinite skeleton.
+  const awaitingBg = !!isGenerating && !bgExactFormat;
+
   useEffect(() => {
     // Canvas composite only runs for DEALER backgrounds (groundFraction defined).
     // For catalog/static backgrounds (groundFraction undefined) → CSS overlay uses
     // original positions (h*0.26 normal, bottom:0/height:90% wide), no change.
-    if (compositeUrl || !groundFraction || !offer.image || !bgImage) {
+    if (awaitingBg || compositeUrl || !groundFraction || !offer.image || !bgImage) {
       setCompositeImage(null); setCarBottom(null); setComposing(false); return;
     }
 
@@ -2706,6 +2717,7 @@ function ProjectDetailViewInner({
                     carWidthFraction={dealerCarPlacement(selectedBg as CustomBackground | null, template).carWidth ?? (selectedBg as CustomBackground | null)?.carWidthFraction}
                     carAnchorX={dealerCarPlacement(selectedBg as CustomBackground | null, template).anchorX}
                     isGenerating={isDealerBgGenerating && !!(selectedBg as CustomBackground | null)?.images}
+                    bgExactFormat={!!(selectedBg as CustomBackground | null)?.images?.[templateKey(template.width, template.height)]}
                   />
                 </motion.div>
               ))}
@@ -2762,6 +2774,7 @@ function ProjectDetailViewInner({
                       carWidthFraction={dealerCarPlacement(bg as CustomBackground | null, template).carWidth ?? (bg as CustomBackground | null)?.carWidthFraction}
                       carAnchorX={dealerCarPlacement(bg as CustomBackground | null, template).anchorX}
                       isGenerating={isDealerBgGenerating && !!(bg as CustomBackground | null)?.images}
+                      bgExactFormat={!!(bg as CustomBackground | null)?.images?.[templateKey(template.width, template.height)]}
                     />
                   </motion.div>
                 );

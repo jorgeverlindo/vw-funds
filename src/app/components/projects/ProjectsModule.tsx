@@ -1061,7 +1061,12 @@ function JellyBeanCard({
 
     (async () => {
       try {
-        const [bgImg, carImg] = await Promise.all([loadImg(bgImage), loadImg(offer.image!)]);
+        // Load the CAR first (Cloudinary — stable URL). The BACKGROUND may be an
+        // expired replicate.delivery URL (~1h TTL): its <img> still renders from
+        // browser cache, but a fresh fetch 404s. In that case we skip the baked
+        // composite but STILL compute a precise carBottom for the CSS overlay,
+        // so placement stays correct even with a dead bg URL.
+        const carImg = await loadImg(offer.image!);
         if (cancelled) return;
 
         // ── Alpha-detect tire position ─────────────────────────────────────────
@@ -1077,6 +1082,31 @@ function JellyBeanCard({
           for (let x = 0; x < sW; x++) {
             if (data[(y * sW + x) * 4 + 3] > 20) { tireFraction = y / sH; break outer; }
           }
+        }
+
+        let bgImg: HTMLImageElement | null = null;
+        try {
+          bgImg = await loadImg(bgImage);
+        } catch (e) {
+          console.warn('[JellyBeanCard] bg fetch failed — expired replicate URL? Falling back to precise CSS overlay.', e);
+        }
+        if (cancelled) return;
+
+        if (!bgImg) {
+          // ── Precise CSS fallback (bg unreachable) ────────────────────────────
+          // Mirror the CSS overlay box geometry and set carBottom so the tires
+          // land exactly on the table ground line. Baked shadow is lost, but the
+          // overlay's CSS drop-shadow still grounds the car visually.
+          const carArCss  = carImg.naturalWidth / carImg.naturalHeight;
+          const ground    = groundFraction ?? (isWide ? 0.78 : 0.65);
+          const tiresFromBottom = Math.round(h * (1 - ground));
+          const boxH = isWide ? h * (ground - 0.08) : h * 0.52;
+          const boxW = (carWidthFraction ?? (isWide ? 0.55 : 0.88)) * w;
+          const renderedH = Math.min(boxH, boxW / carArCss);
+          const cssBottom = Math.max(0, Math.round(tiresFromBottom - renderedH * (1 - tireFraction)));
+          setCompositeImage(null);
+          setCarBottom(cssBottom);
+          return;
         }
 
         // ── Composite canvas + background FIRST (ground detection reads its pixels) ──

@@ -2826,6 +2826,14 @@ export function ProjectAgentPane({ isOpen, onClose, userType, activeUserName }: 
       userForcedTool = "propose_share";
     }
 
+    // Dealer scene upload + no project open → the model MUST start with setup_project.
+    // Without this it sometimes answers conversationally or proposes catalog
+    // backgrounds. flow_scope is additionally overridden in getFlowSteps, so the
+    // dealer_bg step is guaranteed regardless of the arguments the model picks.
+    if (hasBgIntent && !ctx.projectId) {
+      userForcedTool = "setup_project";
+    }
+
     await streamMessage(history, ctx,
       d => { accRef.current += d; setStreamingText(accRef.current); },
       handleToolResult,
@@ -2843,6 +2851,15 @@ export function ProjectAgentPane({ isOpen, onClose, userType, activeUserName }: 
   const getFlowSteps = useCallback((): string[] => {
     const msgs = messagesRef.current;
     const setupMsg = msgs.filter((m): m is SetupMsg => m.type === "setup").at(-1);
+
+    // 0. Dealer-bg override — DETERMINISTIC, beats whatever flow_scope the model
+    //    chose. If a dealer scene image is staged (uploaded with bg intent and not
+    //    yet consumed by generate_dealer_background), the flow MUST route through
+    //    the dealer_bg step instead of catalog backgrounds. The ref is cleared
+    //    when the background is generated, so later flows are unaffected.
+    if (setupMsg && pendingDealerImageRef.current) {
+      return ["offers", "templates", "dealer_bg", "brand"];
+    }
 
     // 1. flow_scope enum (set by agent in tools.ts — primary source of truth)
     const SCOPE_STEPS: Record<NonNullable<SetupInput["flow_scope"]>, string[]> = {

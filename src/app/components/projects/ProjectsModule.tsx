@@ -1078,22 +1078,73 @@ function JellyBeanCard({
           }
         }
 
-        // ── Vertical positioning — compute FIRST so availH derives from it ────────
+        // ── Composite canvas + background FIRST (ground detection reads its pixels) ──
+        const canvas = document.createElement('canvas');
+        canvas.width = w; canvas.height = h;
+        const ctx = canvas.getContext('2d')!;
+
+        // Background fills the card (same as object-cover)
+        const bgAr   = bgImg.naturalWidth / bgImg.naturalHeight;
+        const cardAr = w / h;
+        let bx = 0, by = 0, bw = w, bh = h;
+        if (bgAr > cardAr) { bw = Math.round(h * bgAr); bx = -Math.round((bw - w) / 2); }
+        else                { bh = Math.round(w / bgAr); by = -Math.round((bh - h) / 2); }
+        ctx.drawImage(bgImg, bx, by, bw, bh);
+
+        // ── Detect the REAL ground line from the rendered background ───────────
+        // The per-format table is only a fallback: each nano-banana generation
+        // places the asphalt at a slightly different height, so fixed fractions
+        // float the car on some generations. The generated asphalt is a uniform
+        // light region — walk rows bottom-up in the centre band and find where
+        // brightness departs from the bottom reference (building/ground junction).
+        let detectedGround: number | null = null;
+        try {
+          const bandX = Math.round(w * 0.25);
+          const bandW = Math.max(8, Math.round(w * 0.5));
+          const px = ctx.getImageData(bandX, 0, bandW, h).data;
+          const rowMean: number[] = new Array(h);
+          for (let y = 0; y < h; y++) {
+            let s = 0;
+            for (let x = 0; x < bandW; x++) {
+              const i = (y * bandW + x) * 4;
+              s += px[i] + px[i + 1] + px[i + 2];
+            }
+            rowMean[y] = s / (bandW * 3);
+          }
+          // Reference: average of the bottom 7% of rows (pure asphalt)
+          const refStart = Math.round(h * 0.93);
+          let ref = 0;
+          for (let y = refStart; y < h; y++) ref += rowMean[y];
+          ref /= (h - refStart);
+
+          // Walk up: ground continues while rows stay close to the reference
+          // and have no sharp local jump. First break = building/ground junction.
+          let groundY = refStart;
+          for (let y = refStart; y >= Math.round(h * 0.30); y--) {
+            const localJump = Math.abs(rowMean[y] - rowMean[Math.min(h - 1, y + 2)]);
+            if (Math.abs(rowMean[y] - ref) > 32 || localJump > 15) { groundY = y + 2; break; }
+            groundY = y;
+          }
+          const gFrac = groundY / h;
+          if (gFrac > 0.30 && gFrac < 0.90) {
+            // Tires land 45% into the visible ground band — mid-foreground,
+            // clearly on the asphalt, leaving depth in front of the car.
+            detectedGround = gFrac + 0.45 * (1 - gFrac);
+          }
+        } catch { /* taint or read failure — fall back to the table */ }
+
+        // ── Vertical positioning ────────────────────────────────────────────────
         const textZoneH = isWide ? 0 : Math.round(h * 0.20) + 27;
-        // When the caller supplies an explicit groundFraction (dealer flow — the
-        // ground geometry is known from the generation prompt), trust it and use a
-        // relaxed clamp (70% of text zone): the car's transparent PNG corners may
-        // graze the label line, but the tires reach the real ground for realism.
-        const tireTarget = groundFraction !== undefined
+        // Explicit/detected ground (dealer flow) → relaxed clamp: the car's
+        // transparent PNG corners may graze the label line, tires reach real ground.
+        const tireTarget = (detectedGround ?? groundFraction) !== undefined
           ? (isWide ? Math.round(h * 0.03) : Math.round(textZoneH * 0.70))
           : textZoneH + Math.round(h * 0.03);
-        // groundFraction defaults: wide 0.78 (low horizon banner), normal 0.65
-        const effectiveGround = groundFraction ?? (isWide ? 0.78 : 0.65);
+        // Priority: detected from pixels > per-format table > legacy defaults
+        const effectiveGround = detectedGround ?? groundFraction ?? (isWide ? 0.78 : 0.65);
         const groundFromBot   = Math.round(h * (1 - effectiveGround));
 
         // ── Car dimensions — constrained to fit between top bar and tire line ───
-        // For wide: car height = space from topBar (8%) to tireY, never overflows.
-        // For normal: 55% of card height (car overlaps text zone slightly, CSS clips).
         const carAr  = carImg.naturalWidth / carImg.naturalHeight;
         const availW = carWidthFraction !== undefined
           ? Math.round(w * carWidthFraction)
@@ -1111,9 +1162,6 @@ function JellyBeanCard({
         const bottom        = Math.max(rawBottom, tireTarget);
 
         // ── Horizontal positioning ─────────────────────────────────────────────
-        // carAnchorX (0–1): horizontal centre of the car as a fraction of card width.
-        // Dealer flow passes 0.60 for wide (centre-right, clear of left text) and
-        // 0.50 for normal. Without it: wide right-aligned, normal centred (legacy).
         const carX = carAnchorX !== undefined
           ? Math.max(0, Math.min(w - rendW, Math.round(w * carAnchorX - rendW / 2)))
           : isWide
@@ -1121,19 +1169,6 @@ function JellyBeanCard({
             : Math.round((w - rendW) / 2);    // normal: centered
 
         const carY = h - bottom - rendH;    // from top of card
-
-        // ── Composite onto canvas ──────────────────────────────────────────────
-        const canvas = document.createElement('canvas');
-        canvas.width = w; canvas.height = h;
-        const ctx = canvas.getContext('2d')!;
-
-        // Background fills the card (same as object-cover)
-        const bgAr   = bgImg.naturalWidth / bgImg.naturalHeight;
-        const cardAr = w / h;
-        let bx = 0, by = 0, bw = w, bh = h;
-        if (bgAr > cardAr) { bw = Math.round(h * bgAr); bx = -Math.round((bw - w) / 2); }
-        else                { bh = Math.round(w / bgAr); by = -Math.round((bh - h) / 2); }
-        ctx.drawImage(bgImg, bx, by, bw, bh);
 
         // Soft elliptical contact shadow at the tire line — without it the car
         // reads as floating even when the tires sit exactly on the ground.

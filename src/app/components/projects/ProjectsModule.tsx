@@ -1035,16 +1035,23 @@ function JellyBeanCard({
   // Falls back to CSS overlay while the async composite is generating.
   const [compositeImage, setCompositeImage] = useState<string | null>(null);
   const [carBottom,      setCarBottom]      = useState<number | null>(null);
+  // True while the canvas composite is being computed (dealer flow only).
+  // Initialised from props so the FIRST paint already shows the skeleton —
+  // the raw bg + CSS car must never flash before the final render.
+  const [composing, setComposing] = useState<boolean>(
+    () => !!(groundFraction && offer.image && bgImage && !compositeUrl)
+  );
 
   useEffect(() => {
     // Canvas composite only runs for DEALER backgrounds (groundFraction defined).
     // For catalog/static backgrounds (groundFraction undefined) → CSS overlay uses
     // original positions (h*0.26 normal, bottom:0/height:90% wide), no change.
     if (compositeUrl || !groundFraction || !offer.image || !bgImage) {
-      setCompositeImage(null); setCarBottom(null); return;
+      setCompositeImage(null); setCarBottom(null); setComposing(false); return;
     }
 
     let cancelled = false;
+    setComposing(true); // skeleton on while the composite is being computed
 
     // Load image via fetch+blob to avoid CORS canvas taint (Replicate CDN + local assets)
     const loadImg = async (src: string): Promise<HTMLImageElement> => {
@@ -1106,6 +1113,7 @@ function JellyBeanCard({
           const cssBottom = Math.max(0, Math.round(tiresFromBottom - renderedH * (1 - tireFraction)));
           setCompositeImage(null);
           setCarBottom(cssBottom);
+          setComposing(false);
           return;
         }
 
@@ -1261,9 +1269,10 @@ function JellyBeanCard({
         if (!cancelled) {
           setCompositeImage(canvas.toDataURL('image/jpeg', 0.92));
           setCarBottom(bottom);
+          setComposing(false);
         }
       } catch {
-        if (!cancelled) { setCompositeImage(null); setCarBottom(null); }
+        if (!cancelled) { setCompositeImage(null); setCarBottom(null); setComposing(false); }
       }
     })();
 
@@ -1299,6 +1308,35 @@ function JellyBeanCard({
   const priceColor  = hasBg ? "white"                  : "var(--ink)";
   const moColor     = hasBg ? "rgba(255,255,255,0.60)" : "var(--ink-secondary)";
   const termColor   = hasBg ? "rgba(255,255,255,0.45)" : "var(--ink-tertiary)";
+
+  // ── Skeleton while the canvas composite is being computed (dealer flow) ────
+  // No intermediate frame (raw bg crop + CSS car) is ever shown: the card holds
+  // a shimmering placeholder at its exact dimensions, then swaps once to the
+  // final render. Catalog cards never set `composing` and render directly.
+  if (composing) {
+    return (
+      <div
+        className="relative rounded-[10px] overflow-hidden select-none shrink-0"
+        style={{ width: w, height: h, background: "#ececf2" }}
+      >
+        <div
+          className="absolute inset-0 animate-pulse"
+          style={{ background: "linear-gradient(110deg, #ececf2 30%, #f8f8fc 50%, #ececf2 70%)" }}
+        />
+        {/* Format chip — keeps the card identity while loading */}
+        <div className="absolute rounded"
+          style={{ top: Math.round(h * 0.12), left: Math.round(w * 0.04), background: "rgba(71,59,171,0.5)", padding: "2px 5px" }}>
+          <span style={{ fontSize: chipFontSize, fontWeight: 600, color: "white", letterSpacing: "0.3px" }}>
+            {template.width}×{template.height}
+          </span>
+        </div>
+        {/* Centre spinner */}
+        <div className="absolute inset-0 flex items-center justify-center">
+          <div className="w-[18px] h-[18px] rounded-full border-2 border-[rgba(71,59,171,0.35)] border-t-[rgba(71,59,171,0.9)] animate-spin" />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div

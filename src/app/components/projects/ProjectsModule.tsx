@@ -111,9 +111,23 @@ function saveCustomBackgroundLibrary(projectId: string, bgs: CustomBackground[])
   try {
     const raw = localStorage.getItem(STORAGE_KEYS.CUSTOM_BACKGROUND_LIBRARY);
     const all: Record<string, CustomBackground[]> = raw ? JSON.parse(raw) : {};
-    all[projectId] = bgs;
+    // Strip transient "_" -prefixed fields before persisting. They carry the
+    // uploaded dealer photo as a base64 data URL (megabytes per campaign) and
+    // were blowing the ~5MB localStorage quota — which then made the
+    // LOCAL_PROJECTS save throw QuotaExceededError and lose created projects.
+    // Runtime callbacks read these fields from the in-memory object, never
+    // from storage, so stripping here changes nothing functionally.
+    const slim = bgs.map(bg => Object.fromEntries(
+      Object.entries(bg as Record<string, unknown>)
+        .filter(([k, v]) => !k.startsWith('_') &&
+          // also never persist base64 blobs in any string field
+          !(typeof v === 'string' && v.startsWith('data:') && v.length > 50_000))
+    )) as unknown as CustomBackground[];
+    all[projectId] = slim;
     localStorage.setItem(STORAGE_KEYS.CUSTOM_BACKGROUND_LIBRARY, JSON.stringify(all));
-  } catch { /* quota exceeded */ }
+  } catch (e) {
+    console.error('[saveCustomBackgroundLibrary] persist failed:', e);
+  }
 }
 
 // Convert a CustomOffer (from ParsedOffersCard) to a StoredOffer with defaults
@@ -295,13 +309,24 @@ function ProjectsModuleInner({
   };
 
   // ── Persist localProjects to localStorage ───────────────────────────────────
+  // try/catch is load-bearing: an unguarded QuotaExceededError here crashes the
+  // render tree into the ErrorBoundary, whose recovery button DELETES the user's
+  // projects (removeItem LOCAL_PROJECTS). Never let a persistence failure crash.
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEYS.LOCAL_PROJECTS, JSON.stringify(localProjects));
+    try {
+      localStorage.setItem(STORAGE_KEYS.LOCAL_PROJECTS, JSON.stringify(localProjects));
+    } catch (e) {
+      console.error('[ProjectsModule] failed to persist projects (quota?):', e);
+    }
   }, [localProjects]);
 
   // ── Persist statusOverrides to localStorage ──────────────────────────────────
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEYS.STATUS_OVERRIDES, JSON.stringify(statusOverrides));
+    try {
+      localStorage.setItem(STORAGE_KEYS.STATUS_OVERRIDES, JSON.stringify(statusOverrides));
+    } catch (e) {
+      console.error('[ProjectsModule] failed to persist status overrides:', e);
+    }
   }, [statusOverrides]);
 
   // ── Listen for project status change events (e.g. from generate assets) ──────

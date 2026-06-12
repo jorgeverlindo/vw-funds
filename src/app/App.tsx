@@ -211,6 +211,12 @@ class ErrorBoundary extends React.Component<
           </pre>
           <button
             onClick={() => {
+              // Back up before clearing — this button must never destroy the only
+              // copy of the user's projects. Restorable from the _backup key.
+              try {
+                const current = localStorage.getItem(STORAGE_KEYS.LOCAL_PROJECTS);
+                if (current) localStorage.setItem(`${STORAGE_KEYS.LOCAL_PROJECTS}_backup`, current);
+              } catch { /* backup is best-effort */ }
               localStorage.removeItem(STORAGE_KEYS.LOCAL_PROJECTS);
               window.location.reload();
             }}

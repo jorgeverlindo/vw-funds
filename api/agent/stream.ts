@@ -667,50 +667,50 @@ const agentTools: Anthropic.Tool[] = [
     },
   },
 
-  // ── Platform / channel share (user picks Email or Platform Communications) ──
+  // ── Share for review (reviewer picker card — channel per contact) ──────────
   {
     name: "propose_share",
     description:
-      "Propose sharing a project when the user says 'send to [name]' or 'share with [name]' " +
-      "WITHOUT specifying email or platform. The UI shows two choices: Send via Email or " +
-      "Platform Communications (in-app notification). Use this instead of propose_email when " +
-      "no mechanism is specified.",
+      "Show the reviewer picker card when the user wants to share/send the project to one or more contacts. " +
+      "List ALL contacts the user mentioned in recipient_hints. Internal/Constellation contacts default to " +
+      "Platform Message; dealer contacts default to Email. The user can toggle each contact's channel in the UI.",
     input_schema: {
       type: "object" as const,
       properties: {
-        recipient_hint: {
-          type: "string",
-          description: "Full name of the intended recipient as known from the contacts list.",
+        recipient_hints: {
+          type: "array",
+          items: { type: "string" },
+          description: "Full names of all intended recipients as known from the contacts list. Include everyone the user mentioned.",
         },
         project_name: {
           type: "string",
           description: "Name of the current project, for display in the share card.",
         },
       },
-      required: ["recipient_hint"],
+      required: ["recipient_hints"],
     },
   },
 
-  // ── Email sharing ──────────────────────────────────────────────────────────
+  // ── Email sharing (also routes to reviewer picker) ────────────────────────
   {
     name: "propose_email",
     description:
-      "Propose sending a project share link via email. Use this when the user explicitly asks to " +
-      "share or send the project BY EMAIL. The UI will show a contact selector and editable message. " +
-      "Provide a suggested recipient name (if known) and a default message body.",
+      "Show the reviewer picker card pre-populated with the mentioned contact(s) when the user explicitly " +
+      "asks to send or share the project by email. The user can still toggle each contact's channel.",
     input_schema: {
       type: "object" as const,
       properties: {
+        recipient_hints: {
+          type: "array",
+          items: { type: "string" },
+          description: "Full names of all intended recipients mentioned by the user.",
+        },
         recipient_hint: {
           type: "string",
-          description: "Name or email address of the intended recipient if mentioned by the user. Leave empty if unknown.",
-        },
-        message: {
-          type: "string",
-          description: "Default email message body. Should reference the project name and include a placeholder for the project link.",
+          description: "Single recipient name (legacy fallback — prefer recipient_hints).",
         },
       },
-      required: ["message"],
+      required: [],
     },
   },
 

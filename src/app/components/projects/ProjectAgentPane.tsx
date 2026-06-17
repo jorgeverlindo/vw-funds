@@ -206,6 +206,7 @@ interface ParsedOffersMsg { id: string; role: "assistant"; type: "parsed_offers"
 // Reviewer picker — multi-select contacts before the share chooser
 interface ReviewerPickerMsg {
   id: string; role: "assistant"; type: "reviewer_picker"; applied: boolean;
+  recipientHints?: string[];
 }
 
 interface CampaignCtaMsg {
@@ -663,15 +664,23 @@ function ReviewerPickerCard({
   projectName,
   projectUrl,
   onSend,
+  recipientHints,
 }: {
   applied: boolean;
   projectName: string;
   projectUrl: string;
-  onSend: (contacts: ReviewerContact[], message: string) => void;
+  onSend: (contacts: ReviewerContact[], channels: Record<string, "platform" | "email">, message: string) => void;
+  recipientHints?: string[];
 }) {
-  const [selected, setSelected] = useState<ReviewerContact[]>(
-    () => MOCK_CONTACTS.filter(c => c.group !== "dealer")
-  );
+  const [selected, setSelected] = useState<ReviewerContact[]>(() => {
+    if (recipientHints && recipientHints.length > 0) {
+      const lowerHints = recipientHints.map(h => h.toLowerCase());
+      return MOCK_CONTACTS.filter(c =>
+        lowerHints.some(h => c.name.toLowerCase().includes(h) || h.includes(c.name.toLowerCase().split(" ")[0]))
+      );
+    }
+    return MOCK_CONTACTS.filter(c => c.group !== "dealer");
+  });
   const [message, setMessage] = useState(
     () => `I'd like to share the ${projectName} project with you. Please find the project link below:\n\n${projectUrl}`
   );
@@ -818,7 +827,7 @@ function ReviewerPickerCard({
 
         {/* ── Send Message button ── */}
         <button
-          onClick={() => selected.length > 0 && onSend(selected, message)}
+          onClick={() => selected.length > 0 && onSend(selected, channels, message)}
           disabled={selected.length === 0}
           className="w-full py-[8px] rounded-full text-[13px] font-medium tracking-[0.46px] text-white transition-all cursor-pointer disabled:opacity-40"
           style={{ background: "linear-gradient(99deg, var(--brand-accent) 0%, var(--brand-mid) 100%)" }}>
@@ -2630,10 +2639,11 @@ export function ProjectAgentPane({ isOpen, onClose, userType, activeUserName }: 
         if (hasPostGenCard) return updated;
 
         const isProactiveSession = updated.some(m => m.type === "proactive_questions");
+        const isDealerBgSession  = updated.some(m => m.type === "dealer_bg_proposal");
         const now = Date.now();
 
-        if (isProactiveSession) {
-          // Proactive flow: user decides who to share with
+        if (isProactiveSession || isDealerBgSession) {
+          // Proactive + dealer-bg flows: user reviews and decides who to share with
           return [
             ...updated,
             { id: `a-${now}`, role: "assistant", type: "text",
@@ -2759,24 +2769,19 @@ export function ProjectAgentPane({ isOpen, onClose, userType, activeUserName }: 
         liveOwners: ctxRef.current?.taskOwners,
       } as NotifyOwnersMsg]);
     } else if (toolName === "propose_share") {
+      const input = toolInput as { recipient_hints?: string[]; recipient_hint?: string };
+      const recipientHints = input.recipient_hints ?? (input.recipient_hint ? [input.recipient_hint] : []);
       setMessages(prev => [...prev, {
-        id: `share-${Date.now()}`, role: "assistant", type: "share",
-        input: toolInput as ShareInput, applied: false,
-      } as ShareMsg]);
+        id: `reviewer-picker-${Date.now()}`, role: "assistant", type: "reviewer_picker",
+        applied: false, recipientHints,
+      } as ReviewerPickerMsg]);
     } else if (toolName === "propose_email") {
-      const raw = toolInput as EmailInput;
-      const projectId = ctxRef.current?.projectId;
-      const projectUrl = projectId
-        ? `https://constellation-ux-app.vercel.app/OEM/Projects?project=${encodeURIComponent(projectId)}`
-        : "https://constellation-ux-app.vercel.app/OEM/Projects";
-      const emailInput: EmailInput = {
-        ...raw,
-        message: (raw.message ?? "").replace(/\[Project link\]/gi, projectUrl),
-      };
+      const input = toolInput as { recipient_hints?: string[]; recipient_hint?: string };
+      const recipientHints = input.recipient_hints ?? (input.recipient_hint ? [input.recipient_hint] : []);
       setMessages(prev => [...prev, {
-        id: `email-${Date.now()}`, role: "assistant", type: "email",
-        input: emailInput, applied: false,
-      } as EmailMsg]);
+        id: `reviewer-picker-${Date.now()}`, role: "assistant", type: "reviewer_picker",
+        applied: false, recipientHints,
+      } as ReviewerPickerMsg]);
     } else if (toolName === "propose_brand") {
       setMessages(prev => [...prev, {
         id: `brand-${Date.now()}`, role: "assistant", type: "brand",
@@ -3663,16 +3668,16 @@ export function ProjectAgentPane({ isOpen, onClose, userType, activeUserName }: 
   }, [pushProjectMention]);
 
   // ── Reviewer picker confirm → show ShareChooserCard with grouped contacts ────
-  const handleReviewerPickerConfirm = useCallback((msgId: string, selected: typeof MOCK_CONTACTS[number][], _message: string) => {
+  const handleReviewerPickerConfirm = useCallback((msgId: string, selected: typeof MOCK_CONTACTS[number][], channels: Record<string, "platform" | "email">, _message: string) => {
     // Mark card applied
     setMessages(prev => prev.map(m => m.id === msgId ? { ...m, applied: true } as ReviewerPickerMsg : m));
 
-    // Build confirmation text
-    const emailNames = selected.filter(c => c.group !== "dealer").map(c => c.name.split(" ")[0]).join(", ");
-    const platformNames = selected.filter(c => c.group === "dealer").map(c => c.name.split(" ")[0]).join(", ");
+    // Build confirmation using actual channel selection (user may have toggled)
+    const platformNames = selected.filter(c => channels[c.email] === "platform").map(c => c.name.split(" ")[0]).join(", ");
+    const emailNames    = selected.filter(c => channels[c.email] === "email").map(c => c.name.split(" ")[0]).join(", ");
     const parts: string[] = [];
-    if (emailNames) parts.push(`Email sent to **${emailNames}**.`);
     if (platformNames) parts.push(`Platform notification sent to **${platformNames}**.`);
+    if (emailNames) parts.push(`Email sent to **${emailNames}**.`);
 
     setMessages(prev => [...prev, {
       id: `a-${Date.now()}`, role: "assistant", type: "text",
@@ -4091,7 +4096,7 @@ export function ProjectAgentPane({ isOpen, onClose, userType, activeUserName }: 
                           onEmailDismiss={handleEmailDismiss}
                           onShareChooseEmail={handleShareChooseEmail}
                           onShareChoosePlatform={handleShareChoosePlatform}
-                          onReviewerPickerConfirm={(contacts, message) => handleReviewerPickerConfirm(msg.id, contacts, message)}
+                          onReviewerPickerConfirm={(contacts, channels, message) => handleReviewerPickerConfirm(msg.id, contacts, channels, message)}
                           onParsedOffersApply={(offers) => handleParsedOffersApply(msg.id, offers)}
                           onParsedOffersDismiss={() => handleParsedOffersDismiss(msg.id)}
                           onNotifyOwnersApply={() => setMessages(prev => prev.map(m => m.id === msg.id ? { ...m, applied: true } : m))}
@@ -4266,7 +4271,7 @@ function MessageBubble({
   onEmailDismiss: () => void;
   onShareChooseEmail: (recipientHint: string) => void;
   onShareChoosePlatform: (recipientName: string) => void;
-  onReviewerPickerConfirm: (contacts: typeof MOCK_CONTACTS[number][], message: string) => void;
+  onReviewerPickerConfirm: (contacts: typeof MOCK_CONTACTS[number][], channels: Record<string, "platform" | "email">, message: string) => void;
   onParsedOffersApply: (offers: CustomOffer[]) => void;
   onParsedOffersDismiss: () => void;
   onNotifyOwnersApply: () => void;
@@ -4503,6 +4508,7 @@ function MessageBubble({
         projectName={projectName}
         projectUrl={projectUrl}
         onSend={onReviewerPickerConfirm}
+        recipientHints={(message as ReviewerPickerMsg).recipientHints}
       />
     );
   }

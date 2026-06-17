@@ -1,6 +1,5 @@
 import { useState } from "react";
-import { Search, PanelLeft, ChevronLeft, Plus, Megaphone, Globe, Calendar, MoreVertical, Trash2, ExternalLink } from "lucide-react";
-import { useSidebar } from "@projects/lib/sidebar-context";
+import { Search, ChevronLeft, Plus, Megaphone, Globe, Calendar, MoreVertical, Trash2, ExternalLink } from "lucide-react";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -182,7 +181,6 @@ export function CampaignsPage({
   projectName: string;
   onNavigateTo: (page: string) => void;
 }) {
-  const { toggleSidebar, sidebarOpen } = useSidebar();
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [query, setQuery]         = useState("");
   const [showNew, setShowNew]     = useState(false);
@@ -200,17 +198,6 @@ export function CampaignsPage({
     <div className="flex flex-col h-full">
       {/* Header */}
       <div className="flex items-center gap-3 px-6 py-3 bg-white">
-        <button
-          onClick={toggleSidebar}
-          title={sidebarOpen ? "Close sidebar" : "Open sidebar"}
-          className={`w-7 h-7 flex items-center justify-center rounded-md transition-colors ${
-            sidebarOpen
-              ? "text-[var(--brand-accent)] bg-[var(--brand-accent)/8]"
-              : "text-gray-400 hover:text-gray-600 hover:bg-gray-100"
-          }`}
-        >
-          <PanelLeft size={15} />
-        </button>
         <h1 className="text-lg font-semibold text-gray-900">Campaigns</h1>
         <div className="ml-auto flex items-center gap-3">
           <div className="relative">

@@ -36,9 +36,15 @@ export interface ProjectContext {
   taskOwners?: Record<string, string>;
 }
 
+type CacheableTextBlock = {
+  type: "text";
+  text: string;
+  cache_control?: { type: "ephemeral" };
+};
+
 // ─── System Prompt Builder ────────────────────────────────────────────────────
 
-export function buildSystemPrompt(ctx: ProjectContext): string {
+export function buildSystemPrompt(ctx: ProjectContext): CacheableTextBlock[] {
   const offerList = ctx.availableOffers
     .map(
       (o) =>
@@ -78,7 +84,11 @@ export function buildSystemPrompt(ctx: ProjectContext): string {
     ? ctx.currentTemplateIds.join(", ")
     : "none";
 
-  return `━━━ PIPELINE AWARENESS — CHECK THIS FIRST, EVERY TURN ━━━
+  // ── Static block (cached) ─────────────────────────────────────────────────
+  // Everything that never changes between requests: all rules, contacts,
+  // background catalog, and campaign flow instructions.
+
+  const staticPart = `━━━ PIPELINE AWARENESS — CHECK THIS FIRST, EVERY TURN ━━━
 
 TWO sources of truth — check BOTH before every action:
 
@@ -197,21 +207,6 @@ Dealer contacts:
   • Katelyn Gray — katelyn.gray@emichvw.com
 
 When the user mentions a name (e.g. "send to Luke", "share with Sarah"), match it to this list and pass their full name in recipient_hint. Never ask who they are — you already know them.
-
-━━━ CURRENT PROJECT ━━━
-Name: ${ctx.projectName}
-ID: ${ctx.projectId}
-OEM / Brand: ${ctx.oem}
-Current offers: ${currentOffers}
-Current templates: ${currentTemplates}
-Active brand kit: ${ctx.activeBrandOem ?? "none"}
-Task owners: ${ctx.taskOwners && Object.keys(ctx.taskOwners).length > 0 ? Object.entries(ctx.taskOwners).map(([s, n]) => `${s}: ${n}`).join(", ") : "none assigned"}
-
-━━━ OFFER CATALOG (used only by propose_offers — other brands go through propose_parsed_offers) ━━━
-${offerList || "  (empty — use propose_parsed_offers for all offer extraction)"}
-
-━━━ AVAILABLE TEMPLATE CATALOG ━━━
-${templateList || "  (no templates available for this brand)"}
 
 ━━━ AVAILABLE BACKGROUND CATALOG ━━━
 ${bgList}
@@ -454,7 +449,7 @@ DECISION RULE — always extract the mechanism before calling propose_share:
   3. No mechanism stated? → propose_share with no mechanism field (shows chooser)
 - For propose_email: write a friendly, professional default message referencing the project name. Always use "project" — never "campaign" — in the email copy.
 - For propose_task_owners: pass only the sections where the user explicitly named an owner. Leave others empty.
-- Email body pattern: "I'd like to share the [OEM] project "[Project Name]" with you. You can view and collaborate on it using the link below:\n\n[Project link]"
+- Email body pattern: "I'd like to share the [OEM] project "[Project Name]" with you. You can view and collaborate on it using the link below:\\n\\n[Project link]"
 - Email subject pattern: "[OEM] Project shared: [Project Name]"
 - Include a placeholder for the project link.
 
@@ -491,7 +486,30 @@ GENERATE_DEALER_BACKGROUND RULES:
   ⚠️  Do NOT call this in any other flow_scope.
   Pass vehicle_context = the makes+models of all currently confirmed offers.
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`;
+
+  // ── Dynamic block (never cached) ─────────────────────────────────────────
+  // Per-request data: current project state, available offers/templates, date.
+
+  const dynamicPart = `━━━ CURRENT PROJECT ━━━
+Name: ${ctx.projectName}
+ID: ${ctx.projectId}
+OEM / Brand: ${ctx.oem}
+Current offers: ${currentOffers}
+Current templates: ${currentTemplates}
+Active brand kit: ${ctx.activeBrandOem ?? "none"}
+Task owners: ${ctx.taskOwners && Object.keys(ctx.taskOwners).length > 0 ? Object.entries(ctx.taskOwners).map(([s, n]) => `${s}: ${n}`).join(", ") : "none assigned"}
+
+━━━ OFFER CATALOG (used only by propose_offers — other brands go through propose_parsed_offers) ━━━
+${offerList || "  (empty — use propose_parsed_offers for all offer extraction)"}
+
+━━━ AVAILABLE TEMPLATE CATALOG ━━━
+${templateList || "  (no templates available for this brand)"}
 
 Today's date: ${new Date().toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}.`;
+
+  return [
+    { type: "text", text: staticPart, cache_control: { type: "ephemeral" } },
+    { type: "text", text: dynamicPart },
+  ];
 }

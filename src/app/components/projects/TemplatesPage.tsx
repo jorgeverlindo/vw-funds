@@ -1,7 +1,6 @@
 
 import { useState, useEffect, useMemo } from "react";
-import { ChevronLeft, ChevronRight, Plus, Search, MoreVertical, GitMerge, PanelLeft } from "lucide-react";
-import { useSidebar } from "@projects/lib/sidebar-context";
+import { ChevronLeft, ChevronRight, Plus, Search, MoreVertical, GitMerge } from "lucide-react";
 import { TemplateCard } from "@projects/templates/TemplateCard";
 import { SelectTemplateDialog } from "@projects/templates/SelectTemplateDialog";
 import { CardViewVertical } from "@projects/ui/CardViewVertical";
@@ -14,7 +13,6 @@ import { useProjectStore } from "@projects/lib/project-store";
 export function TemplatesPage({ projectId, onNavigateTo }: { projectId: string; onNavigateTo: (page: string) => void }) {
   const id = projectId;
   const project = getProjectById(id);
-  const { toggleSidebar, sidebarOpen } = useSidebar();
   const baseTemplates = getProjectTemplates(id);
 
   const { addedTemplateIds, addTemplates } = useProjectStore();
@@ -86,13 +84,6 @@ export function TemplatesPage({ projectId, onNavigateTo }: { projectId: string; 
     <div className="flex flex-col h-full">
       {/* Page header */}
       <div className="flex items-center gap-3 px-6 py-3 bg-white">
-        <button
-          onClick={toggleSidebar}
-          title={sidebarOpen ? "Close sidebar" : "Open sidebar"}
-          className={`w-7 h-7 flex items-center justify-center rounded-md transition-colors ${sidebarOpen ? "text-[var(--brand-accent)] bg-[var(--brand-accent)/8]" : "text-gray-400 hover:text-gray-600 hover:bg-gray-100"}`}
-        >
-          <PanelLeft size={15} />
-        </button>
         <h1 className="text-lg font-semibold text-gray-900">Templates</h1>
 
         <button

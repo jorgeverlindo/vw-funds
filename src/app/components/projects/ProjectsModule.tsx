@@ -43,6 +43,8 @@ import {
   PROJECT_AGENT_ACTION_EVENT,
   AGENT_SCROLL_TO_SECTION_EVENT,
   AGENT_GENERATE_ASSETS_EVENT,
+  AGENT_ASSETS_GENERATED_EVENT,
+  AGENT_OPEN_CAMPAIGNS_EVENT,
   type ProjectContextPayload,
   type AgentActionPayload,
 } from "@projects/ProjectAgentPane";
@@ -281,6 +283,15 @@ function ProjectsModuleInner({
       setLocalProjects((prev) =>
         prev.map((p) => (p.id === projectId ? { ...p, status: newStatus } : p)),
       );
+      // Clear any stale statusOverride so localProjects.status takes precedence.
+      // This fixes cases where the project-status-change event (captured in a stale
+      // closure at mount) wrote to statusOverrides instead of localProjects, then
+      // the override masked subsequent drag-drop moves.
+      setStatusOverrides((prev) => {
+        if (!(projectId in prev)) return prev;
+        const { [projectId]: _removed, ...rest } = prev;
+        return rest;
+      });
     } else {
       setStatusOverrides((prev) => ({ ...prev, [projectId]: newStatus }));
     }
@@ -986,8 +997,14 @@ function dealerCarPlacement(
     // Portrait: ground band 60%→100% → tires at 76%.
     return { ground: 0.76, carWidth: 0.70, anchorX: 0.5 };
   }
-  // Square / standard: ground band 60%→100% → tires at 74%.
-  return { ground: 0.74, carWidth: 0.62, anchorX: 0.5 };
+  if (ar >= 1.1) {
+    // Near-square landscape (300×250 ar=1.2, 600×450 ar=1.33): car sits lower so
+    // it doesn't float above the bottom text zone.
+    return { ground: 0.78, carWidth: 0.62, anchorX: 0.5 };
+  }
+  // Pure square (1080×1080 ar=1.0): slightly larger car, anchored a touch higher
+  // so the roof doesn't clip the top bar.
+  return { ground: 0.71, carWidth: 0.70, anchorX: 0.5 };
 }
 
 // Template key lookup from dimensions
@@ -2144,6 +2161,12 @@ function ProjectDetailViewInner({
   // ── Detail page overlay state ──────────────────────────────────────────────
   const [detailPage, setDetailPage] = useState<string | null>(null);
 
+  useEffect(() => {
+    const handler = () => setDetailPage("campaigns");
+    window.addEventListener(AGENT_OPEN_CAMPAIGNS_EVENT, handler);
+    return () => window.removeEventListener(AGENT_OPEN_CAMPAIGNS_EVENT, handler);
+  }, []);
+
   // Re-derive helpers from props (previously local vars in ProjectDetailView)
   const setTaskOwner = (section: string, ownerId: string) =>
     setTaskOwners((prev) => ({ ...prev, [section]: ownerId }));
@@ -2906,6 +2929,9 @@ function ProjectDetailViewInner({
           window.dispatchEvent(new CustomEvent("project-status-change", {
             detail: { projectId: project.id, status: "Assets Created" },
           }));
+          window.dispatchEvent(new CustomEvent(AGENT_ASSETS_GENERATED_EVENT, {
+            detail: { total: assets.length },
+          }));
         };
 
         return (
@@ -3008,19 +3034,23 @@ function ProjectDetailViewInner({
             transition={{ duration: 0.28, ease: [0.16, 1, 0.3, 1] }}
             className="absolute inset-0 z-[200] bg-white flex flex-col overflow-hidden"
           >
-            {/* Back nav */}
-            <div className="flex items-center gap-2 px-4 py-2.5 border-b border-[var(--border)] shrink-0 bg-white">
-              <button
-                onClick={() => setDetailPage(null)}
-                className="flex items-center gap-1.5 text-[12px] text-[var(--ink-secondary)] hover:text-[var(--ink)] transition cursor-pointer"
-              >
-                <ChevronLeft size={14} strokeWidth={2} />
-                {project.name}
-              </button>
-              <span className="text-[var(--ink-tertiary)] text-[12px]">/</span>
-              <span className="text-[12px] font-medium text-[var(--ink)] capitalize">
-                {detailPage === "logos-backgrounds" ? "Styles & Backgrounds" : detailPage.replace("-", " ")}
-              </span>
+            {/* Breadcrumb */}
+            <div className="px-5 pt-3.5 pb-0 shrink-0 bg-white">
+              <BreadcrumbBar
+                items={[
+                  { label: "Projects", onClick: onBack },
+                  { label: project.name, onClick: () => setDetailPage(null) },
+                ]}
+                activeLabel={
+                  detailPage === "logos-backgrounds" ? "Styles & Backgrounds" :
+                  detailPage === "adshells" ? "Ad Shells" :
+                  detailPage === "offers" ? "Offers" :
+                  detailPage === "templates" ? "Templates" :
+                  detailPage === "preview" ? "Preview" :
+                  detailPage === "campaigns" ? "Campaigns" :
+                  detailPage.replace(/-/g, " ")
+                }
+              />
             </div>
             {/* Page content */}
             <div className="flex-1 min-h-0 overflow-hidden">

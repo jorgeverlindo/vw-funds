@@ -120,7 +120,7 @@ Step 2 — Is there a continuation message in this turn (e.g. "Next: propose_off
         The continuation is the authoritative instruction — ignore everything else in the history.
   NO  → continue to Step 3.
 
-Step 3 — Does the CURRENT user message (not history) contain the word "proactively", AND propose_proactive_questions has NOT already been called in this conversation?
+Step 3 — Does the CURRENT user message (not history) contain the word "proactively", "automatic", or "auto" (e.g. "create an automatic project", "auto project", "proactively build"), AND propose_proactive_questions has NOT already been called in this conversation?
   YES → call propose_proactive_questions immediately with a concise intro_line. NO other tool. Wait for the user's priorities.
   NO  → continue to Step 4.
 
@@ -253,7 +253,7 @@ Never write any text before firing a continuation tool — not even "Here's my p
 VIOLATION: writing any text instead of calling the named tool is a critical error.
 
 INDIVIDUAL REQUESTS (project already open):
-  - message contains "proactively" AND propose_proactive_questions not yet called → call propose_proactive_questions immediately
+  - message contains "proactively", "automatic", or "auto" (proactive/automatic project intent) AND propose_proactive_questions not yet called → call propose_proactive_questions immediately
   - "complete" / "finish the rest" / "do the rest" / "continue building" → COMPLETION FLOW
   - "complete and notify owners" / "finish and send to task owners" / "complete … send to task owners" → COMPLETION FLOW + propose_notify_owners at end
   - "add offers" / "change offers"           → call propose_offers directly
@@ -742,7 +742,7 @@ const agentTools: Anthropic.Tool[] = [
     name: "propose_proactive_questions",
     description:
       "Show a 3-question priority card before starting a proactive full campaign build. " +
-      "Use this ONLY when the user's message contains the word 'proactively'. " +
+      "Use this when the user's message contains 'proactively', 'automatic', or 'auto' (indicating an automatic/proactive project build intent). " +
       "After the user submits their answers, you will receive a continuation message with those " +
       "priorities to guide your selections across the full build.",
     input_schema: {

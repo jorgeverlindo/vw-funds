@@ -2,9 +2,8 @@
 import { useState, useMemo } from "react";
 import {
   Sparkles, BarChart2, Clock, Search, MoreVertical,
-  ChevronRight, Trash2, LayoutGrid, Table2, Check, Info, MoreHorizontal, PanelLeft
+  ChevronRight, Trash2, LayoutGrid, Table2, Check, Info, MoreHorizontal
 } from "lucide-react";
-import { useSidebar } from "@projects/lib/sidebar-context";
 import { OfferCard } from "@projects/offers/OfferCard";
 import { BrowseOffersDialog } from "@projects/offers/BrowseOffersDialog";
 import { getProjectOffers, getProjectById, offerLibrary } from "@projects/lib/mock-data";
@@ -15,7 +14,6 @@ type Offer = typeof offerLibrary[number];
 export function OffersPage({ projectId, onNavigateTo }: { projectId: string; onNavigateTo: (page: string) => void }) {
   const id = projectId;
   const project = getProjectById(id);
-  const { toggleSidebar, sidebarOpen } = useSidebar();
 
   const { deletedOfferIds, deleteOffers, addedOfferIds, addOffers } = useProjectStore();
 
@@ -67,13 +65,6 @@ export function OffersPage({ projectId, onNavigateTo }: { projectId: string; onN
     <div className="flex flex-col h-full">
       {/* Page header */}
       <div className="flex items-center gap-3 px-6 py-3 bg-white">
-        <button
-          onClick={toggleSidebar}
-          title={sidebarOpen ? "Close sidebar" : "Open sidebar"}
-          className={`w-7 h-7 flex items-center justify-center rounded-md transition-colors ${sidebarOpen ? "text-[var(--brand-accent)] bg-[var(--brand-accent)/8]" : "text-gray-400 hover:text-gray-600 hover:bg-gray-100"}`}
-        >
-          <PanelLeft size={15} />
-        </button>
         <h1 className="text-lg font-semibold text-gray-900">Offers</h1>
         <div className="flex items-center rounded-full border border-[var(--brand-accent)/20] bg-[var(--brand-accent)/8] px-3 py-1 gap-1.5 ml-1">
           <span className="text-xs font-medium text-[var(--brand-accent)]">Data Compliance</span>

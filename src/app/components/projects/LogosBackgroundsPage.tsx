@@ -3,9 +3,8 @@ import React, { useState, useRef, useEffect, useMemo } from "react";
 import {
   ChevronLeft, ChevronRight, ImageIcon, Plus, MoreHorizontal,
   ChevronDown, Trash2, Eye, Pencil, Check,
-  FileImage, Share2, Upload, X, Sparkles, Globe, PanelLeft
+  FileImage, Share2, Upload, X, Sparkles, Globe
 } from "lucide-react";
-import { useSidebar } from "@projects/lib/sidebar-context";
 import { SelectBackgroundDialog } from "@projects/logos-backgrounds/SelectBackgroundDialog";
 import { SubsectionActions, TipWrapper } from "@projects/logos-backgrounds/SubsectionActions";
 import { LogoPicker } from "@projects/logos-backgrounds/LogoPicker";
@@ -35,7 +34,6 @@ const GROUP_OPTIONS: { value: GroupBy; label: string }[] = [
 
 
 export function LogosBackgroundsPage({ projectId, onNavigateTo }: { projectId: string; onNavigateTo: (page: string) => void }) {
-  const { toggleSidebar, sidebarOpen } = useSidebar();
   const id = projectId;
   const project = getProjectById(id);
   const baseTemplates = getProjectTemplates(id);
@@ -238,13 +236,6 @@ export function LogosBackgroundsPage({ projectId, onNavigateTo }: { projectId: s
     <div className="flex flex-col h-full">
       {/* Page header */}
       <div className="flex items-center gap-3 px-6 py-3 bg-white">
-        <button
-          onClick={toggleSidebar}
-          title={sidebarOpen ? "Close sidebar" : "Open sidebar"}
-          className={`w-7 h-7 flex items-center justify-center rounded-md transition-colors ${sidebarOpen ? "text-[var(--brand-accent)] bg-[var(--brand-accent)/8]" : "text-gray-400 hover:text-gray-600 hover:bg-gray-100"}`}
-        >
-          <PanelLeft size={15} />
-        </button>
         <h1 className="text-lg font-semibold text-gray-900">Styles</h1>
 
         {fineTune && (

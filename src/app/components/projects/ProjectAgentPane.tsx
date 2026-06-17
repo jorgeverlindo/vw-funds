@@ -6,7 +6,7 @@ import { motion, AnimatePresence } from "motion/react";
 import {
   ChevronLeft, ChevronDown, Search, X, Check,
   Copy, ThumbsUp, ThumbsDown, Pencil, Download, Share2,
-  Plus, Minus, FileText, Tag, Trash2, Eye,
+  Plus, Minus, FileText, Tag, Trash2, Eye, Layers, Image, Info, MoreVertical,
 } from "lucide-react";
 import { cn } from "../../../lib/utils";
 import { STORAGE_KEYS } from "../../constants/storageKeys";
@@ -45,6 +45,8 @@ export const PROJECT_CONTEXT_EVENT         = "project-context-update";
 export const PROJECT_AGENT_ACTION_EVENT    = "project-agent-action";
 export const AGENT_SCROLL_TO_SECTION_EVENT = "agent-scroll-to-section";
 export const AGENT_GENERATE_ASSETS_EVENT   = "agent-generate-assets";
+export const AGENT_ASSETS_GENERATED_EVENT  = "agent-assets-generated";
+export const AGENT_OPEN_CAMPAIGNS_EVENT    = "agent-open-campaigns";
 
 export interface ProjectContextPayload {
   projectId: string;
@@ -168,7 +170,7 @@ type ApiMessage = { role: "user" | "assistant"; content: string | ApiContentBloc
 // ─── Message model ─────────────────────────────────────────────────────────────
 type Role = "user" | "assistant";
 
-interface TextMessage    { id: string; role: Role;        type: "text";      content: string; isGenerateAssetsPrompt?: boolean }
+interface TextMessage    { id: string; role: Role;        type: "text";      content: string; isGenerateAssetsPrompt?: boolean; applied?: boolean; totalGenerated?: number }
 interface ToolChipMsg    { id: string; role: "assistant"; type: "tool";      name: string; input: Record<string, unknown> }
 interface ProposalMsg    { id: string; role: "assistant"; type: "proposal";  input: ProposalInput; applied: boolean }
 interface SetupMsg       { id: string; role: "assistant"; type: "setup";     input: SetupInput;    applied: boolean }
@@ -201,6 +203,15 @@ interface UserFileMsg     { id: string; role: "user"; type: "user_file"; text: s
 // Parsed offers from AI extraction of uploaded file
 interface ParsedOffersMsg { id: string; role: "assistant"; type: "parsed_offers"; input: ParsedOffersInput; applied: boolean }
 
+// Reviewer picker — multi-select contacts before the share chooser
+interface ReviewerPickerMsg {
+  id: string; role: "assistant"; type: "reviewer_picker"; applied: boolean;
+}
+
+interface CampaignCtaMsg {
+  id: string; role: "assistant"; type: "campaign_cta";
+}
+
 // Dealer background approval card (full_dealer_bg flow — isolated from Inventory AI Config)
 interface DealerBgProposalMsg {
   id: string; role: "assistant"; type: "dealer_bg_proposal";
@@ -209,7 +220,7 @@ interface DealerBgProposalMsg {
   applied: boolean;
 }
 
-type Message = TextMessage | ToolChipMsg | ProposalMsg | SetupMsg | OffersMsg | TemplatesMsg | BrandMsg | BackgroundsMsg | PreviewMsg | ContinuationMsg | EmailMsg | ShareMsg | UserFileMsg | ParsedOffersMsg | NotifyOwnersMsg | TaskOwnersMsg | ProactiveQuestionsMsg | DealerBgProposalMsg;
+type Message = TextMessage | ToolChipMsg | ProposalMsg | SetupMsg | OffersMsg | TemplatesMsg | BrandMsg | BackgroundsMsg | PreviewMsg | ContinuationMsg | EmailMsg | ShareMsg | UserFileMsg | ParsedOffersMsg | NotifyOwnersMsg | TaskOwnersMsg | ProactiveQuestionsMsg | DealerBgProposalMsg | ReviewerPickerMsg | CampaignCtaMsg;
 
 interface ProposalInput {
   project_name?: string;
@@ -257,6 +268,8 @@ interface ShareInput {
   project_name?: string;
   /** Pre-selected mechanism — when set, the chooser is skipped entirely */
   mechanism?: "email" | "platform";
+  /** Contacts pre-selected from the reviewer picker — shows a grouped summary */
+  selectedContacts?: Array<{ name: string; email: string; group: "constellation" | "dealer" | "internal" }>;
 }
 interface NotifyOwnersInput {
   owners?: Record<string, string>; // section → owner name hint from agent
@@ -378,7 +391,7 @@ function TemplatesProposalCard({ input, context, onApply, onDismiss, proactive }
     autoApplyRef.current = setTimeout(() => {
       setApplied(true);
       onApply(templateIds);
-    }, 2000);
+    }, 5000);
     return () => { if (autoApplyRef.current) clearTimeout(autoApplyRef.current); };
   }, [proactive, manualMode, applied]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -528,7 +541,7 @@ function BrandProposalCard({ input, projectName, onApply, onDismiss, proactive }
     autoApplyRef.current = setTimeout(() => {
       setApplied(true);
       onApply(oem);
-    }, 2000);
+    }, 5000);
     return () => { if (autoApplyRef.current) clearTimeout(autoApplyRef.current); };
   }, [proactive, manualMode, applied]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -615,6 +628,350 @@ const SCENE_BACKGROUNDS = [
   { id: "ice-lab",                    name: "Ice Lab",                 thumbnail: "https://res.cloudinary.com/dvq75cqna/image/upload/v1780071589/vw-funds/public/backgrounds/Ice_Lab/1777123961113_36260ab2.jpg" },
   { id: "stadium-night",              name: "Stadium Night",           thumbnail: "https://res.cloudinary.com/dvq75cqna/image/upload/v1780071628/vw-funds/public/backgrounds/Stadium_Night/BM_250825_1C_Display_300x250.jpg" },
 ];
+
+// ─── Reviewer Picker Card ("Share for review" — matches Figma 5573-603759) ────
+type ReviewerContact = typeof MOCK_CONTACTS[number];
+
+// ─── Campaign CTA Card (standard flow — post asset generation) ────────────────
+function CampaignCtaCard() {
+  return (
+    <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}
+      className="ml-[32px] mr-[16px] mt-[4px] bg-white border border-[rgba(0,0,0,0.12)] rounded-[14px] overflow-hidden"
+      style={{ boxShadow: "0px 1px 3px rgba(0,0,0,0.12), 0px 1px 1px rgba(0,0,0,0.14), 0px 2px 1px -1px rgba(0,0,0,0.2)" }}>
+      <div className="flex flex-col gap-[12px] p-[14px]">
+        <div className="flex flex-col gap-[4px]">
+          <p style={{ fontSize: 14, fontWeight: 700, color: "#1f1d25", letterSpacing: "0.15px", lineHeight: 1.57 }}>
+            Assets ready for campaign
+          </p>
+          <p style={{ fontSize: 12, color: "#686576", letterSpacing: "0.17px", lineHeight: 1.43 }}>
+            This is a pre-approved flow — your assets are set. Would you like to generate a campaign now?
+          </p>
+        </div>
+        <button
+          onClick={() => window.dispatchEvent(new CustomEvent(AGENT_OPEN_CAMPAIGNS_EVENT))}
+          className="w-full py-[8px] rounded-full text-[13px] font-medium tracking-[0.46px] text-white transition-all cursor-pointer"
+          style={{ background: "linear-gradient(99deg, var(--brand-accent) 0%, var(--brand-mid) 100%)" }}>
+          Go to Campaigns
+        </button>
+      </div>
+    </motion.div>
+  );
+}
+
+function ReviewerPickerCard({
+  applied,
+  projectName,
+  projectUrl,
+  onSend,
+}: {
+  applied: boolean;
+  projectName: string;
+  projectUrl: string;
+  onSend: (contacts: ReviewerContact[], message: string) => void;
+}) {
+  const [selected, setSelected] = useState<ReviewerContact[]>(
+    () => MOCK_CONTACTS.filter(c => c.group !== "dealer")
+  );
+  const [message, setMessage] = useState(
+    () => `I'd like to share the ${projectName} project with you. Please find the project link below:\n\n${projectUrl}`
+  );
+  const [showAddMenu, setShowAddMenu] = useState(false);
+  const [channels, setChannels] = useState<Record<string, "platform" | "email">>(
+    () => Object.fromEntries(MOCK_CONTACTS.map(c => [c.email, c.group === "dealer" ? "email" : "platform"]))
+  );
+
+  const toggleChannel = (email: string) =>
+    setChannels(prev => ({ ...prev, [email]: prev[email] === "platform" ? "email" : "platform" }));
+
+  if (applied) {
+    return (
+      <div className="ml-[32px] mt-[4px]">
+        <ConfirmedChip label="Sent for review" />
+      </div>
+    );
+  }
+
+  const remove = (email: string) => setSelected(prev => prev.filter(c => c.email !== email));
+  const add = (contact: ReviewerContact) => {
+    setSelected(prev => prev.find(c => c.email === contact.email) ? prev : [...prev, contact]);
+    setShowAddMenu(false);
+  };
+  const available = MOCK_CONTACTS.filter(c => !selected.find(s => s.email === c.email));
+
+  const initials = (name: string) => name.split(" ").map(n => n[0]).join("").slice(0, 2).toUpperCase();
+
+  return (
+    <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}
+      className="ml-[32px] mr-[16px] mt-[4px] bg-white border border-[rgba(0,0,0,0.12)] rounded-[14px] overflow-visible"
+      style={{
+        boxShadow: "0px 1px 3px rgba(0,0,0,0.12), 0px 1px 1px rgba(0,0,0,0.14), 0px 2px 1px -1px rgba(0,0,0,0.2)",
+      }}>
+
+      <div className="flex flex-col gap-[12px] p-[14px]">
+
+        {/* ── Header ── */}
+        <div className="flex items-center justify-between">
+          <p style={{ fontSize: 14, fontWeight: 700, color: "#1f1d25", letterSpacing: "0.15px", lineHeight: 1.57 }}>Share for review</p>
+          <div className="flex items-center px-[6px] py-[3px] rounded-[8px]" style={{ background: "#fafaff", minHeight: 24 }}>
+            <span style={{ fontSize: 11, color: "#6356e1", letterSpacing: "0.16px", lineHeight: "18px" }}>{selected.length} selected</span>
+          </div>
+        </div>
+
+        {/* ── Contact list ── */}
+        <div className="flex flex-col rounded-[var(--card,12px)] overflow-hidden">
+          {selected.map((contact, i) => (
+            <div key={contact.email} className="relative">
+              <div className="flex items-center gap-[12px] px-[8px]" style={{ paddingTop: 4, paddingBottom: 4 }}>
+                {/* Avatar */}
+                <div className="w-[24px] h-[24px] rounded-full flex items-center justify-center shrink-0"
+                  style={{ background: "#f4f5f6" }}>
+                  <span style={{ fontSize: 9, fontWeight: 400, color: "#473bab", letterSpacing: "0.4px", lineHeight: "1.66" }}>
+                    {initials(contact.name)}
+                  </span>
+                </div>
+                {/* Text */}
+                <div className="flex flex-col flex-1 min-w-0 py-[4px]">
+                  <p style={{ fontSize: 12, color: "#1f1d25", letterSpacing: "0.17px", lineHeight: "1.43", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{contact.name}</p>
+                  <p style={{ fontSize: 11, color: "#686576", letterSpacing: "0.4px", lineHeight: "1.66" }}>
+                    {channels[contact.email] === "platform" ? "Platform Message" : contact.email}
+                  </p>
+                </div>
+                {/* Kebab menu */}
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <button
+                      className="flex items-center justify-center rounded-full shrink-0 cursor-pointer hover:bg-[rgba(0,0,0,0.04)] transition-colors"
+                      style={{ padding: 5 }}>
+                      <MoreVertical size={14} strokeWidth={1.5} color="#686576" />
+                    </button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" sideOffset={4} className="w-[220px]">
+                    <DropdownMenuItem onClick={() => toggleChannel(contact.email)}>
+                      {channels[contact.email] === "platform" ? "Notify by Email" : "Notify by Platform Message"}
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={() => remove(contact.email)}
+                      className="text-red-600 focus:text-red-600 focus:bg-red-50">
+                      Remove contact
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+              {/* Divider */}
+              {i < selected.length - 1 && (
+                <div className="absolute bottom-0 left-0 right-0 h-px bg-[rgba(0,0,0,0.08)]" />
+              )}
+            </div>
+          ))}
+        </div>
+
+        {/* ── Include Contact button ── */}
+        <div className="relative">
+          <button
+            onClick={() => setShowAddMenu(v => !v)}
+            className="w-full py-[8px] rounded-full border text-[13px] font-medium tracking-[0.46px] cursor-pointer transition-colors hover:bg-[rgba(71,59,171,0.04)]"
+            style={{ borderColor: "var(--brand-accent)", color: "var(--brand-accent)", fontWeight: 500, background: "transparent" }}>
+            Include Contact
+          </button>
+          {showAddMenu && available.length > 0 && (
+            <div className="absolute top-full left-0 right-0 mt-[4px] bg-white rounded-[8px] border border-[rgba(0,0,0,0.12)] z-20 overflow-hidden"
+              style={{ boxShadow: "0px 4px 12px rgba(0,0,0,0.12)" }}>
+              {available.map(contact => (
+                <button key={contact.email} onClick={() => add(contact)}
+                  className="w-full flex items-center gap-[10px] px-[12px] py-[8px] hover:bg-[#f5f4ff] text-left cursor-pointer transition-colors">
+                  <div className="w-[24px] h-[24px] rounded-full flex items-center justify-center shrink-0"
+                    style={{ background: "#f4f5f6" }}>
+                    <span style={{ fontSize: 9, color: "#473bab" }}>{initials(contact.name)}</span>
+                  </div>
+                  <div className="flex flex-col flex-1 min-w-0">
+                    <span style={{ fontSize: 12, color: "#1f1d25" }}>{contact.name}</span>
+                    <span style={{ fontSize: 10, color: "#686576" }}>{contact.email}</span>
+                  </div>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* ── Message textarea ── */}
+        <div className="flex flex-col gap-[4px]">
+          <div className="px-[4px]">
+            <p style={{ fontSize: 12, color: "#686576", letterSpacing: "0.15px", lineHeight: "12px" }}>Message</p>
+          </div>
+          <textarea
+            value={message}
+            onChange={e => setMessage(e.target.value)}
+            className="w-full px-[8px] py-[6px] rounded-[4px] resize-none focus:outline-none focus:ring-1"
+            style={{
+              background: "#f9fafa",
+              border: "1px solid #dddce0",
+              color: "#1f1d25",
+              fontSize: 12,
+              letterSpacing: "0.17px",
+              lineHeight: "1.43",
+              height: 120,
+              fontFamily: "inherit",
+              // focus ring color
+            }}
+          />
+        </div>
+
+        {/* ── Send Message button ── */}
+        <button
+          onClick={() => selected.length > 0 && onSend(selected, message)}
+          disabled={selected.length === 0}
+          className="w-full py-[8px] rounded-full text-[13px] font-medium tracking-[0.46px] text-white transition-all cursor-pointer disabled:opacity-40"
+          style={{ background: "linear-gradient(99deg, var(--brand-accent) 0%, var(--brand-mid) 100%)" }}>
+          Send Message
+        </button>
+
+      </div>
+    </motion.div>
+  );
+}
+
+// ─── Dealer BG preview image with shimmer skeleton ────────────────────────────
+function DealerBgPreviewImage({ src }: { src: string }) {
+  const [loaded, setLoaded] = useState(false);
+  return (
+    <>
+      {/* Skeleton always rendered on top — fades out once the real image is ready */}
+      <div
+        className="absolute inset-0 skeleton-shimmer pointer-events-none"
+        style={{ opacity: loaded ? 0 : 1, transition: "opacity 0.3s ease", zIndex: 1 }}
+      />
+      <img
+        src={src}
+        alt="Generated background preview"
+        style={{
+          width: "100%", height: "100%", objectFit: "cover", display: "block",
+          opacity: loaded ? 1 : 0,
+          transition: "opacity 0.3s ease",
+        }}
+        onLoad={() => setLoaded(true)}
+        onError={() => setLoaded(true)}
+      />
+    </>
+  );
+}
+
+// ─── Generate Assets Smart Card ───────────────────────────────────────────────
+function GenerateAssetsSmartCard({
+  context,
+  confirmedBackgroundIds,
+  applied,
+  totalGenerated,
+}: {
+  context: ProjectContextPayload | null;
+  confirmedBackgroundIds: string[];
+  applied: boolean;
+  totalGenerated?: number;
+}) {
+  if (applied) {
+    return (
+      <div className="ml-[32px] mt-[4px]">
+        <ConfirmedChip label={`${totalGenerated ?? 0} assets generated`} />
+      </div>
+    );
+  }
+
+  const selectedOffers = (context?.currentOfferIds ?? [])
+    .map(id => context?.availableOffers.find(o => o.id === id))
+    .filter((o): o is NonNullable<typeof o> => Boolean(o));
+
+  const selectedTemplates = (context?.currentTemplateIds ?? [])
+    .map(id => context?.availableTemplates.find(t => t.id === id))
+    .filter((t): t is NonNullable<typeof t> => Boolean(t));
+
+  const offerCount    = selectedOffers.length;
+  const templateCount = selectedTemplates.length;
+  const bgCount       = confirmedBackgroundIds.length > 0 ? confirmedBackgroundIds.length : 1;
+  const total         = Math.max(offerCount * templateCount * bgCount, 0);
+  const adShells      = bgCount;
+
+  const offerNames  = selectedOffers.slice(0, 4).map(o => o.model).join(" · ") || "—";
+  const tmplDims    = selectedTemplates.slice(0, 4).map(t => `${t.width}×${t.height}`).join(" · ") || "—";
+  const bgNames     = confirmedBackgroundIds.length > 0
+    ? confirmedBackgroundIds.slice(0, 3).map(id => SCENE_BACKGROUNDS.find(b => b.id === id)?.name ?? id).join(" · ")
+    : "No backgrounds";
+
+  const listItems = [
+    { icon: <Tag size={14} style={{ color: "#473bab" }} />, label: `${offerCount} Offer${offerCount !== 1 ? "s" : ""}`, sub: offerNames },
+    { icon: <Layers size={14} style={{ color: "#473bab" }} />, label: "Templates", sub: tmplDims },
+    { icon: <Image size={14} style={{ color: "#473bab" }} />, label: `${confirmedBackgroundIds.length > 0 ? confirmedBackgroundIds.length : "No"} Background${confirmedBackgroundIds.length !== 1 ? "s" : ""}`, sub: bgNames },
+  ];
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}
+      className="ml-[32px] mt-[4px] rounded-[14px] border border-[rgba(0,0,0,0.1)] bg-white overflow-hidden"
+      style={{ boxShadow: "0 2px 12px rgba(0,0,0,0.06)" }}
+    >
+      <div style={{ display: "flex", flexDirection: "column", gap: 12, padding: 14 }}>
+        {/* Header — title only, no chip */}
+        <span style={{ fontSize: 14, fontWeight: 700, color: "#1f1d25", letterSpacing: "0.15px" }}>Generate Assets</span>
+
+        {/* List items — no outer border, only bottom dividers */}
+        <div>
+          {listItems.map((item, i) => (
+            <div key={i} style={{
+              display: "flex", alignItems: "center", gap: 12, padding: "10px 0",
+              borderBottom: i < listItems.length - 1 ? "1px solid rgba(0,0,0,0.07)" : "none",
+            }}>
+              <div style={{
+                width: 36, height: 36, borderRadius: 100, background: "#EEEEFF",
+                display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
+              }}>
+                {item.icon}
+              </div>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <p style={{ fontSize: 13, fontWeight: 600, color: "#1f1d25", lineHeight: 1.4, margin: 0 }}>{item.label}</p>
+                <p style={{ fontSize: 11, color: "#686576", lineHeight: 1.4, margin: "2px 0 0", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{item.sub}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Alert */}
+        <div style={{
+          display: "flex", alignItems: "flex-start", gap: 8, padding: "10px 12px",
+          border: "1px solid #473bab", borderRadius: 8,
+          background: "rgba(71,59,171,0.04)",
+        }}>
+          <Info size={14} style={{ color: "#473bab", flexShrink: 0, marginTop: 1 }} />
+          <p style={{ fontSize: 12, color: "#473bab", lineHeight: 1.5, margin: 0 }}>
+            <strong>{total} Assets</strong> will be grouped into <strong>{adShells} Ad Shell{adShells !== 1 ? "s" : ""}</strong> — one per background — each containing all format sizes for every offer.
+          </p>
+        </div>
+
+        {/* Buttons */}
+        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          <button
+            onClick={() => window.dispatchEvent(new CustomEvent(AGENT_GENERATE_ASSETS_EVENT))}
+            style={{
+              width: "100%", padding: "10px 16px", borderRadius: 999,
+              fontSize: 13, fontWeight: 600, letterSpacing: "0.46px",
+              color: "white", background: "#473bab", border: "none", cursor: "pointer",
+            }}
+          >
+            Generate {total} Assets
+          </button>
+          <button
+            onClick={() => window.dispatchEvent(new CustomEvent(AGENT_SCROLL_TO_SECTION_EVENT, { detail: { section: "adshells" } }))}
+            style={{
+              width: "100%", padding: "10px 16px", borderRadius: 999,
+              fontSize: 13, fontWeight: 500, letterSpacing: "0.46px",
+              color: "#473bab", background: "transparent",
+              border: "1px solid rgba(99,86,225,0.5)", cursor: "pointer",
+            }}
+          >
+            Review First
+          </button>
+        </div>
+      </div>
+    </motion.div>
+  );
+}
 
 interface BackgroundsCardProps {
   input: BackgroundsInput;
@@ -808,6 +1165,64 @@ function ShareChooserCard({
       <div className="ml-[32px] mt-[4px]">
         <ConfirmedChip label={`Platform notification sent to ${firstName}`} />
       </div>
+    );
+  }
+
+  // ── Grouped contacts mode (from ReviewerPickerCard) ─────────────────────────
+  if (input.selectedContacts && input.selectedContacts.length > 0) {
+    const emailContacts = input.selectedContacts.filter(c => c.group !== "dealer");
+    const platformContacts = input.selectedContacts.filter(c => c.group === "dealer");
+
+    const handleGroupedConfirm = () => {
+      setChosen("email"); // mark as applied
+      if (emailContacts.length > 0) onChooseEmail(emailContacts.map(c => c.name).join(", "));
+      if (platformContacts.length > 0) onChoosePlatform(platformContacts.map(c => c.name).join(", "));
+    };
+
+    const ContactRow = ({ contact, method, color }: { contact: typeof input.selectedContacts[number]; method: string; color: string }) => (
+      <div className="flex items-center gap-[8px] py-[5px]">
+        <div className="w-[22px] h-[22px] rounded-full flex items-center justify-center shrink-0"
+          style={{ background: color }}>
+          <span style={{ fontSize: 8, fontWeight: 700, color: "white" }}>
+            {contact.name.split(" ").map((n: string) => n[0]).join("").slice(0, 2)}
+          </span>
+        </div>
+        <span style={{ fontSize: 12, color: "var(--ink)", flex: 1 }}>{contact.name}</span>
+        <span style={{ fontSize: 10, color: "var(--ink-tertiary)", background: "rgba(0,0,0,0.06)", borderRadius: 4, padding: "1px 6px" }}>{method}</span>
+      </div>
+    );
+
+    return (
+      <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}
+        className="ml-[32px] mt-[4px] rounded-[14px] border border-[rgba(0,0,0,0.10)] bg-white overflow-hidden"
+        style={{ boxShadow: "0 2px 12px rgba(0,0,0,0.06)", maxWidth: 360 }}>
+
+        <div className="px-[14px] pt-[10px] pb-[8px] border-b border-[rgba(0,0,0,0.06)] bg-[#fafafa]">
+          <p style={{ fontSize: 14, fontWeight: 700, color: "var(--ink)" }}>Ready to send</p>
+          <p style={{ fontSize: 10.5, color: "var(--ink-tertiary)", lineHeight: 1.4 }}>Here's how each reviewer will be notified.</p>
+        </div>
+
+        <div className="px-[14px] py-[10px] flex flex-col">
+          {emailContacts.length > 0 && (
+            <div className="mb-[6px]">
+              <p className="text-[9px] font-semibold uppercase tracking-[0.08em] text-[#c4c1d0] mb-[3px]">Via Email</p>
+              {emailContacts.map(c => <ContactRow key={c.email} contact={c} method="Email" color="var(--brand-accent)" />)}
+            </div>
+          )}
+          {platformContacts.length > 0 && (
+            <div className="mb-[6px]">
+              <p className="text-[9px] font-semibold uppercase tracking-[0.08em] text-[#c4c1d0] mb-[3px]">Via Platform</p>
+              {platformContacts.map(c => <ContactRow key={c.email} contact={c} method="Platform" color="#0d7a5f" />)}
+            </div>
+          )}
+          <button
+            onClick={handleGroupedConfirm}
+            className="mt-[6px] py-[8px] rounded-full text-[13px] font-medium tracking-[0.46px] text-white"
+            style={{ background: "linear-gradient(99deg, var(--brand-accent) 0%, var(--brand-mid) 100%)", cursor: "pointer" }}>
+            Confirm & Send
+          </button>
+        </div>
+      </motion.div>
     );
   }
 
@@ -2142,6 +2557,7 @@ export function ProjectAgentPane({ isOpen, onClose, userType, activeUserName }: 
 
   const [messages,      setMessages]      = useState<Message[]>([]);
   const [streamingText, setStreamingText] = useState("");
+  const [bgProcessing, setBgProcessing] = useState(false);
   const [projectContext, setProjectContext] = useState<ProjectContextPayload | null>(null);
   const [showHistory,      setShowHistory]      = useState(false);
   const [threads,          setThreads]          = useState<AgentThread[]>(() => loadAgentThreads());
@@ -2197,6 +2613,44 @@ export function ProjectAgentPane({ isOpen, onClose, userType, activeUserName }: 
     const h = (e: Event) => setProjectContext((e as CustomEvent<ProjectContextPayload>).detail);
     window.addEventListener(PROJECT_CONTEXT_EVENT, h);
     return () => window.removeEventListener(PROJECT_CONTEXT_EVENT, h);
+  }, []);
+
+  // Mark generate-assets prompt as applied and append post-generation card once generation completes
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const { total } = (e as CustomEvent<{ total: number }>).detail;
+      setMessages(prev => {
+        const updated = prev.map(m =>
+          (m.type === "text" && (m as TextMessage).isGenerateAssetsPrompt && !(m as TextMessage).applied)
+            ? { ...m, applied: true, totalGenerated: total } as TextMessage
+            : m
+        );
+        // Avoid duplicates
+        const hasPostGenCard = updated.some(m => m.type === "share" || m.type === "reviewer_picker" || m.type === "campaign_cta");
+        if (hasPostGenCard) return updated;
+
+        const isProactiveSession = updated.some(m => m.type === "proactive_questions");
+        const now = Date.now();
+
+        if (isProactiveSession) {
+          // Proactive flow: user decides who to share with
+          return [
+            ...updated,
+            { id: `a-${now}`, role: "assistant", type: "text",
+              content: "Based on your last project, these are the people who should review." } as TextMessage,
+            { id: `reviewer-picker-${now + 1}`, role: "assistant", type: "reviewer_picker", applied: false } as ReviewerPickerMsg,
+          ];
+        }
+
+        // Standard flow: assets are pre-approved, offer campaign creation
+        return [
+          ...updated,
+          { id: `campaign-cta-${now}`, role: "assistant", type: "campaign_cta" } as CampaignCtaMsg,
+        ];
+      });
+    };
+    window.addEventListener(AGENT_ASSETS_GENERATED_EVENT, handler);
+    return () => window.removeEventListener(AGENT_ASSETS_GENERATED_EVENT, handler);
   }, []);
 
   useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages, streamingText]);
@@ -2347,10 +2801,7 @@ export function ProjectAgentPane({ isOpen, onClose, userType, activeUserName }: 
       // PHASE 2 runs AFTER user approves (see onDealerBgApprove below):
       // Per-template clean backgrounds generated in parallel, then dispatched.
 
-      setMessages(prev => [...prev, {
-        id: `a-${Date.now()}`, role: "assistant", type: "text",
-        content: "Preparing your dealership scene — adapting perspective and clearing the foreground. This takes about 30 seconds…",
-      } as TextMessage]);
+      setBgProcessing(true);
       dispatchAction({ action: "set_dealer_bg_generating", value: true } as never);
 
       (async () => {
@@ -2440,6 +2891,7 @@ export function ProjectAgentPane({ isOpen, onClose, userType, activeUserName }: 
 
           pendingDealerImageRef.current = null;
 
+          setBgProcessing(false);
           setMessages(prev => [...prev, {
             id: `dealer-bg-${Date.now()}`,
             role: "assistant",
@@ -2451,6 +2903,7 @@ export function ProjectAgentPane({ isOpen, onClose, userType, activeUserName }: 
           dispatchAction({ action: "set_dealer_bg_generating", value: false } as never);
 
         } catch (err) {
+          setBgProcessing(false);
           setMessages(prev => [...prev, {
             id: `e-${Date.now()}`, role: "assistant", type: "text",
             content: `⚠️ Background generation failed: ${String(err)}. Please try uploading the image again.`,
@@ -2826,6 +3279,12 @@ export function ProjectAgentPane({ isOpen, onClose, userType, activeUserName }: 
       userForcedTool = "propose_share";
     }
 
+    // "proactive" / "automatic" / "auto" → trigger the proactive questions flow
+    const wantsProactive = /\b(proactive|automatic|auto)\b/i.test(lowerText) && !hasBgIntent;
+    if (wantsProactive && !userForcedTool) {
+      userForcedTool = "propose_proactive_questions";
+    }
+
     // Dealer scene upload + no project open → the model MUST start with setup_project.
     // Without this it sometimes answers conversationally or proposes catalog
     // backgrounds. flow_scope is additionally overridden in getFlowSteps, so the
@@ -2961,23 +3420,10 @@ export function ProjectAgentPane({ isOpen, onClose, userType, activeUserName }: 
             id: `a-${Date.now()}`,
             role: "assistant",
             type: "text",
-            content: `You now have everything ready to generate your assets — ${offerCount} offer${offerCount > 1 ? "s" : ""} × ${templateCount} template${templateCount > 1 ? "s" : ""} = **${total} asset${total > 1 ? "s" : ""}**.`,
+            content: "Your offers, templates, and backgrounds are all confirmed. Ready to generate the ad assets?",
             isGenerateAssetsPrompt: true,
           } as TextMessage]);
         }, 600);
-      }
-
-      // Proactively propose task owners with smart defaults at the end of every flow.
-      const ownersAlreadySet = ctx?.taskOwners && Object.keys(ctx.taskOwners).length > 0;
-      const ownersAlreadyProposed = messagesRef.current.some(m => m.type === "task_owners");
-      if (!ownersAlreadySet && !ownersAlreadyProposed) {
-        setTimeout(() => sendInternal(
-          "NOW call propose_task_owners with suggested_owners: " +
-          "[{section:'offers',name:'Jorge Verlindo'},{section:'templates',name:'Rachel Hui'}," +
-          "{section:'assets',name:'Rachel Hui'},{section:'platforms',name:'Mallory Gonzalez'}," +
-          "{section:'brand',name:'Mallory Gonzalez'},{section:'backgrounds',name:'Rachel Hui'}," +
-          "{section:'adshells',name:'Jorge Verlindo'},{section:'campaigns',name:'Jorge Verlindo'}]."
-        ), 1800);
       }
 
       return;
@@ -3165,6 +3611,13 @@ export function ProjectAgentPane({ isOpen, onClose, userType, activeUserName }: 
       id: `a-${Date.now()}`, role: "assistant", type: "text",
       content: `✅ Email sent to **${recipient}** with the project link.`,
     } as TextMessage]);
+
+    const projectId = ctxRef.current?.projectId;
+    if (projectId) {
+      window.dispatchEvent(new CustomEvent("project-status-change", {
+        detail: { projectId, status: "Awaiting Approval" },
+      }));
+    }
   }, [dispatchAction]);
 
   const handleEmailDismiss = useCallback(() => {}, []);
@@ -3200,7 +3653,39 @@ export function ProjectAgentPane({ isOpen, onClose, userType, activeUserName }: 
       id: `a-${Date.now()}`, role: "assistant", type: "text",
       content: `✅ Platform notification sent to **${recipientName}**. They'll see a notification in their feed.`,
     } as TextMessage]);
+
+    const projectId = ctxRef.current?.projectId;
+    if (projectId) {
+      window.dispatchEvent(new CustomEvent("project-status-change", {
+        detail: { projectId, status: "Awaiting Approval" },
+      }));
+    }
   }, [pushProjectMention]);
+
+  // ── Reviewer picker confirm → show ShareChooserCard with grouped contacts ────
+  const handleReviewerPickerConfirm = useCallback((msgId: string, selected: typeof MOCK_CONTACTS[number][], _message: string) => {
+    // Mark card applied
+    setMessages(prev => prev.map(m => m.id === msgId ? { ...m, applied: true } as ReviewerPickerMsg : m));
+
+    // Build confirmation text
+    const emailNames = selected.filter(c => c.group !== "dealer").map(c => c.name.split(" ")[0]).join(", ");
+    const platformNames = selected.filter(c => c.group === "dealer").map(c => c.name.split(" ")[0]).join(", ");
+    const parts: string[] = [];
+    if (emailNames) parts.push(`Email sent to **${emailNames}**.`);
+    if (platformNames) parts.push(`Platform notification sent to **${platformNames}**.`);
+
+    setMessages(prev => [...prev, {
+      id: `a-${Date.now()}`, role: "assistant", type: "text",
+      content: parts.join(" "),
+    } as TextMessage]);
+
+    const projectId = ctxRef.current?.projectId;
+    if (projectId) {
+      window.dispatchEvent(new CustomEvent("project-status-change", {
+        detail: { projectId, status: "Awaiting Approval" },
+      }));
+    }
+  }, []);
 
   // ── ParsedOffers card ────────────────────────────────────────────────────────
   const handleParsedOffersApply = useCallback((msgId: string, offers: CustomOffer[]) => {
@@ -3358,7 +3843,7 @@ export function ProjectAgentPane({ isOpen, onClose, userType, activeUserName }: 
     ? selectedAccount
     : (projectContext?.projectName ?? "(no project open)");
   const hasMessages = messages.length > 0 || streaming || simulatingStream;
-  const arcState = useConstellationAnim((streaming && !streamingText) || simulatingStream);
+  const arcState = useConstellationAnim((streaming && !streamingText) || simulatingStream || bgProcessing);
 
   // ─── Render ──────────────────────────────────────────────────────────────────
   return (
@@ -3579,11 +4064,16 @@ export function ProjectAgentPane({ isOpen, onClose, userType, activeUserName }: 
                   <div className="flex-1 overflow-y-auto custom-scrollbar pb-2" style={{ minHeight: 0 }}>
                     <div className="flex flex-col gap-[12px] pt-[4px]">
 
-                      {messages.map(msg => (
+                      {(() => {
+                        const confirmedBgIds = messages
+                          .filter((m): m is BackgroundsMsg => m.type === "backgrounds" && m.applied)
+                          .flatMap(m => m.input.background_ids);
+                        return messages.map(msg => (
                         <MessageBubble
                           key={msg.id} message={msg} context={filteredContext}
                           projectName={projectContext?.projectName ?? "this project"}
                           existingProjectNames={knownProjectNames}
+                          confirmedBackgroundIds={confirmedBgIds}
                           onSetupApply={handleSetupApply}
                           onSetupDismiss={() => setMessages(prev => prev.filter(m => m.id !== msg.id))}
                           onOffersApply={handleOffersApply}
@@ -3601,6 +4091,7 @@ export function ProjectAgentPane({ isOpen, onClose, userType, activeUserName }: 
                           onEmailDismiss={handleEmailDismiss}
                           onShareChooseEmail={handleShareChooseEmail}
                           onShareChoosePlatform={handleShareChoosePlatform}
+                          onReviewerPickerConfirm={(contacts, message) => handleReviewerPickerConfirm(msg.id, contacts, message)}
                           onParsedOffersApply={(offers) => handleParsedOffersApply(msg.id, offers)}
                           onParsedOffersDismiss={() => handleParsedOffersDismiss(msg.id)}
                           onNotifyOwnersApply={() => setMessages(prev => prev.map(m => m.id === msg.id ? { ...m, applied: true } : m))}
@@ -3617,6 +4108,9 @@ export function ProjectAgentPane({ isOpen, onClose, userType, activeUserName }: 
                           onDealerBgApprove={(bgObject) => {
                             dispatchAction({ action: "add_custom_background", background: bgObject });
                             setMessages(prev => prev.map(m => m.id === msg.id ? { ...m, applied: true } as DealerBgProposalMsg : m));
+                            // Open Backgrounds accordion and scroll to it, then scroll to Preview
+                            window.dispatchEvent(new CustomEvent(AGENT_SCROLL_TO_SECTION_EVENT, { detail: { section: "backgrounds" } }));
+                            setTimeout(() => window.dispatchEvent(new CustomEvent(AGENT_SCROLL_TO_SECTION_EVENT, { detail: { section: "preview" } })), 600);
                             setTimeout(() => fireNextStep("dealer_bg"), 300);
 
                             // ── PHASE 2: Generate per-template clean bgs + per-offer composites ──
@@ -3674,11 +4168,25 @@ export function ProjectAgentPane({ isOpen, onClose, userType, activeUserName }: 
                             }, 200);
                           }}
                         />
-                      ))}
+                      ));
+                      })()}
 
-                      {/* Streaming */}
-                      {streaming && streamingText && (
+                      {/* Streaming — suppressed when bgProcessing to avoid duplicate indicator */}
+                      {streaming && streamingText && !bgProcessing && (
                         <AssistantBubble text={streamingText} streaming />
+                      )}
+
+                      {/* Background generation loading indicator — absorbs LLM streaming text when available */}
+                      {bgProcessing && (
+                        <div className="flex items-center gap-[8px]">
+                          <img src={imgAgentAvatar} alt="AI" className="w-[22px] h-[22px] rounded-full object-cover shrink-0" />
+                          <div className="flex items-center gap-[6px]">
+                            <ConstellationArcMark arcs={arcState} size={18} />
+                            <span className="text-[12px] text-[var(--ink-secondary)] tracking-[0.4px]">
+                              {streaming && streamingText ? streamingText : "Generating the background image — in-painting the scene…"}
+                            </span>
+                          </div>
+                        </div>
                       )}
 
                       {/* Contextual loading indicator */}
@@ -3718,6 +4226,7 @@ export function ProjectAgentPane({ isOpen, onClose, userType, activeUserName }: 
 // ─── Message bubble router ─────────────────────────────────────────────────────
 function MessageBubble({
   message, context, projectName, existingProjectNames,
+  confirmedBackgroundIds,
   onSetupApply, onSetupDismiss,
   onOffersApply, onOffersDismiss,
   onTemplatesApply, onTemplatesDismiss,
@@ -3726,6 +4235,7 @@ function MessageBubble({
   onProposalApply, onProposalDismiss,
   onEmailApply, onEmailDismiss,
   onShareChooseEmail, onShareChoosePlatform,
+  onReviewerPickerConfirm,
   onParsedOffersApply, onParsedOffersDismiss,
   onNotifyOwnersApply,
   onTaskOwnersApply,
@@ -3739,6 +4249,7 @@ function MessageBubble({
   context: ProjectContextPayload | null;
   projectName: string;
   existingProjectNames: string[];
+  confirmedBackgroundIds: string[];
   onSetupApply: (name: string, account: string, oem: string, start: string, end: string) => void;
   onSetupDismiss: () => void;
   onOffersApply: (offerIds: string[]) => void;
@@ -3755,6 +4266,7 @@ function MessageBubble({
   onEmailDismiss: () => void;
   onShareChooseEmail: (recipientHint: string) => void;
   onShareChoosePlatform: (recipientName: string) => void;
+  onReviewerPickerConfirm: (contacts: typeof MOCK_CONTACTS[number][], message: string) => void;
   onParsedOffersApply: (offers: CustomOffer[]) => void;
   onParsedOffersDismiss: () => void;
   onNotifyOwnersApply: () => void;
@@ -3836,12 +4348,8 @@ function MessageBubble({
         </div>
 
         {/* Preview composite */}
-        <div className="relative w-full" style={{ aspectRatio: "4/3", background: "#e2e2e2" }}>
-          <img
-            src={msg.previewUrl}
-            alt="Generated background preview"
-            style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
-          />
+        <div className="relative w-full" style={{ aspectRatio: "4/3", background: "#ececf2" }}>
+          <DealerBgPreviewImage src={msg.previewUrl} />
           <div
             className="absolute top-[8px] left-[8px] rounded-[4px] text-white font-medium"
             style={{ fontSize: 9, padding: "2px 6px", background: "rgba(71,59,171,0.82)" }}
@@ -3985,6 +4493,24 @@ function MessageBubble({
     );
   }
 
+  if (message.type === "reviewer_picker") {
+    const projectUrl = context?.projectId
+      ? `https://constellation-ux-app.vercel.app/OEM/Projects?project=${context.projectId}`
+      : "https://constellation-ux-app.vercel.app/OEM/Projects";
+    return (
+      <ReviewerPickerCard
+        applied={message.applied}
+        projectName={projectName}
+        projectUrl={projectUrl}
+        onSend={onReviewerPickerConfirm}
+      />
+    );
+  }
+
+  if (message.type === "campaign_cta") {
+    return <CampaignCtaCard />;
+  }
+
   if (message.type === "brand") {
     return (
       <BrandProposalCard
@@ -4019,7 +4545,21 @@ function MessageBubble({
     );
   }
 
-  return <AssistantBubble text={(message as TextMessage).content} isGeneratePrompt={(message as TextMessage).isGenerateAssetsPrompt} />;
+  const textMsg = message as TextMessage;
+  if (textMsg.isGenerateAssetsPrompt) {
+    return (
+      <div>
+        <AssistantBubble text={textMsg.content} />
+        <GenerateAssetsSmartCard
+          context={context}
+          confirmedBackgroundIds={confirmedBackgroundIds}
+          applied={textMsg.applied ?? false}
+          totalGenerated={textMsg.totalGenerated}
+        />
+      </div>
+    );
+  }
+  return <AssistantBubble text={textMsg.content} />;
 }
 
 // ─── Assistant bubble with avatar + action bar ─────────────────────────────────

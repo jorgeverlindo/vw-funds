@@ -240,6 +240,18 @@
   --animate-accordion-up:   accordion-up   200ms ease-out;
 }
 
+/* ── Skeleton shimmer (MUI-style wave) ───────────────────────────────────── */
+
+@keyframes skeleton-shimmer {
+  0%   { background-position: -800px 0; }
+  100% { background-position:  800px 0; }
+}
+.skeleton-shimmer {
+  background: linear-gradient(90deg, #ececf2 25%, #f4f4f8 37%, #ececf2 63%);
+  background-size: 800px 100%;
+  animation: skeleton-shimmer 1.4s ease-in-out infinite;
+}
+
 /* ── ProjectAgentPane animations ─────────────────────────────────────────── */
 
 @keyframes typing-dot {

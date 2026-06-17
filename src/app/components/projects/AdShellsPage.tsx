@@ -1,10 +1,9 @@
 import { useState, useMemo } from "react";
 import {
-  Search, PanelLeft, ChevronRight, ChevronLeft,
-  MoreVertical, Folder, Globe, Sparkles, Edit3, Check,
+  Search, ChevronRight, ChevronLeft,
+  MoreVertical, Globe, Sparkles, Edit3, Check, Layers,
 } from "lucide-react";
-import { useSidebar } from "@projects/lib/sidebar-context";
-import { templateLibrary } from "@projects/lib/mock-data";
+import { templateLibrary, backgroundCollections } from "@projects/lib/mock-data";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -29,59 +28,72 @@ export interface GeneratedAsset {
   bgId: string | null;
 }
 
-interface AdShell {
-  id: string;
-  assets: GeneratedAsset[];
+interface FormatGroup {
   templateId: string;
   templateName: string;
   width: number;
   height: number;
   platform: string;
+  assets: GeneratedAsset[];
+}
+
+interface AdShell {
+  id: string;
+  assets: GeneratedAsset[];  // all assets across all formats (for stacked preview)
+  formats: FormatGroup[];
   bgId: string | null;
+  bgName: string;
   bgNum: number;
   name: string;
 }
 
 // ─── Build shells from generatedAssets ───────────────────────────────────────
-// Group by template × background → one shell per combination
+// Group by background → one card per background, all template formats inside.
 
 function buildShells(assets: GeneratedAsset[]): AdShell[] {
-  const map = new Map<string, GeneratedAsset[]>();
+  const bgMap = new Map<string, GeneratedAsset[]>();
   assets.forEach(a => {
-    const key = `${a.template.id}__${a.bgId ?? "none"}`;
-    if (!map.has(key)) map.set(key, []);
-    map.get(key)!.push(a);
+    const key = a.bgId ?? "none";
+    if (!bgMap.has(key)) bgMap.set(key, []);
+    bgMap.get(key)!.push(a);
   });
 
-  // Track bg order per template for the bgNum label
-  const bgCounters = new Map<string, Map<string, number>>();
+  let bgCounter = 0;
+  return Array.from(bgMap.entries()).map(([bgKey, bgAssets]) => {
+    bgCounter++;
+    const bgId = bgKey === "none" ? null : bgKey;
 
-  return Array.from(map.entries()).map(([id, shellAssets]) => {
-    const first = shellAssets[0];
-    const tmpl = templateLibrary.find(t => t.id === first.template.id) ?? first.template;
-    const w = (tmpl as any).width ?? 0;
-    const h = (tmpl as any).height ?? 0;
+    // Group assets by template within this background
+    const tmplMap = new Map<string, GeneratedAsset[]>();
+    bgAssets.forEach(a => {
+      if (!tmplMap.has(a.template.id)) tmplMap.set(a.template.id, []);
+      tmplMap.get(a.template.id)!.push(a);
+    });
 
-    if (!bgCounters.has(first.template.id)) bgCounters.set(first.template.id, new Map());
-    const bgMap = bgCounters.get(first.template.id)!;
-    const bgKey = first.bgId ?? "none";
-    if (!bgMap.has(bgKey)) bgMap.set(bgKey, bgMap.size + 1);
-    const bgNum = bgMap.get(bgKey)!;
+    const formats: FormatGroup[] = Array.from(tmplMap.entries()).map(([tmplId, tmplAssets]) => {
+      const first = tmplAssets[0];
+      const tmpl = templateLibrary.find(t => t.id === tmplId) ?? first.template;
+      return {
+        templateId: tmplId,
+        templateName: (tmpl as any).name ?? first.template.name ?? tmplId,
+        width: (tmpl as any).width ?? 0,
+        height: (tmpl as any).height ?? 0,
+        platform: (tmpl as any).platform ?? first.template.platform ?? "Web",
+        assets: tmplAssets,
+      };
+    });
 
-    const dims = w && h ? `${w}x${h}` : "Ad";
-    const platform = (tmpl as any).platform ?? first.template.platform ?? "Web";
+    const bgInfo = backgroundCollections.find(b => b.id === bgId);
+    const bgName = (bgInfo as any)?.name ?? (bgId ? `BG ${bgCounter}` : "No Background");
 
     return {
-      id,
-      assets: shellAssets,
-      templateId: first.template.id,
-      templateName: (tmpl as any).name ?? first.template.name ?? first.template.id,
-      width: w,
-      height: h,
-      platform,
-      bgId: first.bgId,
-      bgNum,
-      name: `${(tmpl as any).name ?? first.template.id}_BG_${bgNum}`,
+      id: bgKey,
+      assets: bgAssets,
+      formats,
+      bgId,
+      bgName,
+      bgNum: bgCounter,
+      name: `BG_${bgCounter}`,
     };
   });
 }
@@ -132,8 +144,10 @@ function AdShellCard({
   onSelect: (checked: boolean) => void;
 }) {
   const [hover, setHover] = useState(false);
-  const { assets, width, height, name, platform, templateName } = shell;
-  const hiddenCount = Math.max(0, assets.length - 4);
+  const { assets, formats, name, bgName } = shell;
+  // Use first format's dimensions for aspect-ratio letterboxing in default view
+  const previewWidth = formats[0]?.width ?? 0;
+  const previewHeight = formats[0]?.height ?? 0;
 
   return (
     <div
@@ -150,76 +164,57 @@ function AdShellCard({
           border: `${hover || selected ? 2 : 1}px solid ${hover || selected ? "#473bab" : "#e7e7e9"}`,
         }}
       >
-        {/* Default: stacked rotated layers */}
+        {/* Default: stacked rotated asset layers */}
         {!hover && (
           <>
             {assets[2] && (
               <div className="absolute inset-6 opacity-40" style={{ transform: "rotate(-5deg)" }}>
-                <AssetLayer asset={assets[2]} width={width} height={height} />
+                <AssetLayer asset={assets[2]} width={previewWidth} height={previewHeight} />
               </div>
             )}
             {assets[1] && (
               <div className="absolute inset-6 opacity-40" style={{ transform: "rotate(5deg)" }}>
-                <AssetLayer asset={assets[1]} width={width} height={height} />
+                <AssetLayer asset={assets[1]} width={previewWidth} height={previewHeight} />
               </div>
             )}
             {assets[0] && (
               <div className="absolute inset-6">
-                <AssetLayer asset={assets[0]} width={width} height={height} />
+                <AssetLayer asset={assets[0]} width={previewWidth} height={previewHeight} />
               </div>
             )}
           </>
         )}
 
-        {/* Hover: 2×2 grid */}
-        {hover && (() => {
-          const hPct = width && height ? (height / width) * 100 : 56;
-          return (
-            <div className="absolute inset-0 p-4">
-              <div className="w-full h-full flex flex-col gap-1">
-                {/* Row 1 */}
-                <div className="flex-1 flex gap-1 min-h-0">
-                  {[0, 1].map(i => (
-                    <div key={i} className="flex-1 flex items-center justify-center overflow-hidden rounded min-w-0">
-                      {assets[i] && (
-                        <div style={{ width: "100%", height: `${hPct}%`, position: "relative", flexShrink: 0 }}>
-                          <AssetLayer asset={assets[i]} width={width} height={height} />
-                        </div>
-                      )}
-                    </div>
-                  ))}
+        {/* Hover: 2×2 format grid — one tile per template size */}
+        {hover && (
+          <div className="absolute inset-0 p-2">
+            <div className="w-full h-full grid grid-cols-2 gap-1.5">
+              {formats.slice(0, 4).map((fmt, i) => (
+                <div
+                  key={fmt.templateId}
+                  className="relative flex flex-col items-center justify-center bg-white rounded-md overflow-hidden"
+                >
+                  <span className="text-[9px] font-semibold text-gray-800 leading-tight px-1 text-center">
+                    {fmt.width && fmt.height ? `${fmt.width}×${fmt.height}` : fmt.templateName}
+                  </span>
+                  <span className="text-[8px] text-gray-400 px-1 truncate w-full text-center mt-0.5">
+                    {fmt.platform}
+                  </span>
+                  {i === 3 && formats.length > 4 && (
+                    <>
+                      <div className="absolute inset-0 bg-black/50 rounded-md" />
+                      <span className="absolute inset-0 flex items-center justify-center text-white text-xl font-light">
+                        +{formats.length - 4}
+                      </span>
+                    </>
+                  )}
                 </div>
-                {/* Row 2 */}
-                <div className="flex-1 flex gap-1 min-h-0">
-                  <div className="flex-1 flex items-center justify-center overflow-hidden rounded min-w-0">
-                    {assets[2] && (
-                      <div style={{ width: "100%", height: `${hPct}%`, position: "relative", flexShrink: 0 }}>
-                        <AssetLayer asset={assets[2]} width={width} height={height} />
-                      </div>
-                    )}
-                  </div>
-                  <div className="flex-1 flex items-center justify-center overflow-hidden rounded min-w-0 relative">
-                    {assets[3] && (
-                      <div style={{ width: "100%", height: `${hPct}%`, position: "relative", flexShrink: 0 }}>
-                        <AssetLayer asset={assets[3]} width={width} height={height} />
-                      </div>
-                    )}
-                    {hiddenCount > 0 && (
-                      <>
-                        <div className="absolute inset-0 bg-black/45 z-10 rounded" />
-                        <span className="absolute inset-0 flex items-center justify-center z-20 text-white text-2xl font-light">
-                          +{hiddenCount}
-                        </span>
-                      </>
-                    )}
-                  </div>
-                </div>
-              </div>
+              ))}
             </div>
-          );
-        })()}
+          </div>
+        )}
 
-        {/* Auto Generated badge — top right */}
+        {/* Auto Generated + format count — top right */}
         <div className="absolute top-2 right-2 z-10 flex flex-col items-end gap-1">
           <div className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#EBF5FB]">
             <Sparkles size={11} className="text-[#0277BD]" />
@@ -227,9 +222,9 @@ function AdShellCard({
               Auto Generated
             </span>
           </div>
-          {shell.assets.length > 1 && (
+          {formats.length > 0 && (
             <div className="bg-black/60 text-white rounded-full px-2 py-0.5 text-[10px] font-mono whitespace-nowrap">
-              {shell.assets.length} offers
+              {formats.length} format{formats.length !== 1 ? "s" : ""}
             </div>
           )}
         </div>
@@ -276,8 +271,7 @@ function AdShellCard({
           <div className="flex-1 min-w-0">
             <p className="text-[13px] text-gray-900 leading-snug truncate">{name}</p>
             <p className="text-[11px] text-[#686576] mt-0.5 tracking-wide">
-              Ad Shell&nbsp;|&nbsp;{platform}&nbsp;|&nbsp;
-              {width && height ? `${width}×${height}` : templateName}
+              Ad Shell&nbsp;|&nbsp;{formats.length} format{formats.length !== 1 ? "s" : ""}&nbsp;|&nbsp;{assets.length} offer{assets.length !== 1 ? "s" : ""}
             </p>
           </div>
           <button className="shrink-0 mt-0.5 p-1 rounded hover:bg-gray-100 text-gray-500 transition">
@@ -285,8 +279,8 @@ function AdShellCard({
           </button>
         </div>
         <div className="flex items-center gap-1.5 mt-1.5">
-          <Folder size={12} className="text-[#686576] shrink-0" />
-          <span className="text-[11px] text-[#686576] truncate">{templateName}</span>
+          <Layers size={12} className="text-[#686576] shrink-0" />
+          <span className="text-[11px] text-[#686576] truncate">{bgName}</span>
         </div>
       </div>
     </div>
@@ -306,14 +300,17 @@ export function AdShellsPage({
   generatedAssets: GeneratedAsset[];
   onNavigateTo: (page: string) => void;
 }) {
-  const { toggleSidebar, sidebarOpen } = useSidebar();
   const [query, setQuery] = useState("");
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
   const shells = useMemo(() => buildShells(generatedAssets), [generatedAssets]);
 
   const filtered = useMemo(() =>
-    shells.filter(s => s.name.toLowerCase().includes(query.toLowerCase()) || s.platform.toLowerCase().includes(query.toLowerCase())),
+    shells.filter(s =>
+      s.name.toLowerCase().includes(query.toLowerCase()) ||
+      s.bgName.toLowerCase().includes(query.toLowerCase()) ||
+      s.formats.some(f => f.templateName.toLowerCase().includes(query.toLowerCase()))
+    ),
     [shells, query]
   );
 
@@ -329,17 +326,6 @@ export function AdShellsPage({
     <div className="flex flex-col h-full">
       {/* Header */}
       <div className="flex items-center gap-3 px-6 py-3 bg-white">
-        <button
-          onClick={toggleSidebar}
-          title={sidebarOpen ? "Close sidebar" : "Open sidebar"}
-          className={`w-7 h-7 flex items-center justify-center rounded-md transition-colors ${
-            sidebarOpen
-              ? "text-[var(--brand-accent)] bg-[var(--brand-accent)/8]"
-              : "text-gray-400 hover:text-gray-600 hover:bg-gray-100"
-          }`}
-        >
-          <PanelLeft size={15} />
-        </button>
         <h1 className="text-lg font-semibold text-gray-900">Ad Shells</h1>
         {shells.length > 0 && (
           <span className="text-xs text-gray-400 ml-1">{filtered.length} Items</span>

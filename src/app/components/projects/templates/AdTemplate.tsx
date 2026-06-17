@@ -1,6 +1,7 @@
 "use client";
 
 import { CSSProperties, ReactNode, useState, useEffect, createContext, useContext } from "react";
+import { sampleImageUrl, deriveAdaptiveColors } from "@/app/utils/adaptiveColor";
 import { zoneConfigs, isKeyMessageTextLayout, isPharmaZoneConfig } from "@projects/lib/template-zone-configs";
 import type { TemplateZoneConfig, SingleProductTextLayout, MultiProductTextLayout, KeyMessageTextLayout } from "@projects/lib/template-zone-configs";
 import { useProjectStoreSafe } from "@projects/lib/project-store";
@@ -672,6 +673,26 @@ export function AdTemplate({
   // slot the result is null (slot renders empty). The Honda fallbacks only apply
   // when there is no project context at all (e.g. standalone / export renders).
   const store = useProjectStoreSafe();
+
+  // Adaptive text color: sample the background image to pick white, near-black,
+  // or a darkened harmonized hue based on the background luminance.
+  const bgImageUrl =
+    background.images?.[templateId] ??
+    background.images?.["social-1080x1080"] ??
+    background.images?.["website-2000x500"] ??
+    Object.values(background.images ?? {})[0];
+
+  const [adTextColor, setAdTextColor] = useState<string | null>(null);
+  useEffect(() => {
+    if (!bgImageUrl) { setAdTextColor(null); return; }
+    let cancelled = false;
+    setAdTextColor(null);
+    sampleImageUrl(bgImageUrl).then((sample) => {
+      if (!cancelled && sample) setAdTextColor(deriveAdaptiveColors(sample).primary);
+    });
+    return () => { cancelled = true; };
+  }, [bgImageUrl]);
+
   const offerMake = offer?.make ?? offers?.find(Boolean)?.make ?? "";
   const offerId = offer?.id ?? "";
   const otKey = offerId && templateId ? `${offerId}::${templateId}` : "";
@@ -744,7 +765,7 @@ export function AdTemplate({
         position: "relative",
         overflow: "hidden",
         flexShrink: 0,
-        "--brand-text": textColor,
+        "--brand-text": adTextColor ?? textColor,
         "--brand": btnColor,
         "--brand-foreground": "#ffffff",
       } as React.CSSProperties}>

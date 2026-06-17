@@ -58,6 +58,8 @@ import { ChannelChip } from "../ui/ChannelChip";
 import { emitSnackbar } from "../Snackbar";
 import { TaskOwner } from "@projects/ui/TaskOwner";
 import { useComments, CommentsButton } from "@comments";
+import { computeSampleFromData, deriveAdaptiveColors } from "@/app/utils/adaptiveColor";
+import type { AdaptiveColorSet } from "@/app/utils/adaptiveColor";
 
 // ─── Left-pane toggle icon (from design asset) ────────────────────────────────
 function LeftPaneIcon({ className }: { className?: string }) {
@@ -1057,6 +1059,7 @@ function JellyBeanCard({
   // Falls back to CSS overlay while the async composite is generating.
   const [compositeImage, setCompositeImage] = useState<string | null>(null);
   const [carBottom,      setCarBottom]      = useState<number | null>(null);
+  const [adaptiveColors, setAdaptiveColors] = useState<AdaptiveColorSet | null>(null);
   // True while the canvas composite is being computed (dealer flow only).
   // Initialised from props so the FIRST paint already shows the skeleton —
   // the raw bg + CSS car must never flash before the final render.
@@ -1217,6 +1220,14 @@ function JellyBeanCard({
           }
         }
 
+        // Sample background luminance in the bottom 30% (text zone) for adaptive colors
+        try {
+          const sampleY = Math.round(h * 0.70);
+          const sampleH = h - sampleY;
+          const { data: sampleData } = ctx.getImageData(0, sampleY, w, sampleH);
+          if (!cancelled) setAdaptiveColors(deriveAdaptiveColors(computeSampleFromData(sampleData)));
+        } catch { /* canvas taint or small canvas — leave adaptiveColors null */ }
+
         // Tire line: 45% into the visible ground band — mid-foreground, clearly
         // on the asphalt, leaving depth in front of the car.
         const detectedGround = groundStart !== null
@@ -1330,12 +1341,12 @@ function JellyBeanCard({
   const primaryLogoH = Math.round(h * 0.174);   // ~28px at h=160  (+20%)
   const eventLogoH   = Math.round(h * 0.126);   // ~20px at h=160  (+20%)
 
-  const dealerColor = hasBg ? "rgba(255,255,255,0.92)" : "var(--ink)";
-  const makeColor   = hasBg ? "rgba(255,255,255,0.55)" : "var(--ink-tertiary)";
-  const labelColor  = hasBg ? "rgba(255,255,255,0.70)" : "var(--ink-secondary)";
-  const priceColor  = hasBg ? "white"                  : "var(--ink)";
-  const moColor     = hasBg ? "rgba(255,255,255,0.60)" : "var(--ink-secondary)";
-  const termColor   = hasBg ? "rgba(255,255,255,0.45)" : "var(--ink-tertiary)";
+  const dealerColor = hasBg ? (adaptiveColors?.primary   ?? "rgba(255,255,255,0.92)") : "var(--ink)";
+  const makeColor   = hasBg ? (adaptiveColors?.tertiary  ?? "rgba(255,255,255,0.55)") : "var(--ink-tertiary)";
+  const labelColor  = hasBg ? (adaptiveColors?.secondary ?? "rgba(255,255,255,0.70)") : "var(--ink-secondary)";
+  const priceColor  = hasBg ? (adaptiveColors?.primary   ?? "white")                  : "var(--ink)";
+  const moColor     = hasBg ? (adaptiveColors?.secondary ?? "rgba(255,255,255,0.60)") : "var(--ink-secondary)";
+  const termColor   = hasBg ? (adaptiveColors?.tertiary  ?? "rgba(255,255,255,0.45)") : "var(--ink-tertiary)";
 
   // ── Skeleton while the canvas composite is being computed (dealer flow) ────
   // No intermediate frame (raw bg crop + CSS car) is ever shown: the card holds

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect, useCallback, useMemo, forwardRef, type ButtonHTMLAttributes } from "react";
+import { useUsabilityTesting } from "../../contexts/UsabilityTestingContext";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "motion/react";
 import {
@@ -378,12 +379,34 @@ interface TemplatesCardProps {
   onApply: (templateIds: string[]) => void;
   onDismiss: () => void;
   proactive?: boolean;
+  platforms?: string[];
 }
-function TemplatesProposalCard({ input, context, onApply, onDismiss, proactive }: TemplatesCardProps) {
-  const [templateIds,   setTemplateIds]   = useState<string[]>(input.template_ids);
+function TemplatesProposalCard({ input, context, onApply, onDismiss, proactive, platforms }: TemplatesCardProps) {
+  const allTemplates = context?.availableTemplates ?? [];
+
+  const matchesPlatforms = (format: string) => {
+    if (!platforms || platforms.length === 0) return true;
+    const f = format.toLowerCase();
+    return platforms.some(p => {
+      if (p === "google-pmax") return true;
+      if (p === "website") return f.includes("website") || f.includes("mobile");
+      if (p === "facebook" || p === "meta") return f.includes("social");
+      if (p === "google-display") return f.includes("display");
+      return false;
+    });
+  };
+
+  const [templateIds, setTemplateIds] = useState<string[]>(() =>
+    platforms && platforms.length > 0
+      ? input.template_ids.filter(id => {
+          const t = allTemplates.find(x => x.id === id);
+          return !t || matchesPlatforms(t.format);
+        })
+      : input.template_ids
+  );
   const [applied,       setApplied]       = useState(false);
   const [zoneTpl,       setZoneTpl]       = useState<TemplateInfo | null>(null);
-  const templates = context?.availableTemplates ?? [];
+  const templates = allTemplates.filter(t => matchesPlatforms(t.format));
   const [manualMode, setManualMode] = useState(false);
   const autoApplyRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -1052,12 +1075,20 @@ function BackgroundsProposalCard({ input, onApply, onDismiss }: BackgroundsCardP
                         boxShadow: isSelected ? "0 0 0 3px rgba(71,59,171,0.15)" : "none",
                       }}>
                       <img src={bg.thumbnail} alt={bg.name} className="w-full h-full object-cover" />
-                      {isSelected && (
-                        <div className="absolute inset-0 flex items-center justify-center"
-                          style={{ background: "rgba(71,59,171,0.22)" }}>
-                          <Check size={12} strokeWidth={2.5} className="text-white drop-shadow" />
-                        </div>
-                      )}
+
+                      {/* Checkbox — top left */}
+                      <div
+                        className="absolute top-[6px] left-[6px] z-10 flex items-center justify-center rounded-[4px] transition-all duration-150"
+                        style={{
+                          width: 18, height: 18,
+                          background: isSelected ? "var(--brand-accent)" : "rgba(255,255,255,0.88)",
+                          border: isSelected ? "none" : "1.5px solid rgba(0,0,0,0.28)",
+                          boxShadow: "0 1px 3px rgba(0,0,0,0.18)",
+                        }}
+                      >
+                        {isSelected && <Check size={11} strokeWidth={3} className="text-white" />}
+                      </div>
+
                       {/* Preview button — top right, visible on hover */}
                       <button
                         className="absolute top-[6px] right-[6px] z-10 w-[26px] h-[26px] rounded-full bg-black/50 hover:bg-black/70 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
@@ -2505,7 +2536,7 @@ function ToolChipView({ name, input }: { name: string; input: Record<string, unk
 }
 
 // ─── Category chips ────────────────────────────────────────────────────────────
-const PROJECT_CATEGORIES = ["Create a project", "Pick offers", "Pick templates", "Duplicate a project", "Create proactive project"];
+const PROJECT_CATEGORIES = ["Create a project", "Pick offers", "Pick templates", "Duplicate a project", "Create Automatic Project"];
 
 // What each category chip sends to the agent — explicit phrasing ensures correct flow_scope
 const CATEGORY_MESSAGES: Record<string, string> = {
@@ -2513,7 +2544,7 @@ const CATEGORY_MESSAGES: Record<string, string> = {
   "Pick offers":               "I want to pick offers for a new project. Offers only — no need for templates, backgrounds, or brand.",
   "Pick templates":            "I want to pick templates for a new project. Templates only — no need for offers, backgrounds, or brand.",
   "Duplicate a project":       "Duplicate a project",
-  "Create proactive project":  "Build a full project proactively",
+  "Create Automatic Project":        "Create a proactive project",
 };
 
 const CategoryChip = forwardRef<HTMLButtonElement, { label: string } & ButtonHTMLAttributes<HTMLButtonElement>>(
@@ -2537,6 +2568,7 @@ const HONDA_ACCOUNTS = ["Honda of Anywhere", "Honda City"];
 interface ProjectAgentPaneProps { isOpen: boolean; onClose: () => void; userType?: UserType; activeUserName?: string; }
 
 export function ProjectAgentPane({ isOpen, onClose, userType, activeUserName }: ProjectAgentPaneProps) {
+  const { triggerEvent } = useUsabilityTesting();
   const [paneWidth, setPaneWidth] = useState(400);
   const [isResizing, setIsResizing] = useState(false);
   const isDraggingPane = useRef(false);
@@ -2665,6 +2697,12 @@ export function ProjectAgentPane({ isOpen, onClose, userType, activeUserName }: 
     return () => window.removeEventListener(AGENT_ASSETS_GENERATED_EVENT, handler);
   }, []);
 
+  useEffect(() => {
+    const handler = () => triggerEvent('assets_generated');
+    window.addEventListener(AGENT_ASSETS_GENERATED_EVENT, handler);
+    return () => window.removeEventListener(AGENT_ASSETS_GENERATED_EVENT, handler);
+  }, [triggerEvent]);
+
   useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages, streamingText]);
 
   // Dispatch to ProjectsModule
@@ -2687,9 +2725,13 @@ export function ProjectAgentPane({ isOpen, onClose, userType, activeUserName }: 
   // Dealer background image — stores base64 dataURL of dealer-uploaded image for the full_dealer_bg flow.
   // ISOLATED from Inventory AI Config. Cleared after background is generated.
   const pendingDealerImageRef = useRef<string | null>(null);
+  // Files currently staged in the AgentInput (updated via onFilesChange callback).
+  const stagedFilesRef = useRef<File[]>([]);
   // Set to true right before create_project is dispatched so the project-ID-change effect
   // doesn't wipe the conversation history (the project was created BY this conversation).
   const projectCreatedByConversationRef = useRef(false);
+  // Waiting for user confirmation to start a new project after completing the current one.
+  const [awaitingNewProject, setAwaitingNewProject] = useState(false);
   useEffect(() => { ctxRef.current      = projectContext; }, [projectContext]);
   useEffect(() => { messagesRef.current = messages;       }, [messages]);
 
@@ -2773,6 +2815,7 @@ export function ProjectAgentPane({ isOpen, onClose, userType, activeUserName }: 
     } else if (toolName === "propose_share") {
       const input = toolInput as { recipient_hints?: string[]; recipient_hint?: string };
       const recipientHints = input.recipient_hints ?? (input.recipient_hint ? [input.recipient_hint] : []);
+      triggerEvent('email_notification_sent');
       setMessages(prev => [...prev, {
         id: `reviewer-picker-${Date.now()}`, role: "assistant", type: "reviewer_picker",
         applied: false, recipientHints,
@@ -2780,6 +2823,7 @@ export function ProjectAgentPane({ isOpen, onClose, userType, activeUserName }: 
     } else if (toolName === "propose_email") {
       const input = toolInput as { recipient_hints?: string[]; recipient_hint?: string };
       const recipientHints = input.recipient_hints ?? (input.recipient_hint ? [input.recipient_hint] : []);
+      triggerEvent('email_notification_sent');
       setMessages(prev => [...prev, {
         id: `reviewer-picker-${Date.now()}`, role: "assistant", type: "reviewer_picker",
         applied: false, recipientHints,
@@ -3085,15 +3129,67 @@ export function ProjectAgentPane({ isOpen, onClose, userType, activeUserName }: 
   const send = useCallback(async (text: string, attachments: File[]) => {
     if (!text.trim() && !attachments.length || streaming) return;
 
-    // Intercept "create a project" / "build a project" / "create proactive project" when one is already open
-    if (!attachments.length && ctxRef.current?.projectId &&
+    // ── New-project confirmation handler ────────────────────────────────────────
+    // When awaitingNewProject is true the agent asked "create a new project?" and
+    // is waiting for the user to confirm or cancel.
+    if (awaitingNewProject) {
+      setAwaitingNewProject(false);
+      const confirmed = /\b(yes|ok|sure|yeah|yep|sim|claro|certo|pode|vamos|yup|go)\b/i.test(text.trim());
+      setMessages(prev => [...prev,
+        { id: `u-${Date.now()}`, role: "user", type: "text", content: text } as TextMessage,
+      ]);
+      if (confirmed) {
+        // Inline handleNewThread to avoid a forward-reference TDZ (send is defined before handleNewThread)
+        setMessages([]);
+        setStreamingText("");
+        currentThreadIdRef.current = null;
+        setShowHistory(false);
+        proactiveModeRef.current = false;
+        setProactiveMode(false);
+        setTimeout(() => {
+          const ctx = ctxRef.current;
+          const oem = ctx?.availableOffers?.[0]?.make ?? "General";
+          const now = new Date();
+          const fmt = (d: Date) => d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+          const setupInput: SetupInput = {
+            project_name: deduplicateName("New Project", knownProjectNames),
+            oem,
+            start_date: fmt(now),
+            end_date: fmt(new Date(now.getFullYear(), now.getMonth() + 1, now.getDate())),
+            flow_steps: ["offers", "templates", "backgrounds", "brand"],
+          };
+          setMessages([
+            { id: `a-${Date.now()}`, role: "assistant", type: "text",
+              content: `Starting fresh! Fill in the details below and confirm when you're ready.` } as TextMessage,
+            { id: `setup-${Date.now()}`, role: "assistant", type: "setup", input: setupInput, applied: false } as SetupMsg,
+          ]);
+        }, 350);
+      } else {
+        const name = ctxRef.current?.projectName ?? "this project";
+        setMessages(prev => [...prev,
+          { id: `a-${Date.now()}`, role: "assistant", type: "text",
+            content: `No problem — I'll keep working on **${name}**.` } as TextMessage,
+        ]);
+      }
+      return;
+    }
+
+    // Detect proactive intent early — bypasses the "already open" intercept below.
+    const isProactiveIntent = /\b(proactive|automatic|auto)\b/i.test(text);
+
+    // Intercept "create a project" / "build a project" when one is already open (skip for proactive)
+    if (!isProactiveIntent && !attachments.length && ctxRef.current?.projectId &&
         /\b(create|build|start|new)\b.*(project|campaign)/i.test(text.trim())) {
       const name = ctxRef.current.projectName;
+      const isComplete = messages.some(m => m.type === "campaign_cta");
       setMessages(prev => [...prev,
         { id: `u-${Date.now()}`, role: "user", type: "text", content: text } as TextMessage,
         { id: `a-${Date.now()}`, role: "assistant", type: "text",
-          content: `**${name}** is already open — I won't start a new project mid-flow. Ask me to add offers, templates, backgrounds, or share the project instead.` } as TextMessage,
+          content: isComplete
+            ? `**${name}** is complete — would you like to create a new project? I'll save this one and start fresh. Just say **yes** to confirm.`
+            : `**${name}** is already open — I won't start a new project mid-flow. Ask me to add offers, templates, backgrounds, or share the project instead.` } as TextMessage,
       ]);
+      if (isComplete) setAwaitingNewProject(true);
       return;
     }
 
@@ -3196,6 +3292,7 @@ export function ProjectAgentPane({ isOpen, onClose, userType, activeUserName }: 
     const isImageUpload = isFileUpload && (userMsg as UserFileMsg).files.some(f => f.type.startsWith("image/"));
     const lowerTextForBg = text.toLowerCase();
     const hasBgIntent = isImageUpload && (
+      !lowerTextForBg.trim() ||            // bare image upload (no text) = bg intent
       lowerTextForBg.includes("background") || lowerTextForBg.includes("project") ||
       lowerTextForBg.includes("campaign") || lowerTextForBg.includes("include") ||
       lowerTextForBg.includes("usar") || lowerTextForBg.includes("usar essa") ||
@@ -3290,6 +3387,7 @@ export function ProjectAgentPane({ isOpen, onClose, userType, activeUserName }: 
     const wantsProactive = /\b(proactive|automatic|auto)\b/i.test(lowerText) && !hasBgIntent;
     if (wantsProactive && !userForcedTool) {
       userForcedTool = "propose_proactive_questions";
+      triggerEvent('automatic_project_created');
     }
 
     // Dealer scene upload + no project open → the model MUST start with setup_project.
@@ -3298,6 +3396,20 @@ export function ProjectAgentPane({ isOpen, onClose, userType, activeUserName }: 
     // dealer_bg step is guaranteed regardless of the arguments the model picks.
     if (hasBgIntent && !ctx.projectId) {
       userForcedTool = "setup_project";
+    }
+
+    // Non-linear bg flow: project already open, user uploaded a bg image → skip
+    // the normal agent turn and jump straight to background generation instead of
+    // restarting the project setup flow. The image is already stored in pendingDealerImageRef.
+    if (hasBgIntent && ctx.projectId) {
+      const confirmedOffers = (ctx.availableOffers ?? []).filter(o => (ctx.currentOfferIds ?? []).includes(o.id));
+      const vehicleCtx = confirmedOffers.map(o => `${o.year} ${o.make} ${o.model}`).join(", ") || "project vehicles";
+      setTimeout(() => sendInternal(
+        `Background image uploaded for the open project "${ctx.projectName}". ` +
+        `Call generate_dealer_background with vehicle_context="${vehicleCtx}". ` +
+        `Do NOT call setup_project — the project is already active.`
+      ), 400);
+      return;
     }
 
     await streamMessage(history, ctx,
@@ -3311,7 +3423,7 @@ export function ProjectAgentPane({ isOpen, onClose, userType, activeUserName }: 
       err => { setMessages(prev => [...prev, { id: `e-${Date.now()}`, role: "assistant", type: "text", content: `⚠️ ${err}` } as TextMessage]); accRef.current = ""; setStreamingText(""); },
       userForcedTool,
     );
-  }, [streaming, projectContext, messages, streamMessage, handleToolResult]);
+  }, [streaming, projectContext, messages, streamMessage, handleToolResult, awaitingNewProject, knownProjectNames]);
 
   // ── Flow steps helper — reads messagesRef (always fresh, no stale closure) ──
   const getFlowSteps = useCallback((): string[] => {
@@ -3416,6 +3528,7 @@ export function ProjectAgentPane({ isOpen, onClose, userType, activeUserName }: 
         proactiveModeRef.current = false;
         setProactiveMode(false);
       }
+      triggerEvent('project_pipeline_complete');
       // Flow is complete — proactively offer asset generation if offers + templates are present
       const ctx = ctxRef.current;
       const offerCount    = ctx?.currentOfferIds.length ?? 0;
@@ -3787,14 +3900,27 @@ export function ProjectAgentPane({ isOpen, onClose, userType, activeUserName }: 
     if (simulatingStream) return; // prevent double-tap
     const ctx = ctxRef.current;
 
-    // ⚠️ GUARD: if a project is already open, never inject a setup card.
-    // The chip is still visible in the chat state, but we redirect the user conversationally.
+    // Feature 5: If the user has an image staged in the input, treat this chip
+    // click as "create a project with this background image" — route through send()
+    // which will detect hasBgIntent and handle accordingly.
+    const stagedImages = stagedFilesRef.current.filter(f => f.type.startsWith("image/"));
+    if (stagedImages.length > 0) {
+      stagedFilesRef.current = [];
+      send("Create a project", stagedImages);
+      return;
+    }
+
+    // Feature 2: If a project is open and already complete (campaign_cta), offer to start fresh.
     if (ctx?.projectId) {
+      const isComplete = messagesRef.current.some(m => m.type === "campaign_cta");
       setMessages(prev => [...prev,
         { id: `u-${Date.now()}`, role: "user", type: "text", content: "Create a project" } as TextMessage,
         { id: `a-${Date.now()}`, role: "assistant", type: "text",
-          content: `**${ctx.projectName}** is already open. I can add or change offers, templates, backgrounds, or share it — just ask. To start a completely new project, close this one first.` } as TextMessage,
+          content: isComplete
+            ? `**${ctx.projectName}** is complete — would you like to create a new project? I'll save this one and start fresh. Just say **yes** to confirm.`
+            : `**${ctx.projectName}** is already open. I can add or change offers, templates, backgrounds, or share it — just ask. To start a completely new project, close this one first.` } as TextMessage,
       ]);
+      if (isComplete) setAwaitingNewProject(true);
       return;
     }
 
@@ -3831,7 +3957,7 @@ export function ProjectAgentPane({ isOpen, onClose, userType, activeUserName }: 
         { id: `setup-${Date.now()}`, role: "assistant", type: "setup", input: setupInput, applied: false } as SetupMsg,
       ]);
     }, 1100);
-  }, [knownProjectNames, simulatingStream]);
+  }, [knownProjectNames, simulatingStream, send]);
 
   // ── Full proposal card (existing projects) ───────────────────────────────────
   const handleProposalApply = useCallback((msgId: string, offerIds: string[], templateIds: string[], name?: string) => {
@@ -3848,7 +3974,7 @@ export function ProjectAgentPane({ isOpen, onClose, userType, activeUserName }: 
   const isAgency = userType === 'dealer';
   const focusLabel = isAgency
     ? selectedAccount
-    : (projectContext?.projectName ?? "(no project open)");
+    : (projectContext?.projectName ?? "Honda of Anywhere");
   const hasMessages = messages.length > 0 || streaming || simulatingStream;
   const arcState = useConstellationAnim((streaming && !streamingText) || simulatingStream || bgProcessing);
 
@@ -4057,17 +4183,17 @@ export function ProjectAgentPane({ isOpen, onClose, userType, activeUserName }: 
                   </div>
                   <div className="flex-1" />
                   <div className="flex flex-col items-center gap-[8px] pb-[16px] shrink-0">
-                    <AgentInput onSubmit={send} accountName={isAgency ? selectedAccount : undefined} />
+                    <AgentInput onSubmit={send} onFilesChange={files => { stagedFilesRef.current = files; }} accountName={isAgency ? selectedAccount : "Honda of Anywhere"} />
                     <div className="flex flex-wrap gap-[8px] items-center justify-center w-full">
                       {PROJECT_CATEGORIES.map(cat => {
-                        const chip = <CategoryChip label={cat} onClick={cat === "Create a project" ? handleCreateProjectClick : () => send(CATEGORY_MESSAGES[cat] ?? cat, null)} />;
-                        if (cat === "Create proactive project") {
+                        const chip = <CategoryChip label={cat} onClick={cat === "Create a project" ? handleCreateProjectClick : () => send(CATEGORY_MESSAGES[cat] ?? cat, [])} />;
+                        if (cat === "Create Automatic Project") {
                           return (
                             <Tooltip.Provider key={cat} delayDuration={400}>
                               <Tooltip.Root>
                                 <Tooltip.Trigger asChild>{chip}</Tooltip.Trigger>
                                 <Tooltip.Portal>
-                                  <Tooltip.Content side="top" sideOffset={6} className="z-[999] max-w-[200px] px-[8px] py-[6px] rounded-[6px] text-[11px] font-medium leading-[1.4] text-white bg-[var(--ink)] shadow-md select-none text-center">
+                                  <Tooltip.Content side="top" sideOffset={6} className="z-[999] max-w-[200px] px-[8px] py-[6px] rounded-[6px] text-[11px] font-medium leading-[1.4] text-white bg-[var(--ink)] shadow-md select-none text-center animate-in fade-in-0 data-[side=top]:slide-in-from-bottom-2 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 duration-[450ms]">
                                     Create a full project. Agent will pick up all of our templates and take decisions for you.
                                     <Tooltip.Arrow className="fill-[var(--ink)]" />
                                   </Tooltip.Content>
@@ -4076,7 +4202,7 @@ export function ProjectAgentPane({ isOpen, onClose, userType, activeUserName }: 
                             </Tooltip.Provider>
                           );
                         }
-                        return <CategoryChip key={cat} label={cat} onClick={cat === "Create a project" ? handleCreateProjectClick : () => send(CATEGORY_MESSAGES[cat] ?? cat, null)} />;
+                        return <CategoryChip key={cat} label={cat} onClick={cat === "Create a project" ? handleCreateProjectClick : () => send(CATEGORY_MESSAGES[cat] ?? cat, [])} />;
                       })}
                     </div>
                   </div>
@@ -4091,12 +4217,16 @@ export function ProjectAgentPane({ isOpen, onClose, userType, activeUserName }: 
                         const confirmedBgIds = messages
                           .filter((m): m is BackgroundsMsg => m.type === "backgrounds" && m.applied)
                           .flatMap(m => m.input.background_ids);
+                        const setupPlatforms = messages
+                          .filter((m): m is SetupMsg => m.type === "setup" && m.applied)
+                          .at(-1)?.input.platforms ?? [];
                         return messages.map(msg => (
                         <MessageBubble
                           key={msg.id} message={msg} context={filteredContext}
                           projectName={projectContext?.projectName ?? "this project"}
                           existingProjectNames={knownProjectNames}
                           confirmedBackgroundIds={confirmedBgIds}
+                          setupPlatforms={setupPlatforms}
                           onSetupApply={handleSetupApply}
                           onSetupDismiss={() => setMessages(prev => prev.filter(m => m.id !== msg.id))}
                           onOffersApply={handleOffersApply}
@@ -4228,18 +4358,18 @@ export function ProjectAgentPane({ isOpen, onClose, userType, activeUserName }: 
                   </div>
 
                   <div className="flex flex-col items-center gap-[8px] pb-[16px] shrink-0 pt-[8px]">
-                    <AgentInput onSubmit={send} accountName={isAgency ? selectedAccount : undefined} />
+                    <AgentInput onSubmit={send} onFilesChange={files => { stagedFilesRef.current = files; }} accountName={isAgency ? selectedAccount : "Honda of Anywhere"} />
                     <div className="flex flex-wrap gap-[8px] items-center justify-center w-full">
                       {PROJECT_CATEGORIES.map(cat => {
-                        if (cat === "Create proactive project") {
+                        if (cat === "Create Automatic Project") {
                           return (
                             <Tooltip.Provider key={cat} delayDuration={400}>
                               <Tooltip.Root>
                                 <Tooltip.Trigger asChild>
-                                  <CategoryChip label={cat} onClick={() => send(CATEGORY_MESSAGES[cat] ?? cat, null)} />
+                                  <CategoryChip label={cat} onClick={() => send(CATEGORY_MESSAGES[cat] ?? cat, [])} />
                                 </Tooltip.Trigger>
                                 <Tooltip.Portal>
-                                  <Tooltip.Content side="top" sideOffset={6} className="z-[999] max-w-[200px] px-[8px] py-[6px] rounded-[6px] text-[11px] font-medium leading-[1.4] text-white bg-[var(--ink)] shadow-md select-none text-center">
+                                  <Tooltip.Content side="top" sideOffset={6} className="z-[999] max-w-[200px] px-[8px] py-[6px] rounded-[6px] text-[11px] font-medium leading-[1.4] text-white bg-[var(--ink)] shadow-md select-none text-center animate-in fade-in-0 data-[side=top]:slide-in-from-bottom-2 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 duration-[450ms]">
                                     Create a full project. Agent will pick up all of our templates and take decisions for you.
                                     <Tooltip.Arrow className="fill-[var(--ink)]" />
                                   </Tooltip.Content>
@@ -4248,7 +4378,7 @@ export function ProjectAgentPane({ isOpen, onClose, userType, activeUserName }: 
                             </Tooltip.Provider>
                           );
                         }
-                        return <CategoryChip key={cat} label={cat} onClick={cat === "Create a project" ? handleCreateProjectClick : () => send(CATEGORY_MESSAGES[cat] ?? cat, null)} />;
+                        return <CategoryChip key={cat} label={cat} onClick={cat === "Create a project" ? handleCreateProjectClick : () => send(CATEGORY_MESSAGES[cat] ?? cat, [])} />;
                       })}
                     </div>
                   </div>
@@ -4267,6 +4397,7 @@ export function ProjectAgentPane({ isOpen, onClose, userType, activeUserName }: 
 function MessageBubble({
   message, context, projectName, existingProjectNames,
   confirmedBackgroundIds,
+  setupPlatforms,
   onSetupApply, onSetupDismiss,
   onOffersApply, onOffersDismiss,
   onTemplatesApply, onTemplatesDismiss,
@@ -4290,6 +4421,7 @@ function MessageBubble({
   projectName: string;
   existingProjectNames: string[];
   confirmedBackgroundIds: string[];
+  setupPlatforms?: string[];
   onSetupApply: (name: string, account: string, oem: string, start: string, end: string) => void;
   onSetupDismiss: () => void;
   onOffersApply: (offerIds: string[]) => void;
@@ -4459,6 +4591,7 @@ function MessageBubble({
         onApply={onTemplatesApply}
         onDismiss={onTemplatesDismiss}
         proactive={proactive}
+        platforms={setupPlatforms}
       />
     );
   }

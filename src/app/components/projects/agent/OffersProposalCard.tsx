@@ -121,6 +121,14 @@ export function OffersProposalCard({ input, context, onApply, onDismiss, proacti
     return () => { if (autoApplyRef.current) clearTimeout(autoApplyRef.current); };
   }, [proactive, manualMode, applied]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Auto-apply when every offer has had its individual "Apply" clicked — equivalent to "Apply All"
+  useEffect(() => {
+    if (!applied && offerIds.length > 0 && appliedCustomizations.size >= offerIds.length) {
+      setApplied(true);
+      onApply(offerIds, [...appliedCustomizations]);
+    }
+  }, [appliedCustomizations.size]); // eslint-disable-line react-hooks/exhaustive-deps
+
   // Scroll the main panel to the offers section when this card appears
   useEffect(() => {
     window.dispatchEvent(new CustomEvent(AGENT_SCROLL_TO_SECTION_EVENT, { detail: { section: "offers" } }));
@@ -185,6 +193,8 @@ export function OffersProposalCard({ input, context, onApply, onDismiss, proacti
           return (
             <motion.div key={id}
               variants={{ hidden: { opacity: 0, y: 8 }, show: { opacity: 1, y: 0, transition: { duration: 0.22, ease: "easeOut" } } }}
+              onClick={() => !customizeMode && setCustomizeMode(true)}
+              style={{ cursor: !customizeMode ? "pointer" : undefined }}
             >
               <OfferCard
                 offer={cardData}

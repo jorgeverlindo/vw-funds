@@ -7,6 +7,7 @@ import { FilterProvider } from './contexts/FilterContext';
 import { WorkflowProvider } from './contexts/WorkflowContext';
 import { InventoryProvider } from './contexts/InventoryContext';
 import { ComplianceProvider } from './contexts/ComplianceContext';
+import { UsabilityTestingProvider } from './contexts/UsabilityTestingContext';
 import { SnackbarHost } from './components/Snackbar';
 import React, { useState, useEffect } from 'react';
 import { STORAGE_KEYS, ACCESS_PASSWORD } from './constants/storageKeys';
@@ -242,9 +243,11 @@ export default function App() {
             <FilterProvider>
               <WorkflowProvider>
                 <ComplianceProvider>
-                  <RouterProvider router={router} />
-                  <SnackbarHost />
-                  <Analytics />
+                  <UsabilityTestingProvider>
+                    <RouterProvider router={router} />
+                    <SnackbarHost />
+                    <Analytics />
+                  </UsabilityTestingProvider>
                 </ComplianceProvider>
               </WorkflowProvider>
             </FilterProvider>

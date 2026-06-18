@@ -272,14 +272,14 @@ function VoiceStatus({ isActive }: { isActive: boolean }) {
 }
 
 // ─── AgentInput ───────────────────────────────────────────────────────────────
-export interface AgentInputProps { onSubmit?: (text: string, attachments: File[]) => void; compact?: boolean; accountName?: string; }
+export interface AgentInputProps { onSubmit?: (text: string, attachments: File[]) => void; onFilesChange?: (files: File[]) => void; compact?: boolean; accountName?: string; }
 
 const SIM_PHRASES = [
   'Raise what I have in accrued funds', ' and plan strategies based on my inventory',
   ' for April.', ' Order them by priority', ' and justify each one', ' with the corresponding budget allocation.',
 ];
 
-export function AgentInput({ onSubmit, compact = false, accountName }: AgentInputProps) {
+export function AgentInput({ onSubmit, onFilesChange, compact = false, accountName }: AgentInputProps) {
   const [value, setValue]             = useState('');
   const [isFocused, setIsFocused]     = useState(false);
   const [attachments, setAttachments] = useState<AttachmentEntry[]>([]);
@@ -296,6 +296,10 @@ export function AgentInput({ onSubmit, compact = false, accountName }: AgentInpu
   // Saved cursor position — captured on blur so mic-button click doesn't lose it
   const savedSelectionRef = useRef<{ start: number; end: number } | null>(null);
   const isReadyToSend  = value.trim().length > 0 || attachments.length > 0;
+
+  useEffect(() => {
+    onFilesChange?.(attachments.map(a => a.file));
+  }, [attachments]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const startAmpLoop = useCallback(() => {
     function poll() {

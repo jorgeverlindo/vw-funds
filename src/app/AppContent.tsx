@@ -26,6 +26,7 @@ import { WebMonitoringModal } from './components/WebMonitoringModal';
 import { WebMonitoringConfigModal } from './components/WebMonitoringConfigModal'; // [FV]
 import { ComponentLibraryDialog } from './components/component-library/ComponentLibraryDialog';
 import { useTranslation } from './contexts/LanguageContext';
+import { useUsabilityTesting } from './contexts/UsabilityTestingContext';
 import { ClientSwitcher } from './components/ClientSwitcher';
 import { emitSnackbar } from './components/Snackbar';
 import { useClient } from './contexts/ClientContext';
@@ -76,6 +77,7 @@ export type { UserType } from './utils/routing';
 
 export default function AppContent() {
   const { t } = useTranslation();
+  const { triggerEvent } = useUsabilityTesting();
   const { workflow, approvePreApproval, requestPreApprovalRevision } = useWorkflow();
   const { client, switchClient } = useClient();
   const { lockDealership, unlockDealership } = useFilters();
@@ -313,6 +315,7 @@ export default function AppContent() {
   const handleNavigate = (route: string) => {
     setActiveAppSection(route);
     setSettingsSection(null); // leave Client Settings when navigating elsewhere
+    if (route === 'projects') triggerEvent('navigate_to_projects');
     if (route === 'projects' || route === 'portal' || route === 'inventory') {
       navigate(buildUrl(userType, client.clientId, route), { replace: true });
     } else {
@@ -559,7 +562,10 @@ export default function AppContent() {
         onOpenOEMDrawer={() => setIsOEMDrawerOpen(true)}
         languageToggleActive={showLanguageToggle}
         onOpenAgentPane={() => setIsAgentPaneOpen(open => {
-          if (!open) window.dispatchEvent(new CustomEvent("agent-opened"));
+          if (!open) {
+            window.dispatchEvent(new CustomEvent("agent-opened"));
+            triggerEvent('agent_pane_opened');
+          }
           return !open;
         })}
         isAgentPaneOpen={isAgentPaneOpen}

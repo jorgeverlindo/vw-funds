@@ -1,6 +1,8 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { ChevronDown, ArrowLeft } from 'lucide-react';
+import { UsabilityTestingModal } from './UsabilityTestingModal';
+import { useUsabilityTesting } from '../contexts/UsabilityTestingContext';
 import svgPaths from '@/imports/svg-kh2cdc4deu';
 import { useTranslation } from '../contexts/LanguageContext';
 import { useClient } from '../contexts/ClientContext';
@@ -236,6 +238,9 @@ export function AppSidebar({
   const { t } = useTranslation();
   const { client } = useClient();
 
+  // ── Usability testing modal ───────────────────────────────────────────────
+  const { openModal: openUsabilityModal } = useUsabilityTesting();
+
   // ── Flyout state ──────────────────────────────────────────────────────────
   const [expandedSection, setExpandedSection] = useState<string | null>(null);
   const [flyoutVisible,   setFlyoutVisible]   = useState(false);
@@ -398,9 +403,10 @@ export function AppSidebar({
         <div className="shrink-0 w-full flex flex-col items-center pb-3 gap-3">
           <NavItem
             icon={<img src={helpIcon} alt="" className="size-6 shrink-0" style={{ filter: 'brightness(0) saturate(100%) invert(74%) sepia(53%) saturate(380%) hue-rotate(203deg) brightness(101%) contrast(101%)' }} />}
-            label="Help"
+            label="Test info"
             isActive={activeRoute === 'help'}
             onClick={() => {
+              openUsabilityModal();
               if (client.clientId === 'ride-now') {
                 expandedSection === 'help' ? closeFlyout() : openFlyout('help');
               }
@@ -585,6 +591,8 @@ export function AppSidebar({
           </motion.div>
         )}
       </AnimatePresence>
+
+      <UsabilityTestingModal />
     </>
   );
 }

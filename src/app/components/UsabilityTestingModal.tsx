@@ -91,7 +91,8 @@ export function UsabilityTestingModal() {
                   {Array.from({ length: TOTAL_FLOWS }).map((_, i) => (
                     <div
                       key={i}
-                      className="flex-1 h-[3px] rounded-full transition-colors duration-300"
+                      onClick={() => setFlowIndex(i)}
+                      className="flex-1 h-[3px] rounded-full transition-colors duration-300 cursor-pointer"
                       style={{
                         background:
                           i === currentFlowIndex

@@ -93,7 +93,7 @@ export const USABILITY_FLOWS: UsabilityFlow[] = [
       {
         text: "Let's imagine you received some offers from the client. Use the offers below to create a new project with them.",
         boldText: "received some offers from the client.",
-        completionEvent: "project_pipeline_complete",
+        completionEvent: "assets_generated",
         badgeNumber: 8,
         downloadButton: { label: "Download Offer Sheet", href: "/test-assets/Honda_Offers_User_Testing.xlsx" },
       },

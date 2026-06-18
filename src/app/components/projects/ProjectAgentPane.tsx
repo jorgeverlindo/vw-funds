@@ -3398,6 +3398,35 @@ export function ProjectAgentPane({ isOpen, onClose, userType, activeUserName }: 
       userForcedTool = "setup_project";
     }
 
+    // If user uploads a bg image AND explicitly asks to CREATE a new project while one is open,
+    // start fresh — do NOT apply the bg to the existing project.
+    // The image is already stored in pendingDealerImageRef and will be used at the backgrounds step.
+    if (hasBgIntent && ctx.projectId && /\b(create|build|start|new)\b.*(project|campaign)/i.test(text.trim())) {
+      const oem = ctx?.availableOffers?.[0]?.make ?? "General";
+      const now = new Date();
+      const fmt = (d: Date) => d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+      const setupInput: SetupInput = {
+        project_name: deduplicateName("New Project", knownProjectNames),
+        oem,
+        start_date: fmt(now),
+        end_date: fmt(new Date(now.getFullYear(), now.getMonth() + 1, now.getDate())),
+        flow_steps: ["offers", "templates", "backgrounds", "brand"],
+      };
+      // Inline handleNewThread to avoid forward-ref TDZ
+      currentThreadIdRef.current = null;
+      setShowHistory(false);
+      proactiveModeRef.current = false;
+      setProactiveMode(false);
+      setStreamingText("");
+      setMessages([
+        { id: `u-${Date.now()}`, role: "user", type: "text", content: text } as TextMessage,
+        { id: `a-${Date.now()}`, role: "assistant", type: "text",
+          content: `Starting a new project — your background image is saved and will be used at the backgrounds step. Fill in the details below.` } as TextMessage,
+        { id: `setup-${Date.now()}`, role: "assistant", type: "setup", input: setupInput, applied: false } as SetupMsg,
+      ]);
+      return;
+    }
+
     // Non-linear bg flow: project already open, user uploaded a bg image → skip
     // the normal agent turn and jump straight to background generation instead of
     // restarting the project setup flow. The image is already stored in pendingDealerImageRef.

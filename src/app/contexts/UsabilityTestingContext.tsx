@@ -32,10 +32,9 @@ export const USABILITY_FLOWS: UsabilityFlow[] = [
     hasStartButton: true,
     tasks: [
       {
-        text: "You're in the projects starting page and you need to create a new project for Honda using the AI agent. Where would you go to start the task?",
-        boldText: "create a new project for Honda using the AI agent.",
+        text: "You're on the Project's starting page, and you need to create a new project from scratch for Honda using the AI agent. Where would you go to start the task?",
+        boldText: "create a new project from scratch for Honda using the AI agent.",
         completionEvent: "agent_pane_opened",
-        downloadButton: { label: "Download Offer Sheet", href: "/test-assets/Honda_Offers_User_Testing.xlsx" },
       },
       {
         text: "Set up",

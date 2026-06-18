@@ -52,7 +52,22 @@ export function UsabilityTestingModal() {
   const [copiedIdx, setCopiedIdx] = useState<number | null>(null);
 
   const copyBullets = (bullets: string[], idx: number) => {
-    navigator.clipboard.writeText(bullets.map(b => `· ${b}`).join("\n"));
+    const text = bullets.map(b => `· ${b}`).join("\n");
+    const doFallback = () => {
+      const ta = document.createElement("textarea");
+      ta.value = text;
+      ta.style.cssText = "position:fixed;top:0;left:0;opacity:0;pointer-events:none";
+      document.body.appendChild(ta);
+      ta.focus();
+      ta.select();
+      document.execCommand("copy");
+      document.body.removeChild(ta);
+    };
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(text).catch(doFallback);
+    } else {
+      doFallback();
+    }
     setCopiedIdx(idx);
     setTimeout(() => setCopiedIdx(null), 1500);
   };

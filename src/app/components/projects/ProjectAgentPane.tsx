@@ -4183,7 +4183,7 @@ export function ProjectAgentPane({ isOpen, onClose, userType, activeUserName }: 
                   </div>
                   <div className="flex-1" />
                   <div className="flex flex-col items-center gap-[8px] pb-[16px] shrink-0">
-                    <AgentInput onSubmit={send} onFilesChange={files => { stagedFilesRef.current = files; }} accountName={isAgency ? selectedAccount : "Honda of Anywhere"} />
+                    <AgentInput onSubmit={send} onFilesChange={files => { stagedFilesRef.current = files; }} onStop={stop} streaming={streaming} accountName={isAgency ? selectedAccount : "Honda of Anywhere"} />
                     <div className="flex flex-wrap gap-[8px] items-center justify-center w-full">
                       {PROJECT_CATEGORIES.map(cat => {
                         const chip = <CategoryChip label={cat} onClick={cat === "Create a project" ? handleCreateProjectClick : () => send(CATEGORY_MESSAGES[cat] ?? cat, [])} />;
@@ -4358,7 +4358,7 @@ export function ProjectAgentPane({ isOpen, onClose, userType, activeUserName }: 
                   </div>
 
                   <div className="flex flex-col items-center gap-[8px] pb-[16px] shrink-0 pt-[8px]">
-                    <AgentInput onSubmit={send} onFilesChange={files => { stagedFilesRef.current = files; }} accountName={isAgency ? selectedAccount : "Honda of Anywhere"} />
+                    <AgentInput onSubmit={send} onFilesChange={files => { stagedFilesRef.current = files; }} onStop={stop} streaming={streaming} accountName={isAgency ? selectedAccount : "Honda of Anywhere"} />
                     <div className="flex flex-wrap gap-[8px] items-center justify-center w-full">
                       {PROJECT_CATEGORIES.map(cat => {
                         if (cat === "Create Automatic Project") {

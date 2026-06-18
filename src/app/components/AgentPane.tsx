@@ -272,14 +272,14 @@ function VoiceStatus({ isActive }: { isActive: boolean }) {
 }
 
 // ─── AgentInput ───────────────────────────────────────────────────────────────
-export interface AgentInputProps { onSubmit?: (text: string, attachments: File[]) => void; onFilesChange?: (files: File[]) => void; compact?: boolean; accountName?: string; }
+export interface AgentInputProps { onSubmit?: (text: string, attachments: File[]) => void; onFilesChange?: (files: File[]) => void; onStop?: () => void; streaming?: boolean; compact?: boolean; accountName?: string; }
 
 const SIM_PHRASES = [
   'Raise what I have in accrued funds', ' and plan strategies based on my inventory',
   ' for April.', ' Order them by priority', ' and justify each one', ' with the corresponding budget allocation.',
 ];
 
-export function AgentInput({ onSubmit, onFilesChange, compact = false, accountName }: AgentInputProps) {
+export function AgentInput({ onSubmit, onFilesChange, onStop, streaming = false, compact = false, accountName }: AgentInputProps) {
   const [value, setValue]             = useState('');
   const [isFocused, setIsFocused]     = useState(false);
   const [attachments, setAttachments] = useState<AttachmentEntry[]>([]);
@@ -544,10 +544,18 @@ export function AgentInput({ onSubmit, onFilesChange, compact = false, accountNa
                 </button>
               </Tooltip>
             </div>
-            <button onClick={handleSubmit} aria-label="Send" disabled={!isReadyToSend}
-              className={cn('rounded-full p-[5px] transition-all duration-200 cursor-pointer', isReadyToSend ? 'bg-[var(--brand-accent)] hover:bg-[#392e8a] shadow-sm' : 'bg-[var(--brand-accent)] opacity-50 cursor-not-allowed')}>
-              <div className="size-[20px] flex items-center justify-center"><svg className="w-[12px] h-[15px]" fill="none" viewBox="0 0 11.9167 15.25"><path d={svgPaths.p2332e980} stroke="white" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" /></svg></div>
-            </button>
+            {streaming ? (
+              <button onClick={onStop} aria-label="Stop" className="rounded-full p-[5px] bg-[var(--brand-accent)] hover:bg-[#392e8a] shadow-sm transition-all duration-200 cursor-pointer">
+                <div className="size-[20px] flex items-center justify-center">
+                  <div className="w-[10px] h-[10px] rounded-[2px] bg-white" />
+                </div>
+              </button>
+            ) : (
+              <button onClick={handleSubmit} aria-label="Send" disabled={!isReadyToSend}
+                className={cn('rounded-full p-[5px] transition-all duration-200 cursor-pointer', isReadyToSend ? 'bg-[var(--brand-accent)] hover:bg-[#392e8a] shadow-sm' : 'bg-[var(--brand-accent)] opacity-50 cursor-not-allowed')}>
+                <div className="size-[20px] flex items-center justify-center"><svg className="w-[12px] h-[15px]" fill="none" viewBox="0 0 11.9167 15.25"><path d={svgPaths.p2332e980} stroke="white" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" /></svg></div>
+              </button>
+            )}
           </div>
         </div>
       </div>

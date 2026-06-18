@@ -12,6 +12,12 @@ export interface UsabilityTask {
   completionEvent: string;
   /** Override the global sequential badge number displayed on this task */
   badgeNumber?: number;
+  /**
+   * File download button shown below the task text.
+   * Set inline:true to render the boldText substring itself as a download link
+   * (styled in brand-accent) instead of a separate chip.
+   */
+  downloadButton?: { label: string; href: string; inline?: boolean };
 }
 
 export interface UsabilityFlow {
@@ -29,6 +35,7 @@ export const USABILITY_FLOWS: UsabilityFlow[] = [
         text: "You're in the projects starting page and you need to create a new project for Honda using the AI agent. Where would you go to start the task?",
         boldText: "create a new project for Honda using the AI agent.",
         completionEvent: "agent_pane_opened",
+        downloadButton: { label: "Download Offer Sheet", href: "/test-assets/Honda_Offers_User_Testing.xlsx" },
       },
       {
         text: "Set up",
@@ -47,7 +54,9 @@ export const USABILITY_FLOWS: UsabilityFlow[] = [
     tasks: [
       {
         text: "Now you want to use the provided background, and create a full project for Honda, using that background for the templates. How would you do it?",
+        boldText: "provided background",
         completionEvent: "assets_generated",
+        downloadButton: { label: "Download Background", href: "/test-assets/honda_dealer_background.jpg", inline: true },
       },
     ],
   },

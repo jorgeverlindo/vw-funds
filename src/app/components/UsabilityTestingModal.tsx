@@ -1,17 +1,36 @@
 import * as Dialog from "@radix-ui/react-dialog";
-import { X, ChevronLeft, ChevronRight, Check, CheckCircle2, ClipboardCheck, PartyPopper } from "lucide-react";
+import { X, ChevronLeft, ChevronRight, Check, CheckCircle2, ClipboardCheck, PartyPopper, Download } from "lucide-react";
 import { useUsabilityTesting, USABILITY_FLOWS } from "../contexts/UsabilityTestingContext";
 
 const TOTAL_FLOWS = USABILITY_FLOWS.length;
 
-function renderTaskText(text: string, boldText?: string) {
+function renderTaskText(
+  text: string,
+  boldText?: string,
+  downloadButton?: { label: string; href: string; inline?: boolean },
+) {
   if (!boldText) return <>{text}</>;
   const idx = text.indexOf(boldText);
   if (idx < 0) return <>{text}</>;
+
+  const boldPart = downloadButton?.inline ? (
+    <a
+      href={downloadButton.href}
+      download
+      onClick={e => e.stopPropagation()}
+      className="font-semibold underline decoration-dotted underline-offset-2 cursor-pointer"
+      style={{ color: "var(--brand-accent)" }}
+    >
+      {boldText}
+    </a>
+  ) : (
+    <strong>{boldText}</strong>
+  );
+
   return (
     <>
       {text.slice(0, idx)}
-      <strong>{boldText}</strong>
+      {boldPart}
       {text.slice(idx + boldText.length)}
     </>
   );
@@ -128,7 +147,7 @@ export function UsabilityTestingModal() {
                         className="text-[12px] font-normal leading-[1.43] tracking-[0.17px]"
                         style={{ color: "var(--ink)" }}
                       >
-                        {renderTaskText(task.text, task.boldText)}
+                        {renderTaskText(task.text, task.boldText, task.downloadButton)}
                       </p>
                       {task.bullets && (
                         <ul className="mt-1 ml-1 flex flex-col gap-[2px]">
@@ -139,6 +158,18 @@ export function UsabilityTestingModal() {
                             </li>
                           ))}
                         </ul>
+                      )}
+                      {task.downloadButton && !task.downloadButton.inline && (
+                        <a
+                          href={task.downloadButton.href}
+                          download
+                          onClick={e => e.stopPropagation()}
+                          className="mt-[6px] inline-flex items-center gap-[5px] px-[10px] py-[4px] rounded-full border transition-colors hover:bg-[rgba(71,59,171,0.06)] cursor-pointer"
+                          style={{ color: "var(--brand-accent)", borderColor: "rgba(71,59,171,0.3)", fontSize: 11, fontWeight: 500, textDecoration: "none" }}
+                        >
+                          <Download style={{ width: 12, height: 12, strokeWidth: 2 }} />
+                          {task.downloadButton.label}
+                        </a>
                       )}
                     </div>
                     <button

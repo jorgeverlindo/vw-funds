@@ -2727,6 +2727,8 @@ export function ProjectAgentPane({ isOpen, onClose, userType, activeUserName }: 
   const pendingDealerImageRef = useRef<string | null>(null);
   // Files currently staged in the AgentInput (updated via onFilesChange callback).
   const stagedFilesRef = useRef<File[]>([]);
+  // Excel/PDF files the user staged alongside "Create a project" — held until setup completes.
+  const pendingOffersFilesRef = useRef<File[] | null>(null);
   // Set to true right before create_project is dispatched so the project-ID-change effect
   // doesn't wipe the conversation history (the project was created BY this conversation).
   const projectCreatedByConversationRef = useRef(false);
@@ -2873,6 +2875,7 @@ export function ProjectAgentPane({ isOpen, onClose, userType, activeUserName }: 
           // Resolve confirmed offers — primary source: currentOfferIds from context.
           // Fallback: match vehicleContext string against availableOffers (handles
           // timing gap where ctx may not have latest currentOfferIds yet).
+          const vehicleContext = (toolInput as { vehicle_context?: string }).vehicle_context ?? "";
           const ctx2 = ctxRef.current;
           const confirmedOffers = (() => {
             const fromIds = (ctx2?.availableOffers ?? [])
@@ -3616,6 +3619,22 @@ export function ProjectAgentPane({ isOpen, onClose, userType, activeUserName }: 
     projectCreatedByConversationRef.current = true; // suppress the project-ID-change reset
     dispatchAction({ action: "create_project", name, account, oem, startDate, endDate, owner, platforms });
     setKnownProjectNames(prev => [...prev, name]);
+
+    // Recovery: if there are unapplied parsed-offers cards visible in the conversation
+    // (user uploaded Excel before creating the project), queue them now so they get added.
+    if (!pendingParsedOffersRef.current) {
+      const unapplied = (messagesRef.current as Message[])
+        .filter((m): m is ParsedOffersMsg => m.type === "parsed_offers" && !(m as ParsedOffersMsg).applied)
+        .flatMap(m => (m as ParsedOffersMsg).input.offers);
+      if (unapplied.length > 0) {
+        pendingParsedOffersRef.current = unapplied;
+        setMessages(prev => prev.map(m =>
+          m.type === "parsed_offers" && !(m as ParsedOffersMsg).applied
+            ? { ...m, applied: true } as ParsedOffersMsg : m
+        ));
+      }
+    }
+
     setTimeout(() => {
       // If offers were pre-extracted from a document, add them now and skip propose_offers
       if (pendingParsedOffersRef.current) {
@@ -3624,6 +3643,15 @@ export function ProjectAgentPane({ isOpen, onClose, userType, activeUserName }: 
         dispatchAction({ action: "add_custom_offers", offers: pending });
         // Continue to next step after offers (templates, email, etc.) based on flow scope
         setTimeout(() => fireNextStep("offers"), 400);
+        return;
+      }
+
+      // If the user staged Excel/PDF files alongside "Create a project", send them now
+      // for extraction and offer-adding, now that the project exists.
+      if (pendingOffersFilesRef.current) {
+        const files = pendingOffersFilesRef.current;
+        pendingOffersFilesRef.current = null;
+        setTimeout(() => send("Add the offers from the attached file to the project", files), 200);
         return;
       }
 
@@ -3643,7 +3671,7 @@ export function ProjectAgentPane({ isOpen, onClose, userType, activeUserName }: 
       };
       sendInternal(continuations[firstStep] ?? buildOffersContinuation("Project created", oem));
     }, 600);
-  }, [dispatchAction, sendInternal, getFlowSteps, buildOffersContinuation, fireNextStep]);
+  }, [dispatchAction, send, sendInternal, getFlowSteps, buildOffersContinuation, fireNextStep]);
 
   // ── Proactive questions submit ───────────────────────────────────────────────
   const handleProactiveQuestionsSubmit = useCallback((goal: string, timeline: string, offerFocus: string) => {
@@ -3931,14 +3959,21 @@ export function ProjectAgentPane({ isOpen, onClose, userType, activeUserName }: 
     if (simulatingStream) return; // prevent double-tap
     const ctx = ctxRef.current;
 
-    // Feature 5: If the user has an image staged in the input, treat this chip
-    // click as "create a project with this background image" — route through send()
-    // which will detect hasBgIntent and handle accordingly.
     const stagedFiles = stagedFilesRef.current.slice();
     if (stagedFiles.length > 0) {
       stagedFilesRef.current = [];
-      send("Create a project", stagedFiles);
-      return;
+      const imageFiles = stagedFiles.filter(f => f.type.startsWith("image/"));
+      const docFiles   = stagedFiles.filter(f => !f.type.startsWith("image/"));
+
+      if (imageFiles.length > 0 && docFiles.length === 0) {
+        // Pure image → bg flow (hasBgIntent detection in send())
+        send("Create a project", imageFiles);
+        return;
+      }
+
+      // Has Excel/PDF: queue for after project creation, show setup card below
+      if (docFiles.length > 0) pendingOffersFilesRef.current = docFiles;
+      // If there were also images alongside docs, ignore them for now (edge case)
     }
 
     // Feature 2: If a project is open and already complete (campaign_cta), offer to start fresh.

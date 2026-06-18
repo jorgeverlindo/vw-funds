@@ -52,7 +52,7 @@ export function UsabilityTestingModal() {
   const [copiedIdx, setCopiedIdx] = useState<number | null>(null);
 
   const copyBullets = (bullets: string[], idx: number) => {
-    navigator.clipboard.writeText(bullets.join("\n"));
+    navigator.clipboard.writeText(bullets.map(b => `· ${b}`).join("\n"));
     setCopiedIdx(idx);
     setTimeout(() => setCopiedIdx(null), 1500);
   };

@@ -3934,10 +3934,10 @@ export function ProjectAgentPane({ isOpen, onClose, userType, activeUserName }: 
     // Feature 5: If the user has an image staged in the input, treat this chip
     // click as "create a project with this background image" — route through send()
     // which will detect hasBgIntent and handle accordingly.
-    const stagedImages = stagedFilesRef.current.filter(f => f.type.startsWith("image/"));
-    if (stagedImages.length > 0) {
+    const stagedFiles = stagedFilesRef.current.slice();
+    if (stagedFiles.length > 0) {
       stagedFilesRef.current = [];
-      send("Create a project", stagedImages);
+      send("Create a project", stagedFiles);
       return;
     }
 
@@ -3989,6 +3989,12 @@ export function ProjectAgentPane({ isOpen, onClose, userType, activeUserName }: 
       ]);
     }, 1100);
   }, [knownProjectNames, simulatingStream, send]);
+
+  const sendWithStaged = useCallback((text: string) => {
+    const files = stagedFilesRef.current.slice();
+    stagedFilesRef.current = [];
+    send(text, files);
+  }, [send]);
 
   // ── Full proposal card (existing projects) ───────────────────────────────────
   const handleProposalApply = useCallback((msgId: string, offerIds: string[], templateIds: string[], name?: string) => {
@@ -4217,7 +4223,7 @@ export function ProjectAgentPane({ isOpen, onClose, userType, activeUserName }: 
                     <AgentInput onSubmit={send} onFilesChange={files => { stagedFilesRef.current = files; }} onStop={stop} streaming={streaming} accountName={isAgency ? selectedAccount : "Honda of Anywhere"} />
                     <div className="flex flex-wrap gap-[8px] items-center justify-center w-full">
                       {PROJECT_CATEGORIES.map(cat => {
-                        const chip = <CategoryChip label={cat} onClick={cat === "Create a project" ? handleCreateProjectClick : () => send(CATEGORY_MESSAGES[cat] ?? cat, [])} />;
+                        const chip = <CategoryChip label={cat} onClick={cat === "Create a project" ? handleCreateProjectClick : () => sendWithStaged(CATEGORY_MESSAGES[cat] ?? cat)} />;
                         if (cat === "Create Automatic Project") {
                           return (
                             <Tooltip.Provider key={cat} delayDuration={400}>
@@ -4233,7 +4239,7 @@ export function ProjectAgentPane({ isOpen, onClose, userType, activeUserName }: 
                             </Tooltip.Provider>
                           );
                         }
-                        return <CategoryChip key={cat} label={cat} onClick={cat === "Create a project" ? handleCreateProjectClick : () => send(CATEGORY_MESSAGES[cat] ?? cat, [])} />;
+                        return <CategoryChip key={cat} label={cat} onClick={cat === "Create a project" ? handleCreateProjectClick : () => sendWithStaged(CATEGORY_MESSAGES[cat] ?? cat)} />;
                       })}
                     </div>
                   </div>
@@ -4402,7 +4408,7 @@ export function ProjectAgentPane({ isOpen, onClose, userType, activeUserName }: 
                             <Tooltip.Provider key={cat} delayDuration={400}>
                               <Tooltip.Root>
                                 <Tooltip.Trigger asChild>
-                                  <CategoryChip label={cat} onClick={() => send(CATEGORY_MESSAGES[cat] ?? cat, [])} />
+                                  <CategoryChip label={cat} onClick={() => sendWithStaged(CATEGORY_MESSAGES[cat] ?? cat)} />
                                 </Tooltip.Trigger>
                                 <Tooltip.Portal>
                                   <Tooltip.Content side="top" sideOffset={6} className="z-[999] max-w-[200px] px-[8px] py-[6px] rounded-[6px] text-[11px] font-medium leading-[1.4] text-white bg-[var(--ink)] shadow-md select-none text-center animate-in fade-in-0 data-[side=top]:slide-in-from-bottom-2 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 duration-[450ms]">
@@ -4414,7 +4420,7 @@ export function ProjectAgentPane({ isOpen, onClose, userType, activeUserName }: 
                             </Tooltip.Provider>
                           );
                         }
-                        return <CategoryChip key={cat} label={cat} onClick={cat === "Create a project" ? handleCreateProjectClick : () => send(CATEGORY_MESSAGES[cat] ?? cat, [])} />;
+                        return <CategoryChip key={cat} label={cat} onClick={cat === "Create a project" ? handleCreateProjectClick : () => sendWithStaged(CATEGORY_MESSAGES[cat] ?? cat)} />;
                       })}
                     </div>
                   </div>

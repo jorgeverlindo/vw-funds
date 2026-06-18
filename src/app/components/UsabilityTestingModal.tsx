@@ -1,5 +1,6 @@
 import * as Dialog from "@radix-ui/react-dialog";
-import { X, ChevronLeft, ChevronRight, Check, CheckCircle2, ClipboardCheck, PartyPopper, Download } from "lucide-react";
+import { useState } from "react";
+import { X, ChevronLeft, ChevronRight, Check, CheckCircle2, ClipboardCheck, PartyPopper, Download, Copy, CheckCheck } from "lucide-react";
 import { useUsabilityTesting, USABILITY_FLOWS } from "../contexts/UsabilityTestingContext";
 
 const TOTAL_FLOWS = USABILITY_FLOWS.length;
@@ -47,6 +48,14 @@ export function UsabilityTestingModal() {
     toggleTask,
     dismissCompletion,
   } = useUsabilityTesting();
+
+  const [copiedIdx, setCopiedIdx] = useState<number | null>(null);
+
+  const copyBullets = (bullets: string[], idx: number) => {
+    navigator.clipboard.writeText(bullets.join("\n"));
+    setCopiedIdx(idx);
+    setTimeout(() => setCopiedIdx(null), 1500);
+  };
 
   const flow = USABILITY_FLOWS[currentFlowIndex];
   const canGoPrev = currentFlowIndex > 0;
@@ -151,14 +160,27 @@ export function UsabilityTestingModal() {
                         {renderTaskText(task.text, task.boldText, task.downloadButton)}
                       </p>
                       {task.bullets && (
-                        <ul className="mt-1 ml-1 flex flex-col gap-[2px]">
-                          {task.bullets.map((item, j) => (
-                            <li key={j} className="flex items-start gap-1 text-[12px]" style={{ color: "var(--ink)" }}>
-                              <span className="mt-[3px] shrink-0">·</span>
-                              <span>{item}</span>
-                            </li>
-                          ))}
-                        </ul>
+                        <div className="mt-1">
+                          <ul className="ml-1 flex flex-col gap-[2px]">
+                            {task.bullets.map((item, j) => (
+                              <li key={j} className="flex items-start gap-1 text-[12px]" style={{ color: "var(--ink)" }}>
+                                <span className="mt-[3px] shrink-0">·</span>
+                                <span>{item}</span>
+                              </li>
+                            ))}
+                          </ul>
+                          <button
+                            onClick={() => copyBullets(task.bullets!, i)}
+                            className="mt-[6px] inline-flex items-center gap-[5px] px-[8px] py-[3px] rounded-full border transition-colors hover:bg-[rgba(71,59,171,0.06)] cursor-pointer"
+                            style={{ color: copiedIdx === i ? "#2e7d32" : "var(--brand-accent)", borderColor: copiedIdx === i ? "rgba(46,125,50,0.3)" : "rgba(71,59,171,0.3)", fontSize: 11, fontWeight: 500 }}
+                            aria-label="Copy setup info"
+                          >
+                            {copiedIdx === i
+                              ? <><CheckCheck style={{ width: 11, height: 11, strokeWidth: 2 }} />Copied!</>
+                              : <><Copy style={{ width: 11, height: 11, strokeWidth: 2 }} />Copy setup</>
+                            }
+                          </button>
+                        </div>
                       )}
                       {task.downloadButton && !task.downloadButton.inline && (
                         <a

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect, useCallback, useMemo } from "react";
+import { useState, useRef, useEffect, useCallback, useMemo, forwardRef, type ButtonHTMLAttributes } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "motion/react";
 import {
@@ -2516,17 +2516,19 @@ const CATEGORY_MESSAGES: Record<string, string> = {
   "Create proactive project":  "Build a full project proactively",
 };
 
-function CategoryChip({ label, onClick }: { label: string; onClick?: () => void }) {
-  return (
-    <button onClick={onClick}
-      className="relative rounded-full border border-[rgba(99,86,225,0.5)] px-[10px] py-[4px] hover:bg-[rgba(71,59,171,0.06)] transition-colors cursor-pointer">
-      <span className="text-[13px] text-[var(--brand-accent)] tracking-[0.46px] whitespace-nowrap capitalize"
-        style={{ fontWeight: 500, lineHeight: "22px" }}>
-        {label}
-      </span>
-    </button>
-  );
-}
+const CategoryChip = forwardRef<HTMLButtonElement, { label: string } & ButtonHTMLAttributes<HTMLButtonElement>>(
+  function CategoryChip({ label, ...rest }, ref) {
+    return (
+      <button ref={ref} {...rest}
+        className="relative rounded-full border border-[rgba(99,86,225,0.5)] px-[10px] py-[4px] hover:bg-[rgba(71,59,171,0.06)] transition-colors cursor-pointer">
+        <span className="text-[13px] text-[var(--brand-accent)] tracking-[0.46px] whitespace-nowrap capitalize"
+          style={{ fontWeight: 500, lineHeight: "22px" }}>
+          {label}
+        </span>
+      </button>
+    );
+  }
+);
 
 // ─── Main component ────────────────────────────────────────────────────────────
 // Honda accounts available to the Agency user
@@ -4057,9 +4059,25 @@ export function ProjectAgentPane({ isOpen, onClose, userType, activeUserName }: 
                   <div className="flex flex-col items-center gap-[8px] pb-[16px] shrink-0">
                     <AgentInput onSubmit={send} accountName={isAgency ? selectedAccount : undefined} />
                     <div className="flex flex-wrap gap-[8px] items-center justify-center w-full">
-                      {PROJECT_CATEGORIES.map(cat => (
-                        <CategoryChip key={cat} label={cat} onClick={cat === "Create a project" ? handleCreateProjectClick : () => send(CATEGORY_MESSAGES[cat] ?? cat, null)} />
-                      ))}
+                      {PROJECT_CATEGORIES.map(cat => {
+                        const chip = <CategoryChip label={cat} onClick={cat === "Create a project" ? handleCreateProjectClick : () => send(CATEGORY_MESSAGES[cat] ?? cat, null)} />;
+                        if (cat === "Create proactive project") {
+                          return (
+                            <Tooltip.Provider key={cat} delayDuration={400}>
+                              <Tooltip.Root>
+                                <Tooltip.Trigger asChild>{chip}</Tooltip.Trigger>
+                                <Tooltip.Portal>
+                                  <Tooltip.Content side="top" sideOffset={6} className="z-[999] max-w-[200px] px-[8px] py-[6px] rounded-[6px] text-[11px] font-medium leading-[1.4] text-white bg-[var(--ink)] shadow-md select-none text-center">
+                                    Create a full project. Agent will pick up all of our templates and take decisions for you.
+                                    <Tooltip.Arrow className="fill-[var(--ink)]" />
+                                  </Tooltip.Content>
+                                </Tooltip.Portal>
+                              </Tooltip.Root>
+                            </Tooltip.Provider>
+                          );
+                        }
+                        return <CategoryChip key={cat} label={cat} onClick={cat === "Create a project" ? handleCreateProjectClick : () => send(CATEGORY_MESSAGES[cat] ?? cat, null)} />;
+                      })}
                     </div>
                   </div>
                 </div>
@@ -4212,9 +4230,26 @@ export function ProjectAgentPane({ isOpen, onClose, userType, activeUserName }: 
                   <div className="flex flex-col items-center gap-[8px] pb-[16px] shrink-0 pt-[8px]">
                     <AgentInput onSubmit={send} accountName={isAgency ? selectedAccount : undefined} />
                     <div className="flex flex-wrap gap-[8px] items-center justify-center w-full">
-                      {PROJECT_CATEGORIES.map(cat => (
-                        <CategoryChip key={cat} label={cat} onClick={cat === "Create a project" ? handleCreateProjectClick : () => send(CATEGORY_MESSAGES[cat] ?? cat, null)} />
-                      ))}
+                      {PROJECT_CATEGORIES.map(cat => {
+                        if (cat === "Create proactive project") {
+                          return (
+                            <Tooltip.Provider key={cat} delayDuration={400}>
+                              <Tooltip.Root>
+                                <Tooltip.Trigger asChild>
+                                  <CategoryChip label={cat} onClick={() => send(CATEGORY_MESSAGES[cat] ?? cat, null)} />
+                                </Tooltip.Trigger>
+                                <Tooltip.Portal>
+                                  <Tooltip.Content side="top" sideOffset={6} className="z-[999] max-w-[200px] px-[8px] py-[6px] rounded-[6px] text-[11px] font-medium leading-[1.4] text-white bg-[var(--ink)] shadow-md select-none text-center">
+                                    Create a full project. Agent will pick up all of our templates and take decisions for you.
+                                    <Tooltip.Arrow className="fill-[var(--ink)]" />
+                                  </Tooltip.Content>
+                                </Tooltip.Portal>
+                              </Tooltip.Root>
+                            </Tooltip.Provider>
+                          );
+                        }
+                        return <CategoryChip key={cat} label={cat} onClick={cat === "Create a project" ? handleCreateProjectClick : () => send(CATEGORY_MESSAGES[cat] ?? cat, null)} />;
+                      })}
                     </div>
                   </div>
                 </div>

@@ -2845,12 +2845,13 @@ export function ProjectAgentPane({ isOpen, onClose, userType, activeUserName }: 
       } as ProactiveQuestionsMsg]);
     } else if (toolName === "generate_dealer_background") {
       // ── PHASE 1: Fast preview (runs now, ~30s) ───────────────────────────
-      // One Replicate call → clean background → canvas composite for visual preview.
-      // The approval card shows the canvas composite so the user can judge composition.
-      // The STORED background has NO car baked in — duplication is impossible.
-      //
-      // PHASE 2 runs AFTER user approves (see onDealerBgApprove below):
-      // Per-template clean backgrounds generated in parallel, then dispatched.
+      // Remove any trailing assistant text message committed in the same turn —
+      // the model sometimes outputs a disclaimer before calling this tool.
+      // The loading state below is the only visible signal we want.
+      setMessages(prev => {
+        const last = prev[prev.length - 1];
+        return (last?.role === "assistant" && last.type === "text") ? prev.slice(0, -1) : prev;
+      });
 
       setBgProcessing(true);
       dispatchAction({ action: "set_dealer_bg_generating", value: true } as never);
@@ -3815,6 +3816,7 @@ export function ProjectAgentPane({ isOpen, onClose, userType, activeUserName }: 
   const handleReviewerPickerConfirm = useCallback((msgId: string, selected: typeof MOCK_CONTACTS[number][], channels: Record<string, "platform" | "email">, _message: string) => {
     // Mark card applied
     setMessages(prev => prev.map(m => m.id === msgId ? { ...m, applied: true } as ReviewerPickerMsg : m));
+    triggerEvent('reviewer_sent');
 
     // Build confirmation using actual channel selection (user may have toggled)
     const platformNames = selected.filter(c => channels[c.email] === "platform").map(c => c.name.split(" ")[0]).join(", ");
@@ -3834,7 +3836,7 @@ export function ProjectAgentPane({ isOpen, onClose, userType, activeUserName }: 
         detail: { projectId, status: "Awaiting Approval" },
       }));
     }
-  }, []);
+  }, [triggerEvent]);
 
   // ── ParsedOffers card ────────────────────────────────────────────────────────
   const handleParsedOffersApply = useCallback((msgId: string, offers: CustomOffer[]) => {
@@ -4288,6 +4290,17 @@ export function ProjectAgentPane({ isOpen, onClose, userType, activeUserName }: 
                           onProactiveQuestionsApply={handleProactiveQuestionsSubmit}
                           dispatchAction={dispatchAction}
                           onDealerBgApprove={(bgObject) => {
+                            // ── PHASE 2: Generate per-template clean bgs + per-offer composites ──
+                            const dealerPhoto = (bgObject as any)._dealerPhotoDataUrl as string | undefined;
+                            const confirmedOfferDescs = (bgObject as any)._confirmedOffers as
+                              Array<{ offerId: string; year: string; make: string; model: string; trim: string; imageUrl?: string }> | undefined;
+
+                            // Set generating flag BEFORE adding the bg to the library so JellyBeanCard
+                            // shows the skeleton from the very first render — prevents a one-frame flash
+                            // of the wrong-ratio placeholder image.
+                            if (dealerPhoto) {
+                              dispatchAction({ action: "set_dealer_bg_generating", value: true } as never);
+                            }
                             dispatchAction({ action: "add_custom_background", background: bgObject });
                             setMessages(prev => prev.map(m => m.id === msg.id ? { ...m, applied: true } as DealerBgProposalMsg : m));
                             // Open Backgrounds accordion and scroll to it, then scroll to Preview
@@ -4295,13 +4308,7 @@ export function ProjectAgentPane({ isOpen, onClose, userType, activeUserName }: 
                             setTimeout(() => window.dispatchEvent(new CustomEvent(AGENT_SCROLL_TO_SECTION_EVENT, { detail: { section: "preview" } })), 600);
                             setTimeout(() => fireNextStep("dealer_bg"), 300);
 
-                            // ── PHASE 2: Generate per-template clean bgs + per-offer composites ──
-                            const dealerPhoto = (bgObject as any)._dealerPhotoDataUrl as string | undefined;
-                            const confirmedOfferDescs = (bgObject as any)._confirmedOffers as
-                              Array<{ offerId: string; year: string; make: string; model: string; trim: string; imageUrl?: string }> | undefined;
-
                             if (dealerPhoto) {
-                              dispatchAction({ action: "set_dealer_bg_generating", value: true } as never);
                               (async () => {
                                 try {
                                   const { generateDealerBackgroundsForTemplates } =

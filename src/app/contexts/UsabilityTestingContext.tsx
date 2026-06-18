@@ -54,7 +54,7 @@ export const USABILITY_FLOWS: UsabilityFlow[] = [
       {
         text: "Now you want to use the provided background, and create a full project for Honda, using that background for the templates. How would you do it?",
         boldText: "provided background",
-        completionEvent: "assets_generated",
+        completionEvent: "reviewer_sent",
         downloadButton: { label: "Download Background", href: "/test-assets/honda_dealer_background.jpg", inline: true },
       },
     ],

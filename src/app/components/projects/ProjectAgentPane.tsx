@@ -158,7 +158,9 @@ export type AgentActionPayload =
   | { action: "add_custom_offers"; offers: CustomOffer[] }
   | { action: "edit_offer"; offerId: string; patches: Partial<{ monthlyPayment: number; term: number; totalDueAtSigning: number; offerType: string; trim: string; year: string; make: string; model: string }> }
   | { action: "set_task_owners"; owners: Record<string, string> }
-  | { action: "set_dealer_bg_generating"; value: boolean };
+  | { action: "set_dealer_bg_generating"; value: boolean }
+  | { action: "remove_backgrounds"; backgroundIds: string[] }
+  | { action: "duplicate_template"; templateId: string; newName?: string };
 
 // ─── Multimodal API types ─────────────────────────────────────────────────────
 type ApiContentBlock =
@@ -2513,11 +2515,14 @@ function ParsedOffersCard({
 // ─── Tool chip (for non-proposal tools) ───────────────────────────────────────
 function ToolChipView({ name, input }: { name: string; input: Record<string, unknown> }) {
   const cfg: Record<string, { label: string; icon: React.ReactNode; color: string; bg: string }> = {
-    add_offers_to_project:        { label: "Added offers",     icon: <Plus     size={10} strokeWidth={2.5} />, color: "#16a34a", bg: "rgba(22,163,74,0.09)"  },
-    remove_offers_from_project:   { label: "Removed offers",   icon: <Minus    size={10} strokeWidth={2.5} />, color: "#dc2626", bg: "rgba(220,38,38,0.09)"  },
-    add_templates_to_project:     { label: "Added templates",  icon: <FileText size={10} strokeWidth={2.5} />, color: "var(--brand-mid)", bg: "rgba(99,86,225,0.09)"  },
-    remove_templates_from_project:{ label: "Removed templates",icon: <Minus    size={10} strokeWidth={2.5} />, color: "#dc2626", bg: "rgba(220,38,38,0.09)"  },
-    set_project_name:             { label: "Renamed project",  icon: <Tag      size={10} strokeWidth={2.5} />, color: "#0369a1", bg: "rgba(3,105,161,0.09)"  },
+    add_offers_to_project:            { label: "Added offers",       icon: <Plus     size={10} strokeWidth={2.5} />, color: "#16a34a", bg: "rgba(22,163,74,0.09)"  },
+    remove_offers_from_project:       { label: "Removed offers",     icon: <Minus    size={10} strokeWidth={2.5} />, color: "#dc2626", bg: "rgba(220,38,38,0.09)"  },
+    add_templates_to_project:         { label: "Added templates",    icon: <FileText size={10} strokeWidth={2.5} />, color: "var(--brand-mid)", bg: "rgba(99,86,225,0.09)"  },
+    remove_templates_from_project:    { label: "Removed templates",  icon: <Minus    size={10} strokeWidth={2.5} />, color: "#dc2626", bg: "rgba(220,38,38,0.09)"  },
+    set_project_name:                 { label: "Renamed project",    icon: <Tag      size={10} strokeWidth={2.5} />, color: "#0369a1", bg: "rgba(3,105,161,0.09)"  },
+    edit_offer:                       { label: "Edited offer",       icon: <Tag      size={10} strokeWidth={2.5} />, color: "#7c3aed", bg: "rgba(124,58,237,0.09)"  },
+    remove_backgrounds_from_project:  { label: "Removed background", icon: <Minus    size={10} strokeWidth={2.5} />, color: "#dc2626", bg: "rgba(220,38,38,0.09)"  },
+    duplicate_template_in_project:    { label: "Duplicated template",icon: <FileText size={10} strokeWidth={2.5} />, color: "var(--brand-mid)", bg: "rgba(99,86,225,0.09)"  },
   };
   const c = cfg[name] ?? { label: name, icon: null, color: "var(--ink-secondary)", bg: "rgba(104,101,118,0.09)" };
   let detail = "";
@@ -2525,7 +2530,10 @@ function ToolChipView({ name, input }: { name: string; input: Record<string, unk
     const ids = (input.offer_ids as string[]) ?? []; detail = ids.length === 1 ? ids[0] : `${ids.length} offers`;
   } else if (name === "add_templates_to_project" || name === "remove_templates_from_project") {
     const ids = (input.template_ids as string[]) ?? []; detail = ids.length === 1 ? ids[0] : `${ids.length} templates`;
-  } else if (name === "set_project_name") { detail = `"${input.name}"`; }
+  } else if (name === "set_project_name") { detail = `"${input.name}"`;
+  } else if (name === "edit_offer") { detail = `${input.offer_id ?? ""}`;
+  } else if (name === "remove_backgrounds_from_project") { const ids = (input.background_ids as string[]) ?? []; detail = ids.length === 1 ? ids[0] : `${ids.length} backgrounds`;
+  } else if (name === "duplicate_template_in_project") { detail = `${input.template_id ?? ""}`; }
   return (
     <span style={{ display: "inline-flex", alignItems: "center", gap: 5, background: c.bg, color: c.color,
       fontSize: 11, fontWeight: 500, padding: "3px 10px", borderRadius: 100 }}>
@@ -3008,9 +3016,9 @@ export function ProjectAgentPane({ isOpen, onClose, userType, activeUserName }: 
         dispatchAction({ action: "set_project_name", name: toolInput.name as string });
       else if (toolName === "edit_offer") {
         const patches: Record<string, unknown> = {};
-        if (toolInput.monthly_payment      != null) patches.monthlyPayment      = toolInput.monthly_payment;
-        if (toolInput.term                 != null) patches.term                = toolInput.term;
-        if (toolInput.total_due_at_signing != null) patches.totalDueAtSigning   = toolInput.total_due_at_signing;
+        if (toolInput.monthly_payment      != null) patches.monthlyPayment      = Number(toolInput.monthly_payment);
+        if (toolInput.term                 != null) patches.term                = Number(toolInput.term);
+        if (toolInput.total_due_at_signing != null) patches.totalDueAtSigning   = Number(toolInput.total_due_at_signing);
         if (toolInput.offer_type           != null) patches.offerType           = toolInput.offer_type;
         if (toolInput.trim                 != null) patches.trim                = toolInput.trim;
         if (toolInput.year                 != null) patches.year                = toolInput.year;
@@ -3018,6 +3026,10 @@ export function ProjectAgentPane({ isOpen, onClose, userType, activeUserName }: 
         if (toolInput.model                != null) patches.model               = toolInput.model;
         dispatchAction({ action: "edit_offer", offerId: toolInput.offer_id as string, patches: patches as never });
       }
+      else if (toolName === "remove_backgrounds_from_project")
+        dispatchAction({ action: "remove_backgrounds", backgroundIds: toolInput.background_ids as string[] });
+      else if (toolName === "duplicate_template_in_project")
+        dispatchAction({ action: "duplicate_template", templateId: toolInput.template_id as string, newName: toolInput.new_name as string | undefined });
     }
   }, [dispatchAction]);
 

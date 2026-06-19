@@ -265,6 +265,10 @@ INDIVIDUAL REQUESTS (project already open):
   - "set task owners" / "define owners" / "quero definir os owners de tarefa" → call propose_task_owners with suggested owners if named, otherwise no suggestions
   - "set [section] owner to [name]" → call propose_task_owners directly with { owners: { section: name } } map
   - "notify task owners" / "send to task owners" / "notifique os responsáveis" → call propose_notify_owners with owners from the project context taskOwners field
+  PIPELINE EDITS (project already built — edit individual items):
+  - "change the [field] of [offer]" / "update [offer] price to X" / "set the term on [offer] to N months" → call edit_offer with offer_id and the changed patches only
+  - "remove background [X]" / "delete background [X]" / "remove the [name] background" → call remove_backgrounds_from_project with that background's ID
+  - "duplicate template [X]" / "make a copy of [template]" / "clone the [name] template" → call duplicate_template_in_project with template_id and optional new_name
   Do NOT restart the full flow. Respond ONLY to what was asked.
 
 KEY RULES:
@@ -602,6 +606,74 @@ const agentTools: Anthropic.Tool[] = [
     },
   },
   {
+    name: "edit_offer",
+    description:
+      "Edit one or more fields of an existing offer already in the current project. " +
+      "Use this when the user asks to change a price, term, due-at-signing, APR, or any other field " +
+      "on a specific offer (e.g. 'change the monthly payment of offer X to $299', " +
+      "'update the term on the Civic to 48 months'). " +
+      "Pass only the fields that need changing — omit unchanged fields.",
+    input_schema: {
+      type: "object" as const,
+      properties: {
+        offer_id: {
+          type: "string",
+          description: "ID of the offer to edit (e.g. 'offer-1', 'p2')",
+        },
+        patches: {
+          type: "object",
+          description:
+            "Fields to update. Valid keys: monthlyPayment (number), term (number), " +
+            "totalDueAtSigning (number), apr (number), offerType (string), " +
+            "year (string), make (string), model (string), trim (string).",
+          additionalProperties: true,
+        },
+      },
+      required: ["offer_id", "patches"],
+    },
+  },
+  {
+    name: "remove_backgrounds_from_project",
+    description:
+      "Remove one or more backgrounds that are currently applied to the project. " +
+      "Use this when the user asks to remove, delete, or clear a specific background " +
+      "(e.g. 'remove the beach background', 'delete background dirt-road'). " +
+      "Pass the background IDs from the AVAILABLE BACKGROUND CATALOG.",
+    input_schema: {
+      type: "object" as const,
+      properties: {
+        background_ids: {
+          type: "array",
+          items: { type: "string" },
+          description: "IDs of backgrounds to remove (e.g. ['beach-sunset', 'dirt-road'])",
+        },
+      },
+      required: ["background_ids"],
+    },
+  },
+  {
+    name: "duplicate_template_in_project",
+    description:
+      "Create a copy of an existing template in the project. " +
+      "Use this when the user asks to duplicate, copy, or clone a template " +
+      "(e.g. 'duplicate the Honda banner template', 'make a copy of template X'). " +
+      "Optionally provide a new name for the copy.",
+    input_schema: {
+      type: "object" as const,
+      properties: {
+        template_id: {
+          type: "string",
+          description: "ID of the template to duplicate",
+        },
+        new_name: {
+          type: "string",
+          description: "Optional name for the new copy. Defaults to '[original name] (Copy)' if omitted.",
+        },
+      },
+      required: ["template_id"],
+    },
+  },
+  {
     name: "set_project_name",
     description: "Update the project name.",
     input_schema: {
@@ -802,6 +874,12 @@ function executeTool(
       return { success: true, added: input.template_ids, message: `Added ${(input.template_ids as string[]).length} template(s) to the project.` };
     case "remove_templates_from_project":
       return { success: true, removed: input.template_ids, message: `Removed ${(input.template_ids as string[]).length} template(s) from the project.` };
+    case "edit_offer":
+      return { success: true, offer_id: input.offer_id, patches: input.patches, message: `Offer ${input.offer_id} updated.` };
+    case "remove_backgrounds_from_project":
+      return { success: true, removed: input.background_ids, message: `Removed ${(input.background_ids as string[]).length} background(s) from the project.` };
+    case "duplicate_template_in_project":
+      return { success: true, template_id: input.template_id, new_name: input.new_name, message: `Template ${input.template_id} duplicated.` };
     case "set_project_name":
       return { success: true, name: input.name, message: `Project renamed to "${input.name}".` };
     case "propose_email":

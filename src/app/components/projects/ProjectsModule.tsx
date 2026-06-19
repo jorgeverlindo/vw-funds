@@ -1658,6 +1658,8 @@ function ProjectDetailView({
   const [agentAddedTemplateIds, setAgentAddedTemplateIds] = useState<string[]>(saved?.addedTemplateIds ?? []);
   // Custom offer library — persisted to localStorage, merged with static offerLibrary
   const [customOfferLibrary, setCustomOfferLibrary] = useState<StoredOffer[]>(() => loadCustomOfferLibrary());
+  // Custom template library — in-memory duplicates created by the agent post-pipeline
+  const [customTemplateLibrary, setCustomTemplateLibrary] = useState<Template[]>([]);
   // Custom background library (dealer-uploaded backgrounds — isolated from catalog)
   const [customBackgroundLibrary, setCustomBackgroundLibrary] = useState<CustomBackground[]>(
     () => loadCustomBackgroundLibrary(project.id)
@@ -1783,10 +1785,11 @@ function ProjectDetailView({
       .filter((o): o is Offer => !!o),
   ].filter((o, i, arr) => !removedOfferIds.has(o.id) && arr.findIndex((x) => x.id === o.id) === i);
 
+  const combinedTemplateLibrary = [...templateLibrary, ...customTemplateLibrary];
   const visibleTemplates = [
     ...templates,
     ...agentAddedTemplateIds
-      .map((id) => templateLibrary.find((t) => t.id === id))
+      .map((id) => combinedTemplateLibrary.find((t) => t.id === id))
       .filter((t): t is Template => !!t),
   ].filter((t, i, arr) => !removedTemplateIds.has(t.id) && arr.findIndex((x) => x.id === t.id) === i);
 
@@ -1845,7 +1848,7 @@ function ProjectDetailView({
         term: o.term, pvi: (o as any).pvi ?? 0, aging: (o as any).aging ?? 0, stock: (o as any).stock ?? 1,
         image: (o as any).image ?? "",
       })),
-      availableTemplates: templateLibrary.map((t) => ({
+      availableTemplates: combinedTemplateLibrary.map((t) => ({
         id: t.id, name: t.name, format: t.format,
         width: t.width, height: t.height, brand: t.brand,
       })),
@@ -1853,7 +1856,7 @@ function ProjectDetailView({
     // Defer so ProjectAgentPane's listener effect has time to register first
     setTimeout(() => window.dispatchEvent(new CustomEvent(PROJECT_CONTEXT_EVENT, { detail: payload })), 0);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [project.id, visibleOffers.length, visibleTemplates.length, customOfferLibrary.length, brandKit?.oem, taskOwners]);
+  }, [project.id, visibleOffers.length, visibleTemplates.length, customOfferLibrary.length, customTemplateLibrary.length, brandKit?.oem, taskOwners]);
 
   // ── Listen for agent actions from ProjectAgentPane ────────────────────────
   useEffect(() => {
@@ -1901,6 +1904,24 @@ function ProjectDetailView({
           setAgentAddedBgIds((prev) => [...new Set([...prev, ...backgroundIds])]);
           if (backgroundIds.length > 0) setSelectedBgId(backgroundIds[0]);
         }, 220);
+      } else if (action === "remove_backgrounds") {
+        const { backgroundIds } = payload as { backgroundIds: string[] };
+        setAgentAddedBgIds((prev) => prev.filter(id => !backgroundIds.includes(id)));
+        setRemovedBgIds((prev) => new Set([...prev, ...backgroundIds]));
+      } else if (action === "duplicate_template") {
+        const { templateId, newName } = payload as { templateId: string; newName?: string };
+        const original = combinedTemplateLibrary.find(t => t.id === templateId);
+        if (original) {
+          const copyId = `custom-tpl-${templateId}-${Date.now()}`;
+          const copy: Template = {
+            ...original,
+            id:   copyId,
+            name: newName ?? `${original.name} (Copy)`,
+          };
+          setCustomTemplateLibrary(prev => [...prev, copy]);
+          setExpandedSections(prev => ({ ...prev, templates: true }));
+          setTimeout(() => setAgentAddedTemplateIds(prev => [...new Set([...prev, copyId])]), 220);
+        }
       } else if (action === "set_brand") {
         const { oem } = payload as { oem: string };
         setExpandedSections((prev) => ({ ...prev, theme: true }));

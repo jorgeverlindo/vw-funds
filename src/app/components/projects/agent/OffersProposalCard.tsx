@@ -117,7 +117,7 @@ export function OffersProposalCard({ input, context, onApply, onDismiss, proacti
     autoApplyRef.current = setTimeout(() => {
       setApplied(true);
       onApply(offerIds, [...appliedCustomizations]);
-    }, 2000);
+    }, 5000);
     return () => { if (autoApplyRef.current) clearTimeout(autoApplyRef.current); };
   }, [proactive, manualMode, applied]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -276,7 +276,7 @@ export function OffersProposalCard({ input, context, onApply, onDismiss, proacti
         </div>
       </div>
       {proactive && !manualMode && !applied && (
-        <ProactiveAutoApplyBar delay={2000} onCancel={() => { if (autoApplyRef.current) clearTimeout(autoApplyRef.current); setManualMode(true); }} />
+        <ProactiveAutoApplyBar delay={5000} onCancel={() => { if (autoApplyRef.current) clearTimeout(autoApplyRef.current); setManualMode(true); }} />
       )}
     </motion.div>
   );

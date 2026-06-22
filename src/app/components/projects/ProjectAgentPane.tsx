@@ -3203,7 +3203,7 @@ export function ProjectAgentPane({ isOpen, onClose, userType, activeUserName }: 
     }
 
     // Detect proactive intent early — bypasses the "already open" intercept below.
-    const isProactiveIntent = /\b(proactive|automatic|auto)\b/i.test(text);
+    const isProactiveIntent = /\b(proactive|proactively|automatic|automatically|auto(?:pilot|create)?|autopilot)\b|do\s+(?:it\s+all|everything)\s*(?:for\s+me|automatically)?|(?:build|create|make|generate|set\s+up|wrap\s+up|put\s+together)\s+(?:the\s+)?(?:whole|entire|full|complete)\s+(?:campaign|project)|(?:build|create|make|finish|complete)\s+(?:the\s+)?(?:campaign|project)\s+for\s+me|build\s+it\s+(?:start\s+to\s+finish|end\s+to\s+end)|handle\s+the\s+whole\s+thing|take\s+it\s+from\s+here|take\s+care\s+of\s+the\s+whole\s+project|run\s+(?:with\s+it|the\s+full\s+project)|you\s+decide\s+everything|pick\s+everything\s+for\s+me|one[- ]click\s+campaign|just\s+make\s+it\s+happen|no\s+input\s+needed|don.?t\s+ask\s+me/i.test(text);
 
     // Intercept "create a project" / "build a project" when one is already open (skip for proactive)
     if (!isProactiveIntent && !attachments.length && ctxRef.current?.projectId &&
@@ -3412,7 +3412,7 @@ export function ProjectAgentPane({ isOpen, onClose, userType, activeUserName }: 
     }
 
     // "proactive" / "automatic" / "auto" → trigger the proactive questions flow
-    const wantsProactive = /\b(proactive|automatic|auto)\b/i.test(lowerText) && !hasBgIntent;
+    const wantsProactive = (/\b(proactive|proactively|automatic|automatically|auto(?:pilot|create)?|autopilot)\b|do\s+(?:it\s+all|everything)\s*(?:for\s+me|automatically)?|(?:build|create|make|generate|set\s+up|wrap\s+up|put\s+together)\s+(?:the\s+)?(?:whole|entire|full|complete)\s+(?:campaign|project)|(?:build|create|make|finish|complete)\s+(?:the\s+)?(?:campaign|project)\s+for\s+me|build\s+it\s+(?:start\s+to\s+finish|end\s+to\s+end)|handle\s+the\s+whole\s+thing|take\s+it\s+from\s+here|take\s+care\s+of\s+the\s+whole\s+project|run\s+(?:with\s+it|the\s+full\s+project)|you\s+decide\s+everything|pick\s+everything\s+for\s+me|one[- ]click\s+campaign|just\s+make\s+it\s+happen|no\s+input\s+needed|don.?t\s+ask\s+me/i).test(lowerText) && !hasBgIntent;
     if (wantsProactive && !userForcedTool) {
       userForcedTool = "propose_proactive_questions";
       triggerEvent('automatic_project_created');

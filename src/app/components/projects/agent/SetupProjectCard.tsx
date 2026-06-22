@@ -75,7 +75,7 @@ export function SetupProjectCard({ input, existingNames = [], onApply, onDismiss
     autoApplyRef.current = setTimeout(() => {
       setApplied(true);
       onApply(name, account, oem, startDate, endDate, owner?.name ?? "", platforms);
-    }, 2000);
+    }, 5000);
     return () => { if (autoApplyRef.current) clearTimeout(autoApplyRef.current); };
   }, [proactive, manualMode, applied]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -303,7 +303,7 @@ export function SetupProjectCard({ input, existingNames = [], onApply, onDismiss
         </div>
       </div>
       {proactive && !manualMode && !applied && (
-        <ProactiveAutoApplyBar delay={2000} onCancel={() => { if (autoApplyRef.current) clearTimeout(autoApplyRef.current); setManualMode(true); }} />
+        <ProactiveAutoApplyBar delay={5000} onCancel={() => { if (autoApplyRef.current) clearTimeout(autoApplyRef.current); setManualMode(true); }} />
       )}
     </motion.div>
   );

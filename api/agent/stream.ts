@@ -120,9 +120,37 @@ Step 2 — Is there a continuation message in this turn (e.g. "Next: propose_off
         The continuation is the authoritative instruction — ignore everything else in the history.
   NO  → continue to Step 3.
 
-Step 3 — Does the CURRENT user message (not history) contain the word "proactively", "automatic", or "auto" (e.g. "create an automatic project", "auto project", "proactively build"), AND propose_proactive_questions has NOT already been called in this conversation?
+Step 3 — Does the CURRENT user message (not history) express automatic/proactive project intent — AND propose_proactive_questions has NOT already been called in this conversation?
+
+  Trigger words / phrases that count (any of these):
+  • Single words: "proactively", "automatic", "automatically", "auto", "autopilot", "auto-pilot"
+  • "one-click campaign", "auto-create", "auto-pilot the project"
+  • "build the whole campaign for me", "build the entire project end to end", "build it start to finish"
+  • "create and finish the project", "create and finish the campaign"
+  • "set up the full campaign and finish it", "make the complete project for me"
+  • "generate the full campaign automatically", "put together the whole campaign"
+  • "do everything for me", "do it all automatically", "do it all"
+  • "handle the whole thing", "take it from here", "take care of the whole project"
+  • "run the full project", "run with it"
+  • "you decide everything", "pick everything for me"
+  • "just make it happen", "just go", "just go ahead and build it"
+  • "complete the project for me", "finish everything"
+  • "wrap up the whole campaign"
+  • "no input needed, just build it", "don't ask me, just create it"
+  • Any phrase meaning: build the entire project automatically without asking me for each step
+
   YES → call propose_proactive_questions immediately with a concise intro_line. NO other tool. Wait for the user's priorities.
   NO  → continue to Step 4.
+
+AUTOMATIC PROJECT SPECIFICS (apply whenever you've called propose_proactive_questions):
+  • The user's 3 priority answers arrive in the continuation message "Proactive build. User priorities: [...]"
+  • USE those answers to guide every selection in the subsequent steps:
+    - Campaign objective (Awareness/Conquest/Retention/Service Drive) → shapes offer type and template tone
+    - Urgency (Weekend Event/Month-long/Seasonal) → shapes offer count and template energy level
+    - Offer focus (Lease-heavy/Finance-heavy/Mixed) → directly filters offer type when calling propose_offers
+  • After each step auto-confirms, the UI fires a continuation message — follow it immediately (NO text)
+  • NEVER ask for confirmation between steps; each proposal card auto-applies after 5 seconds
+  • Full proactive sequence: propose_proactive_questions → setup_project → propose_offers → propose_templates → propose_backgrounds → propose_brand → (propose_notify_owners if owners exist)
 
 Step 4 — Is the user asking to build / create a new project, AND "Project ID" in the current context is EMPTY (no project exists yet)?
   YES (both conditions met) → call setup_project immediately (infer OEM from context if needed). NO clarifying questions.
@@ -253,7 +281,7 @@ Never write any text before firing a continuation tool — not even "Here's my p
 VIOLATION: writing any text instead of calling the named tool is a critical error.
 
 INDIVIDUAL REQUESTS (project already open):
-  - message contains "proactively", "automatic", or "auto" (proactive/automatic project intent) AND propose_proactive_questions not yet called → call propose_proactive_questions immediately
+  - message expresses automatic/proactive project intent (see Step 3 trigger list: "proactively", "automatic", "auto", "autopilot", "build the whole campaign for me", "do everything for me", "do it all", "handle the whole thing", "take it from here", "run with it", "pick everything for me", "just make it happen", "no input needed", "don't ask me, just create it", etc.) AND propose_proactive_questions not yet called → call propose_proactive_questions immediately
   - "complete" / "finish the rest" / "do the rest" / "continue building" → COMPLETION FLOW
   - "complete and notify owners" / "finish and send to task owners" / "complete … send to task owners" → COMPLETION FLOW + propose_notify_owners at end
 
@@ -897,7 +925,17 @@ const agentTools: Anthropic.Tool[] = [
     name: "propose_proactive_questions",
     description:
       "Show a 3-question priority card before starting a proactive full campaign build. " +
-      "Use this when the user's message contains 'proactively', 'automatic', or 'auto' (indicating an automatic/proactive project build intent). " +
+      "Use this when the user's message expresses automatic/proactive project intent — including: " +
+      "'proactively', 'automatic', 'automatically', 'auto', 'autopilot', 'auto-pilot', 'one-click campaign', " +
+      "'build the whole campaign for me', 'build the entire project end to end', 'build it start to finish', " +
+      "'create and finish the project/campaign', 'set up the full campaign and finish it', " +
+      "'make the complete project for me', 'generate the full campaign automatically', " +
+      "'put together the whole campaign', 'do everything for me', 'do it all automatically', " +
+      "'handle the whole thing', 'take it from here', 'take care of the whole project', " +
+      "'run the full project', 'run with it', 'you decide everything', 'pick everything for me', " +
+      "'just make it happen', 'just go ahead and build it', 'complete the project for me', " +
+      "'finish everything', 'wrap up the whole campaign', 'no input needed just build it', " +
+      "\"don't ask me, just create it\", or any phrase meaning: build everything automatically. " +
       "After the user submits their answers, you will receive a continuation message with those " +
       "priorities to guide your selections across the full build.",
     input_schema: {

@@ -74,6 +74,8 @@ export interface ProjectContextPayload {
   activeBrandOem?: string;
   /** Per-section task owner names, keyed by section id (e.g. "offers", "templates") */
   taskOwners?: Record<string, string>;
+  /** IDs of all backgrounds currently in the project (authoritative — includes all add paths) */
+  currentBackgroundIds?: string[];
   /**
    * First N generated asset preview records (bg image URL + label).
    * Used for email asset grid and campaign-review.html query params.
@@ -4310,9 +4312,13 @@ export function ProjectAgentPane({ isOpen, onClose, userType, activeUserName }: 
                     <div className="flex flex-col gap-[12px] pt-[4px]">
 
                       {(() => {
-                        const confirmedBgIds = messages
-                          .filter((m): m is BackgroundsMsg => m.type === "backgrounds" && m.applied)
-                          .flatMap(m => m.input.background_ids);
+                        // Prefer the authoritative context field (covers all add paths: propose_backgrounds,
+                        // add_backgrounds_to_project tool, and manual UI selection). Fall back to
+                        // scanning the message history in case context hasn't re-dispatched yet.
+                        const confirmedBgIds = filteredContext?.currentBackgroundIds
+                          ?? messages
+                            .filter((m): m is BackgroundsMsg => m.type === "backgrounds" && m.applied)
+                            .flatMap(m => m.input.background_ids);
                         const setupPlatforms = messages
                           .filter((m): m is SetupMsg => m.type === "setup" && m.applied)
                           .at(-1)?.input.platforms ?? [];

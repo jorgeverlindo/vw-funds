@@ -1960,9 +1960,10 @@ function ProjectDetailView({
       startDate:          (project as any).startDate,
       endDate:            (project as any).endDate,
       owner:              (project as any).owner,
-      currentOfferIds:    visibleOfferIds,
-      currentTemplateIds: visibleTemplateIds,
-      activeBrandOem:     brandKit?.oem,
+      currentOfferIds:        visibleOfferIds,
+      currentTemplateIds:     visibleTemplateIds,
+      currentBackgroundIds:   visibleBackgrounds.map(b => b.id),
+      activeBrandOem:         brandKit?.oem,
       // First 4 generated asset previews — bg image URLs are public Cloudinary links
       generatedAssetPreviews: generatedAssets.slice(0, 4).flatMap(({ offer, template, bgId }) => {
         // Check static catalog first, then custom dealer backgrounds
@@ -2003,7 +2004,7 @@ function ProjectDetailView({
     // Defer so ProjectAgentPane's listener effect has time to register first
     setTimeout(() => window.dispatchEvent(new CustomEvent(PROJECT_CONTEXT_EVENT, { detail: payload })), 0);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [project.id, visibleOffers.length, visibleTemplates.length, customOfferLibrary.length, customTemplateLibrary.length, brandKit?.oem, taskOwners]);
+  }, [project.id, visibleOffers.length, visibleTemplates.length, customOfferLibrary.length, customTemplateLibrary.length, brandKit?.oem, taskOwners, agentAddedBgIds.length, customBackgroundLibrary.length, removedBgIds.size]);
 
   // ── Listen for agent actions from ProjectAgentPane ────────────────────────
   useEffect(() => {

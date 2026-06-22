@@ -1382,8 +1382,10 @@ function JellyBeanCard({
       className="relative rounded-[10px] overflow-hidden select-none shrink-0 cursor-pointer hover:shadow-lg transition-shadow"
       style={{ width: w, height: h, background: "#e2e2e2" }}
     >
-      {/* Background — priority: Flux composite > canvas composite > clean bg */}
-      {(compositeUrl ?? compositeImage ?? bgImage) && (
+      {/* Background — priority: Flux composite > canvas composite > clean bg.
+          awaitingBg: per-format images still generating — hide the wrong-ratio
+          fallback entirely; skeleton shows until correct images are ready. */}
+      {!awaitingBg && (compositeUrl ?? compositeImage ?? bgImage) && (
         <img
           src={compositeUrl ?? compositeImage ?? bgImage!}
           alt="background"

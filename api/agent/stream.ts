@@ -258,7 +258,8 @@ INDIVIDUAL REQUESTS (project already open):
   - "complete and notify owners" / "finish and send to task owners" / "complete … send to task owners" → COMPLETION FLOW + propose_notify_owners at end
   - "add offers" / "change offers"           → call propose_offers directly
   - "add templates" / "change templates"     → call propose_templates directly
-  - "add backgrounds" / "change backgrounds" → call propose_backgrounds directly
+  - "add backgrounds" / "change backgrounds" / "show me backgrounds" → call propose_backgrounds directly (show selection UI)
+  - "include [specific background name]" / "add the [name] background" / "use the [name] background" → call add_backgrounds_to_project DIRECTLY (no UI card) with that background's ID from the AVAILABLE BACKGROUND CATALOG. If the background is NOT in the catalog, reply explaining it's not available and list the closest alternatives by name — do NOT call any tool.
   - "add brand" / "change theme"             → call propose_brand directly
   - "full refresh"                           → call propose_project (offers + templates)
   - "send by email" / "share" / "email this" → call propose_email directly
@@ -274,7 +275,7 @@ INDIVIDUAL REQUESTS (project already open):
   → Each tool call is independent — they can be batched in any order.
   → Example: "change offer-1 price to $299, remove the beach background, and duplicate the Honda banner"
     → call edit_offer + remove_backgrounds_from_project + duplicate_template_in_project simultaneously.
-  → This applies to any mix of: edit_offer, remove_backgrounds_from_project, duplicate_template_in_project,
+  → This applies to any mix of: edit_offer, add_backgrounds_to_project, remove_backgrounds_from_project, duplicate_template_in_project,
     add_offers_to_project, remove_offers_from_project, add_templates_to_project, remove_templates_from_project, set_project_name.
   Do NOT restart the full flow. Respond ONLY to what was asked.
 
@@ -640,6 +641,28 @@ const agentTools: Anthropic.Tool[] = [
     },
   },
   {
+    name: "add_backgrounds_to_project",
+    description:
+      "Directly add one or more backgrounds to the project — no review card, no selection UI. " +
+      "Use this when the user explicitly names a background to include/add/use " +
+      "(e.g. 'include the desert background', 'add dirt road', 'use the beach sunset'). " +
+      "ONLY pass IDs that exist in the AVAILABLE BACKGROUND CATALOG. " +
+      "If the requested background does NOT exist in the catalog, do NOT call this tool — " +
+      "instead reply with a short message explaining what was asked for is not available, " +
+      "then list the closest available options by name. Never hallucinate background IDs.",
+    input_schema: {
+      type: "object" as const,
+      properties: {
+        background_ids: {
+          type: "array",
+          items: { type: "string" },
+          description: "IDs of backgrounds to add directly (must exist in the AVAILABLE BACKGROUND CATALOG)",
+        },
+      },
+      required: ["background_ids"],
+    },
+  },
+  {
     name: "remove_backgrounds_from_project",
     description:
       "Remove one or more backgrounds that are currently applied to the project. " +
@@ -883,6 +906,8 @@ function executeTool(
       return { success: true, removed: input.template_ids, message: `Removed ${(input.template_ids as string[]).length} template(s) from the project.` };
     case "edit_offer":
       return { success: true, offer_id: input.offer_id, patches: input.patches, message: `Offer ${input.offer_id} updated.` };
+    case "add_backgrounds_to_project":
+      return { success: true, added: input.background_ids, message: `Added ${(input.background_ids as string[]).length} background(s) directly to the project.` };
     case "remove_backgrounds_from_project":
       return { success: true, removed: input.background_ids, message: `Removed ${(input.background_ids as string[]).length} background(s) from the project.` };
     case "duplicate_template_in_project":

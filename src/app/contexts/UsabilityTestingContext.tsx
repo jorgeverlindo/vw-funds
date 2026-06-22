@@ -39,7 +39,7 @@ export const USABILITY_FLOWS: UsabilityFlow[] = [
       {
         text: "Set up",
         bullets: ["Brand - Honda", "Starting Today and ending July 18th", "Platform Facebook and Website"],
-        completionEvent: "project_pipeline_complete",
+        completionEvent: "assets_generated",
       },
       {
         text: "Now how would you get back to projects page?",

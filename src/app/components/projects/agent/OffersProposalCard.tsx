@@ -158,9 +158,9 @@ export function OffersProposalCard({ input, context, onApply, onDismiss, proacti
           </div>
         } />
       </div>
-      {/* Offer cards list */}
+      {/* Offer cards list — capped so action buttons stay visible without scrolling */}
       <motion.div
-        className="flex flex-col gap-[6px]"
+        className="flex flex-col gap-[6px] max-h-[52vh] overflow-y-auto pr-[2px]"
         variants={{ hidden: {}, show: { transition: { staggerChildren: 0.08, delayChildren: 0.2 } } }}
         initial="hidden"
         animate="show"

@@ -463,7 +463,7 @@ function TemplatesProposalCard({ input, context, onApply, onDismiss, proactive, 
         <div>
           <p className={labelCls}>Templates · {templateIds.length} selected</p>
           <motion.div
-            className="flex flex-col gap-[4px]"
+            className="flex flex-col gap-[4px] max-h-[40vh] overflow-y-auto pr-[2px]"
             variants={{ hidden: {}, show: { transition: { staggerChildren: 0.1, delayChildren: 0.28 } } }}
             initial="hidden"
             animate="show"
@@ -2521,6 +2521,7 @@ function ToolChipView({ name, input }: { name: string; input: Record<string, unk
     remove_templates_from_project:    { label: "Removed templates",  icon: <Minus    size={10} strokeWidth={2.5} />, color: "#dc2626", bg: "rgba(220,38,38,0.09)"  },
     set_project_name:                 { label: "Renamed project",    icon: <Tag      size={10} strokeWidth={2.5} />, color: "#0369a1", bg: "rgba(3,105,161,0.09)"  },
     edit_offer:                       { label: "Edited offer",       icon: <Tag      size={10} strokeWidth={2.5} />, color: "#7c3aed", bg: "rgba(124,58,237,0.09)"  },
+    add_backgrounds_to_project:       { label: "Added background",   icon: <Image    size={10} strokeWidth={2.5} />, color: "#0369a1", bg: "rgba(3,105,161,0.09)"  },
     remove_backgrounds_from_project:  { label: "Removed background", icon: <Minus    size={10} strokeWidth={2.5} />, color: "#dc2626", bg: "rgba(220,38,38,0.09)"  },
     duplicate_template_in_project:    { label: "Duplicated template",icon: <FileText size={10} strokeWidth={2.5} />, color: "var(--brand-mid)", bg: "rgba(99,86,225,0.09)"  },
   };
@@ -2532,7 +2533,7 @@ function ToolChipView({ name, input }: { name: string; input: Record<string, unk
     const ids = (input.template_ids as string[]) ?? []; detail = ids.length === 1 ? ids[0] : `${ids.length} templates`;
   } else if (name === "set_project_name") { detail = `"${input.name}"`;
   } else if (name === "edit_offer") { detail = `${input.offer_id ?? ""}`;
-  } else if (name === "remove_backgrounds_from_project") { const ids = (input.background_ids as string[]) ?? []; detail = ids.length === 1 ? ids[0] : `${ids.length} backgrounds`;
+  } else if (name === "add_backgrounds_to_project" || name === "remove_backgrounds_from_project") { const ids = (input.background_ids as string[]) ?? []; detail = ids.length === 1 ? ids[0] : `${ids.length} backgrounds`;
   } else if (name === "duplicate_template_in_project") { detail = `${input.template_id ?? ""}`; }
   return (
     <span style={{ display: "inline-flex", alignItems: "center", gap: 5, background: c.bg, color: c.color,
@@ -2644,6 +2645,14 @@ export function ProjectAgentPane({ isOpen, onClose, userType, activeUserName }: 
       }
       if (m.type === "text" && m.role === "user") {
         const t = m.content.toLowerCase();
+        // Edit-intent verbs take priority — project is already built, user is adjusting
+        const isEdit = t.includes("remove") || t.includes("delete") || t.includes("remov") ||
+          t.includes("change") || t.includes("update") || t.includes("edit") ||
+          t.includes("rename") || t.includes("duplicate") || t.includes("swap") ||
+          t.includes("replace") || t.includes("adjust") || t.includes("modify") ||
+          t.includes("include") || t.includes("add the") || t.includes("add a ") ||
+          t.includes("add an ");
+        if (isEdit) return "Planning your adjustments…";
         if (t.includes("offer") || t.includes("lease") || t.includes("inventory")) return "Scanning inventory for top picks…";
         if (t.includes("template") || t.includes("banner") || t.includes("format")) return "Matching templates to your brand…";
         if (t.includes("background") || t.includes("scene")) return "Curating background scenes…";
@@ -3026,6 +3035,8 @@ export function ProjectAgentPane({ isOpen, onClose, userType, activeUserName }: 
         if (toolInput.model                != null) patches.model               = toolInput.model;
         dispatchAction({ action: "edit_offer", offerId: toolInput.offer_id as string, patches: patches as never });
       }
+      else if (toolName === "add_backgrounds_to_project")
+        dispatchAction({ action: "add_backgrounds", backgroundIds: toolInput.background_ids as string[] });
       else if (toolName === "remove_backgrounds_from_project")
         dispatchAction({ action: "remove_backgrounds", backgroundIds: toolInput.background_ids as string[] });
       else if (toolName === "duplicate_template_in_project")

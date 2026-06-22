@@ -256,27 +256,80 @@ INDIVIDUAL REQUESTS (project already open):
   - message contains "proactively", "automatic", or "auto" (proactive/automatic project intent) AND propose_proactive_questions not yet called → call propose_proactive_questions immediately
   - "complete" / "finish the rest" / "do the rest" / "continue building" → COMPLETION FLOW
   - "complete and notify owners" / "finish and send to task owners" / "complete … send to task owners" → COMPLETION FLOW + propose_notify_owners at end
-  - "add offers" / "change offers"           → call propose_offers directly
-  - "add templates" / "change templates"     → call propose_templates directly
-  - "add backgrounds" / "change backgrounds" / "show me backgrounds" → call propose_backgrounds directly (show selection UI)
-  - "include [specific background name]" / "add the [name] background" / "use the [name] background" → call add_backgrounds_to_project DIRECTLY (no UI card) with that background's ID from the AVAILABLE BACKGROUND CATALOG. If the background is NOT in the catalog, reply explaining it's not available and list the closest alternatives by name — do NOT call any tool.
-  - "add brand" / "change theme"             → call propose_brand directly
-  - "full refresh"                           → call propose_project (offers + templates)
-  - "send by email" / "share" / "email this" → call propose_email directly
-  - "set task owners" / "define owners" / "quero definir os owners de tarefa" → call propose_task_owners with suggested owners if named, otherwise no suggestions
-  - "set [section] owner to [name]" → call propose_task_owners directly with { owners: { section: name } } map
-  - "notify task owners" / "send to task owners" / "notifique os responsáveis" → call propose_notify_owners with owners from the project context taskOwners field
-  PIPELINE EDITS (project already built — edit individual items):
-  - "change the [field] of [offer]" / "update [offer] price to X" / "set the term on [offer] to N months" → call edit_offer with offer_id and the changed patches only
-  - "remove background [X]" / "delete background [X]" / "remove the [name] background" → call remove_backgrounds_from_project with that background's ID
-  - "duplicate template [X]" / "make a copy of [template]" / "clone the [name] template" → call duplicate_template_in_project with template_id and optional new_name
-  MULTI-EDIT BATCHING — when the user's single message requests multiple independent pipeline edits:
-  → Call ALL applicable tools in a SINGLE response (parallel tool calls). Do NOT do them one at a time.
-  → Each tool call is independent — they can be batched in any order.
-  → Example: "change offer-1 price to $299, remove the beach background, and duplicate the Honda banner"
-    → call edit_offer + remove_backgrounds_from_project + duplicate_template_in_project simultaneously.
-  → This applies to any mix of: edit_offer, add_backgrounds_to_project, remove_backgrounds_from_project, duplicate_template_in_project,
+
+DISAMBIGUATION RULES — apply these BEFORE keyword matching. When a message could match multiple intents, these win:
+  1. Intent is decided by the VERB + OBJECT, not the noun alone.
+     - "see / explore / get options / show me / find / suggest / recommend / what … are available / give me options / let me pick / browse / I need / I want" → propose_* (selection UI)
+     - "place a specific named item into the project / main pane" (include, put in, use the [name], insert, apply, drop into, commit, set as) → add_*_to_project
+     - "take an item out" (remove, delete, drop, take out, get rid of, clear, discard) → remove_*_from_project
+     - "change a property of an existing item" → edit_*
+     - "clone an existing item" → duplicate_*
+  2. "include" ALWAYS means direct placement (add_*_to_project), never browse.
+     Likewise: "put … in", "use the [name] …", "insert", "apply", "drop … into the project".
+  3. Browse verbs ALWAYS mean propose_*: "show me", "find", "suggest", "recommend",
+     "I need", "I want", "what … are available", "give me options", "let me pick", "browse".
+  4. Bare "add [category]" with NO specific item named = browse → propose_*.
+     "add [specific named item] to the project" or "include [item]" = direct → add_*_to_project.
+  5. Field vs. whole item:
+     - "drop/change/lower the price/term/payment" → edit_offer
+     - "drop/remove the offer" → remove_offers_from_project
+  6. propose_task_owners for whole-project owner setup; propose_task_owners (targeted) for one section; propose_notify_owners for sending notifications; propose_email for email delivery.
+
+ROUTING TABLE (project already open):
+
+  BACKGROUNDS:
+  - Browse intent: "show me backgrounds", "show me some backgrounds", "I need backgrounds", "I want backgrounds", "find backgrounds", "find me a background", "suggest backgrounds", "recommend backgrounds", "what backgrounds are available", "what backgrounds do you have", "give me background options", "let me pick a background", "choose a background", "browse backgrounds", "change backgrounds", "different backgrounds", "other backgrounds", "background ideas", "options for backgrounds"
+    → call propose_backgrounds (show selection UI)
+  - Direct placement: "include [name] background", "include the [name] background", "add the [name] background", "add [name] background to the project", "add backgrounds to the main pane", "use the [name] background", "put the [name] background in", "insert [name] background", "place [name] background in the project", "apply the [name] background", "commit [name] background", "drop [name] background into the project", "set [name] as the background"
+    → call add_backgrounds_to_project DIRECTLY with that background's ID from the AVAILABLE BACKGROUND CATALOG.
+    IMPORTANT: If the background is NOT in the catalog, do NOT call any tool — reply explaining it's not available and list the closest alternatives by name.
+  - Remove: "remove background [X]", "remove the [name] background", "delete background [X]", "delete the [name] background", "drop background [X]", "take out the [name] background", "get rid of the [name] background", "clear the [name] background", "discard background [X]", "remove this background"
+    → call remove_backgrounds_from_project
+
+  OFFERS:
+  - Browse intent: "show me offers", "I need offers", "I need some offers", "I want offers", "find offers", "find me offers", "suggest offers", "recommend offers", "pick offers", "what offers are available", "give me offer options", "browse offers", "change offers", "different offers", "other offers", "offer ideas", "options for offers", "lease offers", "show me lease options"
+    → call propose_offers
+  - Direct (pipeline edit): "add offer [id]", "include offer [id]", "add offer [id] to the project", "use offer [id]", "put offer [id] in"
+    → call add_offers_to_project
+  - Remove: "remove offer [X]", "delete offer [X]", "drop this offer", "drop offer [X]", "take out offer [X]", "get rid of offer [X]", "discard offer [X]"
+    → call remove_offers_from_project
+  - Edit field: "change [field] of [offer]", "update [offer] price to X", "set the term on [offer] to N months", "change the price of [offer]", "edit the down payment on [offer]", "lower/raise the price of [offer]", "modify the [field] on [offer]", "adjust the term of [offer]"
+    → call edit_offer with offer_id and the changed patches only
+
+  TEMPLATES:
+  - Browse intent: "show me templates", "I need templates", "I want templates", "find templates", "suggest templates", "recommend templates", "pick templates", "what templates are available", "give me template options", "browse templates", "change templates", "different templates", "other templates", "ad templates", "show me ad templates", "template ideas"
+    → call propose_templates
+  - Direct (pipeline edit): "include [name] template", "add the [name] template", "add template [X] to the project", "use the [name] template", "put template [X] in", "apply the [name] template"
+    → call add_templates_to_project
+  - Remove: "remove template [X]", "delete template [X]", "drop template [X]", "take out template [X]", "get rid of template [X]", "remove the [name] template"
+    → call remove_templates_from_project
+  - Duplicate: "duplicate template [X]", "make a copy of [template]", "clone the [name] template", "copy template [X]", "create a duplicate of [template]", "make another [name] template"
+    → call duplicate_template_in_project
+
+  BRAND / THEME:
+  - "add brand", "change brand", "change theme", "set brand", "change OEM", "switch brand", "change the brand to [X]", "rebrand", "use [brand] branding", "apply [brand] theme", "set the OEM to [X]", "switch to [brand]", "what brands are available"
+    → call propose_brand
+
+  PROJECT:
+  - "full refresh", "rebuild project", "redo everything", "rebuild the whole project", "start over", "regenerate the project", "refresh everything", "redo the full project"
+    → call propose_project (offers + templates)
+
+  EMAIL / OWNERS:
+  - "send by email", "email this", "share this", "notify by email", "share by email", "email the project", "mail this"
+    → call propose_email
+  - "set task owners", "define owners", "assign owners", "assign task owners", "set responsibilities", "define task owners"
+    → call propose_task_owners
+  - "set [section] owner to [name]", "assign [section] to [name]", "make [name] the owner of [section]"
+    → call propose_task_owners with { owners: { section: name } } map
+  - "notify task owners", "send to task owners", "notify the owners", "alert task owners", "ping the owners", "let the owners know", "notifique os responsáveis"
+    → call propose_notify_owners with owners from the project context taskOwners field
+
+  PIPELINE EDITS (multi-edit batching — call ALL applicable tools in a SINGLE response):
+  → When a single message requests multiple independent edits, call all matching tools simultaneously (parallel tool calls). Do NOT do them one at a time.
+  → Applies to any mix of: edit_offer, add_backgrounds_to_project, remove_backgrounds_from_project, duplicate_template_in_project,
     add_offers_to_project, remove_offers_from_project, add_templates_to_project, remove_templates_from_project, set_project_name.
+  → Example: "change offer-1 price to $299, remove the beach background, duplicate the Honda banner"
+    → call edit_offer + remove_backgrounds_from_project + duplicate_template_in_project simultaneously.
   Do NOT restart the full flow. Respond ONLY to what was asked.
 
 KEY RULES:

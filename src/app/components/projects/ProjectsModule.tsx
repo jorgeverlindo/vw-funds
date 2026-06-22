@@ -3,6 +3,7 @@
  */
 
 import React, { useState, useMemo, useEffect, useRef, useCallback } from "react";
+import { createPortal } from "react-dom";
 import { STORAGE_KEYS } from "../../constants/storageKeys";
 import {
   ChevronDown, ChevronRight, ChevronLeft, Check, Plus,
@@ -11,7 +12,7 @@ import {
   FileText, Palette, Image as ImageIcon, Layers,
   Pencil, AlertTriangle, XCircle, Archive,
   ChevronsUpDown, Trash2,
-  Eye, Wand2,
+  Eye, Wand2, X,
 } from "lucide-react";
 import { OffersPage } from "./OffersPage";
 import { TemplatesPage } from "./TemplatesPage";
@@ -1591,6 +1592,134 @@ function JellyBeanCard({
 
 // ─── Project Detail View ──────────────────────────────────────────────────────
 
+// ─── PreviewLightbox ──────────────────────────────────────────────────────────
+
+type LightboxItem = {
+  key: string;
+  offer: Offer;
+  template: Template;
+  bgImage: string | undefined;
+  groundFraction: number | undefined;
+  carWidthFraction: number | undefined;
+  carAnchorX: number | undefined;
+  isGenerating: boolean;
+  bgExactFormat: boolean;
+};
+
+function PreviewLightbox({
+  items,
+  index,
+  onClose,
+  onNav,
+  brandKit,
+}: {
+  items: LightboxItem[];
+  index: number;
+  onClose: () => void;
+  onNav: (i: number) => void;
+  brandKit: BrandKit | null;
+}) {
+  const item = items[index];
+  if (!item) return null;
+
+  const aspectRatio = item.template.width / item.template.height;
+  const fixedH = Math.min(360, Math.floor(680 / aspectRatio));
+
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+      if (e.key === "ArrowLeft" && index > 0) onNav(index - 1);
+      if (e.key === "ArrowRight" && index < items.length - 1) onNav(index + 1);
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [index, items.length, onClose, onNav]);
+
+  return (
+    <div
+      className="fixed inset-0 z-[700] flex flex-col items-center justify-center bg-black/80"
+      onClick={onClose}
+    >
+      {/* Header */}
+      <div
+        className="absolute top-0 left-0 right-0 flex items-center justify-between px-6 py-4"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div>
+          <p className="text-white font-semibold text-[14px] truncate max-w-[400px]">
+            {item.template.name}
+          </p>
+          <p className="text-white/60 text-[12px] mt-[2px]">
+            {item.template.width}×{item.template.height} · {item.template.format}
+          </p>
+        </div>
+        <div className="flex items-center gap-3">
+          <span className="text-white/50 text-[12px] tabular-nums">
+            {index + 1} / {items.length}
+          </span>
+          <button
+            onClick={onClose}
+            className="text-white/70 hover:text-white transition-colors cursor-pointer p-1.5 rounded-full hover:bg-white/10"
+          >
+            <X size={20} />
+          </button>
+        </div>
+      </div>
+
+      {/* Card */}
+      <div
+        className="relative flex items-center gap-4"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <button
+          onClick={() => onNav(index - 1)}
+          disabled={index === 0}
+          className="flex items-center justify-center w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors cursor-pointer disabled:opacity-20 disabled:cursor-not-allowed"
+        >
+          <ChevronLeft size={20} />
+        </button>
+
+        <div className="rounded-[12px] overflow-hidden shadow-2xl">
+          <JellyBeanCard
+            offer={item.offer as any}
+            template={item.template}
+            fixedHeight={fixedH}
+            bgImage={item.bgImage}
+            brandKit={brandKit}
+            groundFraction={item.groundFraction}
+            carWidthFraction={item.carWidthFraction}
+            carAnchorX={item.carAnchorX}
+            isGenerating={item.isGenerating}
+            bgExactFormat={item.bgExactFormat}
+          />
+        </div>
+
+        <button
+          onClick={() => onNav(index + 1)}
+          disabled={index === items.length - 1}
+          className="flex items-center justify-center w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors cursor-pointer disabled:opacity-20 disabled:cursor-not-allowed"
+        >
+          <ChevronRight size={20} />
+        </button>
+      </div>
+
+      {/* Offer subtitle */}
+      <div
+        className="mt-4 text-center"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <p className="text-white/70 text-[13px]">
+          {item.offer.year} {item.offer.make} {item.offer.model} {item.offer.trim}
+          <span className="mx-2 text-white/30">·</span>
+          {item.offer.offerType}
+          <span className="mx-2 text-white/30">·</span>
+          ${item.offer.monthlyPayment}/mo
+        </p>
+      </div>
+    </div>
+  );
+}
+
 const SECTION_IDS = ["offers", "templates", "platforms", "backgrounds", "theme", "preview", "assets", "adshells", "campaigns"] as const;
 type SectionId = typeof SECTION_IDS[number];
 type GeneratedAsset = { key: string; offer: Offer; template: Template; bgId: string | null };
@@ -2194,6 +2323,7 @@ function ProjectDetailViewInner({
 
   // ── Detail page overlay state ──────────────────────────────────────────────
   const [detailPage, setDetailPage] = useState<string | null>(null);
+  const [previewLightbox, setPreviewLightbox] = useState<{ items: LightboxItem[]; index: number } | null>(null);
 
   useEffect(() => {
     const handler = () => setDetailPage("campaigns");
@@ -2748,7 +2878,20 @@ function ProjectDetailViewInner({
             </button>
           }
         >
-          {visibleOffers.length > 0 && visibleTemplates.length > 0 && (
+          {visibleOffers.length > 0 && visibleTemplates.length > 0 && (() => {
+            const previewItems: LightboxItem[] = visibleTemplates.flatMap(template =>
+              visibleOffers.map(offer => ({
+                key: `${template.id}-${offer.id}`,
+                offer, template,
+                bgImage: getBgImage(selectedBg, template),
+                groundFraction: dealerCarPlacement(selectedBg as CustomBackground | null, template).ground,
+                carWidthFraction: dealerCarPlacement(selectedBg as CustomBackground | null, template).carWidth ?? (selectedBg as CustomBackground | null)?.carWidthFraction,
+                carAnchorX: dealerCarPlacement(selectedBg as CustomBackground | null, template).anchorX,
+                isGenerating: isDealerBgGenerating && !!(selectedBg as CustomBackground | null)?.images,
+                bgExactFormat: !!(selectedBg as CustomBackground | null)?.images?.[templateKey(template.width, template.height)],
+              }))
+            );
+            return (
             <motion.div
               key={`preview-${visibleTemplates.map(t => t.id).join('-')}-${visibleOffers.map(o => o.id).join('-')}`}
               className="flex gap-3 overflow-x-auto pb-2"
@@ -2756,30 +2899,36 @@ function ProjectDetailViewInner({
               initial="hidden"
               animate="show"
             >
-              {visibleTemplates.flatMap(template =>
-                visibleOffers.map(offer => ({ key: `${template.id}-${offer.id}`, offer, template }))
-              ).map(({ key, offer, template }) => (
+              {previewItems.map((item, idx) => (
                 <motion.div
-                  key={key}
-                  className="flex-shrink-0"
+                  key={item.key}
+                  className="flex-shrink-0 relative group"
                   variants={{ hidden: { opacity: 0, y: 12, scale: 0.96 }, show: { opacity: 1, y: 0, scale: 1, transition: { duration: 0.28, ease: "easeOut" } } }}
                 >
                   <JellyBeanCard
-                    offer={offer as any}
-                    template={template}
+                    offer={item.offer as any}
+                    template={item.template}
                     fixedHeight={160}
-                    bgImage={getBgImage(selectedBg, template)}
+                    bgImage={item.bgImage}
                     brandKit={brandKit}
-                    groundFraction={dealerCarPlacement(selectedBg as CustomBackground | null, template).ground}
-                    carWidthFraction={dealerCarPlacement(selectedBg as CustomBackground | null, template).carWidth ?? (selectedBg as CustomBackground | null)?.carWidthFraction}
-                    carAnchorX={dealerCarPlacement(selectedBg as CustomBackground | null, template).anchorX}
-                    isGenerating={isDealerBgGenerating && !!(selectedBg as CustomBackground | null)?.images}
-                    bgExactFormat={!!(selectedBg as CustomBackground | null)?.images?.[templateKey(template.width, template.height)]}
+                    groundFraction={item.groundFraction}
+                    carWidthFraction={item.carWidthFraction}
+                    carAnchorX={item.carAnchorX}
+                    isGenerating={item.isGenerating}
+                    bgExactFormat={item.bgExactFormat}
                   />
+                  <button
+                    onClick={() => setPreviewLightbox({ items: previewItems, index: idx })}
+                    className="absolute top-[6px] right-[6px] flex items-center justify-center w-7 h-7 rounded-full bg-black/40 text-white hover:bg-black/65 transition-colors cursor-pointer"
+                    title="Full screen preview"
+                  >
+                    <Eye size={14} strokeWidth={2} />
+                  </button>
                 </motion.div>
               ))}
             </motion.div>
-          )}
+          );
+          })()}
         </ProjectAccordionSection>
 
         {/* Assets */}
@@ -2802,7 +2951,22 @@ function ProjectDetailViewInner({
             </div>
           }
         >
-          {generatedAssets.length > 0 && (
+          {generatedAssets.length > 0 && (() => {
+            const assetItems: LightboxItem[] = generatedAssets.map(({ key, offer, template, bgId }) => {
+              const bg = bgId
+                ? (backgroundCollections.find(b => b.id === bgId) ?? customBackgroundLibrary.find(b => b.id === bgId) ?? null)
+                : null;
+              return {
+                key, offer, template,
+                bgImage: getBgImage(bg, template),
+                groundFraction: dealerCarPlacement(bg as CustomBackground | null, template).ground,
+                carWidthFraction: dealerCarPlacement(bg as CustomBackground | null, template).carWidth ?? (bg as CustomBackground | null)?.carWidthFraction,
+                carAnchorX: dealerCarPlacement(bg as CustomBackground | null, template).anchorX,
+                isGenerating: isDealerBgGenerating && !!(bg as CustomBackground | null)?.images,
+                bgExactFormat: !!(bg as CustomBackground | null)?.images?.[templateKey(template.width, template.height)],
+              };
+            });
+            return (
             <motion.div
               key={`assets-${generatedAssets.length}`}
               className="flex gap-3 overflow-x-auto pb-2"
@@ -2810,34 +2974,36 @@ function ProjectDetailViewInner({
               initial="hidden"
               animate="show"
             >
-              {generatedAssets.map(({ key, offer, template, bgId }) => {
-                // Check static catalog first, then custom dealer backgrounds
-                const bg = bgId
-                  ? (backgroundCollections.find(b => b.id === bgId) ?? customBackgroundLibrary.find(b => b.id === bgId) ?? null)
-                  : null;
-                return (
-                  <motion.div
-                    key={key}
-                    className="flex-shrink-0"
-                    variants={{ hidden: { opacity: 0, y: 10, scale: 0.96 }, show: { opacity: 1, y: 0, scale: 1, transition: { duration: 0.25, ease: "easeOut" } } }}
+              {assetItems.map((item, idx) => (
+                <motion.div
+                  key={item.key}
+                  className="flex-shrink-0 relative"
+                  variants={{ hidden: { opacity: 0, y: 10, scale: 0.96 }, show: { opacity: 1, y: 0, scale: 1, transition: { duration: 0.25, ease: "easeOut" } } }}
+                >
+                  <JellyBeanCard
+                    offer={item.offer as any}
+                    template={item.template}
+                    fixedHeight={160}
+                    bgImage={item.bgImage}
+                    brandKit={brandKit}
+                    groundFraction={item.groundFraction}
+                    carWidthFraction={item.carWidthFraction}
+                    carAnchorX={item.carAnchorX}
+                    isGenerating={item.isGenerating}
+                    bgExactFormat={item.bgExactFormat}
+                  />
+                  <button
+                    onClick={() => setPreviewLightbox({ items: assetItems, index: idx })}
+                    className="absolute top-[6px] right-[6px] flex items-center justify-center w-7 h-7 rounded-full bg-black/40 text-white hover:bg-black/65 transition-colors cursor-pointer"
+                    title="Full screen preview"
                   >
-                    <JellyBeanCard
-                      offer={offer as any}
-                      template={template}
-                      fixedHeight={160}
-                      bgImage={getBgImage(bg, template)}
-                      brandKit={brandKit}
-                      groundFraction={dealerCarPlacement(bg as CustomBackground | null, template).ground}
-                      carWidthFraction={dealerCarPlacement(bg as CustomBackground | null, template).carWidth ?? (bg as CustomBackground | null)?.carWidthFraction}
-                      carAnchorX={dealerCarPlacement(bg as CustomBackground | null, template).anchorX}
-                      isGenerating={isDealerBgGenerating && !!(bg as CustomBackground | null)?.images}
-                      bgExactFormat={!!(bg as CustomBackground | null)?.images?.[templateKey(template.width, template.height)]}
-                    />
-                  </motion.div>
-                );
-              })}
+                    <Eye size={14} strokeWidth={2} />
+                  </button>
+                </motion.div>
+              ))}
             </motion.div>
-          )}
+            );
+          })()}
         </ProjectAccordionSection>
         </div>
 
@@ -2875,6 +3041,18 @@ function ProjectDetailViewInner({
         />
         </div>
       </div>
+
+      {/* ── Preview Lightbox ─────────────────────────────────────────── */}
+      {previewLightbox && createPortal(
+        <PreviewLightbox
+          items={previewLightbox.items}
+          index={previewLightbox.index}
+          onClose={() => setPreviewLightbox(null)}
+          onNav={(i) => setPreviewLightbox(prev => prev ? { ...prev, index: i } : null)}
+          brandKit={brandKit}
+        />,
+        document.body
+      )}
 
       {/* ── Delete confirmation overlay ──────────────────────────────── */}
       <AnimatePresence>

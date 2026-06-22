@@ -478,17 +478,17 @@ function TemplatesProposalCard({ input, context, onApply, onDismiss, proactive, 
                     <p className="text-[12px] font-medium text-[var(--ink)] truncate">{t ? t.name : id}</p>
                     {t && <p className="text-[10.5px] text-[var(--ink-secondary)] mt-[1px]">{t.format} · {t.width}×{t.height} · {t.brand}</p>}
                   </div>
-                  <div className="flex items-center gap-[4px] opacity-0 group-hover:opacity-100 transition-all shrink-0">
+                  <div className="flex items-center gap-[6px] shrink-0">
                     {t && (
                       <button onClick={() => setZoneTpl(t)}
-                        className="text-[var(--ink-tertiary)] hover:text-[var(--brand-accent)] transition-colors cursor-pointer"
+                        className="text-[#686576] hover:text-[var(--brand-accent)] transition-colors cursor-pointer p-[2px]"
                         title="Edit Zone">
-                        <Eye size={12} strokeWidth={1.7} />
+                        <Eye size={16} strokeWidth={1.7} />
                       </button>
                     )}
                     <button onClick={() => setTemplateIds(p => p.filter(x => x !== id))}
-                      className="text-[var(--ink-tertiary)] hover:text-[#dc2626] transition-colors cursor-pointer">
-                      <Trash2 size={12} strokeWidth={1.7} />
+                      className="text-[#686576] hover:text-[#dc2626] transition-colors cursor-pointer p-[2px]">
+                      <Trash2 size={16} strokeWidth={1.7} />
                     </button>
                   </div>
                 </motion.div>

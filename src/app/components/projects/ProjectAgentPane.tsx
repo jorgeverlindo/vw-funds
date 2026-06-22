@@ -497,7 +497,7 @@ function TemplatesProposalCard({ input, context, onApply, onDismiss, proactive, 
               );
             })}
             <AgentAddSelect
-              placeholder="+ Add another template…"
+              placeholder="Add another template…"
               onAdd={v => setTemplateIds(p => [...p, v])}
               options={templates
                 .filter(t => !templateIds.includes(t.id))

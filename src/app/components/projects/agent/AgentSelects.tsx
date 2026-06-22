@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { ChevronDown, Check, Plus } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import {
@@ -59,7 +59,7 @@ export function AgentSelect({
   );
 }
 
-/** "Add another" variant — dashed border, purple text, Plus icon trigger. */
+/** "Add another" variant — dashed border, Plus icon, searchable inline dropdown. */
 export function AgentAddSelect({
   onAdd, options, placeholder,
 }: {
@@ -67,28 +67,78 @@ export function AgentAddSelect({
   options: { value: string; label: string }[];
   placeholder?: string;
 }) {
+  const [open, setOpen]   = useState(false);
+  const [query, setQuery] = useState("");
+  const containerRef = useRef<HTMLDivElement>(null);
+  const inputRef     = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e: MouseEvent) => {
+      if (!containerRef.current?.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [open]);
+
+  useEffect(() => {
+    if (open) setTimeout(() => inputRef.current?.focus(), 0);
+    else setQuery("");
+  }, [open]);
+
   if (options.length === 0) return null;
-  const menuCls = "z-[500] bg-white rounded-xl shadow-xl border border-[rgba(0,0,0,0.1)] p-1 animate-in fade-in-0 zoom-in-95 min-w-[var(--radix-dropdown-menu-trigger-width)] max-h-[240px] overflow-y-auto";
-  const itemCls = "flex items-center gap-2 px-[10px] py-[6px] rounded-lg text-[11.5px] text-[var(--ink)] cursor-pointer outline-none select-none data-[highlighted]:bg-[#f5f4f8]";
+
+  const q        = query.trim().toLowerCase();
+  const filtered = q ? options.filter(o => o.label.toLowerCase().includes(q)) : options;
+
   return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <button
-          className="w-full flex items-center gap-[6px] px-[10px] py-[6px] mt-[2px] rounded-[8px] text-[11px] text-[var(--brand-accent)] border border-dashed border-[rgba(71,59,171,0.35)] bg-transparent cursor-pointer hover:bg-[rgba(71,59,171,0.04)] transition-colors"
-        >
-          <Plus size={10} className="shrink-0" />
-          <span className="flex-1 text-left">{placeholder ?? "+ Add another…"}</span>
-          <ChevronDown size={9} className="shrink-0 opacity-60" />
-        </button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent className={menuCls} sideOffset={4} align="start">
-        {options.map(o => (
-          <DropdownMenuItem key={o.value} className={itemCls} onClick={() => onAdd(o.value)}>
-            {o.label}
-          </DropdownMenuItem>
-        ))}
-      </DropdownMenuContent>
-    </DropdownMenu>
+    <div ref={containerRef} className="relative mt-[2px]">
+      <button
+        onClick={() => setOpen(v => !v)}
+        className="w-full flex items-center gap-[6px] px-[10px] py-[6px] rounded-[8px] text-[11px] text-[var(--brand-accent)] border border-dashed border-[rgba(71,59,171,0.35)] bg-transparent cursor-pointer hover:bg-[rgba(71,59,171,0.04)] transition-colors"
+      >
+        <Plus size={10} className="shrink-0" />
+        <span className="flex-1 text-left">{placeholder ?? "Add another…"}</span>
+        <ChevronDown size={9} className={`shrink-0 opacity-60 transition-transform duration-150 ${open ? "rotate-180" : ""}`} />
+      </button>
+      <AnimatePresence>
+        {open && (
+          <motion.div
+            initial={{ opacity: 0, y: -4, scale: 0.97 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -4, scale: 0.97 }}
+            transition={{ duration: 0.12 }}
+            className="absolute z-[500] left-0 right-0 mt-[4px] bg-white rounded-xl shadow-xl border border-[rgba(0,0,0,0.1)] overflow-hidden"
+          >
+            <div className="p-[6px] border-b border-[rgba(0,0,0,0.07)]">
+              <input
+                ref={inputRef}
+                type="text"
+                value={query}
+                onChange={e => setQuery(e.target.value)}
+                placeholder="Search…"
+                className="w-full px-[8px] py-[5px] rounded-[6px] text-[11.5px] bg-[#f5f4f8] outline-none border-none"
+                style={{ color: "var(--ink)" }}
+              />
+            </div>
+            <div className="max-h-[200px] overflow-y-auto p-[4px]">
+              {filtered.length === 0 ? (
+                <p className="px-[10px] py-[8px] text-[11px]" style={{ color: "var(--ink-tertiary)" }}>No results</p>
+              ) : filtered.map(o => (
+                <button
+                  key={o.value}
+                  onClick={() => { onAdd(o.value); setOpen(false); setQuery(""); }}
+                  className="w-full flex items-center px-[10px] py-[6px] rounded-lg text-[11.5px] cursor-pointer hover:bg-[#f5f4f8] text-left transition-colors"
+                  style={{ color: "var(--ink)" }}
+                >
+                  {o.label}
+                </button>
+              ))}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
   );
 }
 

@@ -248,7 +248,7 @@ export function OffersProposalCard({ input, context, onApply, onDismiss, proacti
       {/* Add another + action buttons */}
       <div className="flex flex-col gap-[6px] mt-[2px]">
         <AgentAddSelect
-          placeholder="+ Add another offer…"
+          placeholder="Add another offer…"
           onAdd={v => setOfferIds(p => [...p, v])}
           options={offers
             .filter(o => !offerIds.includes(o.id))

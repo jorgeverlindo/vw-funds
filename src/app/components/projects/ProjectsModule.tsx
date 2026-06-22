@@ -1990,12 +1990,26 @@ function ProjectDetailView({
         Object.entries(taskOwners)
           .map(([section, id]) => [section, PROJECT_OWNERS.find(o => o.id === id)?.name ?? id])
       ),
-      availableOffers:    combinedOfferLibrary.map((o) => ({
-        id: o.id, year: o.year, make: o.make, model: o.model, trim: o.trim,
-        offerType: o.offerType, monthlyPayment: o.monthlyPayment,
-        term: o.term, pvi: (o as any).pvi ?? 0, aging: (o as any).aging ?? 0, stock: (o as any).stock ?? 1,
-        image: (o as any).image ?? "",
-      })),
+      availableOffers: (() => {
+        // For edited catalog offers, serve the edited data under the original ID so
+        // OffersProposalCard can find them by their stored (pre-edit) IDs.
+        const editedByOrigId = new Map<string, StoredOffer>();
+        customOfferLibrary.forEach(o => {
+          if (o.id.startsWith("custom-edited-"))
+            editedByOrigId.set(o.id.slice("custom-edited-".length), o);
+        });
+        return combinedOfferLibrary
+          .filter(o => !o.id.startsWith("custom-edited-"))
+          .map(o => {
+            const src: any = { ...(o as any), ...(editedByOrigId.get(o.id) ?? {}), id: o.id };
+            return {
+              id: src.id, year: src.year, make: src.make, model: src.model, trim: src.trim,
+              offerType: src.offerType, monthlyPayment: src.monthlyPayment,
+              term: src.term, pvi: src.pvi ?? 0, aging: src.aging ?? 0, stock: src.stock ?? 1,
+              image: src.image ?? "",
+            };
+          });
+      })(),
       availableTemplates: combinedTemplateLibrary.map((t) => ({
         id: t.id, name: t.name, format: t.format,
         width: t.width, height: t.height, brand: t.brand,

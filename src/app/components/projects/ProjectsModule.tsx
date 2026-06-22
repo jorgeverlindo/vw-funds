@@ -1622,8 +1622,10 @@ function PreviewLightbox({
   const item = items[index];
   if (!item) return null;
 
+  // Scale card to fit inside ~860px wide, max 380px tall
   const aspectRatio = item.template.width / item.template.height;
-  const fixedH = Math.min(360, Math.floor(680 / aspectRatio));
+  const fixedH = Math.min(380, Math.max(100, Math.floor(860 / aspectRatio)));
+  const cardW = Math.round(fixedH * aspectRatio);
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
@@ -1636,86 +1638,100 @@ function PreviewLightbox({
   }, [index, items.length, onClose, onNav]);
 
   return (
+    // Backdrop — click outside to close
     <div
-      className="fixed inset-0 z-[700] flex flex-col items-center justify-center bg-black/80"
-      onClick={onClose}
+      className="fixed inset-0 z-[700] flex items-center justify-center bg-black/40"
+      style={{ backdropFilter: "blur(2px)" }}
+      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
-      {/* Header */}
-      <div
-        className="absolute top-0 left-0 right-0 flex items-center justify-between px-6 py-4"
+      {/* Modal card */}
+      <motion.div
+        initial={{ opacity: 0, scale: 0.96 }}
+        animate={{ opacity: 1, scale: 1 }}
+        exit={{ opacity: 0, scale: 0.96 }}
+        transition={{ duration: 0.15, ease: "easeOut" }}
+        className="bg-white rounded-[12px] overflow-hidden flex flex-col"
+        style={{ width: Math.min(cardW + 2, window.innerWidth * 0.92), maxWidth: "92vw", boxShadow: "0 8px 32px rgba(0,0,0,0.24)" }}
         onClick={(e) => e.stopPropagation()}
       >
-        <div>
-          <p className="text-white font-semibold text-[14px] truncate max-w-[400px]">
-            {item.template.name}
-          </p>
-          <p className="text-white/60 text-[12px] mt-[2px]">
-            {item.template.width}×{item.template.height} · {item.template.format}
-          </p>
-        </div>
-        <div className="flex items-center gap-3">
-          <span className="text-white/50 text-[12px] tabular-nums">
-            {index + 1} / {items.length}
+        {/* Header */}
+        <div className="flex-none flex items-center h-[52px] px-[16px] border-b border-[rgba(0,0,0,0.10)]">
+          {/* Format chip */}
+          <span className="inline-flex items-center h-[24px] px-[8px] rounded-[8px] bg-[rgba(71,59,171,0.08)] mr-[10px] shrink-0">
+            <span style={{ fontSize: 11, fontWeight: 500, color: "var(--brand-accent)", letterSpacing: "0.2px" }}>
+              {item.template.width}×{item.template.height}
+            </span>
           </span>
-          <button
-            onClick={onClose}
-            className="text-white/70 hover:text-white transition-colors cursor-pointer p-1.5 rounded-full hover:bg-white/10"
-          >
-            <X size={20} />
-          </button>
-        </div>
-      </div>
-
-      {/* Card */}
-      <div
-        className="relative flex items-center gap-4"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <button
-          onClick={() => onNav(index - 1)}
-          disabled={index === 0}
-          className="flex items-center justify-center w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors cursor-pointer disabled:opacity-20 disabled:cursor-not-allowed"
-        >
-          <ChevronLeft size={20} />
-        </button>
-
-        <div className="rounded-[12px] overflow-hidden shadow-2xl">
-          <JellyBeanCard
-            offer={item.offer as any}
-            template={item.template}
-            fixedHeight={fixedH}
-            bgImage={item.bgImage}
-            brandKit={brandKit}
-            groundFraction={item.groundFraction}
-            carWidthFraction={item.carWidthFraction}
-            carAnchorX={item.carAnchorX}
-            isGenerating={item.isGenerating}
-            bgExactFormat={item.bgExactFormat}
-          />
+          {/* Template name */}
+          <span className="flex-1 truncate" style={{ fontSize: 13, fontWeight: 600, color: "var(--ink)" }}>
+            {item.template.name}
+          </span>
+          {/* Counter + close */}
+          <div className="flex items-center gap-[10px] ml-[10px] shrink-0">
+            <span style={{ fontSize: 12, color: "var(--ink-tertiary)" }} className="tabular-nums">
+              {index + 1} / {items.length}
+            </span>
+            <button
+              onClick={onClose}
+              className="size-[30px] rounded-full flex items-center justify-center text-[rgba(17,16,20,0.56)] hover:bg-[rgba(17,16,20,0.06)] transition-colors cursor-pointer"
+            >
+              <X size={18} />
+            </button>
+          </div>
         </div>
 
-        <button
-          onClick={() => onNav(index + 1)}
-          disabled={index === items.length - 1}
-          className="flex items-center justify-center w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors cursor-pointer disabled:opacity-20 disabled:cursor-not-allowed"
-        >
-          <ChevronRight size={20} />
-        </button>
-      </div>
+        {/* Image area with overlay nav arrows */}
+        <div className="relative bg-[#f7f7fb]" style={{ height: fixedH }}>
+          <div className="absolute inset-0 flex items-center justify-center overflow-hidden">
+            <JellyBeanCard
+              offer={item.offer as any}
+              template={item.template}
+              fixedHeight={fixedH}
+              bgImage={item.bgImage}
+              brandKit={brandKit}
+              groundFraction={item.groundFraction}
+              carWidthFraction={item.carWidthFraction}
+              carAnchorX={item.carAnchorX}
+              isGenerating={item.isGenerating}
+              bgExactFormat={item.bgExactFormat}
+            />
+          </div>
+          {/* Prev arrow */}
+          {index > 0 && (
+            <button
+              onClick={() => onNav(index - 1)}
+              aria-label="Previous"
+              className="absolute left-[12px] top-1/2 -translate-y-1/2 size-[36px] rounded-full bg-white/80 flex items-center justify-center text-[rgba(17,16,20,0.72)] shadow-[0px_2px_8px_rgba(0,0,0,0.16)] hover:bg-white transition-colors cursor-pointer"
+              style={{ backdropFilter: "blur(2px)" }}
+            >
+              <ChevronLeft size={20} />
+            </button>
+          )}
+          {/* Next arrow */}
+          {index < items.length - 1 && (
+            <button
+              onClick={() => onNav(index + 1)}
+              aria-label="Next"
+              className="absolute right-[12px] top-1/2 -translate-y-1/2 size-[36px] rounded-full bg-white/80 flex items-center justify-center text-[rgba(17,16,20,0.72)] shadow-[0px_2px_8px_rgba(0,0,0,0.16)] hover:bg-white transition-colors cursor-pointer"
+              style={{ backdropFilter: "blur(2px)" }}
+            >
+              <ChevronRight size={20} />
+            </button>
+          )}
+        </div>
 
-      {/* Offer subtitle */}
-      <div
-        className="mt-4 text-center"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <p className="text-white/70 text-[13px]">
-          {item.offer.year} {item.offer.make} {item.offer.model} {item.offer.trim}
-          <span className="mx-2 text-white/30">·</span>
-          {item.offer.offerType}
-          <span className="mx-2 text-white/30">·</span>
-          ${item.offer.monthlyPayment}/mo
-        </p>
-      </div>
+        {/* Footer — offer details */}
+        <div className="flex items-center gap-[8px] px-[16px] py-[10px] border-t border-[rgba(0,0,0,0.06)]">
+          <span style={{ fontSize: 12, fontWeight: 600, color: "var(--ink)" }}>
+            {item.offer.year} {item.offer.make} {item.offer.model} {item.offer.trim}
+          </span>
+          <span style={{ color: "rgba(0,0,0,0.2)" }}>·</span>
+          <span style={{ fontSize: 12, color: "var(--ink-secondary)" }}>{item.offer.offerType}</span>
+          <span style={{ color: "rgba(0,0,0,0.2)" }}>·</span>
+          <span style={{ fontSize: 12, color: "var(--ink-secondary)" }}>${item.offer.monthlyPayment}/mo</span>
+          <span className="ml-auto" style={{ fontSize: 11, color: "var(--ink-tertiary)" }}>{item.template.format}</span>
+        </div>
+      </motion.div>
     </div>
   );
 }

@@ -11,7 +11,7 @@ import {
 } from "lucide-react";
 import { cn } from "../../../lib/utils";
 import { STORAGE_KEYS } from "../../constants/storageKeys";
-import { AgentInput } from "../AgentPane";
+import { AgentInput, type AgentInputHandle } from "../AgentPane";
 import type { UserType } from "../../AppContent";
 import {
   DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem,
@@ -2624,6 +2624,7 @@ export function ProjectAgentPane({ isOpen, onClose, userType, activeUserName }: 
   const [historySearch, setHistorySearch] = useState("");
   const currentThreadIdRef = useRef<string | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
+  const agentInputRef = useRef<AgentInputHandle>(null);
   const { streaming, setStreaming, streamMessage, stop } = useAgentStream();
   // arcState declared below alongside simulatingStream (after all state declarations)
 
@@ -4278,10 +4279,10 @@ export function ProjectAgentPane({ isOpen, onClose, userType, activeUserName }: 
                   </div>
                   <div className="flex-1" />
                   <div className="flex flex-col items-center gap-[8px] pb-[16px] shrink-0">
-                    <AgentInput onSubmit={send} onFilesChange={files => { stagedFilesRef.current = files; }} onStop={stop} streaming={streaming} accountName={isAgency ? selectedAccount : "Honda of Anywhere"} />
+                    <AgentInput ref={agentInputRef} onSubmit={send} onFilesChange={files => { stagedFilesRef.current = files; }} onStop={stop} streaming={streaming} accountName={isAgency ? selectedAccount : "Honda of Anywhere"} />
                     <div className="flex flex-wrap gap-[8px] items-center justify-center w-full">
                       {PROJECT_CATEGORIES.map(cat => {
-                        const chip = <CategoryChip label={cat} onClick={cat === "Create a project" ? handleCreateProjectClick : () => sendWithStaged(CATEGORY_MESSAGES[cat] ?? cat)} />;
+                        const chip = <CategoryChip label={cat} onClick={cat === "Create a project" ? handleCreateProjectClick : () => agentInputRef.current?.populate(CATEGORY_MESSAGES[cat] ?? cat)} />;
                         if (cat === "Create Automatic Project") {
                           return (
                             <Tooltip.Provider key={cat} delayDuration={400}>
@@ -4297,7 +4298,7 @@ export function ProjectAgentPane({ isOpen, onClose, userType, activeUserName }: 
                             </Tooltip.Provider>
                           );
                         }
-                        return <CategoryChip key={cat} label={cat} onClick={cat === "Create a project" ? handleCreateProjectClick : () => sendWithStaged(CATEGORY_MESSAGES[cat] ?? cat)} />;
+                        return <CategoryChip key={cat} label={cat} onClick={cat === "Create a project" ? handleCreateProjectClick : () => agentInputRef.current?.populate(CATEGORY_MESSAGES[cat] ?? cat)} />;
                       })}
                     </div>
                   </div>
@@ -4458,7 +4459,7 @@ export function ProjectAgentPane({ isOpen, onClose, userType, activeUserName }: 
                   </div>
 
                   <div className="flex flex-col items-center gap-[8px] pb-[16px] shrink-0 pt-[8px]">
-                    <AgentInput onSubmit={send} onFilesChange={files => { stagedFilesRef.current = files; }} onStop={stop} streaming={streaming} accountName={isAgency ? selectedAccount : "Honda of Anywhere"} />
+                    <AgentInput ref={agentInputRef} onSubmit={send} onFilesChange={files => { stagedFilesRef.current = files; }} onStop={stop} streaming={streaming} accountName={isAgency ? selectedAccount : "Honda of Anywhere"} />
                     <div className="flex flex-wrap gap-[8px] items-center justify-center w-full">
                       {PROJECT_CATEGORIES.map(cat => {
                         if (cat === "Create Automatic Project") {
@@ -4466,7 +4467,7 @@ export function ProjectAgentPane({ isOpen, onClose, userType, activeUserName }: 
                             <Tooltip.Provider key={cat} delayDuration={400}>
                               <Tooltip.Root>
                                 <Tooltip.Trigger asChild>
-                                  <CategoryChip label={cat} onClick={() => sendWithStaged(CATEGORY_MESSAGES[cat] ?? cat)} />
+                                  <CategoryChip label={cat} onClick={() => agentInputRef.current?.populate(CATEGORY_MESSAGES[cat] ?? cat)} />
                                 </Tooltip.Trigger>
                                 <Tooltip.Portal>
                                   <Tooltip.Content side="top" sideOffset={6} className="z-[999] max-w-[200px] px-[8px] py-[6px] rounded-[6px] text-[11px] font-medium leading-[1.4] text-white bg-[var(--ink)] shadow-md select-none text-center animate-in fade-in-0 data-[side=top]:slide-in-from-bottom-2 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 duration-[450ms]">
@@ -4478,7 +4479,7 @@ export function ProjectAgentPane({ isOpen, onClose, userType, activeUserName }: 
                             </Tooltip.Provider>
                           );
                         }
-                        return <CategoryChip key={cat} label={cat} onClick={cat === "Create a project" ? handleCreateProjectClick : () => sendWithStaged(CATEGORY_MESSAGES[cat] ?? cat)} />;
+                        return <CategoryChip key={cat} label={cat} onClick={cat === "Create a project" ? handleCreateProjectClick : () => agentInputRef.current?.populate(CATEGORY_MESSAGES[cat] ?? cat)} />;
                       })}
                     </div>
                   </div>

@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback, useEffect } from 'react';
+import { useState, useRef, useCallback, useEffect, forwardRef, useImperativeHandle } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { X, Check } from 'lucide-react';
 import { cn } from '../../lib/utils';
@@ -273,13 +273,14 @@ function VoiceStatus({ isActive }: { isActive: boolean }) {
 
 // ─── AgentInput ───────────────────────────────────────────────────────────────
 export interface AgentInputProps { onSubmit?: (text: string, attachments: File[]) => void; onFilesChange?: (files: File[]) => void; onStop?: () => void; streaming?: boolean; compact?: boolean; accountName?: string; }
+export interface AgentInputHandle { populate: (text: string) => void; }
 
 const SIM_PHRASES = [
   'Raise what I have in accrued funds', ' and plan strategies based on my inventory',
   ' for April.', ' Order them by priority', ' and justify each one', ' with the corresponding budget allocation.',
 ];
 
-export function AgentInput({ onSubmit, onFilesChange, onStop, streaming = false, compact = false, accountName }: AgentInputProps) {
+export const AgentInput = forwardRef<AgentInputHandle, AgentInputProps>(function AgentInput({ onSubmit, onFilesChange, onStop, streaming = false, compact = false, accountName }, ref) {
   const [value, setValue]             = useState('');
   const [isFocused, setIsFocused]     = useState(false);
   const [attachments, setAttachments] = useState<AttachmentEntry[]>([]);
@@ -296,6 +297,13 @@ export function AgentInput({ onSubmit, onFilesChange, onStop, streaming = false,
   // Saved cursor position — captured on blur so mic-button click doesn't lose it
   const savedSelectionRef = useRef<{ start: number; end: number } | null>(null);
   const isReadyToSend  = value.trim().length > 0 || attachments.length > 0;
+
+  useImperativeHandle(ref, () => ({
+    populate: (text: string) => {
+      setValue(text);
+      setTimeout(() => textareaRef.current?.focus(), 0);
+    },
+  }));
 
   useEffect(() => {
     onFilesChange?.(attachments.map(a => a.file));
@@ -562,7 +570,7 @@ export function AgentInput({ onSubmit, onFilesChange, onStop, streaming = false,
       <input ref={fileRef} type="file" accept=".pdf,.xlsx,.xls,.png,.jpg,.jpeg,image/png,image/jpeg,application/pdf" className="hidden" onChange={e => handleAttach(e.target.files)} />
     </div>
   );
-}
+});
 
 // ─── CategoryChip ──────────────────────────────────────────────────────────────
 function CategoryChip({ label }: { label: string }) {

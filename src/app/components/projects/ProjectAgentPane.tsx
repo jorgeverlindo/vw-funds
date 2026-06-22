@@ -2538,8 +2538,13 @@ function ToolChipView({ name, input }: { name: string; input: Record<string, unk
   } else if (name === "add_backgrounds_to_project" || name === "remove_backgrounds_from_project") { const ids = (input.background_ids as string[]) ?? []; detail = ids.length === 1 ? ids[0] : `${ids.length} backgrounds`;
   } else if (name === "duplicate_template_in_project") { detail = `${input.template_id ?? ""}`; }
   return (
-    <span style={{ display: "inline-flex", alignItems: "center", gap: 5, background: c.bg, color: c.color,
-      fontSize: 11, fontWeight: 500, padding: "3px 10px", borderRadius: 100 }}>
+    <span style={{
+      display: "inline-flex", alignItems: "center", gap: 6,
+      background: c.bg, color: c.color,
+      border: `1px solid ${c.bg.replace("0.09)", "0.28)")}`,
+      fontSize: 12, fontWeight: 500, letterSpacing: "0.17px",
+      padding: "4px 10px", borderRadius: 100,
+    }}>
       {c.icon}{c.label}
       {detail && <span style={{ fontWeight: 400, opacity: 0.7 }}>· {detail}</span>}
     </span>
@@ -2752,6 +2757,7 @@ export function ProjectAgentPane({ isOpen, onClose, userType, activeUserName }: 
   // Set to true right before create_project is dispatched so the project-ID-change effect
   // doesn't wipe the conversation history (the project was created BY this conversation).
   const projectCreatedByConversationRef = useRef(false);
+  const fireNextStepRef = useRef<((step: string) => void) | null>(null);
   // Waiting for user confirmation to start a new project after completing the current one.
   const [awaitingNewProject, setAwaitingNewProject] = useState(false);
   useEffect(() => { ctxRef.current      = projectContext; }, [projectContext]);
@@ -2818,10 +2824,26 @@ export function ProjectAgentPane({ isOpen, onClose, userType, activeUserName }: 
         input: toolInput as TemplatesInput, applied: false,
       } as TemplatesMsg]);
     } else if (toolName === "propose_backgrounds") {
-      setMessages(prev => [...prev, {
-        id: `backgrounds-${Date.now()}`, role: "assistant", type: "backgrounds",
-        input: toolInput as BackgroundsInput, applied: false,
-      } as BackgroundsMsg]);
+      if (proactiveModeRef.current) {
+        const bgIds = (toolInput as BackgroundsInput).background_ids ?? [];
+        dispatchAction({ action: "add_backgrounds", backgroundIds: bgIds });
+        const bgNames = bgIds
+          .map(id => SCENE_BACKGROUNDS.find(b => b.id === id)?.name ?? id)
+          .join(", ");
+        const bgLabel = bgIds.length === 1
+          ? `**${bgNames}**`
+          : `**${bgIds.length} backgrounds** (${bgNames})`;
+        setMessages(prev => [...prev, {
+          id: `a-${Date.now()}`, role: "assistant", type: "text",
+          content: `Based on your last project, I recommend ${bgLabel} as your scene backgrounds. I've already added them to the project. If you'd prefer different ones, just let me know and I'll swap them out.`,
+        } as TextMessage]);
+        setTimeout(() => fireNextStepRef.current?.("backgrounds"), 400);
+      } else {
+        setMessages(prev => [...prev, {
+          id: `backgrounds-${Date.now()}`, role: "assistant", type: "backgrounds",
+          input: toolInput as BackgroundsInput, applied: false,
+        } as BackgroundsMsg]);
+      }
     } else if (toolName === "propose_task_owners") {
       setMessages(prev => [...prev, {
         id: `task-owners-${Date.now()}`, role: "assistant", type: "task_owners",
@@ -3639,6 +3661,8 @@ export function ProjectAgentPane({ isOpen, onClose, userType, activeUserName }: 
     const msg = continuations[effectiveNext];
     if (msg) setTimeout(() => sendInternal(msg), 400);
   }, [getFlowSteps, sendInternal, buildOffersContinuation, setMessages]);
+
+  useEffect(() => { fireNextStepRef.current = fireNextStep; }, [fireNextStep]);
 
   // ── Setup card ──────────────────────────────────────────────────────────────
   const handleSetupApply = useCallback((name: string, account: string, oem: string, startDate: string, endDate: string, owner: string, platforms: string[]) => {

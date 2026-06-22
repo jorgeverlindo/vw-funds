@@ -10,8 +10,8 @@ import {
 // ─── Confirmed chip ────────────────────────────────────────────────────────────
 export function ConfirmedChip({ label }: { label: string }) {
   return (
-    <div className="inline-flex items-center gap-[6px] px-[10px] py-[5px] rounded-full"
-      style={{ background: "rgba(35,150,90,0.08)", border: "1px solid rgba(35,150,90,0.18)", color: "#1e7a48" }}>
+    <div className="inline-flex items-center gap-[6px] px-[10px] py-[4px] rounded-full"
+      style={{ background: "rgba(35,150,90,0.08)", border: "1px solid rgba(35,150,90,0.28)", color: "#1e7a48" }}>
       <div className="w-[16px] h-[16px] rounded-full flex items-center justify-center shrink-0"
         style={{ background: "#2e9c5e" }}>
         <Check size={9} color="white" strokeWidth={3} />

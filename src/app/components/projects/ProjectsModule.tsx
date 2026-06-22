@@ -2099,6 +2099,14 @@ function ProjectDetailView({
             saveCustomOfferLibrary(updated);
             return updated;
           });
+          // Patch the same offer object in any already-generated assets
+          setGeneratedAssets((prev) =>
+            prev.map(asset =>
+              asset.offer.id === offerId
+                ? { ...asset, offer: { ...(asset.offer as any), ...patches } }
+                : asset
+            )
+          );
         } else {
           // Static catalog offer — create an edited copy in customOfferLibrary,
           // swap the old ID out and the new one in
@@ -2115,6 +2123,16 @@ function ProjectDetailView({
           // Remove old catalog ID, add new custom ID
           setRemovedOfferIds((prev) => new Set([...prev, offerId]));
           setAgentAddedOfferIds((prev) => [...new Set([...prev, newId])]);
+          // Replace the old offer object in any already-generated assets
+          setGeneratedAssets((prev) =>
+            prev.map(asset =>
+              asset.offer.id === offerId
+                ? { ...asset,
+                    offer: { ...(asset.offer as any), ...patches, id: newId },
+                    key:   `${asset.bgId ?? "none"}-${asset.template.id}-${newId}` }
+                : asset
+            )
+          );
         }
       } else if (action === "set_task_owners") {
         const ownerNames = (payload as any).owners as Record<string, string>;

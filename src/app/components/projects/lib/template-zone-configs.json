@@ -2,139 +2,33 @@
   "website-2000x500": {
     "canvasW": 2000,
     "canvasH": 500,
-    "bgZone": {
-      "l": 540,
-      "top": 0,
-      "w": 1160,
-      "h": 500
-    },
-    "productSlots": [
-      {
-        "l": 700,
-        "top": -350,
-        "w": 1130,
-        "h": 1000
-      }
-    ],
-    "logoP": {
-      "l": 1743,
-      "top": 13,
-      "size": 170
-    },
-    "logoE": {
-      "l": 1742,
-      "top": 192,
-      "size": 197
-    },
+    "bgZone": { "l": 0, "top": 0, "w": 2000, "h": 500 },
+    "productSlots": [{ "l": 665, "top": -13, "w": 669, "h": 538 }],
+    "logoP": { "l": 1796, "top": 4, "size": 161 },
+    "logoE": { "l": -300, "top": 0, "size": 0 },
     "textLayout": {
-      "title": {
-        "l": 76,
-        "top": 29,
-        "fontSize": 48
-      },
-      "leaseLabel": {
-        "l": 76,
-        "top": 167,
-        "fontSize": 28
-      },
-      "price": {
-        "l": 76,
-        "top": 196,
-        "fontSize": 84
-      },
-      "termLabel": {
-        "l": 76,
-        "top": 307,
-        "fontSize": 28
-      },
-      "dueLabel": {
-        "l": 76,
-        "top": 346,
-        "fontSize": 28
-      },
-      "cta": {
-        "l": 76,
-        "top": 404,
-        "w": 99,
-        "h": 52,
-        "fontSize": 24
-      },
-      "disclaimer": {
-        "l": 1721,
-        "top": 415,
-        "fontSize": 18,
-        "w": 218,
-        "textAlign": "center"
-      }
+      "dealerName": { "l": 34, "top": 33, "fontSize": 33, "w": 234 },
+      "leaseLabel": { "l": 44, "top": 301, "fontSize": 20 },
+      "price": { "l": 44, "top": 325, "fontSize": 88 },
+      "finePrint": { "l": 44, "top": 430, "fontSize": 30, "w": 844 },
+      "cta": { "l": 1746, "top": 382, "w": 211, "h": 77, "fontSize": 27 },
+      "disclaimer": { "l": 1746, "top": 462, "fontSize": 12, "w": 211, "textAlign": "center" }
     }
   },
   "display-970x250": {
     "canvasW": 970,
     "canvasH": 250,
-    "bgZone": {
-      "l": 270,
-      "top": 0,
-      "w": 570,
-      "h": 250
-    },
-    "productSlots": [
-      {
-        "l": 380,
-        "top": -190,
-        "w": 550,
-        "h": 500
-      }
-    ],
-    "logoP": {
-      "l": 840,
-      "top": 17,
-      "size": 95
-    },
-    "logoE": {
-      "l": 840,
-      "top": 109,
-      "size": 95
-    },
+    "bgZone": { "l": 0, "top": 0, "w": 970, "h": 250 },
+    "productSlots": [{ "l": 442, "top": 65, "w": 365, "h": 151 }],
+    "logoP": { "l": 891, "top": 17, "size": 56 },
+    "logoE": { "l": -300, "top": 0, "size": 0 },
     "textLayout": {
-      "title": {
-        "l": 37,
-        "top": 18,
-        "fontSize": 23
-      },
-      "leaseLabel": {
-        "l": 37,
-        "top": 85,
-        "fontSize": 14
-      },
-      "price": {
-        "l": 37,
-        "top": 99,
-        "fontSize": 41
-      },
-      "termLabel": {
-        "l": 37,
-        "top": 153,
-        "fontSize": 14
-      },
-      "dueLabel": {
-        "l": 37,
-        "top": 172,
-        "fontSize": 14
-      },
-      "cta": {
-        "l": 37,
-        "top": 200,
-        "w": 80,
-        "h": 25,
-        "fontSize": 12
-      },
-      "disclaimer": {
-        "l": 835,
-        "top": 205,
-        "fontSize": 9,
-        "w": 106,
-        "textAlign": "center"
-      }
+      "dealerName": { "l": 24, "top": 17, "fontSize": 18, "w": 128 },
+      "leaseLabel": { "l": 24, "top": 143, "fontSize": 18 },
+      "price": { "l": 24, "top": 163, "fontSize": 44 },
+      "finePrint": { "l": 24, "top": 220, "fontSize": 12, "w": 339 },
+      "cta": { "l": 24, "top": 52, "w": 116, "h": 42, "fontSize": 15 },
+      "disclaimer": { "l": 24, "top": 238, "fontSize": 7, "w": 300 }
     }
   },
   "display-300x250": {
@@ -276,68 +170,17 @@
   "website-600x450": {
     "canvasW": 600,
     "canvasH": 450,
-    "bgZone": {
-      "l": 140,
-      "top": 100,
-      "w": 450,
-      "h": 340
-    },
-    "productSlots": [
-      {
-        "l": 110,
-        "top": -100,
-        "w": 600,
-        "h": 600
-      }
-    ],
-    "logoP": {
-      "l": 483,
-      "top": 19,
-      "size": 97
-    },
-    "logoE": {
-      "l": 22,
-      "top": 353,
-      "size": 79
-    },
+    "bgZone": { "l": 0, "top": 0, "w": 600, "h": 450 },
+    "productSlots": [{ "l": 127, "top": 114, "w": 361, "h": 290 }],
+    "logoP": { "l": 488, "top": 17, "size": 97 },
+    "logoE": { "l": -300, "top": 0, "size": 0 },
     "textLayout": {
-      "title": {
-        "l": 34,
-        "top": 38,
-        "fontSize": 24
-      },
-      "leaseLabel": {
-        "l": 34,
-        "top": 84,
-        "fontSize": 14
-      },
-      "price": {
-        "l": 34,
-        "top": 99,
-        "fontSize": 42
-      },
-      "termLabel": {
-        "l": 34,
-        "top": 154,
-        "fontSize": 14
-      },
-      "dueLabel": {
-        "l": 34,
-        "top": 174,
-        "fontSize": 14
-      },
-      "cta": {
-        "l": 34,
-        "top": 203,
-        "w": 50,
-        "h": 26,
-        "fontSize": 12
-      },
-      "disclaimer": {
-        "l": 34,
-        "top": 241,
-        "fontSize": 9
-      }
+      "dealerName": { "l": 24, "top": 17, "fontSize": 18, "w": 128 },
+      "leaseLabel": { "l": 24, "top": 54, "fontSize": 20 },
+      "price": { "l": 16, "top": 317, "fontSize": 79 },
+      "finePrint": { "l": 16, "top": 412, "fontSize": 13, "w": 367 },
+      "cta": { "l": 467, "top": 370, "w": 116, "h": 42, "fontSize": 15 },
+      "disclaimer": { "l": 16, "top": 432, "fontSize": 9, "w": 380 }
     }
   },
   "website-600x1067": {
@@ -410,6 +253,86 @@
         "top": 997,
         "fontSize": 18
       }
+    }
+  },
+  "event-1920x200": {
+    "canvasW": 1920,
+    "canvasH": 200,
+    "bgZone": { "l": 0, "top": 0, "w": 1920, "h": 200 },
+    "productSlots": [{ "l": 777, "top": 25, "w": 365, "h": 151 }],
+    "logoP": { "l": 1796, "top": 4, "size": 97 },
+    "logoE": { "l": -300, "top": 0, "size": 0 },
+    "textLayout": {
+      "dealerName": { "l": 24, "top": 17, "fontSize": 18, "w": 128 },
+      "leaseLabel": { "l": 44, "top": 114, "fontSize": 14 },
+      "price": { "l": 44, "top": 130, "fontSize": 35 },
+      "finePrint": { "l": 44, "top": 176, "fontSize": 9, "w": 254 },
+      "cta": { "l": 1796, "top": 131, "w": 89, "h": 32, "fontSize": 11 },
+      "disclaimer": { "l": 44, "top": 189, "fontSize": 6, "w": 400 }
+    }
+  },
+  "display-728x90": {
+    "canvasW": 728,
+    "canvasH": 90,
+    "bgZone": { "l": 0, "top": 0, "w": 728, "h": 90 },
+    "productSlots": [{ "l": 261, "top": 8, "w": 177, "h": 73 }],
+    "logoP": { "l": 659, "top": 0, "size": 56 },
+    "logoE": { "l": -300, "top": 0, "size": 0 },
+    "textLayout": {
+      "dealerName": { "l": 18, "top": 5, "fontSize": 8, "w": 57 },
+      "leaseLabel": { "l": 18, "top": 51, "fontSize": 8 },
+      "price": { "l": 18, "top": 59, "fontSize": 16 },
+      "finePrint": { "l": 18, "top": 79, "fontSize": 7, "w": 198 },
+      "cta": { "l": 659, "top": 61, "w": 51, "h": 19, "fontSize": 7 },
+      "disclaimer": { "l": 18, "top": 85, "fontSize": 5, "w": 200 }
+    }
+  },
+  "display-300x600": {
+    "canvasW": 300,
+    "canvasH": 600,
+    "bgZone": { "l": 0, "top": 0, "w": 300, "h": 600 },
+    "productSlots": [{ "l": 18, "top": 12, "w": 264, "h": 336 }],
+    "logoP": { "l": 200, "top": 0, "size": 97 },
+    "logoE": { "l": -300, "top": 0, "size": 0 },
+    "textLayout": {
+      "dealerName": { "l": 24, "top": 17, "fontSize": 18, "w": 128 },
+      "leaseLabel": { "l": 24, "top": 49, "fontSize": 20, "w": 142 },
+      "price": { "l": 10, "top": 432, "fontSize": 54, "w": 272 },
+      "finePrint": { "l": 16, "top": 497, "fontSize": 13, "w": 239 },
+      "cta": { "l": 166, "top": 542, "w": 116, "h": 42, "fontSize": 15 },
+      "disclaimer": { "l": 16, "top": 579, "fontSize": 9, "w": 200 }
+    }
+  },
+  "display-160x600": {
+    "canvasW": 160,
+    "canvasH": 600,
+    "bgZone": { "l": 0, "top": 0, "w": 160, "h": 600 },
+    "productSlots": [{ "l": 10, "top": 12, "w": 141, "h": 336 }],
+    "logoP": { "l": 32, "top": 453, "size": 97 },
+    "logoE": { "l": -300, "top": 0, "size": 0 },
+    "textLayout": {
+      "dealerName": { "l": 10, "top": 12, "fontSize": 18, "w": 128 },
+      "leaseLabel": { "l": 10, "top": 44, "fontSize": 20, "w": 142 },
+      "price": { "l": 10, "top": 148, "fontSize": 28, "w": 141 },
+      "finePrint": { "l": 13, "top": 182, "fontSize": 7, "w": 124 },
+      "cta": { "l": 22, "top": 542, "w": 116, "h": 42, "fontSize": 15 },
+      "disclaimer": { "l": 10, "top": 390, "fontSize": 6, "w": 140 }
+    }
+  },
+  "event-1900x776": {
+    "canvasW": 1900,
+    "canvasH": 776,
+    "bgZone": { "l": 0, "top": 0, "w": 1900, "h": 776 },
+    "productSlots": [{ "l": 571, "top": 83, "w": 704, "h": 566 }],
+    "logoP": { "l": 1639, "top": 0, "size": 209 },
+    "logoE": { "l": -300, "top": 0, "size": 0 },
+    "textLayout": {
+      "dealerName": { "l": 24, "top": 17, "fontSize": 72, "w": 512 },
+      "leaseLabel": { "l": 44, "top": 442, "fontSize": 33, "w": 357 },
+      "price": { "l": 44, "top": 482, "fontSize": 172, "w": 873 },
+      "finePrint": { "l": 44, "top": 683, "fontSize": 33, "w": 931 },
+      "cta": { "l": 1596, "top": 611, "w": 252, "h": 92, "fontSize": 33 },
+      "disclaimer": { "l": 44, "top": 724, "fontSize": 16, "w": 800 }
     }
   },
   "website-1969x1080-3prod": {

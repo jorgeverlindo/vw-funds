@@ -34,13 +34,17 @@ export interface TextElement {
 /** Text layout for single-product templates */
 export interface SingleProductTextLayout {
   dealerName?: TextElement;
-  title: TextElement;
+  /** Year + make + model + trim line — omit to hide */
+  title?: TextElement;
   leaseLabel: TextElement;
   price: TextElement;
-  termLabel: TextElement;
-  dueLabel: TextElement;
+  /** Legacy: two-line term/due display — used when finePrint is absent */
+  termLabel?: TextElement;
+  dueLabel?: TextElement;
+  /** Single-line fine print replacing termLabel + dueLabel */
+  finePrint?: TextElement;
   cta: TextElement;
-  disclaimer: TextElement;
+  disclaimer?: TextElement;
 }
 
 /** Text layout for multi-product (3-up) templates — positions are per-slot offsets */

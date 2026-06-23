@@ -162,7 +162,8 @@ export type AgentActionPayload =
   | { action: "set_task_owners"; owners: Record<string, string> }
   | { action: "set_dealer_bg_generating"; value: boolean }
   | { action: "remove_backgrounds"; backgroundIds: string[] }
-  | { action: "duplicate_template"; templateId: string; newName?: string };
+  | { action: "duplicate_template"; templateId: string; newName?: string }
+  | { action: "update_project_display"; patches: { ctaText?: string; leaseLabel?: string; finePrint?: string; dealerName?: string } };
 
 // ─── Multimodal API types ─────────────────────────────────────────────────────
 type ApiContentBlock =
@@ -2526,6 +2527,7 @@ function ToolChipView({ name, input }: { name: string; input: Record<string, unk
     add_backgrounds_to_project:       { label: "Added background",   icon: <Image    size={10} strokeWidth={2.5} />, color: "#0369a1", bg: "rgba(3,105,161,0.09)"  },
     remove_backgrounds_from_project:  { label: "Removed background", icon: <Minus    size={10} strokeWidth={2.5} />, color: "#dc2626", bg: "rgba(220,38,38,0.09)"  },
     duplicate_template_in_project:    { label: "Duplicated template",icon: <FileText size={10} strokeWidth={2.5} />, color: "var(--brand-mid)", bg: "rgba(99,86,225,0.09)"  },
+    update_project_display:           { label: "Updated display",    icon: <Tag      size={10} strokeWidth={2.5} />, color: "#0369a1", bg: "rgba(3,105,161,0.09)"  },
   };
   const c = cfg[name] ?? { label: name, icon: null, color: "var(--ink-secondary)", bg: "rgba(104,101,118,0.09)" };
   let detail = "";
@@ -3066,6 +3068,14 @@ export function ProjectAgentPane({ isOpen, onClose, userType, activeUserName }: 
         dispatchAction({ action: "remove_backgrounds", backgroundIds: toolInput.background_ids as string[] });
       else if (toolName === "duplicate_template_in_project")
         dispatchAction({ action: "duplicate_template", templateId: toolInput.template_id as string, newName: toolInput.new_name as string | undefined });
+      else if (toolName === "update_project_display") {
+        const p: { ctaText?: string; leaseLabel?: string; finePrint?: string; dealerName?: string } = {};
+        if (toolInput.cta_text    != null) p.ctaText    = toolInput.cta_text    as string;
+        if (toolInput.lease_label != null) p.leaseLabel = toolInput.lease_label as string;
+        if (toolInput.fine_print  != null) p.finePrint  = toolInput.fine_print  as string;
+        if (toolInput.dealer_name != null) p.dealerName = toolInput.dealer_name as string;
+        dispatchAction({ action: "update_project_display", patches: p });
+      }
     }
   }, [dispatchAction]);
 

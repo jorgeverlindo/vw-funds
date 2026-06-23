@@ -2157,6 +2157,12 @@ function ProjectDetailView({
           if (owner) newOwners[section] = owner.id;
         });
         setTaskOwners(prev => ({ ...prev, ...newOwners }));
+      } else if (action === "set_project_name") {
+        const { name } = payload as { name: string };
+        onUpdateProject?.(project.id, { name });
+      } else if (action === "update_project_display") {
+        const { patches } = payload as { patches: { ctaText?: string; leaseLabel?: string; finePrint?: string; dealerName?: string } };
+        onUpdateProject?.(project.id, patches);
       }
     };
     window.addEventListener(PROJECT_AGENT_ACTION_EVENT, handler);

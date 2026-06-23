@@ -803,6 +803,26 @@ const agentTools: Anthropic.Tool[] = [
       required: ["name"],
     },
   },
+  {
+    name: "update_project_display",
+    description:
+      "Update display-level project settings: the CTA button text, lease label, fine print line, " +
+      "or dealer name shown on all banners. " +
+      "Use this when the user asks to change the button text (e.g. 'change CTA to Shop Now'), " +
+      "the lease label (e.g. 'change lease label to LEASE · 2025 HONDA'), " +
+      "the fine print line (e.g. 'set fine print to 36 months | $3,999 due at signing'), " +
+      "or the dealer name (e.g. 'rename dealer to Honda City'). " +
+      "Pass only the fields that need changing — omit unchanged fields.",
+    input_schema: {
+      type: "object" as const,
+      properties: {
+        cta_text:    { type: "string", description: "New CTA button label, e.g. 'Shop Now' or 'Learn More'." },
+        lease_label: { type: "string", description: "New lease label text, e.g. 'LEASE · 2025 HONDA' or 'Lease for'." },
+        fine_print:  { type: "string", description: "Single-line fine print, e.g. '36 months | $3,999 due at signing | With approved credit'." },
+        dealer_name: { type: "string", description: "New dealer name shown on the banner, e.g. 'Honda City'." },
+      },
+    },
+  },
 
   // ── Offer extraction from uploaded file ───────────────────────────────────
   {
@@ -1013,6 +1033,8 @@ function executeTool(
       return { success: true, template_id: input.template_id, new_name: input.new_name, message: `Template ${input.template_id} duplicated.` };
     case "set_project_name":
       return { success: true, name: input.name, message: `Project renamed to "${input.name}".` };
+    case "update_project_display":
+      return { success: true, patches: input, message: "Project display settings updated." };
     case "propose_email":
       return { success: true, email: input, message: "Email proposal ready for user review." };
     case "propose_parsed_offers":

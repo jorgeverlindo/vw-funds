@@ -417,6 +417,9 @@ export function PreviewPage({ projectId, onNavigateTo }: { projectId: string; on
                   background={bg}
                   scale={1}
                   dealerName={project.dealerName}
+                  cta={project.ctaText || "Shop Now"}
+                  leaseLabel={project.leaseLabel || undefined}
+                  finePrint={project.finePrint || undefined}
                   forExport
                   layerMode="ui"
                 />
@@ -432,6 +435,9 @@ export function PreviewPage({ projectId, onNavigateTo }: { projectId: string; on
               background={bg}
               scale={1}
               dealerName={project.dealerName}
+              cta={project.ctaText || "Shop Now"}
+              leaseLabel={project.leaseLabel || undefined}
+              finePrint={project.finePrint || undefined}
               forExport
             />
           );
@@ -666,11 +672,11 @@ export function PreviewPage({ projectId, onNavigateTo }: { projectId: string; on
                                     <div style={{ width: scaledW, height: scaledH, position: "relative", overflow: "hidden" }}>
                                       <img src={aiResult} style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }} />
                                       <div style={{ position: "absolute", inset: 0 }}>
-                                        <AdTemplate projectId={id} templateId={template.id} offer={offer} background={bg} scale={scale} dealerName={project.dealerName} layerMode="ui" />
+                                        <AdTemplate projectId={id} templateId={template.id} offer={offer} background={bg} scale={scale} dealerName={project.dealerName} cta={project.ctaText || "Shop Now"} leaseLabel={project.leaseLabel || undefined} finePrint={project.finePrint || undefined} layerMode="ui" />
                                       </div>
                                     </div>
                                   ) : (
-                                    <AdTemplate projectId={id} templateId={template.id} offer={offer} background={bg} scale={scale} dealerName={project.dealerName} />
+                                    <AdTemplate projectId={id} templateId={template.id} offer={offer} background={bg} scale={scale} dealerName={project.dealerName} cta={project.ctaText || "Shop Now"} leaseLabel={project.leaseLabel || undefined} finePrint={project.finePrint || undefined} />
                                   )}
                                   <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-2 z-10">
                                     <div className="flex items-center gap-2">
@@ -827,11 +833,11 @@ export function PreviewPage({ projectId, onNavigateTo }: { projectId: string; on
                                     <div style={{ width: scaledW, height: scaledH, position: "relative", overflow: "hidden" }}>
                                       <img src={aiResult} style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }} />
                                       <div style={{ position: "absolute", inset: 0 }}>
-                                        <AdTemplate projectId={id} templateId={template.id} offer={slotOffers[0]} offers={slotOffers} background={bg} scale={scale} dealerName={project.dealerName} layerMode="ui" customFields={customTemplateFields[template.id]} />
+                                        <AdTemplate projectId={id} templateId={template.id} offer={slotOffers[0]} offers={slotOffers} background={bg} scale={scale} dealerName={project.dealerName} cta={project.ctaText || "Shop Now"} leaseLabel={project.leaseLabel || undefined} finePrint={project.finePrint || undefined} layerMode="ui" customFields={customTemplateFields[template.id]} />
                                       </div>
                                     </div>
                                   ) : (
-                                    <AdTemplate projectId={id} templateId={template.id} offer={slotOffers[0]} offers={slotOffers} background={bg} scale={scale} dealerName={project.dealerName} customFields={customTemplateFields[template.id]} />
+                                    <AdTemplate projectId={id} templateId={template.id} offer={slotOffers[0]} offers={slotOffers} background={bg} scale={scale} dealerName={project.dealerName} cta={project.ctaText || "Shop Now"} leaseLabel={project.leaseLabel || undefined} finePrint={project.finePrint || undefined} customFields={customTemplateFields[template.id]} />
                                   )}
                                   <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-2 z-10">
                                     <div className="flex items-center gap-2">
@@ -939,11 +945,11 @@ export function PreviewPage({ projectId, onNavigateTo }: { projectId: string; on
                 <>
                   <img src={lbAiResult} style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }} />
                   <div style={{ position: "absolute", inset: 0 }}>
-                    <AdTemplate projectId={id} templateId={template.id} offer={offer} offers={lbOffers} background={bg} scale={scale} dealerName={project.dealerName} layerMode="ui" />
+                    <AdTemplate projectId={id} templateId={template.id} offer={offer} offers={lbOffers} background={bg} scale={scale} dealerName={project.dealerName} cta={project.ctaText || "Shop Now"} leaseLabel={project.leaseLabel || undefined} finePrint={project.finePrint || undefined} layerMode="ui" />
                   </div>
                 </>
               ) : (
-                <AdTemplate projectId={id} templateId={template.id} offer={offer} offers={lbOffers} background={bg} scale={scale} dealerName={project.dealerName} />
+                <AdTemplate projectId={id} templateId={template.id} offer={offer} offers={lbOffers} background={bg} scale={scale} dealerName={project.dealerName} cta={project.ctaText || "Shop Now"} leaseLabel={project.leaseLabel || undefined} finePrint={project.finePrint || undefined} />
               )}
             </div>
           </div>

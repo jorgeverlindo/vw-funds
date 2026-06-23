@@ -59,6 +59,10 @@ interface AdTemplateProps {
   scale?: number;
   cta?: string;
   dealerName?: string;
+  /** Lease label override — e.g. "LEASE · 2025 HONDA". Defaults to "Lease for" */
+  leaseLabel?: string;
+  /** Single-line fine print — e.g. "36 months | $3,999 due at signing". Falls back to two-line term+due when empty */
+  finePrint?: string;
   blank?: boolean;
   forExport?: boolean;
   layerMode?: LayerMode;
@@ -261,49 +265,75 @@ interface LayoutProps {
   background: Background;
   cta: string;
   dealerName?: string;
+  leaseLabel?: string;
+  finePrint?: string;
   blank?: boolean;
   cfg: TemplateZoneConfig;
 }
 
 // ─── Single-product helper ────────────────────────────────────────────────────
 
-function SingleProductUI({ o, tl, cta, blank }: {
+function SingleProductUI({ o, tl, cta, blank, dealerName, leaseLabel, finePrint }: {
   o: Offer | undefined;
   tl: SingleProductTextLayout;
   cta: string;
   blank?: boolean;
+  dealerName?: string;
+  leaseLabel?: string;
+  finePrint?: string;
 }) {
   if (blank || !o) return null;
   return (
     <>
-      <p style={abs(tl.title.l, tl.title.top, { fontSize: tl.title.fontSize, fontWeight: 400, color: TEXT, lineHeight: "143%", letterSpacing: "0.17px", margin: 0 })}>
-        {o.year} {o.make} {o.model} {o.trim}
-      </p>
+      {tl.dealerName && dealerName && (
+        <p style={abs(tl.dealerName.l, tl.dealerName.top, { fontSize: tl.dealerName.fontSize, fontWeight: 700, color: TEXT, margin: 0, width: tl.dealerName.w, letterSpacing: "0.17px" })}>
+          {dealerName}
+        </p>
+      )}
+      {tl.title && (
+        <p style={abs(tl.title.l, tl.title.top, { fontSize: tl.title.fontSize, fontWeight: 400, color: TEXT, lineHeight: "143%", letterSpacing: "0.17px", margin: 0 })}>
+          {o.year} {o.make} {o.model} {o.trim}
+        </p>
+      )}
       <p style={abs(tl.leaseLabel.l, tl.leaseLabel.top, { fontSize: tl.leaseLabel.fontSize, fontWeight: 400, color: TEXT, margin: 0, letterSpacing: "0.25px" })}>
-        Lease for
+        {leaseLabel || "Lease for"}
       </p>
       <p style={abs(tl.price.l, tl.price.top, { fontSize: tl.price.fontSize, fontWeight: 700, color: TEXT, lineHeight: "143%", letterSpacing: "0.17px", margin: 0 })}>
         ${o.monthlyPayment}/mo.
       </p>
-      <p style={abs(tl.termLabel.l, tl.termLabel.top, { fontSize: tl.termLabel.fontSize, fontWeight: 400, color: TEXT, margin: 0, letterSpacing: "0.25px" })}>
-        for {o.term} months.
-      </p>
-      <p style={abs(tl.dueLabel.l, tl.dueLabel.top, { fontSize: tl.dueLabel.fontSize, fontWeight: 400, color: TEXT, margin: 0, letterSpacing: "0.25px" })}>
-        ${o.totalDueAtSigning.toLocaleString()} due at signing
-      </p>
+      {tl.finePrint ? (
+        <p style={abs(tl.finePrint.l, tl.finePrint.top, { fontSize: tl.finePrint.fontSize, fontWeight: 400, color: TEXT, margin: 0, width: tl.finePrint.w, letterSpacing: "0.25px" })}>
+          {finePrint || `${o.term} months  |  $${o.totalDueAtSigning.toLocaleString()} due at signing`}
+        </p>
+      ) : (
+        <>
+          {tl.termLabel && (
+            <p style={abs(tl.termLabel.l, tl.termLabel.top, { fontSize: tl.termLabel.fontSize, fontWeight: 400, color: TEXT, margin: 0, letterSpacing: "0.25px" })}>
+              for {o.term} months.
+            </p>
+          )}
+          {tl.dueLabel && (
+            <p style={abs(tl.dueLabel.l, tl.dueLabel.top, { fontSize: tl.dueLabel.fontSize, fontWeight: 400, color: TEXT, margin: 0, letterSpacing: "0.25px" })}>
+              ${o.totalDueAtSigning.toLocaleString()} due at signing
+            </p>
+          )}
+        </>
+      )}
       <CTAButton style={{ left: tl.cta.l, top: tl.cta.top, minWidth: tl.cta.w, height: tl.cta.h, fontSize: tl.cta.fontSize, paddingLeft: (tl.cta.h ?? tl.cta.fontSize * 2) * 0.5, paddingRight: (tl.cta.h ?? tl.cta.fontSize * 2) * 0.5 }}>
         {cta}
       </CTAButton>
-      <p style={abs(tl.disclaimer.l, tl.disclaimer.top, { fontSize: tl.disclaimer.fontSize, fontWeight: 400, color: TEXT, margin: 0, width: tl.disclaimer.w, textAlign: tl.disclaimer.textAlign ?? "left" })}>
-        Photos for illustration purposes only.
-      </p>
+      {tl.disclaimer && (
+        <p style={abs(tl.disclaimer.l, tl.disclaimer.top, { fontSize: tl.disclaimer.fontSize, fontWeight: 400, color: TEXT, margin: 0, width: tl.disclaimer.w, textAlign: tl.disclaimer.textAlign ?? "left" })}>
+          Photos for illustration purposes only.
+        </p>
+      )}
     </>
   );
 }
 
 // ─── Layout: Website 2000×500 ─────────────────────────────────────────────────
 
-function Layout2000x500({ offer, background, cta, blank, cfg }: LayoutProps) {
+function Layout2000x500({ offer, background, cta, blank, cfg, dealerName, leaseLabel, finePrint }: LayoutProps) {
   const { layerMode: lm } = useContext(AdTemplateCtx);
   const slot = cfg.productSlots[0];
   const tl = cfg.textLayout as SingleProductTextLayout;
@@ -312,15 +342,15 @@ function Layout2000x500({ offer, background, cta, blank, cfg }: LayoutProps) {
       {lm !== "ui" && lm !== "car" && <BG image={background.images?.["website-2000x500"]} color={background.color} width={2000} height={500} />}
       {lm !== "ui" && offer && !background.isLifestyle && <CarImage offer={offer} style={{ left: slot.l, top: slot.top, width: slot.w, height: slot.h }} />}
       {lm !== "bg-car" && lm !== "car" && <div style={abs(cfg.logoP.l, cfg.logoP.top)}><PrimaryLogo size={cfg.logoP.size} /></div>}
-      {lm !== "bg-car" && lm !== "car" && <div style={abs(cfg.logoE.l, cfg.logoE.top)}><EventLogo size={cfg.logoE.size} /></div>}
-      {lm !== "bg-car" && lm !== "car" && <SingleProductUI o={offer} tl={tl} cta={cta} blank={blank} />}
+      {lm !== "bg-car" && lm !== "car" && cfg.logoE.size > 0 && <div style={abs(cfg.logoE.l, cfg.logoE.top)}><EventLogo size={cfg.logoE.size} /></div>}
+      {lm !== "bg-car" && lm !== "car" && <SingleProductUI o={offer} tl={tl} cta={cta} blank={blank} dealerName={dealerName} leaseLabel={leaseLabel} finePrint={finePrint} />}
     </div>
   );
 }
 
 // ─── Layout: Display 970×250 ──────────────────────────────────────────────────
 
-function Layout970x250({ offer, background, cta, blank, cfg }: LayoutProps) {
+function Layout970x250({ offer, background, cta, blank, cfg, dealerName, leaseLabel, finePrint }: LayoutProps) {
   const { layerMode: lm } = useContext(AdTemplateCtx);
   const slot = cfg.productSlots[0];
   const tl = cfg.textLayout as SingleProductTextLayout;
@@ -329,15 +359,15 @@ function Layout970x250({ offer, background, cta, blank, cfg }: LayoutProps) {
       {lm !== "ui" && lm !== "car" && <BG image={background.images?.["display-970x250"]} color={background.color} width={970} height={250} />}
       {lm !== "ui" && offer && !background.isLifestyle && <CarImage offer={offer} style={{ left: slot.l, top: slot.top, width: slot.w, height: slot.h }} />}
       {lm !== "bg-car" && lm !== "car" && <div style={abs(cfg.logoP.l, cfg.logoP.top)}><PrimaryLogo size={cfg.logoP.size} /></div>}
-      {lm !== "bg-car" && lm !== "car" && <div style={abs(cfg.logoE.l, cfg.logoE.top)}><EventLogo size={cfg.logoE.size} /></div>}
-      {lm !== "bg-car" && lm !== "car" && <SingleProductUI o={offer} tl={tl} cta={cta} blank={blank} />}
+      {lm !== "bg-car" && lm !== "car" && cfg.logoE.size > 0 && <div style={abs(cfg.logoE.l, cfg.logoE.top)}><EventLogo size={cfg.logoE.size} /></div>}
+      {lm !== "bg-car" && lm !== "car" && <SingleProductUI o={offer} tl={tl} cta={cta} blank={blank} dealerName={dealerName} leaseLabel={leaseLabel} finePrint={finePrint} />}
     </div>
   );
 }
 
 // ─── Layout: Display 300×250 ──────────────────────────────────────────────────
 
-function Layout300x250({ offer, background, cta, blank, cfg }: LayoutProps) {
+function Layout300x250({ offer, background, cta, blank, cfg, dealerName, leaseLabel, finePrint }: LayoutProps) {
   const { layerMode: lm } = useContext(AdTemplateCtx);
   const slot = cfg.productSlots[0];
   const tl = cfg.textLayout as SingleProductTextLayout;
@@ -346,15 +376,15 @@ function Layout300x250({ offer, background, cta, blank, cfg }: LayoutProps) {
       {lm !== "ui" && lm !== "car" && <BG image={background.images?.["display-300x250"]} color={background.color} width={300} height={250} />}
       {lm !== "ui" && offer && !background.isLifestyle && <CarImage offer={offer} style={{ left: slot.l, top: slot.top, width: slot.w, height: slot.h }} />}
       {lm !== "bg-car" && lm !== "car" && <div style={abs(cfg.logoP.l, cfg.logoP.top)}><PrimaryLogo size={cfg.logoP.size} /></div>}
-      {lm !== "bg-car" && lm !== "car" && <div style={abs(cfg.logoE.l, cfg.logoE.top)}><EventLogo size={cfg.logoE.size} /></div>}
-      {lm !== "bg-car" && lm !== "car" && <SingleProductUI o={offer} tl={tl} cta={cta} blank={blank} />}
+      {lm !== "bg-car" && lm !== "car" && cfg.logoE.size > 0 && <div style={abs(cfg.logoE.l, cfg.logoE.top)}><EventLogo size={cfg.logoE.size} /></div>}
+      {lm !== "bg-car" && lm !== "car" && <SingleProductUI o={offer} tl={tl} cta={cta} blank={blank} dealerName={dealerName} leaseLabel={leaseLabel} finePrint={finePrint} />}
     </div>
   );
 }
 
 // ─── Layout: Social 1080×1080 ─────────────────────────────────────────────────
 
-function Layout1080x1080({ offer, background, cta, blank, cfg }: LayoutProps) {
+function Layout1080x1080({ offer, background, cta, blank, cfg, dealerName, leaseLabel, finePrint }: LayoutProps) {
   const { layerMode: lm } = useContext(AdTemplateCtx);
   const slot = cfg.productSlots[0];
   const tl = cfg.textLayout as SingleProductTextLayout;
@@ -363,15 +393,15 @@ function Layout1080x1080({ offer, background, cta, blank, cfg }: LayoutProps) {
       {lm !== "ui" && lm !== "car" && <BG image={background.images?.["social-1080x1080"]} color={background.color} width={1080} height={1080} />}
       {lm !== "ui" && offer && !background.isLifestyle && <CarImage offer={offer} style={{ left: slot.l, top: slot.top, width: slot.w, height: slot.h }} />}
       {lm !== "bg-car" && lm !== "car" && <div style={abs(cfg.logoP.l, cfg.logoP.top)}><PrimaryLogo size={cfg.logoP.size} /></div>}
-      {lm !== "bg-car" && lm !== "car" && <div style={abs(cfg.logoE.l, cfg.logoE.top)}><EventLogo size={cfg.logoE.size} /></div>}
-      {lm !== "bg-car" && lm !== "car" && <SingleProductUI o={offer} tl={tl} cta={cta} blank={blank} />}
+      {lm !== "bg-car" && lm !== "car" && cfg.logoE.size > 0 && <div style={abs(cfg.logoE.l, cfg.logoE.top)}><EventLogo size={cfg.logoE.size} /></div>}
+      {lm !== "bg-car" && lm !== "car" && <SingleProductUI o={offer} tl={tl} cta={cta} blank={blank} dealerName={dealerName} leaseLabel={leaseLabel} finePrint={finePrint} />}
     </div>
   );
 }
 
 // ─── Layout: Website 600×450 ─────────────────────────────────────────────────
 
-function Layout600x450({ offer, background, cta, blank, cfg }: LayoutProps) {
+function Layout600x450({ offer, background, cta, blank, cfg, dealerName, leaseLabel, finePrint }: LayoutProps) {
   const { layerMode: lm } = useContext(AdTemplateCtx);
   const slot = cfg.productSlots[0];
   const tl = cfg.textLayout as SingleProductTextLayout;
@@ -380,15 +410,15 @@ function Layout600x450({ offer, background, cta, blank, cfg }: LayoutProps) {
       {lm !== "ui" && lm !== "car" && <BG image={background.images?.["website-600x450"]} color={background.color} width={600} height={450} />}
       {lm !== "ui" && offer && !background.isLifestyle && <CarImage offer={offer} style={{ left: slot.l, top: slot.top, width: slot.w, height: slot.h }} />}
       {lm !== "bg-car" && lm !== "car" && <div style={abs(cfg.logoP.l, cfg.logoP.top)}><PrimaryLogo size={cfg.logoP.size} /></div>}
-      {lm !== "bg-car" && lm !== "car" && <div style={abs(cfg.logoE.l, cfg.logoE.top)}><EventLogo size={cfg.logoE.size} /></div>}
-      {lm !== "bg-car" && lm !== "car" && <SingleProductUI o={offer} tl={tl} cta={cta} blank={blank} />}
+      {lm !== "bg-car" && lm !== "car" && cfg.logoE.size > 0 && <div style={abs(cfg.logoE.l, cfg.logoE.top)}><EventLogo size={cfg.logoE.size} /></div>}
+      {lm !== "bg-car" && lm !== "car" && <SingleProductUI o={offer} tl={tl} cta={cta} blank={blank} dealerName={dealerName} leaseLabel={leaseLabel} finePrint={finePrint} />}
     </div>
   );
 }
 
 // ─── Layout: Website 600×1067 ─────────────────────────────────────────────────
 
-function Layout600x1067({ offer, background, cta, dealerName, blank, cfg }: LayoutProps) {
+function Layout600x1067({ offer, background, cta, dealerName, leaseLabel, finePrint, blank, cfg }: LayoutProps) {
   const o = offer ?? null;
   const { layerMode: lm } = useContext(AdTemplateCtx);
   const slot = cfg.productSlots[0];
@@ -398,37 +428,88 @@ function Layout600x1067({ offer, background, cta, dealerName, blank, cfg }: Layo
       {lm !== "ui" && lm !== "car" && <BG image={background.images?.["website-600x1067"]} color={background.color} width={600} height={1067} />}
       {lm !== "ui" && o && !background.isLifestyle && <CarImage offer={o} style={{ left: slot.l, top: slot.top, width: slot.w, height: slot.h }} />}
       {lm !== "bg-car" && lm !== "car" && <div style={abs(cfg.logoP.l, cfg.logoP.top)}><PrimaryLogo size={cfg.logoP.size} /></div>}
-      {lm !== "bg-car" && lm !== "car" && <div style={abs(cfg.logoE.l, cfg.logoE.top)}><EventLogo size={cfg.logoE.size} /></div>}
-      {lm !== "bg-car" && lm !== "car" && !blank && o && (
-        <>
-          {tl.dealerName && (
-            <p style={abs(tl.dealerName.l, tl.dealerName.top, { fontSize: tl.dealerName.fontSize, fontWeight: 400, color: TEXT, margin: 0, letterSpacing: "0.17px", width: "100%", textAlign: "center" })}>
-              {dealerName}
-            </p>
-          )}
-          <p style={abs(tl.title.l, tl.title.top, { fontSize: tl.title.fontSize, fontWeight: 400, color: TEXT, margin: 0, letterSpacing: "0.17px", lineHeight: "143%", width: 592, textAlign: "center" })}>
-            {o.year} {o.make} {o.model} {o.trim}
-          </p>
-          <p style={abs(tl.leaseLabel.l, tl.leaseLabel.top, { fontSize: tl.leaseLabel.fontSize, fontWeight: 700, color: TEXT, margin: 0, letterSpacing: "0.25px", width: "100%", textAlign: "center" })}>
-            Lease for
-          </p>
-          <p style={abs(tl.price.l, tl.price.top, { fontSize: tl.price.fontSize, fontWeight: 700, color: TEXT, margin: 0, letterSpacing: "0.17px", lineHeight: "143%", width: "100%", textAlign: "center" })}>
-            ${o.monthlyPayment}/mo.
-          </p>
-          <p style={abs(tl.termLabel.l, tl.termLabel.top, { fontSize: tl.termLabel.fontSize, fontWeight: 400, color: TEXT, margin: 0, letterSpacing: "0.25px" })}>
-            for {o.term} months.
-          </p>
-          <p style={abs(tl.dueLabel.l, tl.dueLabel.top, { fontSize: tl.dueLabel.fontSize, fontWeight: 400, color: TEXT, margin: 0, letterSpacing: "0.25px" })}>
-            ${o.totalDueAtSigning.toLocaleString()} due at signing
-          </p>
-          <CTAButton style={{ left: tl.cta.l, top: tl.cta.top, minWidth: tl.cta.w, height: tl.cta.h, fontSize: tl.cta.fontSize, paddingLeft: (tl.cta.h ?? tl.cta.fontSize * 2) * 0.5, paddingRight: (tl.cta.h ?? tl.cta.fontSize * 2) * 0.5 }}>
-            {cta}
-          </CTAButton>
-          <p style={abs(tl.disclaimer.l, tl.disclaimer.top, { fontSize: tl.disclaimer.fontSize, fontWeight: 400, color: TEXT, margin: 0 })}>
-            Photos for illustration purposes only.
-          </p>
-        </>
-      )}
+      {lm !== "bg-car" && lm !== "car" && cfg.logoE.size > 0 && <div style={abs(cfg.logoE.l, cfg.logoE.top)}><EventLogo size={cfg.logoE.size} /></div>}
+      {lm !== "bg-car" && lm !== "car" && <SingleProductUI o={o ?? undefined} tl={tl} cta={cta} blank={blank} dealerName={dealerName} leaseLabel={leaseLabel} finePrint={finePrint} />}
+    </div>
+  );
+}
+
+// ─── Layout: Event 1920×200 ───────────────────────────────────────────────────
+
+function Layout1920x200({ offer, background, cta, blank, cfg, dealerName, leaseLabel, finePrint }: LayoutProps) {
+  const { layerMode: lm } = useContext(AdTemplateCtx);
+  const slot = cfg.productSlots[0];
+  const tl = cfg.textLayout as SingleProductTextLayout;
+  return (
+    <div style={{ position: "relative", width: 1920, height: 200, overflow: "hidden" }}>
+      {lm !== "ui" && lm !== "car" && <BG image={background.images?.["event-1920x200"] ?? background.images?.["display-970x250"]} color={background.color} width={1920} height={200} />}
+      {lm !== "ui" && offer && !background.isLifestyle && <CarImage offer={offer} style={{ left: slot.l, top: slot.top, width: slot.w, height: slot.h }} />}
+      {lm !== "bg-car" && lm !== "car" && <div style={abs(cfg.logoP.l, cfg.logoP.top)}><PrimaryLogo size={cfg.logoP.size} /></div>}
+      {lm !== "bg-car" && lm !== "car" && <SingleProductUI o={offer} tl={tl} cta={cta} blank={blank} dealerName={dealerName} leaseLabel={leaseLabel} finePrint={finePrint} />}
+    </div>
+  );
+}
+
+// ─── Layout: Display 728×90 ───────────────────────────────────────────────────
+
+function Layout728x90({ offer, background, cta, blank, cfg, dealerName, leaseLabel, finePrint }: LayoutProps) {
+  const { layerMode: lm } = useContext(AdTemplateCtx);
+  const slot = cfg.productSlots[0];
+  const tl = cfg.textLayout as SingleProductTextLayout;
+  return (
+    <div style={{ position: "relative", width: 728, height: 90, overflow: "hidden" }}>
+      {lm !== "ui" && lm !== "car" && <BG image={background.images?.["display-728x90"] ?? background.images?.["display-970x250"]} color={background.color} width={728} height={90} />}
+      {lm !== "ui" && offer && !background.isLifestyle && <CarImage offer={offer} style={{ left: slot.l, top: slot.top, width: slot.w, height: slot.h }} />}
+      {lm !== "bg-car" && lm !== "car" && <div style={abs(cfg.logoP.l, cfg.logoP.top)}><PrimaryLogo size={cfg.logoP.size} /></div>}
+      {lm !== "bg-car" && lm !== "car" && <SingleProductUI o={offer} tl={tl} cta={cta} blank={blank} dealerName={dealerName} leaseLabel={leaseLabel} finePrint={finePrint} />}
+    </div>
+  );
+}
+
+// ─── Layout: Display 300×600 ─────────────────────────────────────────────────
+
+function Layout300x600({ offer, background, cta, blank, cfg, dealerName, leaseLabel, finePrint }: LayoutProps) {
+  const { layerMode: lm } = useContext(AdTemplateCtx);
+  const slot = cfg.productSlots[0];
+  const tl = cfg.textLayout as SingleProductTextLayout;
+  return (
+    <div style={{ position: "relative", width: 300, height: 600, overflow: "hidden" }}>
+      {lm !== "ui" && lm !== "car" && <BG image={background.images?.["display-300x600"] ?? background.images?.["website-600x1067"]} color={background.color} width={300} height={600} />}
+      {lm !== "ui" && offer && !background.isLifestyle && <CarImage offer={offer} style={{ left: slot.l, top: slot.top, width: slot.w, height: slot.h }} />}
+      {lm !== "bg-car" && lm !== "car" && <div style={abs(cfg.logoP.l, cfg.logoP.top)}><PrimaryLogo size={cfg.logoP.size} /></div>}
+      {lm !== "bg-car" && lm !== "car" && <SingleProductUI o={offer} tl={tl} cta={cta} blank={blank} dealerName={dealerName} leaseLabel={leaseLabel} finePrint={finePrint} />}
+    </div>
+  );
+}
+
+// ─── Layout: Display 160×600 ─────────────────────────────────────────────────
+
+function Layout160x600({ offer, background, cta, blank, cfg, dealerName, leaseLabel, finePrint }: LayoutProps) {
+  const { layerMode: lm } = useContext(AdTemplateCtx);
+  const slot = cfg.productSlots[0];
+  const tl = cfg.textLayout as SingleProductTextLayout;
+  return (
+    <div style={{ position: "relative", width: 160, height: 600, overflow: "hidden" }}>
+      {lm !== "ui" && lm !== "car" && <BG image={background.images?.["display-160x600"] ?? background.images?.["website-600x1067"]} color={background.color} width={160} height={600} />}
+      {lm !== "ui" && offer && !background.isLifestyle && <CarImage offer={offer} style={{ left: slot.l, top: slot.top, width: slot.w, height: slot.h }} />}
+      {lm !== "bg-car" && lm !== "car" && <div style={abs(cfg.logoP.l, cfg.logoP.top)}><PrimaryLogo size={cfg.logoP.size} /></div>}
+      {lm !== "bg-car" && lm !== "car" && <SingleProductUI o={offer} tl={tl} cta={cta} blank={blank} dealerName={dealerName} leaseLabel={leaseLabel} finePrint={finePrint} />}
+    </div>
+  );
+}
+
+// ─── Layout: Event 1900×776 ───────────────────────────────────────────────────
+
+function Layout1900x776({ offer, background, cta, blank, cfg, dealerName, leaseLabel, finePrint }: LayoutProps) {
+  const { layerMode: lm } = useContext(AdTemplateCtx);
+  const slot = cfg.productSlots[0];
+  const tl = cfg.textLayout as SingleProductTextLayout;
+  return (
+    <div style={{ position: "relative", width: 1900, height: 776, overflow: "hidden" }}>
+      {lm !== "ui" && lm !== "car" && <BG image={background.images?.["event-1900x776"] ?? background.images?.["website-2000x500"]} color={background.color} width={1900} height={776} />}
+      {lm !== "ui" && offer && !background.isLifestyle && <CarImage offer={offer} style={{ left: slot.l, top: slot.top, width: slot.w, height: slot.h }} />}
+      {lm !== "bg-car" && lm !== "car" && <div style={abs(cfg.logoP.l, cfg.logoP.top)}><PrimaryLogo size={cfg.logoP.size} /></div>}
+      {lm !== "bg-car" && lm !== "car" && <SingleProductUI o={offer} tl={tl} cta={cta} blank={blank} dealerName={dealerName} leaseLabel={leaseLabel} finePrint={finePrint} />}
     </div>
   );
 }
@@ -600,6 +681,11 @@ const LAYOUTS: Record<string, { width: number; height: number; Component: React.
   "social-1080x1080":          { width: 1080, height: 1080, Component: Layout1080x1080         },
   "website-600x450":           { width: 600,  height: 450,  Component: Layout600x450           },
   "website-600x1067":          { width: 600,  height: 1067, Component: Layout600x1067          },
+  "event-1920x200":            { width: 1920, height: 200,  Component: Layout1920x200          },
+  "display-728x90":            { width: 728,  height: 90,   Component: Layout728x90            },
+  "display-300x600":           { width: 300,  height: 600,  Component: Layout300x600           },
+  "display-160x600":           { width: 160,  height: 600,  Component: Layout160x600           },
+  "event-1900x776":            { width: 1900, height: 776,  Component: Layout1900x776          },
   "website-1969x1080-3prod":   { width: 1969, height: 1080, Component: Layout1969x1080_3prod   },
   "social-1080x1080-3prod":    { width: 1080, height: 1080, Component: Layout1080x1080_3prod   },
   "social-1080x1080-keymsg":   { width: 1080, height: 1080, Component: Layout1080x1080_keymsg  },
@@ -650,8 +736,10 @@ export function AdTemplate({
   offers,
   background,
   scale = 1,
-  cta = "Learn More",
+  cta = "Shop Now",
   dealerName = "Honda of Anywhere",
+  leaseLabel,
+  finePrint,
   blank = false,
   forExport = false,
   layerMode = "full",
@@ -778,7 +866,7 @@ export function AdTemplate({
           transform: scale !== 1 ? `scale(${scale})` : undefined,
           transformOrigin: "top left",
         }}>
-          <Component offer={offer} offers={offers} background={background} cta={cta} dealerName={dealerName} blank={blank} cfg={cfg} customFields={customFields} />
+          <Component offer={offer} offers={offers} background={background} cta={cta} dealerName={dealerName} leaseLabel={leaseLabel} finePrint={finePrint} blank={blank} cfg={cfg} customFields={customFields} />
         </div>
       </div>
     </AdTemplateCtx.Provider>

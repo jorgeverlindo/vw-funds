@@ -268,7 +268,7 @@ export function visibleSlotBounds(
 
 /** Discriminate between single-product and multi-product text layouts */
 export function isSingleProductTextLayout(tl: TextLayout): tl is SingleProductTextLayout {
-  return "title" in tl;
+  return "price" in tl;
 }
 
 /** Discriminate key-message layout (has `keyMessage` field) */

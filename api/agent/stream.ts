@@ -42,6 +42,10 @@ interface ProjectContext {
   availableBackgrounds?: Array<{ id: string; name: string }>;
   activeBrandOem?: string;
   taskOwners?: Record<string, string>;
+  dealerName?: string;
+  ctaText?: string;
+  leaseLabel?: string;
+  finePrint?: string;
 }
 
 // ─── System Prompt Builder (inlined from _lib/system-prompt) ─────────────────
@@ -231,6 +235,10 @@ When the user mentions a name (e.g. "send to Luke", "share with Sarah"), match i
 Name: ${ctx.projectName}
 ID: ${ctx.projectId}
 OEM / Brand: ${ctx.oem}
+Dealer name on banner: ${ctx.dealerName || "not set"}
+CTA button text: ${ctx.ctaText || "Shop Now (default)"}
+Lease label: ${ctx.leaseLabel || "Lease for (default)"}
+Fine print: ${ctx.finePrint || "(auto from offer terms)"}
 Current offers: ${currentOffers}
 Current templates: ${currentTemplates}
 Current backgrounds: ${currentBackgrounds}

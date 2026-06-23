@@ -59,6 +59,14 @@ export interface ProjectContextPayload {
   endDate?: string;
   /** Primary campaign owner / contact name */
   owner?: string;
+  /** Dealer / account name shown on banners */
+  dealerName?: string;
+  /** CTA button text (default "Shop Now") */
+  ctaText?: string;
+  /** Lease label text (default "Lease for") */
+  leaseLabel?: string;
+  /** Single-line fine print / terms */
+  finePrint?: string;
   currentOfferIds: string[];
   currentTemplateIds: string[];
   availableOffers: {

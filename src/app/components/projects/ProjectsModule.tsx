@@ -266,7 +266,18 @@ function ProjectsModuleInner({
     const localIds = new Set(localProjects.map(p => p.id));
     return [
       ...(projects as LocalProject[]).filter(p => !localIds.has(p.id) && !deletedIds.has(p.id)),
-      ...localProjects.filter(p => !deletedIds.has(p.id)),
+      ...localProjects.filter(p => !deletedIds.has(p.id)).map(p => {
+        // For static-origin projects, merge any new templateIds added to mock-data so
+        // adding a template to mock-data automatically surfaces in existing localStorage copies.
+        const staticBase = (projects as LocalProject[]).find(s => s.id === p.id);
+        if (!staticBase) return p;
+        const existing = new Set(p.templateIds ?? []);
+        const merged = [
+          ...(p.templateIds ?? []),
+          ...(staticBase.templateIds ?? []).filter(id => !existing.has(id)),
+        ];
+        return { ...p, templateIds: merged };
+      }),
     ].map(p => ({ ...p, status: (statusOverrides[p.id] ?? p.status) as ProjectStatus }));
   }, [localProjects, statusOverrides, deletedIds]);
 

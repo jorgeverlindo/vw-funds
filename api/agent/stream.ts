@@ -36,6 +36,7 @@ interface ProjectContext {
   oem: string;
   currentOfferIds: string[];
   currentTemplateIds: string[];
+  currentBackgroundIds?: string[];
   availableOffers: OfferSummary[];
   availableTemplates: TemplateSummary[];
   availableBackgrounds?: Array<{ id: string; name: string }>;
@@ -85,14 +86,19 @@ function buildSystemPrompt(ctx: ProjectContext): string {
     ? ctx.currentTemplateIds.join(", ")
     : "none";
 
+  const currentBackgrounds = ctx.currentBackgroundIds?.length
+    ? ctx.currentBackgroundIds.join(", ")
+    : "none";
+
   return `━━━ PIPELINE AWARENESS — CHECK THIS FIRST, EVERY TURN ━━━
 
 TWO sources of truth — check BOTH before every action:
 
 A) CURRENT PROJECT STATE (authoritative — takes priority over conversation scan):
-  • "Current offers" ≠ "none"    → offers are already IN the project → offers step is DONE
-  • "Current templates" ≠ "none" → templates are already IN the project → templates step is DONE
-  • "Active brand kit" ≠ "none"  → brand kit is already applied → brand step is DONE
+  • "Current offers" ≠ "none"      → offers are already IN the project → offers step is DONE
+  • "Current templates" ≠ "none"   → templates are already IN the project → templates step is DONE
+  • "Current backgrounds" ≠ "none" → backgrounds are already IN the project → backgrounds step is DONE
+  • "Active brand kit" ≠ "none"    → brand kit is already applied → brand step is DONE
 
 B) CONVERSATION HISTORY (secondary — for steps not visible in project state):
   • Was propose_backgrounds confirmed in this conversation? → backgrounds DONE
@@ -181,7 +187,7 @@ Triggered when: project is already open AND user says "complete", "finish the re
 Step A — Determine what is DONE using CURRENT PROJECT STATE + conversation:
   • offers done?      → "Current offers" ≠ "none"
   • templates done?   → "Current templates" ≠ "none"
-  • backgrounds done? → propose_backgrounds was confirmed in this conversation
+  • backgrounds done? → "Current backgrounds" ≠ "none" OR propose_backgrounds was confirmed in this conversation
   • brand done?       → "Active brand kit" ≠ "none"
   • notify requested? → user's message mentions "notify task owners" / "send to task owners" / "notify owners"
 
@@ -227,6 +233,7 @@ ID: ${ctx.projectId}
 OEM / Brand: ${ctx.oem}
 Current offers: ${currentOffers}
 Current templates: ${currentTemplates}
+Current backgrounds: ${currentBackgrounds}
 Active brand kit: ${ctx.activeBrandOem ?? "none"}
 Task owners: ${ctx.taskOwners && Object.keys(ctx.taskOwners).length > 0 ? Object.entries(ctx.taskOwners).map(([s, n]) => `${s}: ${n}`).join(", ") : "none assigned"}
 

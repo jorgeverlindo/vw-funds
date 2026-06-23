@@ -124,20 +124,32 @@ function SingleProductTextOverlay({
           active={activeField === "dealerName"}
           extraStyle={{ width: "100%", textAlign: "center" }} />
       )}
-      <TextVar el={tl.title} text="{year} {make} {model} {trim}" weight={400}
-        active={activeField === "title"} />
+      {tl.title && (
+        <TextVar el={tl.title} text="{year} {make} {model} {trim}" weight={400}
+          active={activeField === "title"} />
+      )}
       <TextVar el={tl.leaseLabel} text="Lease for" weight={400}
         active={activeField === "leaseLabel"} extraStyle={{ letterSpacing: "0.25px", lineHeight: "normal" }} />
       <TextVar el={tl.price} text="{monthlyPayment}/mo." weight={700}
         active={activeField === "price"} />
-      <TextVar el={tl.termLabel} text="for {term} months." weight={400}
-        active={activeField === "termLabel"} extraStyle={{ letterSpacing: "0.25px", lineHeight: "normal" }} />
-      <TextVar el={tl.dueLabel} text="{totalDue} due at signing" weight={400}
-        active={activeField === "dueLabel"} extraStyle={{ letterSpacing: "0.25px", lineHeight: "normal" }} />
+      {tl.finePrint && (
+        <TextVar el={tl.finePrint} text="{term} months  |  {totalDue} due at signing" weight={400}
+          active={activeField === "finePrint"} extraStyle={{ letterSpacing: "0.25px", lineHeight: "normal", whiteSpace: "normal", width: tl.finePrint.w }} />
+      )}
+      {tl.termLabel && (
+        <TextVar el={tl.termLabel} text="for {term} months." weight={400}
+          active={activeField === "termLabel"} extraStyle={{ letterSpacing: "0.25px", lineHeight: "normal" }} />
+      )}
+      {tl.dueLabel && (
+        <TextVar el={tl.dueLabel} text="{totalDue} due at signing" weight={400}
+          active={activeField === "dueLabel"} extraStyle={{ letterSpacing: "0.25px", lineHeight: "normal" }} />
+      )}
       <CTAVar el={tl.cta} active={activeField === "cta"} />
-      <TextVar el={tl.disclaimer} text="Photos for illustration purposes only." weight={400}
-        active={activeField === "disclaimer"}
-        extraStyle={{ width: tl.disclaimer.w, fontSize: tl.disclaimer.fontSize, textAlign: tl.disclaimer.textAlign ?? "left", whiteSpace: "normal" }} />
+      {tl.disclaimer && (
+        <TextVar el={tl.disclaimer} text="Photos for illustration purposes only." weight={400}
+          active={activeField === "disclaimer"}
+          extraStyle={{ width: tl.disclaimer.w, fontSize: tl.disclaimer.fontSize, textAlign: tl.disclaimer.textAlign ?? "left", whiteSpace: "normal" }} />
+      )}
     </>
   );
 }

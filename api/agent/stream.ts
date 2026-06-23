@@ -756,14 +756,15 @@ const agentTools: Anthropic.Tool[] = [
       "Remove one or more backgrounds that are currently applied to the project. " +
       "Use this when the user asks to remove, delete, or clear a specific background " +
       "(e.g. 'remove the beach background', 'delete background dirt-road'). " +
-      "Pass the background IDs from the AVAILABLE BACKGROUND CATALOG.",
+      "The IDs to pass are the ones listed under 'Current backgrounds' in CURRENT PROJECT STATE — " +
+      "those are the backgrounds actively in the project. Never call remove_templates_from_project for a background ID.",
     input_schema: {
       type: "object" as const,
       properties: {
         background_ids: {
           type: "array",
           items: { type: "string" },
-          description: "IDs of backgrounds to remove (e.g. ['beach-sunset', 'dirt-road'])",
+          description: "IDs of backgrounds to remove — use exact IDs from 'Current backgrounds' in the project state (e.g. ['beach-sunset', 'dirt-road'])",
         },
       },
       required: ["background_ids"],

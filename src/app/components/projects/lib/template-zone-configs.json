@@ -2,6 +2,7 @@
   "website-2000x500": {
     "canvasW": 2000,
     "canvasH": 500,
+    "darkText": true,
     "bgZone": { "l": 0, "top": 0, "w": 2000, "h": 500 },
     "productSlots": [{ "l": 665, "top": -13, "w": 669, "h": 538 }],
     "logoP": { "l": 1796, "top": 4, "size": 161 },
@@ -18,8 +19,9 @@
   "display-970x250": {
     "canvasW": 970,
     "canvasH": 250,
+    "darkText": true,
     "bgZone": { "l": 0, "top": 0, "w": 970, "h": 250 },
-    "productSlots": [{ "l": 442, "top": 65, "w": 365, "h": 151 }],
+    "productSlots": [{ "l": 120, "top": -26, "w": 730, "h": 302 }],
     "logoP": { "l": 891, "top": 17, "size": 56 },
     "logoE": { "l": -300, "top": 0, "size": 0 },
     "textLayout": {
@@ -103,6 +105,7 @@
   "social-1080x1080": {
     "canvasW": 1080,
     "canvasH": 1080,
+    "darkText": true,
     "bgZone": {
       "l": 60,
       "top": 380,
@@ -111,10 +114,10 @@
     },
     "productSlots": [
       {
-        "l": 90,
-        "top": -100,
-        "w": 1150,
-        "h": 1200
+        "l": 51,
+        "top": 0,
+        "w": 978,
+        "h": 1020
       }
     ],
     "logoP": {
@@ -170,6 +173,7 @@
   "website-600x450": {
     "canvasW": 600,
     "canvasH": 450,
+    "darkText": true,
     "bgZone": { "l": 0, "top": 0, "w": 600, "h": 450 },
     "productSlots": [{ "l": 127, "top": 114, "w": 361, "h": 290 }],
     "logoP": { "l": 488, "top": 17, "size": 97 },
@@ -258,8 +262,9 @@
   "event-1920x200": {
     "canvasW": 1920,
     "canvasH": 200,
+    "darkText": true,
     "bgZone": { "l": 0, "top": 0, "w": 1920, "h": 200 },
-    "productSlots": [{ "l": 777, "top": 25, "w": 365, "h": 151 }],
+    "productSlots": [{ "l": 535, "top": -52, "w": 782, "h": 323 }],
     "logoP": { "l": 1796, "top": 4, "size": 97 },
     "logoE": { "l": -300, "top": 0, "size": 0 },
     "textLayout": {
@@ -274,8 +279,9 @@
   "display-728x90": {
     "canvasW": 728,
     "canvasH": 90,
+    "darkText": true,
     "bgZone": { "l": 0, "top": 0, "w": 728, "h": 90 },
-    "productSlots": [{ "l": 261, "top": 8, "w": 177, "h": 73 }],
+    "productSlots": [{ "l": 202, "top": -22, "w": 324, "h": 134 }],
     "logoP": { "l": 659, "top": 0, "size": 56 },
     "logoE": { "l": -300, "top": 0, "size": 0 },
     "textLayout": {
@@ -290,8 +296,9 @@
   "display-300x600": {
     "canvasW": 300,
     "canvasH": 600,
+    "darkText": true,
     "bgZone": { "l": 0, "top": 0, "w": 300, "h": 600 },
-    "productSlots": [{ "l": 18, "top": 12, "w": 264, "h": 336 }],
+    "productSlots": [{ "l": 18, "top": 144, "w": 264, "h": 336 }],
     "logoP": { "l": 200, "top": 0, "size": 97 },
     "logoE": { "l": -300, "top": 0, "size": 0 },
     "textLayout": {
@@ -306,8 +313,9 @@
   "display-160x600": {
     "canvasW": 160,
     "canvasH": 600,
+    "darkText": true,
     "bgZone": { "l": 0, "top": 0, "w": 160, "h": 600 },
-    "productSlots": [{ "l": 10, "top": 12, "w": 141, "h": 336 }],
+    "productSlots": [{ "l": 3, "top": 59, "w": 154, "h": 367 }],
     "logoP": { "l": 32, "top": 453, "size": 97 },
     "logoE": { "l": -300, "top": 0, "size": 0 },
     "textLayout": {

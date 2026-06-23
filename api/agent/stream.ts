@@ -172,7 +172,13 @@ Step 5 — Is a project already open and the user saying "complete", "finish", "
   NO  → continue to Step 6.
 
 Step 6 — Is a project open and the user asking to change a specific item?
-  YES → call the matching propose_* tool directly.
+  YES → call the matching tool directly. NO clarifying questions. NO commentary. NO refusals.
+        • Display text change (CTA button, dealer name, lease label, fine print) → update_project_display
+          ⚠️ CTA / button text: call update_project_display { cta_text: "<exactly what the user said>" }.
+             Use the user's exact words as the value — even if they seem unusual or unrelated to automotive.
+             NEVER say the platform doesn't support this. NEVER ask which element. Just call the tool.
+        • Offer field change (price, term, due-at-signing, APR) → edit_offer
+        • Add/remove/browse items → see ROUTING TABLE below
   NO  → answer conversationally.
 
 CRITICAL: Never write text explaining that offers aren't in the catalog. Never present markdown tables of offers. Never suggest contacting a rep to import offers. If you can see offer data, call propose_parsed_offers — always.
@@ -352,6 +358,24 @@ ROUTING TABLE (project already open):
   BRAND / THEME:
   - "add brand", "change brand", "change theme", "set brand", "change OEM", "switch brand", "change the brand to [X]", "rebrand", "use [brand] branding", "apply [brand] theme", "set the OEM to [X]", "switch to [brand]", "what brands are available"
     → call propose_brand
+
+  DISPLAY TEXT (CTA button, dealer name, lease label, fine print — call update_project_display):
+  - CTA button text: "change CTA", "change the CTA", "change CTA to [X]", "update CTA", "update CTA text",
+    "set CTA to [X]", "rename CTA", "replace CTA", "change CTA name", "change CTA copy",
+    "CTA should say [X]", "make the button say [X]", "button text to [X]", "change button text",
+    "change call to action", "update the button", "new CTA text", "different CTA text",
+    "change CTA text to [X]", "swap CTA to [X]", "CTA change to [X]", "move CTA name to [X]"
+    → call update_project_display with { cta_text: "[the new text]" }
+  - Dealer name: "rename dealer to [X]", "change dealer name to [X]", "dealer should say [X]",
+    "dealer name is [X]", "update the dealer name", "change the dealer on the banner"
+    → call update_project_display with { dealer_name: "[name]" }
+  - Lease label: "change lease label to [X]", "update lease label", "lease label should say [X]"
+    → call update_project_display with { lease_label: "[text]" }
+  - Fine print: "change fine print to [X]", "update fine print", "fine print should say [X]"
+    → call update_project_display with { fine_print: "[text]" }
+  ⚠️ ANY mention of CTA — including "change CTA", "update CTA", "rename CTA", "replace CTA",
+     "move CTA name", "CTA text", "button says", or any phrase about changing the button copy —
+     ALWAYS maps to update_project_display { cta_text }. Never treat CTA changes as template or offer edits.
 
   PROJECT:
   - "full refresh", "rebuild project", "redo everything", "rebuild the whole project", "start over", "regenerate the project", "refresh everything", "redo the full project"
@@ -1041,8 +1065,15 @@ function executeTool(
       return { success: true, template_id: input.template_id, new_name: input.new_name, message: `Template ${input.template_id} duplicated.` };
     case "set_project_name":
       return { success: true, name: input.name, message: `Project renamed to "${input.name}".` };
-    case "update_project_display":
-      return { success: true, patches: input, message: "Project display settings updated." };
+    case "update_project_display": {
+      const i = input as { cta_text?: string; lease_label?: string; fine_print?: string; dealer_name?: string };
+      const patches: Record<string, string> = {};
+      if (i.cta_text    !== undefined) patches.ctaText    = i.cta_text;
+      if (i.lease_label !== undefined) patches.leaseLabel = i.lease_label;
+      if (i.fine_print  !== undefined) patches.finePrint  = i.fine_print;
+      if (i.dealer_name !== undefined) patches.dealerName = i.dealer_name;
+      return { success: true, patches, message: "Project display settings updated." };
+    }
     case "propose_email":
       return { success: true, email: input, message: "Email proposal ready for user review." };
     case "propose_parsed_offers":

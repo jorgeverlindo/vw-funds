@@ -681,6 +681,9 @@ function ReviewerPickerCard({
   onSend: (contacts: ReviewerContact[], channels: Record<string, "platform" | "email">, message: string) => void;
   recipientHints?: string[];
 }) {
+  const [customContacts, setCustomContacts] = useState<ReviewerContact[]>([]);
+  const allContacts = [...MOCK_CONTACTS, ...customContacts];
+
   const [selected, setSelected] = useState<ReviewerContact[]>(() => {
     if (recipientHints && recipientHints.length > 0) {
       const lowerHints = recipientHints.map(h => h.toLowerCase());
@@ -694,12 +697,33 @@ function ReviewerPickerCard({
     () => `I'd like to share the ${projectName} project with you. Please find the project link below:\n\n${projectUrl}`
   );
   const [showAddMenu, setShowAddMenu] = useState(false);
+  const [emailInput, setEmailInput] = useState("");
+  const emailInputRef = useRef<HTMLInputElement>(null);
   const [channels, setChannels] = useState<Record<string, "platform" | "email">>(
     () => Object.fromEntries(MOCK_CONTACTS.map(c => [c.email, c.group === "dealer" ? "email" : "platform"]))
   );
 
   const toggleChannel = (email: string) =>
     setChannels(prev => ({ ...prev, [email]: prev[email] === "platform" ? "email" : "platform" }));
+
+  const addByEmail = (raw: string) => {
+    const email = raw.trim().toLowerCase();
+    if (!email || !email.includes("@")) return;
+    const existing = allContacts.find(c => c.email.toLowerCase() === email);
+    if (existing) {
+      if (!selected.find(s => s.email === existing.email)) {
+        setSelected(prev => [...prev, existing]);
+      }
+    } else {
+      const name = email.split("@")[0].replace(/[._-]/g, " ").replace(/\b\w/g, l => l.toUpperCase());
+      const contact: ReviewerContact = { name, email, group: "dealer" };
+      setCustomContacts(prev => [...prev, contact]);
+      setChannels(prev => ({ ...prev, [email]: "email" }));
+      setSelected(prev => [...prev, contact]);
+    }
+    setEmailInput("");
+    setShowAddMenu(false);
+  };
 
   if (applied) {
     return (
@@ -714,7 +738,7 @@ function ReviewerPickerCard({
     setSelected(prev => prev.find(c => c.email === contact.email) ? prev : [...prev, contact]);
     setShowAddMenu(false);
   };
-  const available = MOCK_CONTACTS.filter(c => !selected.find(s => s.email === c.email));
+  const available = allContacts.filter(c => !selected.find(s => s.email === c.email));
 
   const initials = (name: string) => name.split(" ").map(n => n[0]).join("").slice(0, 2).toUpperCase();
 
@@ -786,12 +810,12 @@ function ReviewerPickerCard({
         {/* ── Include Contact button ── */}
         <div className="relative">
           <button
-            onClick={() => setShowAddMenu(v => !v)}
+            onClick={() => { setShowAddMenu(v => !v); setTimeout(() => emailInputRef.current?.focus(), 50); }}
             className="w-full py-[8px] rounded-full border text-[13px] font-medium tracking-[0.46px] cursor-pointer transition-colors hover:bg-[rgba(71,59,171,0.04)]"
             style={{ borderColor: "var(--brand-accent)", color: "var(--brand-accent)", fontWeight: 500, background: "transparent" }}>
             Include Contact
           </button>
-          {showAddMenu && available.length > 0 && (
+          {showAddMenu && (
             <div className="absolute top-full left-0 right-0 mt-[4px] bg-white rounded-[8px] border border-[rgba(0,0,0,0.12)] z-20 overflow-hidden"
               style={{ boxShadow: "0px 4px 12px rgba(0,0,0,0.12)" }}>
               {available.map(contact => (
@@ -807,6 +831,31 @@ function ReviewerPickerCard({
                   </div>
                 </button>
               ))}
+              {/* Email input row */}
+              {available.length > 0 && (
+                <div className="h-px mx-[12px]" style={{ background: "rgba(0,0,0,0.08)" }} />
+              )}
+              <div className="flex items-center gap-[8px] px-[12px] py-[8px]">
+                <input
+                  ref={emailInputRef}
+                  type="email"
+                  value={emailInput}
+                  onChange={e => setEmailInput(e.target.value)}
+                  onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); addByEmail(emailInput); } }}
+                  placeholder="Enter email address..."
+                  className="flex-1 text-[12px] outline-none bg-transparent"
+                  style={{ color: "#1f1d25", letterSpacing: "0.17px" }}
+                />
+                <button
+                  onClick={() => addByEmail(emailInput)}
+                  disabled={!emailInput.includes("@")}
+                  className="shrink-0 w-[20px] h-[20px] rounded-full flex items-center justify-center transition-colors disabled:opacity-30"
+                  style={{ background: "var(--brand-accent)" }}>
+                  <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+                    <path d="M5 1v8M1 5h8" stroke="white" strokeWidth="1.5" strokeLinecap="round"/>
+                  </svg>
+                </button>
+              </div>
             </div>
           )}
         </div>

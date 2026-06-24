@@ -5,226 +5,235 @@ import { lifestyleImages } from "./lifestyle-data";
 // Global pool of offers. In the future, this grows via CSV upload.
 
 export const offerLibrary = [
-  {
-    id: "crv-trailsport",
-    year: "2026",
-    make: "Honda",
-    model: "CR-V",
-    trim: "TrailSport AWD",
-    image: "https://public.dev-app.constech.io/jellybeans/2026/honda/crv/jellybean-ad4b3522-e1ef-415a-bfca-517f4dfd7d38.png",
-    stock: 16,
-    offerType: "Lease",
-    tags: ["Regional"],
-    pvi: 92,
-    aging: 27,
-    sales: 10,
-    inventory: 16,
-    monthlyPayment: 529,
-    term: 36,
-    totalDueAtSigning: 4999,
-  },
-  {
-    id: "hrv-sport",
-    year: "2026",
-    make: "Honda",
-    model: "HR-V",
-    trim: "Sport 2WD",
-    image: "https://public.dev-app.constech.io/jellybeans/2026/honda/hrv/jellybean-50361aba-e638-49cc-9541-d3df45878d48.png",
-    stock: 24,
-    offerType: "Lease",
-    tags: ["Regional"],
-    pvi: 93,
-    aging: 70,
-    sales: 9,
-    inventory: 24,
-    monthlyPayment: 699,
-    term: 36,
-    totalDueAtSigning: 5259,
-  },
-  {
-    id: "crv-lx",
-    year: "2026",
-    make: "Honda",
-    model: "CR-V",
-    trim: "LX AWD",
-    image: "https://public.dev-app.constech.io/jellybeans/2026/honda/crv/jellybean-6a3601ca-2c3b-43f8-ba04-1feb0563529f.png",
-    stock: 6,
-    offerType: "Lease",
-    tags: ["Regional"],
-    pvi: 92,
-    aging: 91,
-    sales: 3,
-    inventory: 6,
-    monthlyPayment: 999,
-    term: 36,
-    totalDueAtSigning: 8419,
-  },
-  {
-    id: "odyssey-exl",
-    year: "2026",
-    make: "Honda",
-    model: "Odyssey",
-    trim: "EX-L",
-    image: "https://public.dev-app.constech.io/jellybeans/2026/honda/odyssey/jellybean-dd433a83-3a52-4f0e-9d1a-0949179bc052.png",
-    stock: 25,
-    offerType: "Lease",
-    tags: ["Regional"],
-    pvi: 96,
-    aging: 77,
-    sales: 33,
-    inventory: 25,
-    monthlyPayment: 999,
-    term: 39,
-    totalDueAtSigning: 7199,
-  },
-  {
-    id: "civic-hybrid",
-    year: "2026",
-    make: "Honda",
-    model: "Civic",
-    trim: "Sport Touring Hybrid CVT",
-    image: "https://public.dev-app.constech.io/jellybeans/2026/honda/civic/jellybean-dbba5cf0-fab9-4286-b7a3-0e0bd3ef23ea.png",
-    stock: 10,
-    offerType: "Lease",
-    tags: ["Regional"],
-    pvi: 92,
-    aging: 71,
-    sales: 6,
-    inventory: 10,
-    monthlyPayment: 799,
-    term: 36,
-    totalDueAtSigning: 7099,
-  },
+
+  // ── Honda CR-V ───────────────────────────────────────────────────────────────
+
+  // CR-V LX 2WD
+  { id: "crv-lx-2wd-l36",         year: "2026", make: "Honda", model: "CR-V", trim: "LX 2WD",                   image: "https://public.dev-app.constech.io/jellybeans/2026/honda/crv/jellybean-d3c65dcb-f86e-4b13-ad7d-24a023c86c9d.png", stock: 28, offerType: "Lease",   tags: ["Regional"], pvi: 91, aging: 34, sales: 14, inventory: 28, monthlyPayment: 429, term: 36, totalDueAtSigning: 3999 },
+  { id: "crv-lx-2wd-l24",         year: "2026", make: "Honda", model: "CR-V", trim: "LX 2WD",                   image: "https://public.dev-app.constech.io/jellybeans/2026/honda/crv/jellybean-d3c65dcb-f86e-4b13-ad7d-24a023c86c9d.png", stock: 28, offerType: "Lease",   tags: ["Regional"], pvi: 90, aging: 34, sales: 10, inventory: 28, monthlyPayment: 479, term: 24, totalDueAtSigning: 4199 },
+  { id: "crv-lx-2wd-apr60",       year: "2026", make: "Honda", model: "CR-V", trim: "LX 2WD",                   image: "https://public.dev-app.constech.io/jellybeans/2026/honda/crv/jellybean-d3c65dcb-f86e-4b13-ad7d-24a023c86c9d.png", stock: 28, offerType: "APR",     tags: ["National"], pvi: 88, aging: 34, sales:  5, inventory: 28, monthlyPayment: 479, term: 60, totalDueAtSigning:    0 },
+  { id: "crv-lx-2wd-apr72",       year: "2026", make: "Honda", model: "CR-V", trim: "LX 2WD",                   image: "https://public.dev-app.constech.io/jellybeans/2026/honda/crv/jellybean-d3c65dcb-f86e-4b13-ad7d-24a023c86c9d.png", stock: 28, offerType: "APR",     tags: ["National"], pvi: 87, aging: 34, sales:  4, inventory: 28, monthlyPayment: 419, term: 72, totalDueAtSigning:    0 },
+  { id: "crv-lx-2wd-fin48",       year: "2026", make: "Honda", model: "CR-V", trim: "LX 2WD",                   image: "https://public.dev-app.constech.io/jellybeans/2026/honda/crv/jellybean-d3c65dcb-f86e-4b13-ad7d-24a023c86c9d.png", stock: 28, offerType: "Finance", tags: ["Regional"], pvi: 90, aging: 34, sales:  7, inventory: 28, monthlyPayment: 559, term: 48, totalDueAtSigning: 1999 },
+
+  // CR-V LX AWD (crv-lx = existing)
+  { id: "crv-lx",                  year: "2026", make: "Honda", model: "CR-V", trim: "LX AWD",                   image: "https://public.dev-app.constech.io/jellybeans/2026/honda/crv/jellybean-6a3601ca-2c3b-43f8-ba04-1feb0563529f.png", stock:  6, offerType: "Lease",   tags: ["Regional"], pvi: 92, aging: 91, sales:  3, inventory:  6, monthlyPayment: 999, term: 36, totalDueAtSigning: 8419 },
+  { id: "crv-lx-awd-l24",         year: "2026", make: "Honda", model: "CR-V", trim: "LX AWD",                   image: "https://public.dev-app.constech.io/jellybeans/2026/honda/crv/jellybean-6a3601ca-2c3b-43f8-ba04-1feb0563529f.png", stock:  6, offerType: "Lease",   tags: ["Regional"], pvi: 91, aging: 91, sales:  2, inventory:  6, monthlyPayment: 1049, term: 24, totalDueAtSigning: 8699 },
+  { id: "crv-lx-awd-apr60",       year: "2026", make: "Honda", model: "CR-V", trim: "LX AWD",                   image: "https://public.dev-app.constech.io/jellybeans/2026/honda/crv/jellybean-6a3601ca-2c3b-43f8-ba04-1feb0563529f.png", stock:  6, offerType: "APR",     tags: ["National"], pvi: 89, aging: 91, sales:  2, inventory:  6, monthlyPayment: 519, term: 60, totalDueAtSigning:    0 },
+  { id: "crv-lx-awd-apr72",       year: "2026", make: "Honda", model: "CR-V", trim: "LX AWD",                   image: "https://public.dev-app.constech.io/jellybeans/2026/honda/crv/jellybean-6a3601ca-2c3b-43f8-ba04-1feb0563529f.png", stock:  6, offerType: "APR",     tags: ["National"], pvi: 88, aging: 91, sales:  1, inventory:  6, monthlyPayment: 459, term: 72, totalDueAtSigning:    0 },
+  { id: "crv-lx-awd-fin48",       year: "2026", make: "Honda", model: "CR-V", trim: "LX AWD",                   image: "https://public.dev-app.constech.io/jellybeans/2026/honda/crv/jellybean-6a3601ca-2c3b-43f8-ba04-1feb0563529f.png", stock:  6, offerType: "Finance", tags: ["Regional"], pvi: 90, aging: 91, sales:  2, inventory:  6, monthlyPayment: 579, term: 48, totalDueAtSigning: 1999 },
+
+  // CR-V EX 2WD
+  { id: "crv-ex-2wd-l36",         year: "2026", make: "Honda", model: "CR-V", trim: "EX 2WD",                   image: "https://public.dev-app.constech.io/jellybeans/2026/honda/crv/jellybean-3aba28bf-35e7-4186-90c9-8258bd6e3c38.png", stock: 19, offerType: "Lease",   tags: ["Regional"], pvi: 93, aging: 22, sales:  9, inventory: 19, monthlyPayment: 469, term: 36, totalDueAtSigning: 4299 },
+  { id: "crv-ex-2wd-l24",         year: "2026", make: "Honda", model: "CR-V", trim: "EX 2WD",                   image: "https://public.dev-app.constech.io/jellybeans/2026/honda/crv/jellybean-3aba28bf-35e7-4186-90c9-8258bd6e3c38.png", stock: 19, offerType: "Lease",   tags: ["Regional"], pvi: 92, aging: 22, sales:  7, inventory: 19, monthlyPayment: 519, term: 24, totalDueAtSigning: 4499 },
+  { id: "crv-ex-2wd-apr60",       year: "2026", make: "Honda", model: "CR-V", trim: "EX 2WD",                   image: "https://public.dev-app.constech.io/jellybeans/2026/honda/crv/jellybean-3aba28bf-35e7-4186-90c9-8258bd6e3c38.png", stock: 19, offerType: "APR",     tags: ["National"], pvi: 90, aging: 22, sales:  4, inventory: 19, monthlyPayment: 529, term: 60, totalDueAtSigning:    0 },
+  { id: "crv-ex-2wd-apr72",       year: "2026", make: "Honda", model: "CR-V", trim: "EX 2WD",                   image: "https://public.dev-app.constech.io/jellybeans/2026/honda/crv/jellybean-3aba28bf-35e7-4186-90c9-8258bd6e3c38.png", stock: 19, offerType: "APR",     tags: ["National"], pvi: 89, aging: 22, sales:  3, inventory: 19, monthlyPayment: 469, term: 72, totalDueAtSigning:    0 },
+  { id: "crv-ex-2wd-fin48",       year: "2026", make: "Honda", model: "CR-V", trim: "EX 2WD",                   image: "https://public.dev-app.constech.io/jellybeans/2026/honda/crv/jellybean-3aba28bf-35e7-4186-90c9-8258bd6e3c38.png", stock: 19, offerType: "Finance", tags: ["Regional"], pvi: 91, aging: 22, sales:  5, inventory: 19, monthlyPayment: 589, term: 48, totalDueAtSigning: 2199 },
+
+  // CR-V EX-L 2WD
+  { id: "crv-exl-2wd-l36",        year: "2026", make: "Honda", model: "CR-V", trim: "EX-L 2WD",                 image: "https://public.dev-app.constech.io/jellybeans/2026/honda/crv/jellybean-ba188901-0704-4685-acdc-cfa6060f399d.png", stock: 14, offerType: "Lease",   tags: ["Regional"], pvi: 90, aging: 45, sales:  7, inventory: 14, monthlyPayment: 499, term: 36, totalDueAtSigning: 4699 },
+  { id: "crv-exl-2wd-l24",        year: "2026", make: "Honda", model: "CR-V", trim: "EX-L 2WD",                 image: "https://public.dev-app.constech.io/jellybeans/2026/honda/crv/jellybean-ba188901-0704-4685-acdc-cfa6060f399d.png", stock: 14, offerType: "Lease",   tags: ["Regional"], pvi: 89, aging: 45, sales:  5, inventory: 14, monthlyPayment: 549, term: 24, totalDueAtSigning: 4899 },
+  { id: "crv-exl-2wd-apr60",      year: "2026", make: "Honda", model: "CR-V", trim: "EX-L 2WD",                 image: "https://public.dev-app.constech.io/jellybeans/2026/honda/crv/jellybean-ba188901-0704-4685-acdc-cfa6060f399d.png", stock: 14, offerType: "APR",     tags: ["National"], pvi: 87, aging: 45, sales:  3, inventory: 14, monthlyPayment: 579, term: 60, totalDueAtSigning:    0 },
+  { id: "crv-exl-2wd-apr72",      year: "2026", make: "Honda", model: "CR-V", trim: "EX-L 2WD",                 image: "https://public.dev-app.constech.io/jellybeans/2026/honda/crv/jellybean-ba188901-0704-4685-acdc-cfa6060f399d.png", stock: 14, offerType: "APR",     tags: ["National"], pvi: 86, aging: 45, sales:  2, inventory: 14, monthlyPayment: 509, term: 72, totalDueAtSigning:    0 },
+  { id: "crv-exl-2wd-fin48",      year: "2026", make: "Honda", model: "CR-V", trim: "EX-L 2WD",                 image: "https://public.dev-app.constech.io/jellybeans/2026/honda/crv/jellybean-ba188901-0704-4685-acdc-cfa6060f399d.png", stock: 14, offerType: "Finance", tags: ["Regional"], pvi: 89, aging: 45, sales:  4, inventory: 14, monthlyPayment: 629, term: 48, totalDueAtSigning: 2299 },
+
+  // CR-V EX-L AWD
+  { id: "crv-exl-awd-l36",        year: "2026", make: "Honda", model: "CR-V", trim: "EX-L AWD",                 image: "https://public.dev-app.constech.io/jellybeans/2026/honda/crv/jellybean-94cc5e74-04b6-4e57-bb16-98824bc67927.png", stock: 11, offerType: "Lease",   tags: ["Regional"], pvi: 91, aging: 38, sales:  5, inventory: 11, monthlyPayment: 519, term: 36, totalDueAtSigning: 4999 },
+  { id: "crv-exl-awd-l24",        year: "2026", make: "Honda", model: "CR-V", trim: "EX-L AWD",                 image: "https://public.dev-app.constech.io/jellybeans/2026/honda/crv/jellybean-94cc5e74-04b6-4e57-bb16-98824bc67927.png", stock: 11, offerType: "Lease",   tags: ["Regional"], pvi: 90, aging: 38, sales:  4, inventory: 11, monthlyPayment: 569, term: 24, totalDueAtSigning: 5199 },
+  { id: "crv-exl-awd-apr60",      year: "2026", make: "Honda", model: "CR-V", trim: "EX-L AWD",                 image: "https://public.dev-app.constech.io/jellybeans/2026/honda/crv/jellybean-94cc5e74-04b6-4e57-bb16-98824bc67927.png", stock: 11, offerType: "APR",     tags: ["National"], pvi: 88, aging: 38, sales:  3, inventory: 11, monthlyPayment: 609, term: 60, totalDueAtSigning:    0 },
+  { id: "crv-exl-awd-apr72",      year: "2026", make: "Honda", model: "CR-V", trim: "EX-L AWD",                 image: "https://public.dev-app.constech.io/jellybeans/2026/honda/crv/jellybean-94cc5e74-04b6-4e57-bb16-98824bc67927.png", stock: 11, offerType: "APR",     tags: ["National"], pvi: 87, aging: 38, sales:  2, inventory: 11, monthlyPayment: 539, term: 72, totalDueAtSigning:    0 },
+  { id: "crv-exl-awd-fin48",      year: "2026", make: "Honda", model: "CR-V", trim: "EX-L AWD",                 image: "https://public.dev-app.constech.io/jellybeans/2026/honda/crv/jellybean-94cc5e74-04b6-4e57-bb16-98824bc67927.png", stock: 11, offerType: "Finance", tags: ["Regional"], pvi: 90, aging: 38, sales:  3, inventory: 11, monthlyPayment: 659, term: 48, totalDueAtSigning: 2399 },
+
+  // CR-V TrailSport AWD (crv-trailsport = existing)
+  { id: "crv-trailsport",          year: "2026", make: "Honda", model: "CR-V", trim: "TrailSport AWD",           image: "https://public.dev-app.constech.io/jellybeans/2026/honda/crv/jellybean-ad4b3522-e1ef-415a-bfca-517f4dfd7d38.png", stock: 16, offerType: "Lease",   tags: ["Regional"], pvi: 92, aging: 27, sales: 10, inventory: 16, monthlyPayment: 529, term: 36, totalDueAtSigning: 4999 },
+  { id: "crv-trailsport-l24",      year: "2026", make: "Honda", model: "CR-V", trim: "TrailSport AWD",           image: "https://public.dev-app.constech.io/jellybeans/2026/honda/crv/jellybean-ad4b3522-e1ef-415a-bfca-517f4dfd7d38.png", stock: 16, offerType: "Lease",   tags: ["Regional"], pvi: 91, aging: 27, sales:  7, inventory: 16, monthlyPayment: 579, term: 24, totalDueAtSigning: 5199 },
+  { id: "crv-trailsport-apr60",    year: "2026", make: "Honda", model: "CR-V", trim: "TrailSport AWD",           image: "https://public.dev-app.constech.io/jellybeans/2026/honda/crv/jellybean-ad4b3522-e1ef-415a-bfca-517f4dfd7d38.png", stock: 16, offerType: "APR",     tags: ["National"], pvi: 89, aging: 27, sales:  4, inventory: 16, monthlyPayment: 619, term: 60, totalDueAtSigning:    0 },
+  { id: "crv-trailsport-apr72",    year: "2026", make: "Honda", model: "CR-V", trim: "TrailSport AWD",           image: "https://public.dev-app.constech.io/jellybeans/2026/honda/crv/jellybean-ad4b3522-e1ef-415a-bfca-517f4dfd7d38.png", stock: 16, offerType: "APR",     tags: ["National"], pvi: 88, aging: 27, sales:  3, inventory: 16, monthlyPayment: 549, term: 72, totalDueAtSigning:    0 },
+  { id: "crv-trailsport-fin48",    year: "2026", make: "Honda", model: "CR-V", trim: "TrailSport AWD",           image: "https://public.dev-app.constech.io/jellybeans/2026/honda/crv/jellybean-ad4b3522-e1ef-415a-bfca-517f4dfd7d38.png", stock: 16, offerType: "Finance", tags: ["Regional"], pvi: 91, aging: 27, sales:  5, inventory: 16, monthlyPayment: 669, term: 48, totalDueAtSigning: 2499 },
+
+  // CR-V Hybrid Sport 2WD
+  { id: "crv-hybsport-2wd-l36",    year: "2026", make: "Honda", model: "CR-V", trim: "Hybrid Sport 2WD",         image: "https://public.dev-app.constech.io/jellybeans/2026/honda/crv/jellybean-f80c85a8-11cc-46b9-a3f7-5a4af1e819db.png", stock: 23, offerType: "Lease",   tags: ["Regional"], pvi: 94, aging: 19, sales: 12, inventory: 23, monthlyPayment: 549, term: 36, totalDueAtSigning: 5199 },
+  { id: "crv-hybsport-2wd-l24",    year: "2026", make: "Honda", model: "CR-V", trim: "Hybrid Sport 2WD",         image: "https://public.dev-app.constech.io/jellybeans/2026/honda/crv/jellybean-f80c85a8-11cc-46b9-a3f7-5a4af1e819db.png", stock: 23, offerType: "Lease",   tags: ["Regional"], pvi: 93, aging: 19, sales:  9, inventory: 23, monthlyPayment: 599, term: 24, totalDueAtSigning: 5399 },
+  { id: "crv-hybsport-2wd-apr60",  year: "2026", make: "Honda", model: "CR-V", trim: "Hybrid Sport 2WD",         image: "https://public.dev-app.constech.io/jellybeans/2026/honda/crv/jellybean-f80c85a8-11cc-46b9-a3f7-5a4af1e819db.png", stock: 23, offerType: "APR",     tags: ["National"], pvi: 91, aging: 19, sales:  5, inventory: 23, monthlyPayment: 579, term: 60, totalDueAtSigning:    0 },
+  { id: "crv-hybsport-2wd-apr72",  year: "2026", make: "Honda", model: "CR-V", trim: "Hybrid Sport 2WD",         image: "https://public.dev-app.constech.io/jellybeans/2026/honda/crv/jellybean-f80c85a8-11cc-46b9-a3f7-5a4af1e819db.png", stock: 23, offerType: "APR",     tags: ["National"], pvi: 90, aging: 19, sales:  4, inventory: 23, monthlyPayment: 519, term: 72, totalDueAtSigning:    0 },
+  { id: "crv-hybsport-2wd-fin48",  year: "2026", make: "Honda", model: "CR-V", trim: "Hybrid Sport 2WD",         image: "https://public.dev-app.constech.io/jellybeans/2026/honda/crv/jellybean-f80c85a8-11cc-46b9-a3f7-5a4af1e819db.png", stock: 23, offerType: "Finance", tags: ["Regional"], pvi: 92, aging: 19, sales:  6, inventory: 23, monthlyPayment: 679, term: 48, totalDueAtSigning: 2499 },
+
+  // CR-V Hybrid Sport AWD
+  { id: "crv-hybsport-awd-l36",    year: "2026", make: "Honda", model: "CR-V", trim: "Hybrid Sport AWD",         image: "https://public.dev-app.constech.io/jellybeans/2026/honda/crv/jellybean-5593f7ed-a7de-42a1-81ba-ba4a021efce7.png", stock: 17, offerType: "Lease",   tags: ["Regional"], pvi: 93, aging: 24, sales:  9, inventory: 17, monthlyPayment: 569, term: 36, totalDueAtSigning: 5399 },
+  { id: "crv-hybsport-awd-l24",    year: "2026", make: "Honda", model: "CR-V", trim: "Hybrid Sport AWD",         image: "https://public.dev-app.constech.io/jellybeans/2026/honda/crv/jellybean-5593f7ed-a7de-42a1-81ba-ba4a021efce7.png", stock: 17, offerType: "Lease",   tags: ["Regional"], pvi: 92, aging: 24, sales:  7, inventory: 17, monthlyPayment: 619, term: 24, totalDueAtSigning: 5599 },
+  { id: "crv-hybsport-awd-apr60",  year: "2026", make: "Honda", model: "CR-V", trim: "Hybrid Sport AWD",         image: "https://public.dev-app.constech.io/jellybeans/2026/honda/crv/jellybean-5593f7ed-a7de-42a1-81ba-ba4a021efce7.png", stock: 17, offerType: "APR",     tags: ["National"], pvi: 90, aging: 24, sales:  4, inventory: 17, monthlyPayment: 599, term: 60, totalDueAtSigning:    0 },
+  { id: "crv-hybsport-awd-apr72",  year: "2026", make: "Honda", model: "CR-V", trim: "Hybrid Sport AWD",         image: "https://public.dev-app.constech.io/jellybeans/2026/honda/crv/jellybean-5593f7ed-a7de-42a1-81ba-ba4a021efce7.png", stock: 17, offerType: "APR",     tags: ["National"], pvi: 89, aging: 24, sales:  3, inventory: 17, monthlyPayment: 539, term: 72, totalDueAtSigning:    0 },
+  { id: "crv-hybsport-awd-fin48",  year: "2026", make: "Honda", model: "CR-V", trim: "Hybrid Sport AWD",         image: "https://public.dev-app.constech.io/jellybeans/2026/honda/crv/jellybean-5593f7ed-a7de-42a1-81ba-ba4a021efce7.png", stock: 17, offerType: "Finance", tags: ["Regional"], pvi: 91, aging: 24, sales:  5, inventory: 17, monthlyPayment: 699, term: 48, totalDueAtSigning: 2499 },
+
+  // CR-V Hybrid Sport-L 2WD
+  { id: "crv-hybsportl-2wd-l36",   year: "2026", make: "Honda", model: "CR-V", trim: "Hybrid Sport-L 2WD",       image: "https://public.dev-app.constech.io/jellybeans/2026/honda/crv/jellybean-7d58160b-c842-4b30-88de-aea3b9533cd2.png", stock: 12, offerType: "Lease",   tags: ["Regional"], pvi: 92, aging: 33, sales:  6, inventory: 12, monthlyPayment: 599, term: 36, totalDueAtSigning: 5699 },
+  { id: "crv-hybsportl-2wd-l24",   year: "2026", make: "Honda", model: "CR-V", trim: "Hybrid Sport-L 2WD",       image: "https://public.dev-app.constech.io/jellybeans/2026/honda/crv/jellybean-7d58160b-c842-4b30-88de-aea3b9533cd2.png", stock: 12, offerType: "Lease",   tags: ["Regional"], pvi: 91, aging: 33, sales:  4, inventory: 12, monthlyPayment: 649, term: 24, totalDueAtSigning: 5899 },
+  { id: "crv-hybsportl-2wd-apr60", year: "2026", make: "Honda", model: "CR-V", trim: "Hybrid Sport-L 2WD",       image: "https://public.dev-app.constech.io/jellybeans/2026/honda/crv/jellybean-7d58160b-c842-4b30-88de-aea3b9533cd2.png", stock: 12, offerType: "APR",     tags: ["National"], pvi: 89, aging: 33, sales:  3, inventory: 12, monthlyPayment: 619, term: 60, totalDueAtSigning:    0 },
+  { id: "crv-hybsportl-2wd-apr72", year: "2026", make: "Honda", model: "CR-V", trim: "Hybrid Sport-L 2WD",       image: "https://public.dev-app.constech.io/jellybeans/2026/honda/crv/jellybean-7d58160b-c842-4b30-88de-aea3b9533cd2.png", stock: 12, offerType: "APR",     tags: ["National"], pvi: 88, aging: 33, sales:  2, inventory: 12, monthlyPayment: 559, term: 72, totalDueAtSigning:    0 },
+  { id: "crv-hybsportl-2wd-fin48", year: "2026", make: "Honda", model: "CR-V", trim: "Hybrid Sport-L 2WD",       image: "https://public.dev-app.constech.io/jellybeans/2026/honda/crv/jellybean-7d58160b-c842-4b30-88de-aea3b9533cd2.png", stock: 12, offerType: "Finance", tags: ["Regional"], pvi: 90, aging: 33, sales:  3, inventory: 12, monthlyPayment: 729, term: 48, totalDueAtSigning: 2599 },
+
+  // CR-V Hybrid Sport-L AWD
+  { id: "crv-hybsportl-awd-l36",   year: "2026", make: "Honda", model: "CR-V", trim: "Hybrid Sport-L AWD",       image: "https://public.dev-app.constech.io/jellybeans/2026/honda/crv/jellybean-8fc61cfc-8db0-471c-8d96-d6dc2bac1ef3.png", stock:  9, offerType: "Lease",   tags: ["Regional"], pvi: 91, aging: 41, sales:  4, inventory:  9, monthlyPayment: 619, term: 36, totalDueAtSigning: 5899 },
+  { id: "crv-hybsportl-awd-l24",   year: "2026", make: "Honda", model: "CR-V", trim: "Hybrid Sport-L AWD",       image: "https://public.dev-app.constech.io/jellybeans/2026/honda/crv/jellybean-8fc61cfc-8db0-471c-8d96-d6dc2bac1ef3.png", stock:  9, offerType: "Lease",   tags: ["Regional"], pvi: 90, aging: 41, sales:  3, inventory:  9, monthlyPayment: 669, term: 24, totalDueAtSigning: 6099 },
+  { id: "crv-hybsportl-awd-apr60", year: "2026", make: "Honda", model: "CR-V", trim: "Hybrid Sport-L AWD",       image: "https://public.dev-app.constech.io/jellybeans/2026/honda/crv/jellybean-8fc61cfc-8db0-471c-8d96-d6dc2bac1ef3.png", stock:  9, offerType: "APR",     tags: ["National"], pvi: 88, aging: 41, sales:  2, inventory:  9, monthlyPayment: 649, term: 60, totalDueAtSigning:    0 },
+  { id: "crv-hybsportl-awd-apr72", year: "2026", make: "Honda", model: "CR-V", trim: "Hybrid Sport-L AWD",       image: "https://public.dev-app.constech.io/jellybeans/2026/honda/crv/jellybean-8fc61cfc-8db0-471c-8d96-d6dc2bac1ef3.png", stock:  9, offerType: "APR",     tags: ["National"], pvi: 87, aging: 41, sales:  2, inventory:  9, monthlyPayment: 579, term: 72, totalDueAtSigning:    0 },
+  { id: "crv-hybsportl-awd-fin48", year: "2026", make: "Honda", model: "CR-V", trim: "Hybrid Sport-L AWD",       image: "https://public.dev-app.constech.io/jellybeans/2026/honda/crv/jellybean-8fc61cfc-8db0-471c-8d96-d6dc2bac1ef3.png", stock:  9, offerType: "Finance", tags: ["Regional"], pvi: 90, aging: 41, sales:  3, inventory:  9, monthlyPayment: 749, term: 48, totalDueAtSigning: 2699 },
+
+  // CR-V Hybrid Sport Touring AWD
+  { id: "crv-hybsporttour-l36",    year: "2026", make: "Honda", model: "CR-V", trim: "Hybrid Sport Touring AWD", image: "https://public.dev-app.constech.io/jellybeans/2026/honda/crv/jellybean-0d2f14db-4e19-4df1-8dd4-1535ccbc8535.png", stock:  8, offerType: "Lease",   tags: ["Regional"], pvi: 90, aging: 55, sales:  3, inventory:  8, monthlyPayment: 649, term: 36, totalDueAtSigning: 6199 },
+  { id: "crv-hybsporttour-l24",    year: "2026", make: "Honda", model: "CR-V", trim: "Hybrid Sport Touring AWD", image: "https://public.dev-app.constech.io/jellybeans/2026/honda/crv/jellybean-0d2f14db-4e19-4df1-8dd4-1535ccbc8535.png", stock:  8, offerType: "Lease",   tags: ["Regional"], pvi: 89, aging: 55, sales:  2, inventory:  8, monthlyPayment: 699, term: 24, totalDueAtSigning: 6399 },
+  { id: "crv-hybsporttour-apr60",  year: "2026", make: "Honda", model: "CR-V", trim: "Hybrid Sport Touring AWD", image: "https://public.dev-app.constech.io/jellybeans/2026/honda/crv/jellybean-0d2f14db-4e19-4df1-8dd4-1535ccbc8535.png", stock:  8, offerType: "APR",     tags: ["National"], pvi: 87, aging: 55, sales:  2, inventory:  8, monthlyPayment: 689, term: 60, totalDueAtSigning:    0 },
+  { id: "crv-hybsporttour-apr72",  year: "2026", make: "Honda", model: "CR-V", trim: "Hybrid Sport Touring AWD", image: "https://public.dev-app.constech.io/jellybeans/2026/honda/crv/jellybean-0d2f14db-4e19-4df1-8dd4-1535ccbc8535.png", stock:  8, offerType: "APR",     tags: ["National"], pvi: 86, aging: 55, sales:  1, inventory:  8, monthlyPayment: 609, term: 72, totalDueAtSigning:    0 },
+  { id: "crv-hybsporttour-fin48",  year: "2026", make: "Honda", model: "CR-V", trim: "Hybrid Sport Touring AWD", image: "https://public.dev-app.constech.io/jellybeans/2026/honda/crv/jellybean-0d2f14db-4e19-4df1-8dd4-1535ccbc8535.png", stock:  8, offerType: "Finance", tags: ["Regional"], pvi: 89, aging: 55, sales:  2, inventory:  8, monthlyPayment: 779, term: 48, totalDueAtSigning: 2799 },
+
+  // CR-V e:FCEV 2025
+  { id: "crv-efcev25-l36",         year: "2025", make: "Honda", model: "CR-V", trim: "e:FCEV",                   image: "https://public.dev-app.constech.io/jellybeans/2025/honda/crv/jellybean-47792eee-1e6d-45c2-88a2-eef1879bd731.png", stock:  4, offerType: "Lease",   tags: ["Regional"], pvi: 87, aging: 62, sales:  2, inventory:  4, monthlyPayment: 799, term: 36, totalDueAtSigning: 6999 },
+  { id: "crv-efcev25-l24",         year: "2025", make: "Honda", model: "CR-V", trim: "e:FCEV",                   image: "https://public.dev-app.constech.io/jellybeans/2025/honda/crv/jellybean-47792eee-1e6d-45c2-88a2-eef1879bd731.png", stock:  4, offerType: "Lease",   tags: ["Regional"], pvi: 86, aging: 62, sales:  1, inventory:  4, monthlyPayment: 849, term: 24, totalDueAtSigning: 7199 },
+  { id: "crv-efcev25-apr60",       year: "2025", make: "Honda", model: "CR-V", trim: "e:FCEV",                   image: "https://public.dev-app.constech.io/jellybeans/2025/honda/crv/jellybean-47792eee-1e6d-45c2-88a2-eef1879bd731.png", stock:  4, offerType: "APR",     tags: ["National"], pvi: 84, aging: 62, sales:  1, inventory:  4, monthlyPayment: 889, term: 60, totalDueAtSigning:    0 },
+  { id: "crv-efcev25-apr72",       year: "2025", make: "Honda", model: "CR-V", trim: "e:FCEV",                   image: "https://public.dev-app.constech.io/jellybeans/2025/honda/crv/jellybean-47792eee-1e6d-45c2-88a2-eef1879bd731.png", stock:  4, offerType: "APR",     tags: ["National"], pvi: 83, aging: 62, sales:  1, inventory:  4, monthlyPayment: 769, term: 72, totalDueAtSigning:    0 },
+  { id: "crv-efcev25-fin48",       year: "2025", make: "Honda", model: "CR-V", trim: "e:FCEV",                   image: "https://public.dev-app.constech.io/jellybeans/2025/honda/crv/jellybean-47792eee-1e6d-45c2-88a2-eef1879bd731.png", stock:  4, offerType: "Finance", tags: ["Regional"], pvi: 86, aging: 62, sales:  1, inventory:  4, monthlyPayment: 969, term: 48, totalDueAtSigning: 2999 },
+
+  // CR-V e:FCEV 2026
+  { id: "crv-efcev26-l36",         year: "2026", make: "Honda", model: "CR-V", trim: "e:FCEV",                   image: "https://public.dev-app.constech.io/jellybeans/2026/honda/crv/jellybean-8cd719f3-71ac-4008-bcb5-cb7d71562a2d.png", stock:  5, offerType: "Lease",   tags: ["Regional"], pvi: 88, aging: 18, sales:  2, inventory:  5, monthlyPayment: 849, term: 36, totalDueAtSigning: 7499 },
+  { id: "crv-efcev26-l24",         year: "2026", make: "Honda", model: "CR-V", trim: "e:FCEV",                   image: "https://public.dev-app.constech.io/jellybeans/2026/honda/crv/jellybean-8cd719f3-71ac-4008-bcb5-cb7d71562a2d.png", stock:  5, offerType: "Lease",   tags: ["Regional"], pvi: 87, aging: 18, sales:  1, inventory:  5, monthlyPayment: 899, term: 24, totalDueAtSigning: 7699 },
+  { id: "crv-efcev26-apr60",       year: "2026", make: "Honda", model: "CR-V", trim: "e:FCEV",                   image: "https://public.dev-app.constech.io/jellybeans/2026/honda/crv/jellybean-8cd719f3-71ac-4008-bcb5-cb7d71562a2d.png", stock:  5, offerType: "APR",     tags: ["National"], pvi: 85, aging: 18, sales:  1, inventory:  5, monthlyPayment: 939, term: 60, totalDueAtSigning:    0 },
+  { id: "crv-efcev26-apr72",       year: "2026", make: "Honda", model: "CR-V", trim: "e:FCEV",                   image: "https://public.dev-app.constech.io/jellybeans/2026/honda/crv/jellybean-8cd719f3-71ac-4008-bcb5-cb7d71562a2d.png", stock:  5, offerType: "APR",     tags: ["National"], pvi: 84, aging: 18, sales:  1, inventory:  5, monthlyPayment: 819, term: 72, totalDueAtSigning:    0 },
+  { id: "crv-efcev26-fin48",       year: "2026", make: "Honda", model: "CR-V", trim: "e:FCEV",                   image: "https://public.dev-app.constech.io/jellybeans/2026/honda/crv/jellybean-8cd719f3-71ac-4008-bcb5-cb7d71562a2d.png", stock:  5, offerType: "Finance", tags: ["Regional"], pvi: 87, aging: 18, sales:  1, inventory:  5, monthlyPayment: 1019, term: 48, totalDueAtSigning: 2999 },
+
+  // ── Honda Civic ──────────────────────────────────────────────────────────────
+
+  // Civic LX CVT
+  { id: "civic-lx-cvt-l36",        year: "2026", make: "Honda", model: "Civic", trim: "LX CVT",                  image: "https://public.dev-app.constech.io/jellybeans/2026/honda/civic/jellybean-f08526e9-a9cc-4489-90c2-ba48dcf97f06.png", stock: 31, offerType: "Lease",   tags: ["Regional"], pvi: 95, aging: 21, sales: 19, inventory: 31, monthlyPayment: 299, term: 36, totalDueAtSigning: 2699 },
+  { id: "civic-lx-cvt-l24",        year: "2026", make: "Honda", model: "Civic", trim: "LX CVT",                  image: "https://public.dev-app.constech.io/jellybeans/2026/honda/civic/jellybean-f08526e9-a9cc-4489-90c2-ba48dcf97f06.png", stock: 31, offerType: "Lease",   tags: ["Regional"], pvi: 94, aging: 21, sales: 14, inventory: 31, monthlyPayment: 339, term: 24, totalDueAtSigning: 2899 },
+  { id: "civic-lx-cvt-apr60",      year: "2026", make: "Honda", model: "Civic", trim: "LX CVT",                  image: "https://public.dev-app.constech.io/jellybeans/2026/honda/civic/jellybean-f08526e9-a9cc-4489-90c2-ba48dcf97f06.png", stock: 31, offerType: "APR",     tags: ["National"], pvi: 92, aging: 21, sales:  8, inventory: 31, monthlyPayment: 399, term: 60, totalDueAtSigning:    0 },
+  { id: "civic-lx-cvt-apr72",      year: "2026", make: "Honda", model: "Civic", trim: "LX CVT",                  image: "https://public.dev-app.constech.io/jellybeans/2026/honda/civic/jellybean-f08526e9-a9cc-4489-90c2-ba48dcf97f06.png", stock: 31, offerType: "APR",     tags: ["National"], pvi: 91, aging: 21, sales:  6, inventory: 31, monthlyPayment: 349, term: 72, totalDueAtSigning:    0 },
+  { id: "civic-lx-cvt-fin48",      year: "2026", make: "Honda", model: "Civic", trim: "LX CVT",                  image: "https://public.dev-app.constech.io/jellybeans/2026/honda/civic/jellybean-f08526e9-a9cc-4489-90c2-ba48dcf97f06.png", stock: 31, offerType: "Finance", tags: ["Regional"], pvi: 93, aging: 21, sales:  9, inventory: 31, monthlyPayment: 449, term: 48, totalDueAtSigning: 1999 },
+
+  // Civic Sport CVT
+  { id: "civic-sport-cvt-l36",     year: "2026", make: "Honda", model: "Civic", trim: "Sport CVT",               image: "https://public.dev-app.constech.io/jellybeans/2026/honda/civic/jellybean-298efd50-a285-49b4-9a0b-9c7747649dd1.png", stock: 24, offerType: "Lease",   tags: ["Regional"], pvi: 94, aging: 28, sales: 14, inventory: 24, monthlyPayment: 329, term: 36, totalDueAtSigning: 2999 },
+  { id: "civic-sport-cvt-l24",     year: "2026", make: "Honda", model: "Civic", trim: "Sport CVT",               image: "https://public.dev-app.constech.io/jellybeans/2026/honda/civic/jellybean-298efd50-a285-49b4-9a0b-9c7747649dd1.png", stock: 24, offerType: "Lease",   tags: ["Regional"], pvi: 93, aging: 28, sales: 10, inventory: 24, monthlyPayment: 369, term: 24, totalDueAtSigning: 3199 },
+  { id: "civic-sport-cvt-apr60",   year: "2026", make: "Honda", model: "Civic", trim: "Sport CVT",               image: "https://public.dev-app.constech.io/jellybeans/2026/honda/civic/jellybean-298efd50-a285-49b4-9a0b-9c7747649dd1.png", stock: 24, offerType: "APR",     tags: ["National"], pvi: 91, aging: 28, sales:  6, inventory: 24, monthlyPayment: 429, term: 60, totalDueAtSigning:    0 },
+  { id: "civic-sport-cvt-apr72",   year: "2026", make: "Honda", model: "Civic", trim: "Sport CVT",               image: "https://public.dev-app.constech.io/jellybeans/2026/honda/civic/jellybean-298efd50-a285-49b4-9a0b-9c7747649dd1.png", stock: 24, offerType: "APR",     tags: ["National"], pvi: 90, aging: 28, sales:  5, inventory: 24, monthlyPayment: 379, term: 72, totalDueAtSigning:    0 },
+  { id: "civic-sport-cvt-fin48",   year: "2026", make: "Honda", model: "Civic", trim: "Sport CVT",               image: "https://public.dev-app.constech.io/jellybeans/2026/honda/civic/jellybean-298efd50-a285-49b4-9a0b-9c7747649dd1.png", stock: 24, offerType: "Finance", tags: ["Regional"], pvi: 92, aging: 28, sales:  7, inventory: 24, monthlyPayment: 479, term: 48, totalDueAtSigning: 1999 },
+
+  // Civic Si
+  { id: "civic-si-l36",            year: "2026", make: "Honda", model: "Civic", trim: "Si",                      image: "https://public.dev-app.constech.io/jellybeans/2026/honda/civic/jellybean-1bf66fd8-4177-442d-9889-963dd97dc42a.png", stock: 12, offerType: "Lease",   tags: ["Regional"], pvi: 91, aging: 44, sales:  6, inventory: 12, monthlyPayment: 379, term: 36, totalDueAtSigning: 3299 },
+  { id: "civic-si-l24",            year: "2026", make: "Honda", model: "Civic", trim: "Si",                      image: "https://public.dev-app.constech.io/jellybeans/2026/honda/civic/jellybean-1bf66fd8-4177-442d-9889-963dd97dc42a.png", stock: 12, offerType: "Lease",   tags: ["Regional"], pvi: 90, aging: 44, sales:  4, inventory: 12, monthlyPayment: 419, term: 24, totalDueAtSigning: 3499 },
+  { id: "civic-si-apr60",          year: "2026", make: "Honda", model: "Civic", trim: "Si",                      image: "https://public.dev-app.constech.io/jellybeans/2026/honda/civic/jellybean-1bf66fd8-4177-442d-9889-963dd97dc42a.png", stock: 12, offerType: "APR",     tags: ["National"], pvi: 88, aging: 44, sales:  3, inventory: 12, monthlyPayment: 489, term: 60, totalDueAtSigning:    0 },
+  { id: "civic-si-apr72",          year: "2026", make: "Honda", model: "Civic", trim: "Si",                      image: "https://public.dev-app.constech.io/jellybeans/2026/honda/civic/jellybean-1bf66fd8-4177-442d-9889-963dd97dc42a.png", stock: 12, offerType: "APR",     tags: ["National"], pvi: 87, aging: 44, sales:  2, inventory: 12, monthlyPayment: 429, term: 72, totalDueAtSigning:    0 },
+  { id: "civic-si-fin48",          year: "2026", make: "Honda", model: "Civic", trim: "Si",                      image: "https://public.dev-app.constech.io/jellybeans/2026/honda/civic/jellybean-1bf66fd8-4177-442d-9889-963dd97dc42a.png", stock: 12, offerType: "Finance", tags: ["Regional"], pvi: 90, aging: 44, sales:  3, inventory: 12, monthlyPayment: 549, term: 48, totalDueAtSigning: 2199 },
+
+  // Civic Sport Hybrid CVT
+  { id: "civic-sporthyb-l36",      year: "2026", make: "Honda", model: "Civic", trim: "Sport Hybrid CVT",        image: "https://public.dev-app.constech.io/jellybeans/2026/honda/civic/jellybean-d8555048-ecd3-43f3-95bc-cf2fde4b7386.png", stock: 18, offerType: "Lease",   tags: ["Regional"], pvi: 93, aging: 31, sales:  9, inventory: 18, monthlyPayment: 359, term: 36, totalDueAtSigning: 3099 },
+  { id: "civic-sporthyb-l24",      year: "2026", make: "Honda", model: "Civic", trim: "Sport Hybrid CVT",        image: "https://public.dev-app.constech.io/jellybeans/2026/honda/civic/jellybean-d8555048-ecd3-43f3-95bc-cf2fde4b7386.png", stock: 18, offerType: "Lease",   tags: ["Regional"], pvi: 92, aging: 31, sales:  7, inventory: 18, monthlyPayment: 399, term: 24, totalDueAtSigning: 3299 },
+  { id: "civic-sporthyb-apr60",    year: "2026", make: "Honda", model: "Civic", trim: "Sport Hybrid CVT",        image: "https://public.dev-app.constech.io/jellybeans/2026/honda/civic/jellybean-d8555048-ecd3-43f3-95bc-cf2fde4b7386.png", stock: 18, offerType: "APR",     tags: ["National"], pvi: 90, aging: 31, sales:  4, inventory: 18, monthlyPayment: 459, term: 60, totalDueAtSigning:    0 },
+  { id: "civic-sporthyb-apr72",    year: "2026", make: "Honda", model: "Civic", trim: "Sport Hybrid CVT",        image: "https://public.dev-app.constech.io/jellybeans/2026/honda/civic/jellybean-d8555048-ecd3-43f3-95bc-cf2fde4b7386.png", stock: 18, offerType: "APR",     tags: ["National"], pvi: 89, aging: 31, sales:  3, inventory: 18, monthlyPayment: 409, term: 72, totalDueAtSigning:    0 },
+  { id: "civic-sporthyb-fin48",    year: "2026", make: "Honda", model: "Civic", trim: "Sport Hybrid CVT",        image: "https://public.dev-app.constech.io/jellybeans/2026/honda/civic/jellybean-d8555048-ecd3-43f3-95bc-cf2fde4b7386.png", stock: 18, offerType: "Finance", tags: ["Regional"], pvi: 91, aging: 31, sales:  5, inventory: 18, monthlyPayment: 509, term: 48, totalDueAtSigning: 1999 },
+
+  // Civic Sport Touring Hybrid CVT (civic-hybrid = existing)
+  { id: "civic-hybrid",            year: "2026", make: "Honda", model: "Civic", trim: "Sport Touring Hybrid CVT", image: "https://public.dev-app.constech.io/jellybeans/2026/honda/civic/jellybean-dbba5cf0-fab9-4286-b7a3-0e0bd3ef23ea.png", stock: 10, offerType: "Lease",   tags: ["Regional"], pvi: 92, aging: 71, sales:  6, inventory: 10, monthlyPayment: 799, term: 36, totalDueAtSigning: 7099 },
+  { id: "civic-spttour-l24",       year: "2026", make: "Honda", model: "Civic", trim: "Sport Touring Hybrid CVT", image: "https://public.dev-app.constech.io/jellybeans/2026/honda/civic/jellybean-dbba5cf0-fab9-4286-b7a3-0e0bd3ef23ea.png", stock: 10, offerType: "Lease",   tags: ["Regional"], pvi: 91, aging: 71, sales:  4, inventory: 10, monthlyPayment: 849, term: 24, totalDueAtSigning: 7299 },
+  { id: "civic-spttour-apr60",     year: "2026", make: "Honda", model: "Civic", trim: "Sport Touring Hybrid CVT", image: "https://public.dev-app.constech.io/jellybeans/2026/honda/civic/jellybean-dbba5cf0-fab9-4286-b7a3-0e0bd3ef23ea.png", stock: 10, offerType: "APR",     tags: ["National"], pvi: 89, aging: 71, sales:  2, inventory: 10, monthlyPayment: 549, term: 60, totalDueAtSigning:    0 },
+  { id: "civic-spttour-apr72",     year: "2026", make: "Honda", model: "Civic", trim: "Sport Touring Hybrid CVT", image: "https://public.dev-app.constech.io/jellybeans/2026/honda/civic/jellybean-dbba5cf0-fab9-4286-b7a3-0e0bd3ef23ea.png", stock: 10, offerType: "APR",     tags: ["National"], pvi: 88, aging: 71, sales:  2, inventory: 10, monthlyPayment: 489, term: 72, totalDueAtSigning:    0 },
+  { id: "civic-spttour-fin48",     year: "2026", make: "Honda", model: "Civic", trim: "Sport Touring Hybrid CVT", image: "https://public.dev-app.constech.io/jellybeans/2026/honda/civic/jellybean-dbba5cf0-fab9-4286-b7a3-0e0bd3ef23ea.png", stock: 10, offerType: "Finance", tags: ["Regional"], pvi: 90, aging: 71, sales:  3, inventory: 10, monthlyPayment: 609, term: 48, totalDueAtSigning: 2499 },
+
+  // ── Honda HR-V ───────────────────────────────────────────────────────────────
+
+  // HR-V LX
+  { id: "hrv-lx-l36",              year: "2026", make: "Honda", model: "HR-V", trim: "LX",                       image: "https://public.dev-app.constech.io/jellybeans/2026/honda/hrv/jellybean-a28957f3-10c6-4961-88fa-c623c2ad2d40.png", stock: 26, offerType: "Lease",   tags: ["Regional"], pvi: 92, aging: 29, sales: 13, inventory: 26, monthlyPayment: 349, term: 36, totalDueAtSigning: 2999 },
+  { id: "hrv-lx-l24",              year: "2026", make: "Honda", model: "HR-V", trim: "LX",                       image: "https://public.dev-app.constech.io/jellybeans/2026/honda/hrv/jellybean-a28957f3-10c6-4961-88fa-c623c2ad2d40.png", stock: 26, offerType: "Lease",   tags: ["Regional"], pvi: 91, aging: 29, sales:  9, inventory: 26, monthlyPayment: 389, term: 24, totalDueAtSigning: 3199 },
+  { id: "hrv-lx-apr60",            year: "2026", make: "Honda", model: "HR-V", trim: "LX",                       image: "https://public.dev-app.constech.io/jellybeans/2026/honda/hrv/jellybean-a28957f3-10c6-4961-88fa-c623c2ad2d40.png", stock: 26, offerType: "APR",     tags: ["National"], pvi: 89, aging: 29, sales:  6, inventory: 26, monthlyPayment: 409, term: 60, totalDueAtSigning:    0 },
+  { id: "hrv-lx-apr72",            year: "2026", make: "Honda", model: "HR-V", trim: "LX",                       image: "https://public.dev-app.constech.io/jellybeans/2026/honda/hrv/jellybean-a28957f3-10c6-4961-88fa-c623c2ad2d40.png", stock: 26, offerType: "APR",     tags: ["National"], pvi: 88, aging: 29, sales:  5, inventory: 26, monthlyPayment: 359, term: 72, totalDueAtSigning:    0 },
+  { id: "hrv-lx-fin48",            year: "2026", make: "Honda", model: "HR-V", trim: "LX",                       image: "https://public.dev-app.constech.io/jellybeans/2026/honda/hrv/jellybean-a28957f3-10c6-4961-88fa-c623c2ad2d40.png", stock: 26, offerType: "Finance", tags: ["Regional"], pvi: 91, aging: 29, sales:  7, inventory: 26, monthlyPayment: 459, term: 48, totalDueAtSigning: 1999 },
+
+  // HR-V LX 2WD
+  { id: "hrv-lx-2wd-l36",          year: "2026", make: "Honda", model: "HR-V", trim: "LX 2WD",                   image: "https://public.dev-app.constech.io/jellybeans/2026/honda/hrv/jellybean-a9997e3c-1636-4bd7-a765-ced399353265.png", stock: 22, offerType: "Lease",   tags: ["Regional"], pvi: 91, aging: 37, sales: 11, inventory: 22, monthlyPayment: 359, term: 36, totalDueAtSigning: 3099 },
+  { id: "hrv-lx-2wd-l24",          year: "2026", make: "Honda", model: "HR-V", trim: "LX 2WD",                   image: "https://public.dev-app.constech.io/jellybeans/2026/honda/hrv/jellybean-a9997e3c-1636-4bd7-a765-ced399353265.png", stock: 22, offerType: "Lease",   tags: ["Regional"], pvi: 90, aging: 37, sales:  8, inventory: 22, monthlyPayment: 399, term: 24, totalDueAtSigning: 3299 },
+  { id: "hrv-lx-2wd-apr60",        year: "2026", make: "Honda", model: "HR-V", trim: "LX 2WD",                   image: "https://public.dev-app.constech.io/jellybeans/2026/honda/hrv/jellybean-a9997e3c-1636-4bd7-a765-ced399353265.png", stock: 22, offerType: "APR",     tags: ["National"], pvi: 88, aging: 37, sales:  5, inventory: 22, monthlyPayment: 419, term: 60, totalDueAtSigning:    0 },
+  { id: "hrv-lx-2wd-apr72",        year: "2026", make: "Honda", model: "HR-V", trim: "LX 2WD",                   image: "https://public.dev-app.constech.io/jellybeans/2026/honda/hrv/jellybean-a9997e3c-1636-4bd7-a765-ced399353265.png", stock: 22, offerType: "APR",     tags: ["National"], pvi: 87, aging: 37, sales:  4, inventory: 22, monthlyPayment: 369, term: 72, totalDueAtSigning:    0 },
+  { id: "hrv-lx-2wd-fin48",        year: "2026", make: "Honda", model: "HR-V", trim: "LX 2WD",                   image: "https://public.dev-app.constech.io/jellybeans/2026/honda/hrv/jellybean-a9997e3c-1636-4bd7-a765-ced399353265.png", stock: 22, offerType: "Finance", tags: ["Regional"], pvi: 90, aging: 37, sales:  6, inventory: 22, monthlyPayment: 469, term: 48, totalDueAtSigning: 1999 },
+
+  // HR-V LX AWD
+  { id: "hrv-lx-awd-l36",          year: "2026", make: "Honda", model: "HR-V", trim: "LX AWD",                   image: "https://public.dev-app.constech.io/jellybeans/2026/honda/hrv/jellybean-8033f78a-7b80-43aa-80c8-b9330e64b2d8.png", stock: 19, offerType: "Lease",   tags: ["Regional"], pvi: 90, aging: 43, sales:  9, inventory: 19, monthlyPayment: 379, term: 36, totalDueAtSigning: 3299 },
+  { id: "hrv-lx-awd-l24",          year: "2026", make: "Honda", model: "HR-V", trim: "LX AWD",                   image: "https://public.dev-app.constech.io/jellybeans/2026/honda/hrv/jellybean-8033f78a-7b80-43aa-80c8-b9330e64b2d8.png", stock: 19, offerType: "Lease",   tags: ["Regional"], pvi: 89, aging: 43, sales:  7, inventory: 19, monthlyPayment: 419, term: 24, totalDueAtSigning: 3499 },
+  { id: "hrv-lx-awd-apr60",        year: "2026", make: "Honda", model: "HR-V", trim: "LX AWD",                   image: "https://public.dev-app.constech.io/jellybeans/2026/honda/hrv/jellybean-8033f78a-7b80-43aa-80c8-b9330e64b2d8.png", stock: 19, offerType: "APR",     tags: ["National"], pvi: 87, aging: 43, sales:  4, inventory: 19, monthlyPayment: 439, term: 60, totalDueAtSigning:    0 },
+  { id: "hrv-lx-awd-apr72",        year: "2026", make: "Honda", model: "HR-V", trim: "LX AWD",                   image: "https://public.dev-app.constech.io/jellybeans/2026/honda/hrv/jellybean-8033f78a-7b80-43aa-80c8-b9330e64b2d8.png", stock: 19, offerType: "APR",     tags: ["National"], pvi: 86, aging: 43, sales:  3, inventory: 19, monthlyPayment: 389, term: 72, totalDueAtSigning:    0 },
+  { id: "hrv-lx-awd-fin48",        year: "2026", make: "Honda", model: "HR-V", trim: "LX AWD",                   image: "https://public.dev-app.constech.io/jellybeans/2026/honda/hrv/jellybean-8033f78a-7b80-43aa-80c8-b9330e64b2d8.png", stock: 19, offerType: "Finance", tags: ["Regional"], pvi: 89, aging: 43, sales:  5, inventory: 19, monthlyPayment: 489, term: 48, totalDueAtSigning: 1999 },
+
+  // HR-V Sport 2WD (hrv-sport = existing)
+  { id: "hrv-sport",               year: "2026", make: "Honda", model: "HR-V", trim: "Sport 2WD",                image: "https://public.dev-app.constech.io/jellybeans/2026/honda/hrv/jellybean-50361aba-e638-49cc-9541-d3df45878d48.png", stock: 24, offerType: "Lease",   tags: ["Regional"], pvi: 93, aging: 70, sales:  9, inventory: 24, monthlyPayment: 699, term: 36, totalDueAtSigning: 5259 },
+  { id: "hrv-sport-l24",           year: "2026", make: "Honda", model: "HR-V", trim: "Sport 2WD",                image: "https://public.dev-app.constech.io/jellybeans/2026/honda/hrv/jellybean-50361aba-e638-49cc-9541-d3df45878d48.png", stock: 24, offerType: "Lease",   tags: ["Regional"], pvi: 92, aging: 70, sales:  6, inventory: 24, monthlyPayment: 749, term: 24, totalDueAtSigning: 5459 },
+  { id: "hrv-sport-apr60",         year: "2026", make: "Honda", model: "HR-V", trim: "Sport 2WD",                image: "https://public.dev-app.constech.io/jellybeans/2026/honda/hrv/jellybean-50361aba-e638-49cc-9541-d3df45878d48.png", stock: 24, offerType: "APR",     tags: ["National"], pvi: 90, aging: 70, sales:  4, inventory: 24, monthlyPayment: 459, term: 60, totalDueAtSigning:    0 },
+  { id: "hrv-sport-apr72",         year: "2026", make: "Honda", model: "HR-V", trim: "Sport 2WD",                image: "https://public.dev-app.constech.io/jellybeans/2026/honda/hrv/jellybean-50361aba-e638-49cc-9541-d3df45878d48.png", stock: 24, offerType: "APR",     tags: ["National"], pvi: 89, aging: 70, sales:  3, inventory: 24, monthlyPayment: 409, term: 72, totalDueAtSigning:    0 },
+  { id: "hrv-sport-fin48",         year: "2026", make: "Honda", model: "HR-V", trim: "Sport 2WD",                image: "https://public.dev-app.constech.io/jellybeans/2026/honda/hrv/jellybean-50361aba-e638-49cc-9541-d3df45878d48.png", stock: 24, offerType: "Finance", tags: ["Regional"], pvi: 91, aging: 70, sales:  5, inventory: 24, monthlyPayment: 519, term: 48, totalDueAtSigning: 2199 },
+
+  // HR-V Sport AWD
+  { id: "hrv-sport-awd-l36",       year: "2026", make: "Honda", model: "HR-V", trim: "Sport AWD",                image: "https://public.dev-app.constech.io/jellybeans/2026/honda/hrv/jellybean-c4357bcb-d5c2-4b9b-a825-60ce5f0bf014.png", stock: 16, offerType: "Lease",   tags: ["Regional"], pvi: 92, aging: 26, sales:  8, inventory: 16, monthlyPayment: 449, term: 36, totalDueAtSigning: 3999 },
+  { id: "hrv-sport-awd-l24",       year: "2026", make: "Honda", model: "HR-V", trim: "Sport AWD",                image: "https://public.dev-app.constech.io/jellybeans/2026/honda/hrv/jellybean-c4357bcb-d5c2-4b9b-a825-60ce5f0bf014.png", stock: 16, offerType: "Lease",   tags: ["Regional"], pvi: 91, aging: 26, sales:  6, inventory: 16, monthlyPayment: 489, term: 24, totalDueAtSigning: 4199 },
+  { id: "hrv-sport-awd-apr60",     year: "2026", make: "Honda", model: "HR-V", trim: "Sport AWD",                image: "https://public.dev-app.constech.io/jellybeans/2026/honda/hrv/jellybean-c4357bcb-d5c2-4b9b-a825-60ce5f0bf014.png", stock: 16, offerType: "APR",     tags: ["National"], pvi: 89, aging: 26, sales:  4, inventory: 16, monthlyPayment: 479, term: 60, totalDueAtSigning:    0 },
+  { id: "hrv-sport-awd-apr72",     year: "2026", make: "Honda", model: "HR-V", trim: "Sport AWD",                image: "https://public.dev-app.constech.io/jellybeans/2026/honda/hrv/jellybean-c4357bcb-d5c2-4b9b-a825-60ce5f0bf014.png", stock: 16, offerType: "APR",     tags: ["National"], pvi: 88, aging: 26, sales:  3, inventory: 16, monthlyPayment: 429, term: 72, totalDueAtSigning:    0 },
+  { id: "hrv-sport-awd-fin48",     year: "2026", make: "Honda", model: "HR-V", trim: "Sport AWD",                image: "https://public.dev-app.constech.io/jellybeans/2026/honda/hrv/jellybean-c4357bcb-d5c2-4b9b-a825-60ce5f0bf014.png", stock: 16, offerType: "Finance", tags: ["Regional"], pvi: 90, aging: 26, sales:  5, inventory: 16, monthlyPayment: 539, term: 48, totalDueAtSigning: 2199 },
+
+  // HR-V EX-L 2WD
+  { id: "hrv-exl-2wd-l36",         year: "2026", make: "Honda", model: "HR-V", trim: "EX-L 2WD",                 image: "https://public.dev-app.constech.io/jellybeans/2026/honda/hrv/jellybean-82df1d21-ecb8-4a4d-9e3b-d1ff76353052.png", stock: 13, offerType: "Lease",   tags: ["Regional"], pvi: 89, aging: 48, sales:  5, inventory: 13, monthlyPayment: 449, term: 36, totalDueAtSigning: 3999 },
+  { id: "hrv-exl-2wd-l24",         year: "2026", make: "Honda", model: "HR-V", trim: "EX-L 2WD",                 image: "https://public.dev-app.constech.io/jellybeans/2026/honda/hrv/jellybean-82df1d21-ecb8-4a4d-9e3b-d1ff76353052.png", stock: 13, offerType: "Lease",   tags: ["Regional"], pvi: 88, aging: 48, sales:  4, inventory: 13, monthlyPayment: 489, term: 24, totalDueAtSigning: 4199 },
+  { id: "hrv-exl-2wd-apr60",       year: "2026", make: "Honda", model: "HR-V", trim: "EX-L 2WD",                 image: "https://public.dev-app.constech.io/jellybeans/2026/honda/hrv/jellybean-82df1d21-ecb8-4a4d-9e3b-d1ff76353052.png", stock: 13, offerType: "APR",     tags: ["National"], pvi: 86, aging: 48, sales:  3, inventory: 13, monthlyPayment: 489, term: 60, totalDueAtSigning:    0 },
+  { id: "hrv-exl-2wd-apr72",       year: "2026", make: "Honda", model: "HR-V", trim: "EX-L 2WD",                 image: "https://public.dev-app.constech.io/jellybeans/2026/honda/hrv/jellybean-82df1d21-ecb8-4a4d-9e3b-d1ff76353052.png", stock: 13, offerType: "APR",     tags: ["National"], pvi: 85, aging: 48, sales:  2, inventory: 13, monthlyPayment: 439, term: 72, totalDueAtSigning:    0 },
+  { id: "hrv-exl-2wd-fin48",       year: "2026", make: "Honda", model: "HR-V", trim: "EX-L 2WD",                 image: "https://public.dev-app.constech.io/jellybeans/2026/honda/hrv/jellybean-82df1d21-ecb8-4a4d-9e3b-d1ff76353052.png", stock: 13, offerType: "Finance", tags: ["Regional"], pvi: 88, aging: 48, sales:  3, inventory: 13, monthlyPayment: 549, term: 48, totalDueAtSigning: 2199 },
+
+  // HR-V EX-L AWD
+  { id: "hrv-exl-awd-l36",         year: "2026", make: "Honda", model: "HR-V", trim: "EX-L AWD",                 image: "https://public.dev-app.constech.io/jellybeans/2026/honda/hrv/jellybean-9e72bcdf-340f-48ce-9024-4403630ec544.png", stock: 10, offerType: "Lease",   tags: ["Regional"], pvi: 88, aging: 55, sales:  4, inventory: 10, monthlyPayment: 469, term: 36, totalDueAtSigning: 4199 },
+  { id: "hrv-exl-awd-l24",         year: "2026", make: "Honda", model: "HR-V", trim: "EX-L AWD",                 image: "https://public.dev-app.constech.io/jellybeans/2026/honda/hrv/jellybean-9e72bcdf-340f-48ce-9024-4403630ec544.png", stock: 10, offerType: "Lease",   tags: ["Regional"], pvi: 87, aging: 55, sales:  3, inventory: 10, monthlyPayment: 509, term: 24, totalDueAtSigning: 4399 },
+  { id: "hrv-exl-awd-apr60",       year: "2026", make: "Honda", model: "HR-V", trim: "EX-L AWD",                 image: "https://public.dev-app.constech.io/jellybeans/2026/honda/hrv/jellybean-9e72bcdf-340f-48ce-9024-4403630ec544.png", stock: 10, offerType: "APR",     tags: ["National"], pvi: 85, aging: 55, sales:  2, inventory: 10, monthlyPayment: 519, term: 60, totalDueAtSigning:    0 },
+  { id: "hrv-exl-awd-apr72",       year: "2026", make: "Honda", model: "HR-V", trim: "EX-L AWD",                 image: "https://public.dev-app.constech.io/jellybeans/2026/honda/hrv/jellybean-9e72bcdf-340f-48ce-9024-4403630ec544.png", stock: 10, offerType: "APR",     tags: ["National"], pvi: 84, aging: 55, sales:  2, inventory: 10, monthlyPayment: 459, term: 72, totalDueAtSigning:    0 },
+  { id: "hrv-exl-awd-fin48",       year: "2026", make: "Honda", model: "HR-V", trim: "EX-L AWD",                 image: "https://public.dev-app.constech.io/jellybeans/2026/honda/hrv/jellybean-9e72bcdf-340f-48ce-9024-4403630ec544.png", stock: 10, offerType: "Finance", tags: ["Regional"], pvi: 87, aging: 55, sales:  3, inventory: 10, monthlyPayment: 579, term: 48, totalDueAtSigning: 2299 },
+
+  // ── Honda Odyssey ─────────────────────────────────────────────────────────────
+
+  // Odyssey Sport L 2025
+  { id: "odyssey-sportl25-l39",    year: "2025", make: "Honda", model: "Odyssey", trim: "Sport L",               image: "https://public.dev-app.constech.io/jellybeans/2025/honda/odyssey/jellybean-41f49c4f-ae65-44dd-a407-fbffca32b5ea.png", stock:  8, offerType: "Lease",   tags: ["Regional"], pvi: 87, aging: 81, sales:  3, inventory:  8, monthlyPayment: 599, term: 39, totalDueAtSigning: 4999 },
+  { id: "odyssey-sportl25-l27",    year: "2025", make: "Honda", model: "Odyssey", trim: "Sport L",               image: "https://public.dev-app.constech.io/jellybeans/2025/honda/odyssey/jellybean-41f49c4f-ae65-44dd-a407-fbffca32b5ea.png", stock:  8, offerType: "Lease",   tags: ["Regional"], pvi: 86, aging: 81, sales:  2, inventory:  8, monthlyPayment: 639, term: 27, totalDueAtSigning: 5199 },
+  { id: "odyssey-sportl25-apr60",  year: "2025", make: "Honda", model: "Odyssey", trim: "Sport L",               image: "https://public.dev-app.constech.io/jellybeans/2025/honda/odyssey/jellybean-41f49c4f-ae65-44dd-a407-fbffca32b5ea.png", stock:  8, offerType: "APR",     tags: ["National"], pvi: 84, aging: 81, sales:  1, inventory:  8, monthlyPayment: 649, term: 60, totalDueAtSigning:    0 },
+  { id: "odyssey-sportl25-apr72",  year: "2025", make: "Honda", model: "Odyssey", trim: "Sport L",               image: "https://public.dev-app.constech.io/jellybeans/2025/honda/odyssey/jellybean-41f49c4f-ae65-44dd-a407-fbffca32b5ea.png", stock:  8, offerType: "APR",     tags: ["National"], pvi: 83, aging: 81, sales:  1, inventory:  8, monthlyPayment: 579, term: 72, totalDueAtSigning:    0 },
+  { id: "odyssey-sportl25-fin48",  year: "2025", make: "Honda", model: "Odyssey", trim: "Sport L",               image: "https://public.dev-app.constech.io/jellybeans/2025/honda/odyssey/jellybean-41f49c4f-ae65-44dd-a407-fbffca32b5ea.png", stock:  8, offerType: "Finance", tags: ["Regional"], pvi: 86, aging: 81, sales:  2, inventory:  8, monthlyPayment: 699, term: 48, totalDueAtSigning: 2499 },
+
+  // Odyssey Sport L 2026
+  { id: "odyssey-sportl-l39",      year: "2026", make: "Honda", model: "Odyssey", trim: "Sport L",               image: "https://public.dev-app.constech.io/jellybeans/2026/honda/odyssey/jellybean-b3edc5fd-d7b0-4883-8bf9-fe445f400518.png", stock: 14, offerType: "Lease",   tags: ["Regional"], pvi: 90, aging: 35, sales:  6, inventory: 14, monthlyPayment: 619, term: 39, totalDueAtSigning: 5199 },
+  { id: "odyssey-sportl-l27",      year: "2026", make: "Honda", model: "Odyssey", trim: "Sport L",               image: "https://public.dev-app.constech.io/jellybeans/2026/honda/odyssey/jellybean-b3edc5fd-d7b0-4883-8bf9-fe445f400518.png", stock: 14, offerType: "Lease",   tags: ["Regional"], pvi: 89, aging: 35, sales:  4, inventory: 14, monthlyPayment: 659, term: 27, totalDueAtSigning: 5399 },
+  { id: "odyssey-sportl-apr60",    year: "2026", make: "Honda", model: "Odyssey", trim: "Sport L",               image: "https://public.dev-app.constech.io/jellybeans/2026/honda/odyssey/jellybean-b3edc5fd-d7b0-4883-8bf9-fe445f400518.png", stock: 14, offerType: "APR",     tags: ["National"], pvi: 87, aging: 35, sales:  3, inventory: 14, monthlyPayment: 669, term: 60, totalDueAtSigning:    0 },
+  { id: "odyssey-sportl-apr72",    year: "2026", make: "Honda", model: "Odyssey", trim: "Sport L",               image: "https://public.dev-app.constech.io/jellybeans/2026/honda/odyssey/jellybean-b3edc5fd-d7b0-4883-8bf9-fe445f400518.png", stock: 14, offerType: "APR",     tags: ["National"], pvi: 86, aging: 35, sales:  2, inventory: 14, monthlyPayment: 599, term: 72, totalDueAtSigning:    0 },
+  { id: "odyssey-sportl-fin48",    year: "2026", make: "Honda", model: "Odyssey", trim: "Sport L",               image: "https://public.dev-app.constech.io/jellybeans/2026/honda/odyssey/jellybean-b3edc5fd-d7b0-4883-8bf9-fe445f400518.png", stock: 14, offerType: "Finance", tags: ["Regional"], pvi: 89, aging: 35, sales:  4, inventory: 14, monthlyPayment: 719, term: 48, totalDueAtSigning: 2499 },
+
+  // Odyssey EX-L 2026 (odyssey-exl = existing)
+  { id: "odyssey-exl",             year: "2026", make: "Honda", model: "Odyssey", trim: "EX-L",                  image: "https://public.dev-app.constech.io/jellybeans/2026/honda/odyssey/jellybean-dd433a83-3a52-4f0e-9d1a-0949179bc052.png", stock: 25, offerType: "Lease",   tags: ["Regional"], pvi: 96, aging: 77, sales: 33, inventory: 25, monthlyPayment: 999, term: 39, totalDueAtSigning: 7199 },
+  { id: "odyssey-exl-l27",         year: "2026", make: "Honda", model: "Odyssey", trim: "EX-L",                  image: "https://public.dev-app.constech.io/jellybeans/2026/honda/odyssey/jellybean-dd433a83-3a52-4f0e-9d1a-0949179bc052.png", stock: 25, offerType: "Lease",   tags: ["Regional"], pvi: 95, aging: 77, sales: 22, inventory: 25, monthlyPayment: 1049, term: 27, totalDueAtSigning: 7399 },
+  { id: "odyssey-exl-apr60",       year: "2026", make: "Honda", model: "Odyssey", trim: "EX-L",                  image: "https://public.dev-app.constech.io/jellybeans/2026/honda/odyssey/jellybean-dd433a83-3a52-4f0e-9d1a-0949179bc052.png", stock: 25, offerType: "APR",     tags: ["National"], pvi: 93, aging: 77, sales: 11, inventory: 25, monthlyPayment: 749, term: 60, totalDueAtSigning:    0 },
+  { id: "odyssey-exl-apr72",       year: "2026", make: "Honda", model: "Odyssey", trim: "EX-L",                  image: "https://public.dev-app.constech.io/jellybeans/2026/honda/odyssey/jellybean-dd433a83-3a52-4f0e-9d1a-0949179bc052.png", stock: 25, offerType: "APR",     tags: ["National"], pvi: 92, aging: 77, sales:  8, inventory: 25, monthlyPayment: 669, term: 72, totalDueAtSigning:    0 },
+  { id: "odyssey-exl-fin48",       year: "2026", make: "Honda", model: "Odyssey", trim: "EX-L",                  image: "https://public.dev-app.constech.io/jellybeans/2026/honda/odyssey/jellybean-dd433a83-3a52-4f0e-9d1a-0949179bc052.png", stock: 25, offerType: "Finance", tags: ["Regional"], pvi: 94, aging: 77, sales: 14, inventory: 25, monthlyPayment: 799, term: 48, totalDueAtSigning: 2699 },
+
+  // Odyssey Touring 2026
+  { id: "odyssey-touring-l39",     year: "2026", make: "Honda", model: "Odyssey", trim: "Touring",               image: "https://public.dev-app.constech.io/jellybeans/2026/honda/odyssey/jellybean-ebf215a9-1e48-4b9e-9ecd-a24a8b5a1741.png", stock: 11, offerType: "Lease",   tags: ["Regional"], pvi: 93, aging: 42, sales:  5, inventory: 11, monthlyPayment: 769, term: 39, totalDueAtSigning: 6499 },
+  { id: "odyssey-touring-l27",     year: "2026", make: "Honda", model: "Odyssey", trim: "Touring",               image: "https://public.dev-app.constech.io/jellybeans/2026/honda/odyssey/jellybean-ebf215a9-1e48-4b9e-9ecd-a24a8b5a1741.png", stock: 11, offerType: "Lease",   tags: ["Regional"], pvi: 92, aging: 42, sales:  4, inventory: 11, monthlyPayment: 819, term: 27, totalDueAtSigning: 6699 },
+  { id: "odyssey-touring-apr60",   year: "2026", make: "Honda", model: "Odyssey", trim: "Touring",               image: "https://public.dev-app.constech.io/jellybeans/2026/honda/odyssey/jellybean-ebf215a9-1e48-4b9e-9ecd-a24a8b5a1741.png", stock: 11, offerType: "APR",     tags: ["National"], pvi: 90, aging: 42, sales:  3, inventory: 11, monthlyPayment: 819, term: 60, totalDueAtSigning:    0 },
+  { id: "odyssey-touring-apr72",   year: "2026", make: "Honda", model: "Odyssey", trim: "Touring",               image: "https://public.dev-app.constech.io/jellybeans/2026/honda/odyssey/jellybean-ebf215a9-1e48-4b9e-9ecd-a24a8b5a1741.png", stock: 11, offerType: "APR",     tags: ["National"], pvi: 89, aging: 42, sales:  2, inventory: 11, monthlyPayment: 729, term: 72, totalDueAtSigning:    0 },
+  { id: "odyssey-touring-fin48",   year: "2026", make: "Honda", model: "Odyssey", trim: "Touring",               image: "https://public.dev-app.constech.io/jellybeans/2026/honda/odyssey/jellybean-ebf215a9-1e48-4b9e-9ecd-a24a8b5a1741.png", stock: 11, offerType: "Finance", tags: ["Regional"], pvi: 91, aging: 42, sales:  3, inventory: 11, monthlyPayment: 879, term: 48, totalDueAtSigning: 2799 },
+
+  // Odyssey Elite 2026
+  { id: "odyssey-elite-l39",       year: "2026", make: "Honda", model: "Odyssey", trim: "Elite",                 image: "https://public.dev-app.constech.io/jellybeans/2026/honda/odyssey/jellybean-d581ad20-bfc6-474f-a591-908d2bb3fd86.png", stock:  7, offerType: "Lease",   tags: ["Regional"], pvi: 91, aging: 58, sales:  3, inventory:  7, monthlyPayment: 849, term: 39, totalDueAtSigning: 6999 },
+  { id: "odyssey-elite-l27",       year: "2026", make: "Honda", model: "Odyssey", trim: "Elite",                 image: "https://public.dev-app.constech.io/jellybeans/2026/honda/odyssey/jellybean-d581ad20-bfc6-474f-a591-908d2bb3fd86.png", stock:  7, offerType: "Lease",   tags: ["Regional"], pvi: 90, aging: 58, sales:  2, inventory:  7, monthlyPayment: 899, term: 27, totalDueAtSigning: 7199 },
+  { id: "odyssey-elite-apr60",     year: "2026", make: "Honda", model: "Odyssey", trim: "Elite",                 image: "https://public.dev-app.constech.io/jellybeans/2026/honda/odyssey/jellybean-d581ad20-bfc6-474f-a591-908d2bb3fd86.png", stock:  7, offerType: "APR",     tags: ["National"], pvi: 88, aging: 58, sales:  2, inventory:  7, monthlyPayment: 889, term: 60, totalDueAtSigning:    0 },
+  { id: "odyssey-elite-apr72",     year: "2026", make: "Honda", model: "Odyssey", trim: "Elite",                 image: "https://public.dev-app.constech.io/jellybeans/2026/honda/odyssey/jellybean-d581ad20-bfc6-474f-a591-908d2bb3fd86.png", stock:  7, offerType: "APR",     tags: ["National"], pvi: 87, aging: 58, sales:  1, inventory:  7, monthlyPayment: 789, term: 72, totalDueAtSigning:    0 },
+  { id: "odyssey-elite-fin48",     year: "2026", make: "Honda", model: "Odyssey", trim: "Elite",                 image: "https://public.dev-app.constech.io/jellybeans/2026/honda/odyssey/jellybean-d581ad20-bfc6-474f-a591-908d2bb3fd86.png", stock:  7, offerType: "Finance", tags: ["Regional"], pvi: 90, aging: 58, sales:  2, inventory:  7, monthlyPayment: 949, term: 48, totalDueAtSigning: 2999 },
 
   // ── BMW ──────────────────────────────────────────────────────────────────────
-  {
-    id: "bmw-m5-touring",
-    year: "2026",
-    make: "BMW",
-    model: "M5",
-    trim: "M5 Touring",
-    image: "https://res.cloudinary.com/dvq75cqna/image/upload/v1780071658/vw-funds/public/cars/M5_Touring.png",
-    stock: 4,
-    offerType: "Lease",
-    tags: ["National"],
-    pvi: 88,
-    aging: 12,
-    sales: 2,
-    inventory: 4,
-    monthlyPayment: 1689,
-    term: 36,
-    totalDueAtSigning: 13408,
-  },
-  {
-    id: "bmw-x2-xdrive28i",
-    year: "2026",
-    make: "BMW",
-    model: "X2",
-    trim: "xDrive28i",
-    image: "https://res.cloudinary.com/dvq75cqna/image/upload/v1780071664/vw-funds/public/cars/X2.png",
-    stock: 18,
-    offerType: "Lease",
-    tags: ["National"],
-    pvi: 94,
-    aging: 34,
-    sales: 11,
-    inventory: 18,
-    monthlyPayment: 609,
-    term: 36,
-    totalDueAtSigning: 5289,
-  },
-  {
-    id: "bmw-x5-m60i",
-    year: "2026",
-    make: "BMW",
-    model: "X5",
-    trim: "M60i",
-    image: "https://res.cloudinary.com/dvq75cqna/image/upload/v1780071667/vw-funds/public/cars/X5_M60i.png",
-    stock: 9,
-    offerType: "Lease",
-    tags: ["National"],
-    pvi: 91,
-    aging: 22,
-    sales: 7,
-    inventory: 9,
-    monthlyPayment: 1159,
-    term: 39,
-    totalDueAtSigning: 8619,
-  },
-  {
-    id: "bmw-x5m-competition",
-    year: "2026",
-    make: "BMW",
-    model: "X5 M",
-    trim: "Competition",
-    image: "https://res.cloudinary.com/dvq75cqna/image/upload/v1780071665/vw-funds/public/cars/X5_-_Competition.png",
-    stock: 3,
-    offerType: "Lease",
-    tags: ["National"],
-    pvi: 85,
-    aging: 8,
-    sales: 1,
-    inventory: 3,
-    monthlyPayment: 2079,
-    term: 36,
-    totalDueAtSigning: 10999,
-  },
-  {
-    id: "bmw-x5m-competition-apr",
-    year: "2026",
-    make: "BMW",
-    model: "X5 M",
-    trim: "Competition",
-    image: "https://res.cloudinary.com/dvq75cqna/image/upload/v1780071666/vw-funds/public/cars/X5_-_Competition2.png",
-    stock: 3,
-    offerType: "APR",
-    tags: ["National"],
-    pvi: 87,
-    aging: 8,
-    sales: 1,
-    inventory: 3,
-    monthlyPayment: 1710,
-    term: 60,
-    totalDueAtSigning: 0,
-  },
-  {
-    id: "bmw-x6-m60i",
-    year: "2026",
-    make: "BMW",
-    model: "X6",
-    trim: "M60i",
-    image: "https://res.cloudinary.com/dvq75cqna/image/upload/v1780071668/vw-funds/public/cars/X6.png",
-    stock: 6,
-    offerType: "Lease",
-    tags: ["National"],
-    pvi: 90,
-    aging: 19,
-    sales: 4,
-    inventory: 6,
-    monthlyPayment: 1319,
-    term: 39,
-    totalDueAtSigning: 8979,
-  },
+  { id: "bmw-m5-touring",          year: "2026", make: "BMW", model: "M5",   trim: "M5 Touring",                 image: "https://res.cloudinary.com/dvq75cqna/image/upload/v1780071658/vw-funds/public/cars/M5_Touring.png",          stock:  4, offerType: "Lease",   tags: ["National"], pvi: 88, aging: 12, sales:  2, inventory:  4, monthlyPayment: 1689, term: 36, totalDueAtSigning: 13408 },
+  { id: "bmw-x2-xdrive28i",        year: "2026", make: "BMW", model: "X2",   trim: "xDrive28i",                  image: "https://res.cloudinary.com/dvq75cqna/image/upload/v1780071664/vw-funds/public/cars/X2.png",                  stock: 18, offerType: "Lease",   tags: ["National"], pvi: 94, aging: 34, sales: 11, inventory: 18, monthlyPayment:  609, term: 36, totalDueAtSigning:  5289 },
+  { id: "bmw-x5-m60i",             year: "2026", make: "BMW", model: "X5",   trim: "M60i",                       image: "https://res.cloudinary.com/dvq75cqna/image/upload/v1780071667/vw-funds/public/cars/X5_M60i.png",             stock:  9, offerType: "Lease",   tags: ["National"], pvi: 91, aging: 22, sales:  7, inventory:  9, monthlyPayment: 1159, term: 39, totalDueAtSigning:  8619 },
+  { id: "bmw-x5m-competition",     year: "2026", make: "BMW", model: "X5 M", trim: "Competition",                image: "https://res.cloudinary.com/dvq75cqna/image/upload/v1780071665/vw-funds/public/cars/X5_-_Competition.png",    stock:  3, offerType: "Lease",   tags: ["National"], pvi: 85, aging:  8, sales:  1, inventory:  3, monthlyPayment: 2079, term: 36, totalDueAtSigning: 10999 },
+  { id: "bmw-x5m-competition-apr", year: "2026", make: "BMW", model: "X5 M", trim: "Competition",                image: "https://res.cloudinary.com/dvq75cqna/image/upload/v1780071666/vw-funds/public/cars/X5_-_Competition2.png",   stock:  3, offerType: "APR",     tags: ["National"], pvi: 87, aging:  8, sales:  1, inventory:  3, monthlyPayment: 1710, term: 60, totalDueAtSigning:     0 },
+  { id: "bmw-x6-m60i",             year: "2026", make: "BMW", model: "X6",   trim: "M60i",                       image: "https://res.cloudinary.com/dvq75cqna/image/upload/v1780071668/vw-funds/public/cars/X6.png",                  stock:  6, offerType: "Lease",   tags: ["National"], pvi: 90, aging: 19, sales:  4, inventory:  6, monthlyPayment: 1319, term: 39, totalDueAtSigning:  8979 },
 
   // ── Mercedes-Benz ─────────────────────────────────────────────────────────────
-  {
-    id: "mercedes-e350-4matic",
-    year: "2026",
-    make: "Mercedes-Benz",
-    model: "E-Class",
-    trim: "E350 4MATIC",
-    image: "https://res.cloudinary.com/dvq75cqna/image/upload/v1780071660/vw-funds/public/cars/Mercedes_C.png",
-    stock: 14,
-    offerType: "Lease",
-    tags: ["National"],
-    pvi: 93,
-    aging: 41,
-    sales: 9,
-    inventory: 14,
-    monthlyPayment: 729,
-    term: 24,
-    totalDueAtSigning: 6623,
-  },
+  { id: "mercedes-e350-4matic",    year: "2026", make: "Mercedes-Benz", model: "E-Class", trim: "E350 4MATIC",   image: "https://res.cloudinary.com/dvq75cqna/image/upload/v1780071660/vw-funds/public/cars/Mercedes_C.png",           stock: 14, offerType: "Lease",   tags: ["National"], pvi: 93, aging: 41, sales:  9, inventory: 14, monthlyPayment:  729, term: 24, totalDueAtSigning:  6623 },
 ];
 
 // ─── Template Library ─────────────────────────────────────────────────────────

@@ -1,4 +1,5 @@
 import catalog from "./jellybean-catalog.json";
+import { jbNorm, jbModelMatch, jbTrimScore } from "../../lib/agent/jellybean-algo.js";
 
 export interface JellybeanEntry {
   id: string;
@@ -15,27 +16,6 @@ export interface JellybeanEntry {
 
 const CATALOG = catalog as JellybeanEntry[];
 
-function norm(s: string): string {
-  return s.toLowerCase().replace(/[^a-z0-9]/g, "");
-}
-
-function modelMatch(a: string, b: string): boolean {
-  return norm(a) === norm(b);
-}
-
-function trimScore(catalogTrim: string, queryTrim: string): number {
-  if (!queryTrim) return 1;
-  const ct = norm(catalogTrim);
-  const qt = norm(queryTrim);
-  if (ct === qt) return 3;
-  if (ct.startsWith(qt) || qt.startsWith(ct)) return 2;
-  // token overlap: count shared words
-  const ctTokens = ct.split(/\s+/);
-  const qtTokens = qt.split(/\s+/);
-  const shared = qtTokens.filter(t => t.length > 1 && ctTokens.includes(t)).length;
-  return shared > 0 ? shared : 0;
-}
-
 /**
  * Resolves the best jellybean URL for a given vehicle.
  * Falls back to the S3 URL if cloudinaryUrl would be the same path pattern.
@@ -50,7 +30,7 @@ export function resolveJellybean(
   const yearNum = year ? parseInt(String(year)) : undefined;
 
   const candidates = CATALOG.filter(e =>
-    norm(e.make) === norm(make) && modelMatch(e.model, model),
+    jbNorm(e.make) === jbNorm(make) && jbModelMatch(e.model, model),
   );
 
   if (candidates.length === 0) return "";
@@ -59,7 +39,7 @@ export function resolveJellybean(
   const scored = candidates.map(e => {
     let score = 0;
     if (yearNum && e.year === yearNum) score += 10;
-    score += trimScore(e.trim, trim);
+    score += jbTrimScore(e.trim, trim);
     if (colorFamily && e.colorFamily === colorFamily) score += 5;
     return { e, score };
   });
@@ -82,7 +62,7 @@ export function getJellybeanById(id: string): JellybeanEntry | null {
 export function getColorFamilies(model: string, year?: string | number): string[] {
   const yearNum = year ? parseInt(String(year)) : undefined;
   const entries = CATALOG.filter(e =>
-    modelMatch(e.model, model) &&
+    jbModelMatch(e.model, model) &&
     (!yearNum || e.year === yearNum),
   );
   const families = [...new Set(entries.map(e => e.colorFamily))].filter(f => f !== "other");
@@ -98,10 +78,10 @@ export function getJellybeansByModelAndColor(
 ): JellybeanEntry[] {
   const yearNum = year ? parseInt(String(year)) : undefined;
   return CATALOG.filter(e =>
-    modelMatch(e.model, model) &&
+    jbModelMatch(e.model, model) &&
     e.colorFamily === colorFamily &&
     (!yearNum || e.year === yearNum) &&
-    (!trim || trimScore(e.trim, trim) > 0),
+    (!trim || jbTrimScore(e.trim, trim) > 0),
   );
 }
 

@@ -1620,11 +1620,11 @@ body {
           Provide Feedback
         </button>
         <button class="btn-primary">
-          Publish Campaign
+          Approve Project
         </button>
       </div>
 
-      <p class="cta-disclaimer">By clicking Publish, you authorize Constellation to publish assets across the selected platforms. You'll receive a confirmation once live.</p>
+      <p class="cta-disclaimer">By clicking Approve, you authorize Constellation to publish assets across the selected platforms. You'll receive a confirmation once live.</p>
     </div>
   </div>
 
@@ -1754,27 +1754,28 @@ renderPlatforms();
 
 /* ── Inject real asset images from ?assets= query param ──────── */
 (function() {
-  const params = new URLSearchParams(window.location.search);
-  const raw = params.get('assets');
+  var params = new URLSearchParams(window.location.search);
+  var raw = params.get('assets');
   if (!raw) return;
-  const urls = raw.split(',').map(u => decodeURIComponent(u)).filter(Boolean);
-  const cards = document.querySelectorAll('.asset-card');
-  cards.forEach(function(card, i) {
-    if (i >= urls.length) return;
-    var url = urls[i];
-    var thumb = card.querySelector('.asset-thumb');
-    if (!thumb) return;
-    // Replace placeholder with real image
-    var placeholder = thumb.querySelector('.asset-thumb-placeholder');
-    var logo = thumb.querySelector('.asset-ph-logo');
-    if (placeholder) placeholder.remove();
-    if (logo) logo.remove();
-    var img = document.createElement('img');
-    img.src = url;
-    img.alt = 'Asset ' + (i + 1);
-    img.style.cssText = 'width:100%;height:100%;object-fit:cover;display:block;';
-    thumb.insertBefore(img, thumb.firstChild);
-  });
+  var urls = raw.split(',').map(function(u) { return decodeURIComponent(u); }).filter(Boolean);
+  if (!urls.length) return;
+
+  var row = document.querySelector('.assets-row');
+  if (!row) return;
+
+  var eyeSvg = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" stroke="#473bab" stroke-width="1.8"/><circle cx="12" cy="12" r="3" stroke="#473bab" stroke-width="1.8"/></svg>';
+
+  row.innerHTML = urls.map(function(url, i) {
+    return '<div class="asset-card-full" data-full-url="' + url + '" onclick="openAssetModal(this)">' +
+      '<div class="ac-img-wrap">' +
+        '<img src="' + url + '" alt="Asset ' + (i + 1) + '" style="width:100%;height:100%;object-fit:cover;display:block;">' +
+        '<div class="ac-eye-overlay"><div class="ac-eye-btn">' + eyeSvg + '</div></div>' +
+      '</div>' +
+    '</div>';
+  }).join('');
+
+  var label = document.getElementById('assets-count-label');
+  if (label) label.textContent = urls.length + (urls.length === 1 ? ' asset' : ' assets');
 })();
 
 /* ── Asset preview modal ──────────────────────────────────────── */

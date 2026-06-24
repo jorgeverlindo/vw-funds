@@ -3032,15 +3032,17 @@ export function ProjectAgentPane({ isOpen, onClose, userType, activeUserName }: 
       else if (toolName === "set_project_name")
         dispatchAction({ action: "set_project_name", name: toolInput.name as string });
       else if (toolName === "edit_offer") {
+        // Tool schema defines patches as a nested camelCase object: { monthlyPayment, term, ... }
+        const p = (toolInput.patches ?? {}) as Record<string, unknown>;
         const patches: Record<string, unknown> = {};
-        if (toolInput.monthly_payment      != null) patches.monthlyPayment      = Number(toolInput.monthly_payment);
-        if (toolInput.term                 != null) patches.term                = Number(toolInput.term);
-        if (toolInput.total_due_at_signing != null) patches.totalDueAtSigning   = Number(toolInput.total_due_at_signing);
-        if (toolInput.offer_type           != null) patches.offerType           = toolInput.offer_type;
-        if (toolInput.trim                 != null) patches.trim                = toolInput.trim;
-        if (toolInput.year                 != null) patches.year                = toolInput.year;
-        if (toolInput.make                 != null) patches.make                = toolInput.make;
-        if (toolInput.model                != null) patches.model               = toolInput.model;
+        if (p.monthlyPayment      != null) patches.monthlyPayment      = Number(p.monthlyPayment);
+        if (p.term                != null) patches.term                = Number(p.term);
+        if (p.totalDueAtSigning   != null) patches.totalDueAtSigning   = Number(p.totalDueAtSigning);
+        if (p.offerType           != null) patches.offerType           = p.offerType;
+        if (p.trim                != null) patches.trim                = p.trim;
+        if (p.year                != null) patches.year                = p.year;
+        if (p.make                != null) patches.make                = p.make;
+        if (p.model               != null) patches.model               = p.model;
         dispatchAction({ action: "edit_offer", offerId: toolInput.offer_id as string, patches: patches as never });
       }
       else if (toolName === "add_backgrounds_to_project")
@@ -4304,7 +4306,7 @@ export function ProjectAgentPane({ isOpen, onClose, userType, activeUserName }: 
                     <AgentInput ref={agentInputRef} onSubmit={send} onFilesChange={files => { stagedFilesRef.current = files; }} onStop={stop} streaming={streaming} accountName={isAgency ? selectedAccount : "Honda of Anywhere"} />
                     <div className="flex flex-wrap gap-[8px] items-center justify-center w-full">
                       {PROJECT_CATEGORIES.map(cat => {
-                        const chip = <CategoryChip label={cat} onClick={cat === "Create a project" ? handleCreateProjectClick : () => agentInputRef.current?.populate(CATEGORY_MESSAGES[cat] ?? cat)} />;
+                        const chip = <CategoryChip label={cat} onClick={cat === "Create Automatic Project" ? () => send(CATEGORY_MESSAGES[cat] ?? cat, []) : () => agentInputRef.current?.populate(CATEGORY_MESSAGES[cat] ?? cat)} />;
                         if (cat === "Create Automatic Project") {
                           return (
                             <Tooltip.Provider key={cat} delayDuration={400}>
@@ -4320,7 +4322,7 @@ export function ProjectAgentPane({ isOpen, onClose, userType, activeUserName }: 
                             </Tooltip.Provider>
                           );
                         }
-                        return <CategoryChip key={cat} label={cat} onClick={cat === "Create a project" ? handleCreateProjectClick : () => agentInputRef.current?.populate(CATEGORY_MESSAGES[cat] ?? cat)} />;
+                        return <CategoryChip key={cat} label={cat} onClick={() => agentInputRef.current?.populate(CATEGORY_MESSAGES[cat] ?? cat)} />;
                       })}
                     </div>
                   </div>
@@ -4493,7 +4495,7 @@ export function ProjectAgentPane({ isOpen, onClose, userType, activeUserName }: 
                             <Tooltip.Provider key={cat} delayDuration={400}>
                               <Tooltip.Root>
                                 <Tooltip.Trigger asChild>
-                                  <CategoryChip label={cat} onClick={() => agentInputRef.current?.populate(CATEGORY_MESSAGES[cat] ?? cat)} />
+                                  <CategoryChip label={cat} onClick={() => send(CATEGORY_MESSAGES[cat] ?? cat, [])} />
                                 </Tooltip.Trigger>
                                 <Tooltip.Portal>
                                   <Tooltip.Content side="top" sideOffset={6} className="z-[999] max-w-[200px] px-[8px] py-[6px] rounded-[6px] text-[11px] font-medium leading-[1.4] text-white bg-[var(--ink)] shadow-md select-none text-center animate-in fade-in-0 data-[side=top]:slide-in-from-bottom-2 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 duration-[450ms]">
@@ -4505,7 +4507,7 @@ export function ProjectAgentPane({ isOpen, onClose, userType, activeUserName }: 
                             </Tooltip.Provider>
                           );
                         }
-                        return <CategoryChip key={cat} label={cat} onClick={cat === "Create a project" ? handleCreateProjectClick : () => agentInputRef.current?.populate(CATEGORY_MESSAGES[cat] ?? cat)} />;
+                        return <CategoryChip key={cat} label={cat} onClick={() => agentInputRef.current?.populate(CATEGORY_MESSAGES[cat] ?? cat)} />;
                       })}
                     </div>
                   </div>

@@ -63,6 +63,7 @@ import { useComments, CommentsButton } from "@comments";
 import { computeSampleFromData, deriveAdaptiveColors } from "@/app/utils/adaptiveColor";
 import type { AdaptiveColorSet } from "@/app/utils/adaptiveColor";
 import { getZoneConfig, isSingleProductTextLayout, isPharmaZoneConfig, type TemplateZoneConfig } from "./lib/template-zone-configs";
+import { EditBackgroundModal } from "./EditBackgroundModal";
 
 // ─── Left-pane toggle icon (from design asset) ────────────────────────────────
 function LeftPaneIcon({ className }: { className?: string }) {
@@ -2024,8 +2025,7 @@ function ProjectDetailView({
       currentTemplateIds:     visibleTemplateIds,
       currentBackgroundIds:   visibleBackgrounds.map(b => b.id),
       activeBrandOem:         brandKit?.oem,
-      // First 4 generated asset previews — bg image URLs are public Cloudinary links
-      generatedAssetPreviews: generatedAssets.slice(0, 4).flatMap(({ offer, template, bgId }) => {
+      generatedAssetPreviews: generatedAssets.flatMap(({ offer, template, bgId }) => {
         // Check static catalog first, then custom dealer backgrounds
         const bg = bgId
           ? (backgroundCollections.find(b => b.id === bgId) ?? customBackgroundLibrary.find(b => b.id === bgId) ?? null)
@@ -2461,6 +2461,7 @@ function ProjectDetailViewInner({
   // ── Detail page overlay state ──────────────────────────────────────────────
   const [detailPage, setDetailPage] = useState<string | null>(null);
   const [previewLightbox, setPreviewLightbox] = useState<{ items: LightboxItem[]; index: number } | null>(null);
+  const [editingBg, setEditingBg] = useState<CustomBackground | null>(null);
 
   useEffect(() => {
     const handler = () => setDetailPage("campaigns");
@@ -2862,6 +2863,13 @@ function ProjectDetailViewInner({
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
                       <DropdownMenuItem
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setEditingBg({ id: bg.id, name: bg.name, thumbnail: bg.thumbnail, images: bg.images });
+                        }}>
+                        Customize
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
                         className="text-red-600"
                         onClick={(e) => {
                           e.stopPropagation();
@@ -2987,17 +2995,7 @@ function ProjectDetailViewInner({
               </div>
             ))}
 
-            {/* CTA button text — editable per project */}
-            <div className="flex flex-col gap-1.5 pt-1">
-              <label className="text-[11px] font-semibold text-[var(--ink-secondary)] uppercase tracking-wide">CTA Button Text</label>
-              <input
-                type="text"
-                value={project.ctaText ?? "Shop Now"}
-                onChange={(e) => updateProject(project.id, { ctaText: e.target.value })}
-                placeholder="Shop Now"
-                className="h-9 w-full max-w-[260px] rounded-[4px] border border-[#CAC9CF] px-3 text-[13px] text-[var(--ink)] placeholder:text-[var(--ink-secondary)]/50 bg-[#F9FAFA] outline-none focus:border-[var(--brand-accent)] focus:ring-1 focus:ring-[var(--brand-accent)] transition-all"
-              />
-            </div>
+            {/* CTA button text — hidden from UI, kept for agent use via update_project_display */}
           </div>
         </ProjectAccordionSection>
         </div>
@@ -3363,6 +3361,39 @@ function ProjectDetailViewInner({
           </AnimatePresence>
         );
       })()}
+
+      {/* Edit Background modal */}
+      {editingBg && (
+        <EditBackgroundModal
+          background={editingBg}
+          accountName={accountName}
+          onSave={(newBg) => {
+            // Derive a unique name: "<base> edited", "<base> edited (2)", etc.
+            const base = newBg.name.replace(/ edited(\s*\(\d+\))?$/i, "").trim();
+            const targetBase = `${base} edited`;
+            const existingNames = new Set([
+              ...visibleBackgrounds.map(b => b.name),
+              ...customBackgroundLibrary.map(b => b.name),
+            ]);
+            let finalName = targetBase;
+            if (existingNames.has(targetBase)) {
+              let n = 2;
+              while (existingNames.has(`${targetBase} (${n})`)) n++;
+              finalName = `${targetBase} (${n})`;
+            }
+            const named = { ...newBg, name: finalName } as CustomBackground;
+            setCustomBackgroundLibrary(prev => {
+              const next = [...prev.filter(b => b.id !== editingBg.id), named];
+              saveCustomBackgroundLibrary(project.id, next);
+              return next;
+            });
+            setSelectedBgId(named.id);
+            setEditingBg(null);
+            emitSnackbar("Background updated");
+          }}
+          onClose={() => setEditingBg(null)}
+        />
+      )}
 
       {/* Edit Project dialog */}
       <CreateProjectDialog

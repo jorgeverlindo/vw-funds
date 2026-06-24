@@ -248,10 +248,9 @@ function buildEmailHtml(body: SendReviewBody): string {
   // Prefer rich assetItems (bg + vehicle → Cloudinary composite URL).
   // Fall back to legacy plain `assets` array.
   const rawItems: AssetItem[] = project.assetItems?.length
-    ? project.assetItems.slice(0, 4)
+    ? project.assetItems
     : (project.assets ?? [])
         .filter(u => u.startsWith("http") && !u.startsWith("blob:") && !u.startsWith("data:"))
-        .slice(0, 4)
         .map(bgUrl => ({ bgUrl }));
 
   // Build composited (or plain bg) URLs via Cloudinary

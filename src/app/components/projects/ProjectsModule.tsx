@@ -14,6 +14,7 @@ import {
   ChevronsUpDown, Trash2,
   Eye, Wand2, X,
 } from "lucide-react";
+import { resolveJellybean, getColorFamilies } from "@/data/jellybeans/jellybean-catalog";
 import { OffersPage } from "./OffersPage";
 import { TemplatesPage } from "./TemplatesPage";
 import { LogosBackgroundsPage } from "./LogosBackgroundsPage";
@@ -61,6 +62,7 @@ import { TaskOwner } from "@projects/ui/TaskOwner";
 import { useComments, CommentsButton } from "@comments";
 import { computeSampleFromData, deriveAdaptiveColors } from "@/app/utils/adaptiveColor";
 import type { AdaptiveColorSet } from "@/app/utils/adaptiveColor";
+import { getZoneConfig, isSingleProductTextLayout, isPharmaZoneConfig, type TemplateZoneConfig } from "./lib/template-zone-configs";
 
 // ─── Left-pane toggle icon (from design asset) ────────────────────────────────
 function LeftPaneIcon({ className }: { className?: string }) {
@@ -80,6 +82,7 @@ interface StoredOffer {
   image: string; stock: number; offerType: string; tags: string[];
   pvi: number; aging: number; sales: number; inventory: number;
   monthlyPayment: number; term: number; totalDueAtSigning: number;
+  exteriorColor?: string;
 }
 
 function loadCustomOfferLibrary(): StoredOffer[] {
@@ -154,6 +157,7 @@ function customOfferToStored(co: import("@projects/ProjectAgentPane").CustomOffe
     monthlyPayment: parseFloat(co.monthlyPayment) || 0,
     term: parseInt(co.term) || 36,
     totalDueAtSigning: parseFloat(co.dueAtSigning) || 0,
+    exteriorColor: co.exteriorColor,
   };
 }
 
@@ -1045,6 +1049,7 @@ function JellyBeanCard({
   offer, template, fixedHeight = 160, bgImage, brandKit,
   groundFraction, carWidthFraction, carAnchorX, compositeUrl, isGenerating,
   bgExactFormat = true,
+  dealerName, ctaText, leaseLabel, finePrint,
 }: {
   offer: Offer & { image?: string };
   template: Template;
@@ -1064,10 +1069,28 @@ function JellyBeanCard({
   /** Pre-generated Flux composite (car already baked in). When provided, the car
    *  PNG overlay is suppressed — the composite IS the complete image. */
   compositeUrl?: string;
+  /** Dealer name shown in the ad (falls back to "{make} Dealer"). */
+  dealerName?: string;
+  /** CTA button text (falls back to "Shop Now"). */
+  ctaText?: string;
+  /** Lease label override (falls back to offer type). */
+  leaseLabel?: string;
+  /** Fine print line (falls back to term + due at signing). */
+  finePrint?: string;
 }) {
-  const h = fixedHeight;
   const ar = template.width / template.height;
-  const w = Math.min(Math.round(h * ar), 540);
+  const wUnclamped = Math.round(fixedHeight * ar);
+  // For single-product zone-config templates, enforce a minimum display scale (0.25)
+  // so that text and CTA buttons remain visible at thumbnail size (fixes 1080×1080).
+  const _cfgForSize = getZoneConfig(template.id);
+  const _cfgSingle = (_cfgForSize && !isPharmaZoneConfig(_cfgForSize) && isSingleProductTextLayout((_cfgForSize as TemplateZoneConfig).textLayout))
+    ? (_cfgForSize as TemplateZoneConfig) : null;
+  const wMinScale = _cfgSingle ? Math.min(540, Math.ceil(_cfgSingle.canvasW * 0.25)) : 0;
+  const wEffective = Math.max(wUnclamped, wMinScale);
+  const w = Math.min(wEffective, 540);
+  // Wide banners: clamp width to 540 and shrink height proportionally (avoids empty gray space).
+  // Tall/square: if w was boosted by min-scale, also boost h to maintain aspect ratio.
+  const h = wUnclamped > 540 ? Math.round(w / ar) : (w > wUnclamped ? Math.round(w / ar) : fixedHeight);
   const isWide = ar > 2.0; // 2000×500 (4:1), 970×250 (3.88:1)
 
   // ── Canvas composite fallback (only when no pre-generated compositeUrl) ──
@@ -1346,11 +1369,16 @@ function JellyBeanCard({
   // Adaptive text colors — white on bg image, dark on plain gray
   const hasBg       = !!bgImage;
 
-  // Brand logos — choose positive (dark) or negative (white) based on background
+  // darkText: zone configs can declare that their background is light → use dark ink instead of white
+  const _cfgForDark = getZoneConfig(template.id);
+  const darkText = !!(_cfgForDark && !isPharmaZoneConfig(_cfgForDark) && (_cfgForDark as TemplateZoneConfig).darkText);
+
+  // Brand logos — use positive (dark) logo for light/dark-text templates, negative (white) for dark bg
   const slots = (template as any).logoSlots as string[] | undefined ?? [];
-  const primaryLogoSrc     = getLogoForSlot(brandKit, "primary-square", hasBg);
-  const eventHorizLogoSrc  = getLogoForSlot(brandKit, "event-horizontal", hasBg);
-  const eventSquareLogoSrc = getLogoForSlot(brandKit, "event-square", hasBg);
+  const _logoBgMode = hasBg && !darkText;
+  const primaryLogoSrc     = getLogoForSlot(brandKit, "primary-square", _logoBgMode);
+  const eventHorizLogoSrc  = getLogoForSlot(brandKit, "event-horizontal", _logoBgMode);
+  const eventSquareLogoSrc = getLogoForSlot(brandKit, "event-square", _logoBgMode);
   const eventLogoSrc = slots.includes("event-horizontal") ? eventHorizLogoSrc
     : slots.includes("event-square")                      ? eventSquareLogoSrc
     : undefined;
@@ -1359,12 +1387,12 @@ function JellyBeanCard({
   const primaryLogoH = Math.round(h * 0.174);   // ~28px at h=160  (+20%)
   const eventLogoH   = Math.round(h * 0.126);   // ~20px at h=160  (+20%)
 
-  const dealerColor = hasBg ? (adaptiveColors?.primary   ?? "rgba(255,255,255,0.92)") : "var(--ink)";
-  const makeColor   = hasBg ? (adaptiveColors?.tertiary  ?? "rgba(255,255,255,0.55)") : "var(--ink-tertiary)";
-  const labelColor  = hasBg ? (adaptiveColors?.secondary ?? "rgba(255,255,255,0.70)") : "var(--ink-secondary)";
-  const priceColor  = hasBg ? (adaptiveColors?.primary   ?? "white")                  : "var(--ink)";
-  const moColor     = hasBg ? (adaptiveColors?.secondary ?? "rgba(255,255,255,0.60)") : "var(--ink-secondary)";
-  const termColor   = hasBg ? (adaptiveColors?.tertiary  ?? "rgba(255,255,255,0.45)") : "var(--ink-tertiary)";
+  const dealerColor = hasBg ? (darkText ? "rgba(31,29,37,0.92)"  : (adaptiveColors?.primary   ?? "rgba(255,255,255,0.92)")) : "var(--ink)";
+  const makeColor   = hasBg ? (darkText ? "rgba(31,29,37,0.55)"  : (adaptiveColors?.tertiary  ?? "rgba(255,255,255,0.55)")) : "var(--ink-tertiary)";
+  const labelColor  = hasBg ? (darkText ? "rgba(74,73,79,0.90)"  : (adaptiveColors?.secondary ?? "rgba(255,255,255,0.70)")) : "var(--ink-secondary)";
+  const priceColor  = hasBg ? (darkText ? "#1f1d25"              : (adaptiveColors?.primary   ?? "white"))                  : "var(--ink)";
+  const moColor     = hasBg ? (darkText ? "rgba(31,29,37,0.60)"  : (adaptiveColors?.secondary ?? "rgba(255,255,255,0.60)")) : "var(--ink-secondary)";
+  const termColor   = hasBg ? (darkText ? "rgba(74,73,79,0.85)"  : (adaptiveColors?.tertiary  ?? "rgba(255,255,255,0.45)")) : "var(--ink-tertiary)";
 
   // ── Skeleton while the canvas composite is being computed (dealer flow) ────
   // No intermediate frame (raw bg crop + CSS car) is ever shown: the card holds
@@ -1423,186 +1451,176 @@ function JellyBeanCard({
         </div>
       )}
 
-      {/* ── WIDE layout: car on right 55%, text on left ──────────────────────── */}
-      {isWide ? (
-        <>
-          {/* CSS car overlay — skipped when Flux composite or canvas composite is ready */}
-          {!compositeUrl && !compositeImage && offer.image && (
-            <img
-              src={offer.image}
-              alt={`${offer.year} ${offer.make} ${offer.model}`}
-              className="absolute object-contain"
-              style={{
-                right: 0,
-                // carBottom: precise pixel value from alpha-detected tire position.
-                // Falls back to ground-based estimate, then to 0.
-                // Wide layout: text is on left, car is on right — no vertical conflict.
-                // Dealer bg (groundFraction set): tires at groundFraction, height derived.
-                // Catalog bg (no groundFraction): restore original bottom:0 / height:90%.
-                bottom: carBottom ?? (groundFraction !== undefined
-                  ? Math.round(h * (1 - groundFraction))
-                  : 0),
-                height: groundFraction !== undefined
-                  ? `${Math.round((groundFraction - 0.08) * 100)}%`
-                  : "90%",
-                width: carWidthFraction !== undefined ? `${Math.round(carWidthFraction * 100)}%` : "55%",
-                objectPosition: "right bottom",
-                // CSS drop-shadow on the PNG alpha channel = free realistic cast shadow
-                filter: hasBg
-                  ? "drop-shadow(0px 6px 12px rgba(0,0,0,0.45)) drop-shadow(0px 2px 4px rgba(0,0,0,0.3))"
-                  : undefined,
-              }}
-              draggable={false}
-            />
-          )}
+      {/* ── Zone-config driven layout ─────────────────────────────────────────── */}
+      {(() => {
+        const cfgRaw = getZoneConfig(template.id);
+        const cfg = (cfgRaw && !isPharmaZoneConfig(cfgRaw)) ? cfgRaw : null;
+        const tl = (cfg && isSingleProductTextLayout(cfg.textLayout)) ? cfg.textLayout : null;
 
-          {/* Top row: dealer + primary logo (or make text fallback) */}
-          <div className="absolute top-0 left-0 right-0 flex items-center justify-between"
-            style={{ padding: `${barPadV}px ${barPadH}px` }}>
-            <span style={{ fontSize: 12, fontWeight: 600, color: dealerColor, whiteSpace: "nowrap", fontFamily: "system-ui, -apple-system, 'Helvetica Neue', Arial, sans-serif", letterSpacing: "0.1px" }}>
-              {offer.make} Dealer
-            </span>
-            {primaryLogoSrc
-              ? <img src={primaryLogoSrc} alt={offer.make} draggable={false}
-                  style={{ height: primaryLogoH, width: "auto", objectFit: "contain" }} />
-              : <span style={{ fontSize: 10, fontWeight: 700, color: makeColor, letterSpacing: "0.8px", textTransform: "uppercase" }}>
-                  {offer.make}
-                </span>
-            }
-          </div>
+        // Uniform scale: fit the full canvas width into the (possibly clamped) card width.
+        // For non-clamped templates this equals h/canvasH; for wide banners it keeps
+        // all elements within the visible card area.
+        const scale = cfg ? w / cfg.canvasW : null;
+        const s = (v: number) => scale !== null ? Math.round(v * scale) : 0;
 
-          {/* Template badge */}
-          <div className="absolute rounded"
-            style={{ top: Math.round(h * 0.13), left: barPadH, background: "rgba(71,59,171,0.82)", padding: "2px 5px" }}>
-            <span style={{ fontSize: chipFontSize, fontWeight: 600, color: "white", letterSpacing: "0.3px" }}>
-              {template.width}×{template.height}
-            </span>
-          </div>
+        // ── Fallback for multi-product / pharma / unknown templates ───────────
+        if (!tl || !cfg) {
+          return isWide ? (
+            <>
+              {!compositeUrl && !compositeImage && offer.image && (
+                <img src={offer.image} className="absolute object-cover"
+                  style={{ right: 0, bottom: carBottom ?? (groundFraction !== undefined ? Math.round(h * (1 - groundFraction)) : 0), height: groundFraction !== undefined ? `${Math.round((groundFraction - 0.08) * 100)}%` : "90%", width: carWidthFraction !== undefined ? `${Math.round(carWidthFraction * 100)}%` : "55%", objectPosition: "center bottom", filter: hasBg ? "drop-shadow(0px 6px 12px rgba(0,0,0,0.45)) drop-shadow(0px 2px 4px rgba(0,0,0,0.3))" : undefined }}
+                  draggable={false} />
+              )}
+              <div className="absolute top-0 left-0 right-0 flex items-center justify-between" style={{ padding: `${barPadV}px ${barPadH}px` }}>
+                <span style={{ fontSize: 12, fontWeight: 600, color: dealerColor, whiteSpace: "nowrap" }}>{offer.make} Dealer</span>
+                {primaryLogoSrc ? <img src={primaryLogoSrc} draggable={false} style={{ height: primaryLogoH, width: "auto", objectFit: "contain" }} /> : <span style={{ fontSize: 10, fontWeight: 700, color: makeColor, textTransform: "uppercase" }}>{offer.make}</span>}
+              </div>
+              <div className="absolute rounded" style={{ top: Math.round(h * 0.13), left: barPadH, background: "rgba(71,59,171,0.82)", padding: "2px 5px" }}><span style={{ fontSize: chipFontSize, fontWeight: 600, color: "white", letterSpacing: "0.3px" }}>{template.width}×{template.height}</span></div>
+              <div className="absolute flex items-center gap-[3px] rounded-full" style={{ top: Math.round(h * 0.13), right: barPadH, background: "rgba(255,255,255,0.88)", padding: "2px 6px" }}><div className="rounded-full" style={{ width: 5, height: 5, background: "var(--ink-tertiary)" }} /><span style={{ fontSize: chipFontSize, fontWeight: 600, color: "var(--ink-secondary)" }}>Draft</span></div>
+              <div className="absolute bottom-0 left-0" style={{ width: "48%", padding: `${Math.round(h * 0.06)}px ${barPadH}px ${Math.round(h * 0.07)}px` }}>
+                <p style={{ fontSize: labelFontSize, fontWeight: 500, color: labelColor, textTransform: "uppercase", marginBottom: 1 }}>{offer.offerType} · {offer.year} {offer.make}</p>
+                <div className="flex items-baseline" style={{ gap: 2 }}><span style={{ fontSize: priceFontSize, fontWeight: 700, color: priceColor, lineHeight: 1 }}>${offer.monthlyPayment}</span><span style={{ fontSize: 11, color: moColor }}>/mo</span></div>
+                <p style={{ fontSize: labelFontSize, color: termColor, marginTop: 1 }}>{offer.term}mo · {offer.trim}</p>
+              </div>
+              {eventLogoSrc && <div className="absolute bottom-0 right-0" style={{ padding: `${Math.round(h * 0.06)}px ${barPadH}px ${Math.round(h * 0.07)}px` }}><img src={eventLogoSrc} draggable={false} style={{ height: eventLogoH, width: "auto" }} /></div>}
+            </>
+          ) : (
+            <>
+              {!compositeUrl && !compositeImage && offer.image && (
+                <img src={offer.image} className="absolute w-full object-cover"
+                  style={{ bottom: carBottom ?? (groundFraction !== undefined ? Math.max(Math.round(h * (1 - groundFraction)), Math.round(h * 0.20) + 27) : Math.round(h * 0.26)), left: 0, right: 0, height: Math.round(h * 0.52), objectPosition: "center bottom", filter: hasBg ? "drop-shadow(0px 6px 14px rgba(0,0,0,0.50)) drop-shadow(0px 2px 5px rgba(0,0,0,0.30))" : undefined }}
+                  draggable={false} />
+              )}
+              <div className="absolute top-0 left-0 right-0 flex items-center justify-between" style={{ padding: `${barPadV}px ${barPadH}px` }}>
+                <span style={{ fontSize: 12, fontWeight: 600, color: dealerColor, whiteSpace: "nowrap" }}>{offer.make} Dealer</span>
+                {primaryLogoSrc ? <img src={primaryLogoSrc} draggable={false} style={{ height: primaryLogoH, width: "auto", objectFit: "contain" }} /> : <span style={{ fontSize: 10, fontWeight: 700, color: makeColor, textTransform: "uppercase" }}>{offer.make}</span>}
+              </div>
+              <div className="absolute flex items-center gap-[3px] rounded-full" style={{ top: Math.round(h * 0.12), right: Math.round(w * 0.04), background: "rgba(255,255,255,0.88)", padding: "2px 6px" }}><div className="rounded-full" style={{ width: 5, height: 5, background: "var(--ink-tertiary)" }} /><span style={{ fontSize: chipFontSize, fontWeight: 600, color: "var(--ink-secondary)" }}>Draft</span></div>
+              <div className="absolute rounded" style={{ top: Math.round(h * 0.12), left: Math.round(w * 0.04), background: "rgba(71,59,171,0.82)", padding: "2px 5px" }}><span style={{ fontSize: chipFontSize, fontWeight: 600, color: "white", letterSpacing: "0.3px" }}>{template.width}×{template.height}</span></div>
+              <div className="absolute bottom-0 left-0 right-0" style={{ padding: `${Math.round(h * 0.04)}px ${barPadH}px ${Math.round(h * 0.06)}px` }}>
+                {eventLogoSrc && <img src={eventLogoSrc} draggable={false} className="absolute top-0 right-0" style={{ height: eventLogoH, width: "auto", margin: `${Math.round(h * 0.04)}px ${barPadH}px 0 0` }} />}
+                <p style={{ fontSize: labelFontSize, fontWeight: 500, color: labelColor, textTransform: "uppercase", marginBottom: 1 }}>{offer.offerType} · {offer.year} {offer.make} {offer.model}</p>
+                <div className="flex items-baseline" style={{ gap: 2 }}><span style={{ fontSize: priceFontSize, fontWeight: 700, color: priceColor, lineHeight: 1 }}>${offer.monthlyPayment}</span><span style={{ fontSize: 11, color: moColor }}>/mo</span></div>
+                <p style={{ fontSize: labelFontSize, color: termColor, marginTop: 1 }}>{offer.term}mo · {offer.trim}</p>
+              </div>
+            </>
+          );
+        }
 
-          {/* Draft chip */}
-          <div className="absolute flex items-center gap-[3px] rounded-full"
-            style={{ top: Math.round(h * 0.13), right: barPadH, background: "rgba(255,255,255,0.88)", padding: "2px 6px" }}>
-            <div className="rounded-full" style={{ width: 5, height: 5, background: "var(--ink-tertiary)" }} />
-            <span style={{ fontSize: chipFontSize, fontWeight: 600, color: "var(--ink-secondary)" }}>Draft</span>
-          </div>
+        const slot = cfg.productSlots[0];
+        const lP = cfg.logoP;
+        const lE = cfg.logoE;
 
-          {/* Bottom left: price + optional event logo bottom-right */}
-          <div className="absolute bottom-0 left-0"
-            style={{ width: "48%", padding: `${Math.round(h * 0.06)}px ${barPadH}px ${Math.round(h * 0.07)}px` }}>
-            <p style={{ fontSize: labelFontSize, fontWeight: 500, color: labelColor, letterSpacing: "0.4px", textTransform: "uppercase", marginBottom: 1 }}>
-              {offer.offerType} · {offer.year} {offer.make}
-            </p>
-            <div className="flex items-baseline" style={{ gap: 2 }}>
-              <span style={{ fontSize: priceFontSize, fontWeight: 700, color: priceColor, lineHeight: 1 }}>
-                ${offer.monthlyPayment}
-              </span>
-              <span style={{ fontSize: 11, color: moColor }}>/mo</span>
-            </div>
-            <p style={{ fontSize: labelFontSize, color: termColor, marginTop: 1 }}>
-              {offer.term}mo · {offer.trim}
-            </p>
-          </div>
-
-          {/* Event logo — bottom-right */}
-          {eventLogoSrc && (
-            <div className="absolute bottom-0 right-0"
-              style={{ padding: `${Math.round(h * 0.06)}px ${barPadH}px ${Math.round(h * 0.07)}px` }}>
-              <img src={eventLogoSrc} alt="event" draggable={false}
-                style={{ height: eventLogoH, width: "auto", objectFit: "contain" }} />
-            </div>
-          )}
-        </>
-      ) : (
-        /* ── NORMAL/SQUARE layout ──────────────────────────────────────────── */
-        <>
-          {/* CSS car overlay — skipped when Flux composite or canvas composite is ready */}
-          {!compositeUrl && !compositeImage && offer.image && (
-            <img
-              src={offer.image}
-              alt={`${offer.year} ${offer.make} ${offer.model}`}
-              className="absolute w-full object-contain"
-              style={{
-                // groundFraction: where tires should land in the background image.
-                // Without it (no custom bg): fixed offset h*0.26 (text box below car).
-                // With it: anchor tires to the detected ground plane, keep same car height.
-                // carBottom: pixel-precise value from alpha-detected tire position in the PNG,
-                // clamped to textZoneH so the car never overlaps the price/term text.
-                // Falls back: ground-based estimate clamped to text zone → fixed offset.
-                // Dealer bg: anchor to groundFraction (clamped above text zone).
-                // Catalog bg (no groundFraction): restore original h*0.26 positioning.
-                bottom: carBottom ?? (groundFraction !== undefined
-                  ? Math.max(Math.round(h * (1 - groundFraction)), Math.round(h * 0.20) + 27)
-                  : Math.round(h * 0.26)),
-                left: 0, right: 0,
-                height: Math.round(h * 0.52),
-                padding: carWidthFraction !== undefined
-                  ? `0 ${Math.round(w * (1 - carWidthFraction) / 2)}px`
-                  : `0 ${Math.round(w * 0.06)}px`,
-                objectPosition: carBottom !== null ? "center bottom" : "center center",
-                // CSS drop-shadow respects PNG alpha = realistic cast shadow for free
-                filter: hasBg
-                  ? "drop-shadow(0px 6px 14px rgba(0,0,0,0.50)) drop-shadow(0px 2px 5px rgba(0,0,0,0.30))"
-                  : undefined,
-              }}
-              draggable={false}
-            />
-          )}
-
-          {/* Top row: dealer + primary logo (or make text fallback) */}
-          <div className="absolute top-0 left-0 right-0 flex items-center justify-between"
-            style={{ padding: `${barPadV}px ${barPadH}px` }}>
-            <span style={{ fontSize: 12, fontWeight: 600, color: dealerColor, whiteSpace: "nowrap", fontFamily: "system-ui, -apple-system, 'Helvetica Neue', Arial, sans-serif", letterSpacing: "0.1px" }}>
-              {offer.make} Dealer
-            </span>
-            {primaryLogoSrc
-              ? <img src={primaryLogoSrc} alt={offer.make} draggable={false}
-                  style={{ height: primaryLogoH, width: "auto", objectFit: "contain" }} />
-              : <span style={{ fontSize: 10, fontWeight: 700, color: makeColor, letterSpacing: "0.8px", textTransform: "uppercase" }}>
-                  {offer.make}
-                </span>
-            }
-          </div>
-
-          {/* Draft chip */}
-          <div className="absolute flex items-center gap-[3px] rounded-full"
-            style={{ top: Math.round(h * 0.12), right: Math.round(w * 0.04), background: "rgba(255,255,255,0.88)", padding: "2px 6px" }}>
-            <div className="rounded-full" style={{ width: 5, height: 5, background: "var(--ink-tertiary)" }} />
-            <span style={{ fontSize: chipFontSize, fontWeight: 600, color: "var(--ink-secondary)" }}>Draft</span>
-          </div>
-
-          {/* Template badge */}
-          <div className="absolute rounded"
-            style={{ top: Math.round(h * 0.12), left: Math.round(w * 0.04), background: "rgba(71,59,171,0.82)", padding: "2px 5px" }}>
-            <span style={{ fontSize: chipFontSize, fontWeight: 600, color: "white", letterSpacing: "0.3px" }}>
-              {template.width}×{template.height}
-            </span>
-          </div>
-
-          {/* Bottom: price + event logo top-right of price bar */}
-          <div className="absolute bottom-0 left-0 right-0"
-            style={{ padding: `${Math.round(h * 0.04)}px ${barPadH}px ${Math.round(h * 0.06)}px` }}>
-            {/* Event logo — floated to top-right of this block */}
-            {eventLogoSrc && (
-              <img src={eventLogoSrc} alt="event" draggable={false}
-                className="absolute top-0 right-0"
-                style={{ height: eventLogoH, width: "auto", objectFit: "contain",
-                  margin: `${Math.round(h * 0.04)}px ${barPadH}px 0 0` }} />
+        return (
+          <>
+            {/* Car PNG — CSS overlay (suppressed when canvas or Flux composite is ready) */}
+            {!compositeUrl && !compositeImage && offer.image && (
+              <img
+                src={offer.image}
+                alt={`${offer.year} ${offer.make} ${offer.model}`}
+                className="absolute object-cover"
+                style={{
+                  left: s(slot.l),
+                  top: s(slot.top),
+                  width: s(slot.w),
+                  height: s(slot.h),
+                  objectPosition: "center bottom",
+                  filter: hasBg
+                    ? "drop-shadow(0px 6px 12px rgba(0,0,0,0.45)) drop-shadow(0px 2px 4px rgba(0,0,0,0.3))"
+                    : undefined,
+                }}
+                draggable={false}
+              />
             )}
-            <p style={{ fontSize: labelFontSize, fontWeight: 500, color: labelColor, letterSpacing: "0.4px", textTransform: "uppercase", marginBottom: 1 }}>
-              {offer.offerType} · {offer.year} {offer.make} {offer.model}
-            </p>
-            <div className="flex items-baseline" style={{ gap: 2 }}>
-              <span style={{ fontSize: priceFontSize, fontWeight: 700, color: priceColor, lineHeight: 1 }}>
+
+            {/* Primary logo */}
+            {primaryLogoSrc && lP.size > 0 && lP.l >= 0 && (
+              <img src={primaryLogoSrc} alt={offer.make} draggable={false}
+                style={{ position: "absolute", left: s(lP.l), top: s(lP.top), height: s(lP.size), width: "auto", objectFit: "contain" }} />
+            )}
+
+            {/* Event logo */}
+            {eventLogoSrc && lE.size > 0 && lE.l >= 0 && (
+              <img src={eventLogoSrc} alt="event" draggable={false}
+                style={{ position: "absolute", left: s(lE.l), top: s(lE.top), height: s(lE.size), width: "auto", objectFit: "contain" }} />
+            )}
+
+            {/* Dealer name */}
+            {tl.dealerName && (
+              <span style={{ position: "absolute", left: s(tl.dealerName.l), top: s(tl.dealerName.top), fontSize: s(tl.dealerName.fontSize), fontWeight: 600, color: dealerColor, whiteSpace: "nowrap", fontFamily: "system-ui, sans-serif" }}>
+                {dealerName || `${offer.make} Dealer`}
+              </span>
+            )}
+
+            {/* Title (year make model trim) — present in some formats */}
+            {tl.title && (
+              <span style={{ position: "absolute", left: s(tl.title.l), top: s(tl.title.top), fontSize: s(tl.title.fontSize), fontWeight: 400, color: labelColor }}>
+                {offer.year} {offer.make} {offer.model} {offer.trim}
+              </span>
+            )}
+
+            {/* Lease label */}
+            <span style={{ position: "absolute", left: s(tl.leaseLabel.l), top: s(tl.leaseLabel.top), fontSize: s(tl.leaseLabel.fontSize), fontWeight: 500, color: labelColor, textTransform: "uppercase", letterSpacing: "0.4px" }}>
+              {leaseLabel || offer.offerType}
+            </span>
+
+            {/* Price */}
+            <div style={{ position: "absolute", left: s(tl.price.l), top: s(tl.price.top), display: "flex", alignItems: "baseline", gap: 1 }}>
+              <span style={{ fontSize: s(tl.price.fontSize), fontWeight: 700, color: priceColor, lineHeight: 1 }}>
                 ${offer.monthlyPayment}
               </span>
-              <span style={{ fontSize: 11, color: moColor }}>/mo</span>
+              <span style={{ fontSize: Math.max(8, Math.round(s(tl.price.fontSize) * 0.28)), color: moColor }}>/mo.</span>
             </div>
-            <p style={{ fontSize: labelFontSize, color: termColor, marginTop: 1 }}>
-              {offer.term}mo · {offer.trim}
-            </p>
-          </div>
-        </>
-      )}
+
+            {/* Fine print — single-line (wide formats) */}
+            {tl.finePrint && (
+              <span style={{ position: "absolute", left: s(tl.finePrint.l), top: s(tl.finePrint.top), fontSize: s(tl.finePrint.fontSize), color: termColor, maxWidth: tl.finePrint.w ? s(tl.finePrint.w) : undefined, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                {finePrint || `${offer.term} months  |  $${(offer as any).totalDueAtSigning ?? ""} due at signing`}
+              </span>
+            )}
+
+            {/* termLabel — legacy two-line (300x250, 1080x1080) */}
+            {tl.termLabel && (
+              <span style={{ position: "absolute", left: s(tl.termLabel.l), top: s(tl.termLabel.top), fontSize: s(tl.termLabel.fontSize), color: termColor }}>
+                for {offer.term} months.
+              </span>
+            )}
+
+            {/* dueLabel — legacy two-line */}
+            {tl.dueLabel && (
+              <span style={{ position: "absolute", left: s(tl.dueLabel.l), top: s(tl.dueLabel.top), fontSize: s(tl.dueLabel.fontSize), color: termColor }}>
+                ${(offer as any).totalDueAtSigning ?? ""} due at signing
+              </span>
+            )}
+
+            {/* CTA button */}
+            {tl.cta.w !== undefined && tl.cta.h !== undefined && (
+              <div style={{ position: "absolute", left: s(tl.cta.l), top: s(tl.cta.top), width: s(tl.cta.w), height: s(tl.cta.h), display: "flex", alignItems: "center", justifyContent: "center", fontSize: s(tl.cta.fontSize), fontWeight: 700, backgroundColor: "#111014", color: "white", borderRadius: Math.max(2, s(4)) }}>
+                {ctaText || "Shop Now"}
+              </div>
+            )}
+
+            {/* Disclaimer */}
+            {tl.disclaimer && (
+              <span style={{ position: "absolute", left: s(tl.disclaimer.l), top: s(tl.disclaimer.top), fontSize: Math.max(6, s(tl.disclaimer.fontSize)), color: hasBg ? (darkText ? "rgba(31,29,37,0.45)" : "rgba(255,255,255,0.50)") : "var(--ink-tertiary)", maxWidth: tl.disclaimer.w ? s(tl.disclaimer.w) : undefined, textAlign: tl.disclaimer.textAlign }}>
+                Photos for illustration purposes only.
+              </span>
+            )}
+
+            {/* Format chip */}
+            <div className="absolute rounded" style={{ top: Math.round(h * 0.06), left: Math.round(w * 0.03), background: "rgba(71,59,171,0.82)", padding: "2px 5px", zIndex: 20 }}>
+              <span style={{ fontSize: chipFontSize, fontWeight: 600, color: "white", letterSpacing: "0.3px" }}>{template.width}×{template.height}</span>
+            </div>
+
+            {/* Draft chip */}
+            <div className="absolute flex items-center gap-[3px] rounded-full" style={{ top: Math.round(h * 0.06), right: Math.round(w * 0.03), background: "rgba(255,255,255,0.88)", padding: "2px 6px", zIndex: 20 }}>
+              <div className="rounded-full" style={{ width: 5, height: 5, background: "var(--ink-tertiary)" }} />
+              <span style={{ fontSize: chipFontSize, fontWeight: 600, color: "var(--ink-secondary)" }}>Draft</span>
+            </div>
+          </>
+        );
+      })()}
     </div>
   );
 }
@@ -1629,20 +1647,29 @@ function PreviewLightbox({
   onClose,
   onNav,
   brandKit,
+  dealerName,
+  ctaText,
+  leaseLabel,
+  finePrint,
 }: {
   items: LightboxItem[];
   index: number;
   onClose: () => void;
   onNav: (i: number) => void;
   brandKit: BrandKit | null;
+  dealerName?: string;
+  ctaText?: string;
+  leaseLabel?: string;
+  finePrint?: string;
 }) {
   const item = items[index];
   if (!item) return null;
 
-  // Scale card to fit inside ~860px wide, max 380px tall
+  // Scale card to fit inside ~860px wide, max 380px tall — preserve true aspect ratio.
   const aspectRatio = item.template.width / item.template.height;
-  const fixedH = Math.min(380, Math.max(100, Math.floor(860 / aspectRatio)));
-  const cardW = Math.round(fixedH * aspectRatio);
+  const wUncFromMaxH = Math.round(380 * aspectRatio);
+  const cardW = Math.min(wUncFromMaxH, 860);
+  const fixedH = Math.max(100, wUncFromMaxH > 860 ? Math.round(860 / aspectRatio) : 380);
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
@@ -1711,6 +1738,10 @@ function PreviewLightbox({
               carAnchorX={item.carAnchorX}
               isGenerating={item.isGenerating}
               bgExactFormat={item.bgExactFormat}
+              dealerName={dealerName}
+              ctaText={ctaText}
+              leaseLabel={leaseLabel}
+              finePrint={finePrint}
             />
           </div>
           {/* Prev arrow */}
@@ -1815,6 +1846,11 @@ function ProjectDetailView({
     label: string;
   } | null>(null);
 
+  // Offer patches — keyed by offer ID, applied without changing IDs or reordering (covers jellybean swaps + financial edits)
+  const [offerPatches, setOfferPatches] = useState<Record<string, Partial<StoredOffer>>>(
+    ((saved?.offerPatches ?? saved?.jellyBeanPatches) as Record<string, Partial<StoredOffer>> | undefined) ?? {}
+  );
+
   // Agent-added IDs (arrive via window events from ProjectAgentPane, persisted per project)
   const [agentAddedOfferIds,    setAgentAddedOfferIds]    = useState<string[]>(saved?.addedOfferIds ?? []);
   // Offer IDs that the user edited in the agent panel — rendered with variant="regular" (not recommendation)
@@ -1839,8 +1875,10 @@ function ProjectDetailView({
 
   // Merged library: static catalog + user-added custom offers from file extraction
   const combinedOfferLibrary = useMemo(
-    () => [...offerLibrary, ...customOfferLibrary] as Offer[],
-    [customOfferLibrary],
+    () => [...offerLibrary, ...customOfferLibrary].map(o =>
+      offerPatches[o.id] ? { ...o, ...offerPatches[o.id] } : o
+    ) as Offer[],
+    [customOfferLibrary, offerPatches],
   );
 
   // Agent-created projects (id starts with "project-") should not auto-expand Theme & Logos;
@@ -1938,9 +1976,10 @@ function ProjectDetailView({
       activatedOem: agentActivatedOems[0] ?? null,
       taskOwners,
       generatedAssetIds: generatedAssets.map(a => ({ offerId: a.offer.id, templateId: a.template.id, bgId: a.bgId })),
+      offerPatches,
     };
     localStorage.setItem(STORAGE_KEYS.PROJECT_STATE(project.id), JSON.stringify(state));
-  }, [agentAddedOfferIds, agentAddedTemplateIds, removedOfferIds, removedTemplateIds, selectedBgId, agentAddedBgIds, agentActivatedOems, project.id, taskOwners, generatedAssets]);
+  }, [agentAddedOfferIds, agentAddedTemplateIds, removedOfferIds, removedTemplateIds, selectedBgId, agentAddedBgIds, agentActivatedOems, project.id, taskOwners, generatedAssets, offerPatches]);
 
   const visibleOffers = [
     ...offers,
@@ -2028,6 +2067,7 @@ function ProjectDetailView({
               offerType: src.offerType, monthlyPayment: src.monthlyPayment,
               term: src.term, pvi: src.pvi ?? 0, aging: src.aging ?? 0, stock: src.stock ?? 1,
               image: src.image ?? "",
+              exteriorColor: src.exteriorColor ?? "",
             };
           });
       })(),
@@ -2040,6 +2080,10 @@ function ProjectDetailView({
     setTimeout(() => window.dispatchEvent(new CustomEvent(PROJECT_CONTEXT_EVENT, { detail: payload })), 0);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [project.id, visibleOffers.length, visibleTemplates.length, customOfferLibrary.length, customTemplateLibrary.length, brandKit?.oem, taskOwners, agentAddedBgIds.length, customBackgroundLibrary.length, removedBgIds.size]);
+
+  // Ref to always have the latest combinedOfferLibrary inside the stale closure of the agent action useEffect
+  const combinedOfferLibraryRef = useRef(combinedOfferLibrary);
+  useEffect(() => { combinedOfferLibraryRef.current = combinedOfferLibrary; }, [combinedOfferLibrary]);
 
   // ── Listen for agent actions from ProjectAgentPane ────────────────────────
   useEffect(() => {
@@ -2127,6 +2171,29 @@ function ProjectDetailView({
         setTimeout(() => setAgentAddedOfferIds((prev) => [...new Set([...prev, ...newIds])]), 220);
       } else if (action === "edit_offer") {
         const { offerId, patches } = payload as { offerId: string; patches: Partial<StoredOffer> };
+
+        // Intercept: if the agent put a color word into trim/model, treat it as a jellybean swap instead
+        const COLOR_WORDS = ['white', 'black', 'red', 'blue', 'silver', 'gray', 'grey', 'green', 'orange', 'brown', 'branco', 'preto', 'vermelho', 'azul', 'prata'];
+        const colorPatchStr = JSON.stringify({ trim: (patches as any).trim, model: (patches as any).model }).toLowerCase();
+        const detectedColor = COLOR_WORDS.find(c => colorPatchStr.includes(c));
+        if (detectedColor && ((patches as any).trim !== undefined || (patches as any).model !== undefined)) {
+          const base = combinedOfferLibraryRef.current.find(o => o.id === offerId) as any;
+          if (base) {
+            const colorMap: Record<string, string> = { branco: 'white', preto: 'black', vermelho: 'red', azul: 'blue', prata: 'silver', grey: 'gray' };
+            const colorFamily = colorMap[detectedColor] ?? detectedColor;
+            const jellybeanUrl = resolveJellybean(base.make, base.model, base.trim, base.year, colorFamily);
+            if (jellybeanUrl) {
+              setOfferPatches(prev => ({ ...prev, [offerId]: { ...prev[offerId], image: jellybeanUrl, exteriorColor: colorFamily } }));
+              setGeneratedAssets(prev => prev.map(asset =>
+                asset.offer.id === offerId
+                  ? { ...asset, offer: { ...(asset.offer as any), image: jellybeanUrl, exteriorColor: colorFamily } }
+                  : asset
+              ));
+              return; // skip the trim/model patch
+            }
+          }
+        }
+
         if (offerId.startsWith("custom-")) {
           // Custom offer already in the mutable library — update in-place
           setCustomOfferLibrary((prev) => {
@@ -2143,28 +2210,13 @@ function ProjectDetailView({
             )
           );
         } else {
-          // Static catalog offer — create an edited copy in customOfferLibrary,
-          // swap the old ID out and the new one in
-          const newId = `custom-edited-${offerId}`;
-          setCustomOfferLibrary((prev) => {
-            const base = [...offerLibrary, ...prev].find((o) => o.id === offerId);
-            if (!base) return prev;
-            const editedOffer: StoredOffer = { ...(base as StoredOffer), ...patches, id: newId };
-            const without = prev.filter((o) => o.id !== newId);
-            const updated = [...without, editedOffer];
-            saveCustomOfferLibrary(updated);
-            return updated;
-          });
-          // Remove old catalog ID, add new custom ID
-          setRemovedOfferIds((prev) => new Set([...prev, offerId]));
-          setAgentAddedOfferIds((prev) => [...new Set([...prev, newId])]);
-          // Replace the old offer object in any already-generated assets
+          // Static catalog offer — overlay patches without changing ID or reordering
+          setOfferPatches(prev => ({ ...prev, [offerId]: { ...prev[offerId], ...patches } }));
+          setAgentEditedOfferIds(prev => new Set([...prev, offerId]));
           setGeneratedAssets((prev) =>
             prev.map(asset =>
               asset.offer.id === offerId
-                ? { ...asset,
-                    offer: { ...(asset.offer as any), ...patches, id: newId },
-                    key:   `${asset.bgId ?? "none"}-${asset.template.id}-${newId}` }
+                ? { ...asset, offer: { ...(asset.offer as any), ...patches } }
                 : asset
             )
           );
@@ -2184,6 +2236,15 @@ function ProjectDetailView({
       } else if (action === "update_project_display") {
         const { patches } = payload as { patches: { ctaText?: string; leaseLabel?: string; finePrint?: string; dealerName?: string } };
         onUpdateProject?.(project.id, patches);
+      } else if (action === "swap_jellybean") {
+        const { offerId, jellybeanUrl, colorFamily } = payload as { offerId: string; jellybeanUrl: string; jellybeanId: string; colorFamily: string };
+        // Apply via offerPatches — no ID change, offer stays in original position
+        setOfferPatches(prev => ({ ...prev, [offerId]: { ...prev[offerId], image: jellybeanUrl, exteriorColor: colorFamily } }));
+        setGeneratedAssets(prev =>
+          prev.map(asset => asset.offer.id === offerId
+            ? { ...asset, offer: { ...(asset.offer as any), image: jellybeanUrl, exteriorColor: colorFamily } }
+            : asset)
+        );
       }
     };
     window.addEventListener(PROJECT_AGENT_ACTION_EVENT, handler);
@@ -2925,6 +2986,18 @@ function ProjectDetailViewInner({
                 </motion.div>
               </div>
             ))}
+
+            {/* CTA button text — editable per project */}
+            <div className="flex flex-col gap-1.5 pt-1">
+              <label className="text-[11px] font-semibold text-[var(--ink-secondary)] uppercase tracking-wide">CTA Button Text</label>
+              <input
+                type="text"
+                value={project.ctaText ?? "Shop Now"}
+                onChange={(e) => updateProject(project.id, { ctaText: e.target.value })}
+                placeholder="Shop Now"
+                className="h-9 w-full max-w-[260px] rounded-[4px] border border-[#CAC9CF] px-3 text-[13px] text-[var(--ink)] placeholder:text-[var(--ink-secondary)]/50 bg-[#F9FAFA] outline-none focus:border-[var(--brand-accent)] focus:ring-1 focus:ring-[var(--brand-accent)] transition-all"
+              />
+            </div>
           </div>
         </ProjectAccordionSection>
         </div>
@@ -2992,6 +3065,10 @@ function ProjectDetailViewInner({
                     carAnchorX={item.carAnchorX}
                     isGenerating={item.isGenerating}
                     bgExactFormat={item.bgExactFormat}
+                    dealerName={project.dealerName}
+                    ctaText={project.ctaText}
+                    leaseLabel={project.leaseLabel}
+                    finePrint={project.finePrint}
                   />
                   <button
                     onClick={() => setPreviewLightbox({ items: previewItems, index: idx })}
@@ -3067,6 +3144,10 @@ function ProjectDetailViewInner({
                     carAnchorX={item.carAnchorX}
                     isGenerating={item.isGenerating}
                     bgExactFormat={item.bgExactFormat}
+                    dealerName={project.dealerName}
+                    ctaText={project.ctaText}
+                    leaseLabel={project.leaseLabel}
+                    finePrint={project.finePrint}
                   />
                   <button
                     onClick={() => setPreviewLightbox({ items: assetItems, index: idx })}
@@ -3126,6 +3207,10 @@ function ProjectDetailViewInner({
           onClose={() => setPreviewLightbox(null)}
           onNav={(i) => setPreviewLightbox(prev => prev ? { ...prev, index: i } : null)}
           brandKit={brandKit}
+          dealerName={project.dealerName}
+          ctaText={project.ctaText}
+          leaseLabel={project.leaseLabel}
+          finePrint={project.finePrint}
         />,
         document.body
       )}

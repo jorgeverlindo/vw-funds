@@ -1,4 +1,41 @@
 import type Anthropic from "@anthropic-ai/sdk";
+import { createRequire } from "module";
+const _require = createRequire(import.meta.url);
+const jellybeanCatalog = _require("../src/data/jellybeans/jellybean-catalog.json");
+
+// ─── Jellybean catalog helpers ────────────────────────────────────────────────
+
+interface JBEntry { year: number; make: string; model: string; trim: string; colorFamily: string; s3Url: string; id: string; }
+const JB = jellybeanCatalog as JBEntry[];
+function jbNorm(s: string) { return s.toLowerCase().replace(/[^a-z0-9]/g, ""); }
+function jbModelMatch(a: string, b: string) { return jbNorm(a) === jbNorm(b); }
+function jbTrimScore(ct: string, qt: string): number {
+  if (!qt) return 1;
+  const c = jbNorm(ct), q = jbNorm(qt);
+  if (c === q) return 3;
+  if (c.startsWith(q) || q.startsWith(c)) return 2;
+  const shared = q.split(/(?=[A-Z0-9])/).filter(t => t.length > 1 && c.includes(t.toLowerCase())).length;
+  return shared;
+}
+export function jbListColors(model: string, year?: string): string[] {
+  const y = year ? parseInt(year) : undefined;
+  const families = [...new Set(
+    JB.filter(e => jbModelMatch(e.model, model) && (!y || e.year === y))
+       .map(e => e.colorFamily)
+       .filter(f => f !== "other"),
+  )];
+  return families.sort();
+}
+function jbResolve(model: string, colorFamily: string, year?: string, trim?: string): { url: string; id: string } | null {
+  const y = year ? parseInt(year) : undefined;
+  const candidates = JB.filter(e =>
+    jbModelMatch(e.model, model) && e.colorFamily === colorFamily && (!y || e.year === y),
+  );
+  if (!candidates.length) return null;
+  const scored = candidates.map(e => ({ e, score: trim ? jbTrimScore(e.trim, trim) : 0 }));
+  scored.sort((a, b) => b.score - a.score);
+  return { url: scored[0].e.s3Url, id: scored[0].e.id };
+}
 
 // ─── Tool Definitions ─────────────────────────────────────────────────────────
 
@@ -406,6 +443,42 @@ export const agentTools: Anthropic.Tool[] = [
     },
   },
 
+  // ── Jellybean color tools ──────────────────────────────────────────────────
+  {
+    name: "list_jellybean_colors",
+    description:
+      "Returns all available exterior color families for a given vehicle model (and optionally year). " +
+      "The available colors are already pre-loaded in the system prompt JELLYBEAN COLORS table — " +
+      "use this tool only as a fallback if the model is not listed there.",
+    input_schema: {
+      type: "object" as const,
+      properties: {
+        model: { type: "string", description: "Vehicle model, e.g. 'CR-V', 'Civic', 'HR-V', 'Odyssey'." },
+        year:  { type: "string", description: "Optional model year filter, e.g. '2026'." },
+      },
+      required: ["model"],
+    },
+  },
+
+  {
+    name: "swap_jellybean_color",
+    description:
+      "Changes the exterior color of a specific offer's jellybean image. " +
+      "Only use a color_family that appears in the JELLYBEAN COLORS table for that offer — never guess. " +
+      "If the requested color is not available, reply with the available colors instead of calling this tool.",
+    input_schema: {
+      type: "object" as const,
+      properties: {
+        offer_id:     { type: "string", description: "The ID of the offer whose jellybean image to swap." },
+        color_family: { type: "string", description: "Target color family from the available list: 'black', 'white', 'silver', 'gray', 'red', 'blue', 'green', 'orange'." },
+        model:        { type: "string", description: "Vehicle model, e.g. 'CR-V'." },
+        year:         { type: "string", description: "Optional model year to narrow the match." },
+        trim:         { type: "string", description: "Optional trim level to narrow the match." },
+      },
+      required: ["offer_id", "color_family", "model"],
+    },
+  },
+
   // ── Notify task owners ─────────────────────────────────────────────────────────
   {
     name: "propose_notify_owners",
@@ -562,6 +635,22 @@ export function executeTool(
         proactiveQuestions: input,
         message: "Proactive questions card ready for user.",
       };
+
+    case "list_jellybean_colors": {
+      const { model, year } = input as { model: string; year?: string };
+      const colors = jbListColors(model, year);
+      return { success: true, model, year, available_colors: colors, message: colors.length ? `Available colors for ${model}: ${colors.join(", ")}.` : `No jellybean entries found for model "${model}".` };
+    }
+
+    case "swap_jellybean_color": {
+      const { offer_id, color_family, model, year, trim } = input as { offer_id: string; color_family: string; model: string; year?: string; trim?: string };
+      const match = jbResolve(model, color_family, year, trim);
+      if (!match) {
+        const available = jbListColors(model, year);
+        return { success: false, message: `No jellybean found for ${model} in color "${color_family}". Available colors: ${available.join(", ")}.` };
+      }
+      return { success: true, offer_id, color_family, jellybean_url: match.url, jellybean_id: match.id, message: `Jellybean swapped to ${color_family} for offer ${offer_id}.` };
+    }
 
     default:
       return { success: false, message: `Unknown tool: ${toolName}` };

@@ -1,0 +1,582 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Assets Flow — QA</title>
+<style>
+  :root {
+    --bg: #0f0e13;
+    --surface: #1a1820;
+    --surface2: #221f2e;
+    --border: #2e2b3a;
+    --ink: #f0eef8;
+    --ink2: rgba(240,238,248,0.55);
+    --ink3: rgba(240,238,248,0.30);
+    --accent: #473bab;
+    --accent2: #6358d4;
+    --new: #22c55e;
+    --legacy: #f59e0b;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--ink); font-family: -apple-system, BlinkMacSystemFont, 'Inter', sans-serif; font-size: 13px; line-height: 1.5; }
+
+  /* ── Header ── */
+  .header { display: flex; align-items: center; justify-content: space-between; padding: 16px 28px; border-bottom: 1px solid var(--border); position: sticky; top: 0; background: var(--bg); z-index: 100; }
+  .header-title { display: flex; align-items: center; gap: 10px; }
+  .header-title h1 { font-size: 15px; font-weight: 700; letter-spacing: -0.2px; }
+  .header-badge { background: var(--accent); color: white; font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 20px; letter-spacing: 0.4px; text-transform: uppercase; }
+  .header-meta { font-size: 11px; color: var(--ink3); }
+
+  /* ── Controls ── */
+  .controls { display: flex; align-items: center; gap: 16px; padding: 12px 28px; border-bottom: 1px solid var(--border); background: var(--surface); flex-wrap: wrap; }
+  .ctrl-group { display: flex; align-items: center; gap: 8px; }
+  .ctrl-label { font-size: 11px; font-weight: 600; color: var(--ink3); text-transform: uppercase; letter-spacing: 0.5px; }
+  .ctrl-btn { background: var(--surface2); border: 1px solid var(--border); color: var(--ink2); font-size: 12px; padding: 5px 12px; border-radius: 6px; cursor: pointer; transition: all 0.15s; }
+  .ctrl-btn:hover { border-color: var(--accent2); color: var(--ink); }
+  .ctrl-btn.active { background: var(--accent); border-color: var(--accent); color: white; }
+  .ctrl-sep { width: 1px; height: 24px; background: var(--border); }
+
+  /* ── Main layout ── */
+  .main { padding: 28px; display: flex; flex-direction: column; gap: 40px; }
+
+  /* ── Section ── */
+  .section-header { display: flex; align-items: center; gap: 10px; margin-bottom: 20px; }
+  .section-title { font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px; color: var(--ink2); }
+  .section-count { font-size: 11px; color: var(--ink3); background: var(--surface2); padding: 1px 7px; border-radius: 10px; }
+  .section-line { flex: 1; height: 1px; background: var(--border); }
+
+  /* ── Template row ── */
+  .tpl-row { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
+  .tpl-row-header { display: flex; align-items: center; gap: 12px; padding: 12px 16px; border-bottom: 1px solid var(--border); background: var(--surface2); }
+  .tpl-id { font-size: 12px; font-weight: 700; color: var(--ink); font-family: 'SF Mono', 'Fira Code', monospace; }
+  .tpl-dims { font-size: 11px; color: var(--ink3); }
+  .tpl-badge { font-size: 10px; font-weight: 700; padding: 1px 7px; border-radius: 10px; text-transform: uppercase; letter-spacing: 0.4px; }
+  .tpl-badge.new { background: rgba(34,197,94,0.15); color: var(--new); border: 1px solid rgba(34,197,94,0.3); }
+  .tpl-badge.legacy { background: rgba(245,158,11,0.12); color: var(--legacy); border: 1px solid rgba(245,158,11,0.25); }
+  .tpl-badge.dark-text { background: rgba(71,59,171,0.15); color: #a89fee; border: 1px solid rgba(71,59,171,0.3); }
+  .tpl-note { font-size: 11px; color: var(--ink3); margin-left: auto; }
+  .tpl-body { padding: 20px; }
+
+  /* ── Scales row ── */
+  .scales-row { display: flex; align-items: flex-start; gap: 32px; flex-wrap: wrap; }
+  .scale-block { display: flex; flex-direction: column; gap: 8px; }
+  .scale-label { font-size: 10px; font-weight: 600; color: var(--ink3); text-transform: uppercase; letter-spacing: 0.5px; }
+
+  /* ── Card container ── */
+  .card-wrap { position: relative; border-radius: 10px; overflow: hidden; flex-shrink: 0; background: #e2e2e2; }
+  .card-wrap img.bg { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+  .card-wrap img.car { position: absolute; object-fit: cover; object-position: center bottom; }
+  .card-wrap img.logo { position: absolute; }
+  .card-overlay { position: absolute; inset: 0; pointer-events: none; }
+  .card-chip-fmt { position: absolute; background: rgba(71,59,171,0.82); color: white; font-size: 9px; font-weight: 700; padding: 2px 5px; border-radius: 4px; letter-spacing: 0.3px; z-index: 10; }
+  .card-chip-draft { position: absolute; background: rgba(255,255,255,0.88); color: #555; font-size: 9px; font-weight: 700; padding: 2px 6px; border-radius: 20px; z-index: 10; }
+
+  /* ── Info panel ── */
+  .tpl-info { margin-top: 16px; display: flex; gap: 24px; flex-wrap: wrap; }
+  .info-item { display: flex; flex-direction: column; gap: 2px; }
+  .info-key { font-size: 10px; font-weight: 600; color: var(--ink3); text-transform: uppercase; letter-spacing: 0.4px; }
+  .info-val { font-size: 12px; color: var(--ink); font-family: 'SF Mono', 'Fira Code', monospace; }
+
+  /* ── Diff indicator ── */
+  .diff-ok { color: var(--new); }
+  .diff-warn { color: var(--legacy); }
+
+  /* ── Scrollable cards area for very wide templates ── */
+  .card-scroll { overflow-x: auto; padding-bottom: 4px; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-title">
+    <h1>Assets Flow</h1>
+    <span class="header-badge">QA</span>
+  </div>
+  <div style="display:flex;align-items:center;gap:20px">
+    <div class="ctrl-group">
+      <span class="ctrl-label">Offer</span>
+      <select id="offerSelect" style="background:var(--surface2);border:1px solid var(--border);color:var(--ink);padding:4px 10px;border-radius:6px;font-size:12px;cursor:pointer;">
+        <option value="odyssey">Honda Odyssey — $1,130/mo</option>
+        <option value="crv">Honda CR-V — $389/mo</option>
+        <option value="hrv">Honda HR-V — $249/mo</option>
+      </select>
+    </div>
+    <div class="header-meta" id="lastUpdated">—</div>
+  </div>
+</div>
+
+<div class="controls">
+  <div class="ctrl-group">
+    <span class="ctrl-label">Background</span>
+    <button class="ctrl-btn active" onclick="setBg('dirt-road',this)">Dirt Road</button>
+    <button class="ctrl-btn" onclick="setBg('gold-flare',this)">Gold Flare</button>
+    <button class="ctrl-btn" onclick="setBg('purple-city',this)">Purple City</button>
+    <button class="ctrl-btn" onclick="setBg('snow-house',this)">Snow House</button>
+    <button class="ctrl-btn" onclick="setBg('none',this)">No BG</button>
+  </div>
+  <div class="ctrl-sep"></div>
+  <div class="ctrl-group">
+    <span class="ctrl-label">CTA Text</span>
+    <input id="ctaInput" type="text" value="Shop Now" style="background:var(--surface2);border:1px solid var(--border);color:var(--ink);padding:4px 10px;border-radius:6px;font-size:12px;width:120px;" oninput="rerender()">
+  </div>
+  <div class="ctrl-sep"></div>
+  <div class="ctrl-group">
+    <span class="ctrl-label">Show</span>
+    <button class="ctrl-btn active" id="btnNew" onclick="toggleSection('new',this)">New CTA</button>
+    <button class="ctrl-btn active" id="btnLegacy" onclick="toggleSection('legacy',this)">Legacy</button>
+  </div>
+</div>
+
+<div class="main" id="main"></div>
+
+<script>
+// ── Zone Configs ─────────────────────────────────────────────────────────────
+const ZONE_CONFIGS = {
+  "event-1920x200": {
+    canvasW:1920, canvasH:200, darkText:true,
+    bgZone:{l:0,top:0,w:1920,h:200},
+    productSlots:[{l:692,top:3,w:469,h:194}],
+    logoP:{l:1796,top:4,size:97}, logoE:{l:-300,top:0,size:0},
+    textLayout:{
+      dealerName:{l:24,top:17,fontSize:18,w:128},
+      leaseLabel:{l:44,top:114,fontSize:14},
+      price:{l:44,top:130,fontSize:35},
+      finePrint:{l:44,top:176,fontSize:9,w:254},
+      cta:{l:1796,top:131,w:89,h:32,fontSize:11},
+      disclaimer:{l:44,top:189,fontSize:6,w:400}
+    }
+  },
+  "display-728x90": {
+    canvasW:728, canvasH:90, darkText:true,
+    bgZone:{l:0,top:0,w:728,h:90},
+    productSlots:[{l:251,top:18,w:227,h:94}],
+    logoP:{l:659,top:0,size:56}, logoE:{l:-300,top:0,size:0},
+    textLayout:{
+      dealerName:{l:18,top:5,fontSize:8,w:57},
+      leaseLabel:{l:18,top:51,fontSize:8},
+      price:{l:18,top:59,fontSize:16},
+      finePrint:{l:18,top:79,fontSize:7,w:198},
+      cta:{l:659,top:61,w:51,h:19,fontSize:7},
+      disclaimer:{l:18,top:85,fontSize:5,w:200}
+    }
+  },
+  "display-300x600": {
+    canvasW:300, canvasH:600, darkText:true, overflowCar:true, wrapText:true,
+    bgZone:{l:0,top:0,w:300,h:600},
+    productSlots:[{l:-59,top:245,w:418,h:235}],
+    logoP:{l:200,top:0,size:97}, logoE:{l:-300,top:0,size:0},
+    textLayout:{
+      dealerName:{l:24,top:17,fontSize:18,w:128},
+      leaseLabel:{l:24,top:49,fontSize:20,w:142},
+      price:{l:10,top:432,fontSize:54,w:272},
+      finePrint:{l:16,top:497,fontSize:13,w:239},
+      cta:{l:166,top:542,w:116,h:42,fontSize:15},
+      disclaimer:{l:16,top:579,fontSize:9,w:200}
+    }
+  },
+  "display-160x600": {
+    canvasW:160, canvasH:600, darkText:true, overflowCar:true, wrapText:true,
+    bgZone:{l:0,top:0,w:160,h:600},
+    productSlots:[{l:-38,top:320,w:236,h:132}],
+    logoP:{l:32,top:453,size:97}, logoE:{l:-300,top:0,size:0},
+    textLayout:{
+      dealerName:{l:10,top:12,fontSize:18,w:128},
+      leaseLabel:{l:10,top:44,fontSize:20,w:142},
+      price:{l:10,top:148,fontSize:28,w:141},
+      finePrint:{l:13,top:182,fontSize:7,w:124},
+      cta:{l:22,top:542,w:116,h:42,fontSize:15},
+      disclaimer:{l:10,top:443,fontSize:6,w:140}
+    }
+  },
+  "event-1900x776": {
+    canvasW:1900, canvasH:776, darkText:false,
+    bgZone:{l:0,top:0,w:1900,h:776},
+    productSlots:[{l:571,top:83,w:704,h:566}],
+    logoP:{l:1639,top:0,size:209}, logoE:{l:-300,top:0,size:0},
+    textLayout:{
+      dealerName:{l:24,top:17,fontSize:72,w:512},
+      leaseLabel:{l:44,top:442,fontSize:33,w:357},
+      price:{l:44,top:482,fontSize:172,w:873},
+      finePrint:{l:44,top:683,fontSize:33,w:931},
+      cta:{l:1596,top:611,w:252,h:92,fontSize:33},
+      disclaimer:{l:44,top:724,fontSize:16,w:800}
+    }
+  },
+  "social-1080x1080": {
+    canvasW:1080, canvasH:1080, darkText:true, overflowCar:true,
+    bgZone:{l:60,top:380,w:1020,h:650},
+    productSlots:[{l:-47,top:255,w:1173,h:765}],
+    logoP:{l:849,top:41,size:180}, logoE:{l:866,top:886,size:155},
+    textLayout:{
+      title:{l:67,top:74,fontSize:48},
+      leaseLabel:{l:67,top:177,fontSize:28},
+      price:{l:67,top:206,fontSize:84},
+      termLabel:{l:67,top:317,fontSize:28},
+      dueLabel:{l:67,top:356,fontSize:28},
+      cta:{l:67,top:430,w:99,h:52,fontSize:24},
+      disclaimer:{l:67,top:1030,fontSize:18}
+    }
+  },
+  "website-2000x500": {
+    canvasW:2000, canvasH:500, darkText:true,
+    bgZone:{l:0,top:0,w:2000,h:500},
+    productSlots:[{l:665,top:-13,w:669,h:538}],
+    logoP:{l:1796,top:4,size:161}, logoE:{l:-300,top:0,size:0},
+    textLayout:{
+      dealerName:{l:34,top:33,fontSize:33,w:234},
+      leaseLabel:{l:44,top:301,fontSize:20},
+      price:{l:44,top:325,fontSize:88},
+      finePrint:{l:44,top:430,fontSize:30,w:844},
+      cta:{l:1746,top:382,w:211,h:77,fontSize:27},
+      disclaimer:{l:1746,top:462,fontSize:12,w:211,textAlign:"center"}
+    }
+  },
+  "display-970x250": {
+    canvasW:970, canvasH:250, darkText:true,
+    bgZone:{l:0,top:0,w:970,h:250},
+    productSlots:[{l:230,top:-18,w:511,h:302}],
+    logoP:{l:891,top:17,size:56}, logoE:{l:-300,top:0,size:0},
+    textLayout:{
+      dealerName:{l:24,top:17,fontSize:18,w:128},
+      leaseLabel:{l:24,top:143,fontSize:18},
+      price:{l:24,top:163,fontSize:44},
+      finePrint:{l:24,top:220,fontSize:12,w:339},
+      cta:{l:24,top:52,w:116,h:42,fontSize:15},
+      disclaimer:{l:24,top:238,fontSize:7,w:300}
+    }
+  },
+  "website-600x450": {
+    canvasW:600, canvasH:450, darkText:true,
+    bgZone:{l:0,top:0,w:600,h:450},
+    productSlots:[{l:127,top:114,w:361,h:290}],
+    logoP:{l:488,top:17,size:97}, logoE:{l:-300,top:0,size:0},
+    textLayout:{
+      dealerName:{l:24,top:17,fontSize:18,w:128},
+      leaseLabel:{l:24,top:54,fontSize:20},
+      price:{l:16,top:317,fontSize:79},
+      finePrint:{l:16,top:412,fontSize:13,w:367},
+      cta:{l:467,top:370,w:116,h:42,fontSize:15},
+      disclaimer:{l:16,top:432,fontSize:9,w:380}
+    }
+  },
+};
+
+// ── Background Images ─────────────────────────────────────────────────────────
+const BG_IMAGES = {
+  "dirt-road": {
+    "website-2000x500":  "https://res.cloudinary.com/dvq75cqna/image/upload/v1780071542/vw-funds/public/backgrounds/Dirt-Road-HO_251027_1_Website_2000x500_1.png",
+    "display-970x250":   "https://res.cloudinary.com/dvq75cqna/image/upload/v1780071539/vw-funds/public/backgrounds/Dirt-Road-HO_251027_1_Display_970x250_1.png",
+    "display-300x250":   "https://res.cloudinary.com/dvq75cqna/image/upload/v1780071536/vw-funds/public/backgrounds/Dirt-Road-HO_251027_1_Display_300x250_1.png",
+    "social-1080x1080":  "https://res.cloudinary.com/dvq75cqna/image/upload/v1780071540/vw-funds/public/backgrounds/Dirt-Road-HO_251027_1_Social_1080x1080_1.png",
+    "website-600x450":   "https://res.cloudinary.com/dvq75cqna/image/upload/v1780071544/vw-funds/public/backgrounds/Dirt-Road-HO_251027_1_Website_600x540_1.png",
+    // New templates — use closest available crop
+    "event-1920x200":    "https://res.cloudinary.com/dvq75cqna/image/upload/v1780071539/vw-funds/public/backgrounds/Dirt-Road-HO_251027_1_Display_970x250_1.png",
+    "display-728x90":    "https://res.cloudinary.com/dvq75cqna/image/upload/v1780071539/vw-funds/public/backgrounds/Dirt-Road-HO_251027_1_Display_970x250_1.png",
+    "display-300x600":   "https://res.cloudinary.com/dvq75cqna/image/upload/v1780071536/vw-funds/public/backgrounds/Dirt-Road-HO_251027_1_Display_300x250_1.png",
+    "display-160x600":   "https://res.cloudinary.com/dvq75cqna/image/upload/v1780071536/vw-funds/public/backgrounds/Dirt-Road-HO_251027_1_Display_300x250_1.png",
+    "event-1900x776":    "https://res.cloudinary.com/dvq75cqna/image/upload/v1780071542/vw-funds/public/backgrounds/Dirt-Road-HO_251027_1_Website_2000x500_1.png",
+  },
+  "gold-flare": {
+    "website-2000x500":  "https://res.cloudinary.com/dvq75cqna/image/upload/v1780071586/vw-funds/public/backgrounds/Gold-Flare-HO_251027_3_Website_2000x500_1.png",
+    "display-970x250":   "https://res.cloudinary.com/dvq75cqna/image/upload/v1780071584/vw-funds/public/backgrounds/Gold-Flare-HO_251027_3_Display_970x250_1.png",
+    "social-1080x1080":  "https://res.cloudinary.com/dvq75cqna/image/upload/v1780071585/vw-funds/public/backgrounds/Gold-Flare-HO_251027_3_Social_1080x1080_1.png",
+    "website-600x450":   "https://res.cloudinary.com/dvq75cqna/image/upload/v1780071588/vw-funds/public/backgrounds/Gold-Flare-HO_251027_3_Website_600x540_1.png",
+    "event-1920x200":    "https://res.cloudinary.com/dvq75cqna/image/upload/v1780071584/vw-funds/public/backgrounds/Gold-Flare-HO_251027_3_Display_970x250_1.png",
+    "display-728x90":    "https://res.cloudinary.com/dvq75cqna/image/upload/v1780071584/vw-funds/public/backgrounds/Gold-Flare-HO_251027_3_Display_970x250_1.png",
+    "display-300x600":   "https://res.cloudinary.com/dvq75cqna/image/upload/v1780071581/vw-funds/public/backgrounds/Gold-Flare-HO_251027_3_Display_300x250_1.png",
+    "display-160x600":   "https://res.cloudinary.com/dvq75cqna/image/upload/v1780071581/vw-funds/public/backgrounds/Gold-Flare-HO_251027_3_Display_300x250_1.png",
+    "event-1900x776":    "https://res.cloudinary.com/dvq75cqna/image/upload/v1780071586/vw-funds/public/backgrounds/Gold-Flare-HO_251027_3_Website_2000x500_1.png",
+  },
+  "purple-city": {
+    "website-2000x500":  "https://res.cloudinary.com/dvq75cqna/image/upload/v1780071607/vw-funds/public/backgrounds/Purple-City-HO_251229_D_Keeler_Website_2000x500_1.png",
+    "display-970x250":   "https://res.cloudinary.com/dvq75cqna/image/upload/v1780071602/vw-funds/public/backgrounds/Purple-City-HO_251229_D_Keeler_Display_970x250_1.png",
+    "social-1080x1080":  "https://res.cloudinary.com/dvq75cqna/image/upload/v1780071603/vw-funds/public/backgrounds/Purple-City-HO_251229_D_Keeler_Social_1080x1080_1.png",
+    "website-600x450":   "https://res.cloudinary.com/dvq75cqna/image/upload/v1780071609/vw-funds/public/backgrounds/Purple-City-HO_251229_D_Keeler_Website_600x450_1.png",
+    "event-1920x200":    "https://res.cloudinary.com/dvq75cqna/image/upload/v1780071602/vw-funds/public/backgrounds/Purple-City-HO_251229_D_Keeler_Display_970x250_1.png",
+    "display-728x90":    "https://res.cloudinary.com/dvq75cqna/image/upload/v1780071602/vw-funds/public/backgrounds/Purple-City-HO_251229_D_Keeler_Display_970x250_1.png",
+    "display-300x600":   "https://res.cloudinary.com/dvq75cqna/image/upload/v1780071599/vw-funds/public/backgrounds/Purple-City-HO_251229_D_Keeler_Display_300x250_1.png",
+    "display-160x600":   "https://res.cloudinary.com/dvq75cqna/image/upload/v1780071599/vw-funds/public/backgrounds/Purple-City-HO_251229_D_Keeler_Display_300x250_1.png",
+    "event-1900x776":    "https://res.cloudinary.com/dvq75cqna/image/upload/v1780071607/vw-funds/public/backgrounds/Purple-City-HO_251229_D_Keeler_Website_2000x500_1.png",
+  },
+  "snow-house": {
+    "website-2000x500":  "https://res.cloudinary.com/dvq75cqna/image/upload/v1780071619/vw-funds/public/backgrounds/Snow-House-HO_251120_3_Website_2000x500_1.png",
+    "display-970x250":   "https://res.cloudinary.com/dvq75cqna/image/upload/v1780071613/vw-funds/public/backgrounds/Snow-House-HO_251120_2_Display_970x250_1.png",
+    "social-1080x1080":  "https://res.cloudinary.com/dvq75cqna/image/upload/v1780071615/vw-funds/public/backgrounds/Snow-House-HO_251120_2_Social_1080x1080_1.png",
+    "website-600x450":   "https://res.cloudinary.com/dvq75cqna/image/upload/v1780071618/vw-funds/public/backgrounds/Snow-House-HO_251120_2_Website_600x540_1.png",
+    "event-1920x200":    "https://res.cloudinary.com/dvq75cqna/image/upload/v1780071613/vw-funds/public/backgrounds/Snow-House-HO_251120_2_Display_970x250_1.png",
+    "display-728x90":    "https://res.cloudinary.com/dvq75cqna/image/upload/v1780071613/vw-funds/public/backgrounds/Snow-House-HO_251120_2_Display_970x250_1.png",
+    "display-300x600":   "https://res.cloudinary.com/dvq75cqna/image/upload/v1780071611/vw-funds/public/backgrounds/Snow-House-HO_251120_2_Display_300x250_1.png",
+    "display-160x600":   "https://res.cloudinary.com/dvq75cqna/image/upload/v1780071611/vw-funds/public/backgrounds/Snow-House-HO_251120_2_Display_300x250_1.png",
+    "event-1900x776":    "https://res.cloudinary.com/dvq75cqna/image/upload/v1780071619/vw-funds/public/backgrounds/Snow-House-HO_251120_3_Website_2000x500_1.png",
+  },
+};
+
+// ── Offers ────────────────────────────────────────────────────────────────────
+const OFFERS = {
+  odyssey: { make:"Honda", model:"Odyssey", year:"2026", trim:"EX-L",  offerType:"LEASE", monthlyPayment:"1,130", term:"36", dueAtSigning:"3,999",
+    image:"https://public.dev-app.constech.io/jellybeans/2026/honda/odyssey/jellybean-dd433a83-3a52-4f0e-9d1a-0949179bc052.png" },
+  crv:     { make:"Honda", model:"CR-V",    year:"2026", trim:"TrailSport AWD", offerType:"LEASE", monthlyPayment:"389",   term:"36", dueAtSigning:"2,999",
+    image:"https://public.dev-app.constech.io/jellybeans/2026/honda/crv/jellybean-ad4b3522-e1ef-415a-bfca-517f4dfd7d38.png" },
+  hrv:     { make:"Honda", model:"HR-V",    year:"2026", trim:"Sport 2WD",    offerType:"LEASE", monthlyPayment:"249",   term:"36", dueAtSigning:"1,999",
+    image:"https://public.dev-app.constech.io/jellybeans/2026/honda/hrv/jellybean-50361aba-e638-49cc-9541-d3df45878d48.png" },
+};
+
+// ── Honda brand kit ───────────────────────────────────────────────────────────
+const LOGOS = {
+  "primary-square-positive": "https://res.cloudinary.com/dvq75cqna/image/upload/v1780071648/vw-funds/public/brand-kits/honda/primary-square-positive.png",
+  "primary-square-negative": "https://res.cloudinary.com/dvq75cqna/image/upload/v1780071647/vw-funds/public/brand-kits/honda/primary-square-negative.png",
+};
+
+// ── Template catalog ──────────────────────────────────────────────────────────
+const TEMPLATES = {
+  new: [
+    { id:"event-1920x200",  label:"Event Horizontal",   w:1920, h:200  },
+    { id:"display-728x90",  label:"Display Banner",      w:728,  h:90   },
+    { id:"display-300x600", label:"Display Half Page",   w:300,  h:600  },
+    { id:"display-160x600", label:"Display Skyscraper",  w:160,  h:600  },
+    { id:"event-1900x776",  label:"Event Wide Banner",   w:1900, h:776  },
+  ],
+  legacy: [
+    { id:"social-1080x1080",  label:"Social Square",      w:1080, h:1080 },
+    { id:"website-2000x500",  label:"Website Large",       w:2000, h:500  },
+    { id:"display-970x250",   label:"Display Leaderboard", w:970,  h:250  },
+    { id:"website-600x450",   label:"Website Medium",      w:600,  h:450  },
+  ],
+};
+
+// ── State ─────────────────────────────────────────────────────────────────────
+let currentBg   = 'dirt-road';
+let showNew     = true;
+let showLegacy  = true;
+
+function getOffer()   { return OFFERS[document.getElementById('offerSelect').value] || OFFERS.odyssey; }
+function getCtaText() { return document.getElementById('ctaInput').value || 'Shop Now'; }
+
+// ── Card renderer ─────────────────────────────────────────────────────────────
+function s(v, scale) { return Math.round(v * scale); }
+
+function renderCard(tplId, displayW, displayH, scale, hasBg) {
+  const cfg = ZONE_CONFIGS[tplId];
+  if (!cfg) return `<div style="width:${displayW}px;height:${displayH}px;background:#333;border-radius:8px;display:flex;align-items:center;justify-content:center;color:#888;font-size:11px;">No zone config</div>`;
+
+  const offer     = getOffer();
+  const ctaText   = getCtaText();
+  const tl        = cfg.textLayout;
+  const darkText  = !!cfg.darkText && hasBg;
+  const logoSrc   = darkText ? LOGOS['primary-square-positive'] : LOGOS['primary-square-negative'];
+
+  // Text colors
+  const priceColor   = hasBg ? (darkText ? '#1f1d25'            : 'rgba(255,255,255,0.95)') : '#111';
+  const dealerColor  = hasBg ? (darkText ? 'rgba(31,29,37,0.92)': 'rgba(255,255,255,0.90)') : '#111';
+  const labelColor   = hasBg ? (darkText ? 'rgba(74,73,79,0.90)': 'rgba(255,255,255,0.70)') : '#555';
+  const termColor    = hasBg ? (darkText ? 'rgba(74,73,79,0.85)': 'rgba(255,255,255,0.50)') : '#888';
+  const disclaimCol  = hasBg ? (darkText ? 'rgba(31,29,37,0.45)': 'rgba(255,255,255,0.45)') : '#aaa';
+  const moColor      = hasBg ? (darkText ? 'rgba(31,29,37,0.60)': 'rgba(255,255,255,0.60)') : '#555';
+  const bgUrl        = hasBg ? (BG_IMAGES[currentBg]?.[tplId] || '') : '';
+  const lP           = cfg.logoP;
+  const slot         = cfg.productSlots[0];
+
+  // Chip sizes
+  const chipFs = Math.max(7, s(9, scale));
+  const chipTop = Math.round(displayH * 0.06);
+  const chipL   = Math.round(displayW * 0.03);
+  const chipR   = Math.round(displayW * 0.03);
+
+  const cardOverflow = cfg.overflowCar ? 'overflow:visible;' : '';
+  let html = `<div class="card-wrap" style="width:${displayW}px;height:${displayH}px;flex-shrink:0;${cardOverflow}">`;
+
+  // Background
+  if (bgUrl) html += `<img class="bg" src="${bgUrl}" alt="bg">`;
+
+  // Car PNG
+  const carStyle = `position:absolute;left:${s(slot.l,scale)}px;top:${s(slot.top,scale)}px;width:${s(slot.w,scale)}px;height:${s(slot.h,scale)}px;object-fit:cover;object-position:center bottom;${hasBg?'filter:drop-shadow(0px 4px 8px rgba(0,0,0,0.45)) drop-shadow(0px 2px 4px rgba(0,0,0,0.3));':''}`;
+  html += `<img src="${offer.image}" alt="car" style="${carStyle}" onerror="this.style.display='none'">`;
+
+  // Primary logo
+  if (lP.size > 0 && lP.l >= 0) {
+    html += `<img src="${logoSrc}" alt="logo" style="position:absolute;left:${s(lP.l,scale)}px;top:${s(lP.top,scale)}px;height:${s(lP.size,scale)}px;width:auto;object-fit:contain;" onerror="this.style.display='none'">`;
+  }
+
+  // Text overlay (zone-config driven)
+  // Dealer name
+  if (tl.dealerName) {
+    const dnMaxW = tl.dealerName.w ? `max-width:${s(tl.dealerName.w,scale)}px;` : '';
+    html += `<span style="position:absolute;left:${s(tl.dealerName.l,scale)}px;top:${s(tl.dealerName.top,scale)}px;font-size:${s(tl.dealerName.fontSize,scale)}px;font-weight:700;color:${dealerColor};white-space:nowrap;${dnMaxW}font-family:system-ui,sans-serif;">Dealer Group</span>`;
+  }
+  // Title
+  if (tl.title) {
+    const ttMaxW = tl.title.w ? `max-width:${s(tl.title.w,scale)}px;` : '';
+    html += `<span style="position:absolute;left:${s(tl.title.l,scale)}px;top:${s(tl.title.top,scale)}px;font-size:${s(tl.title.fontSize,scale)}px;font-weight:400;color:${labelColor};white-space:nowrap;${ttMaxW}">${offer.year} ${offer.make} ${offer.model} ${offer.trim}</span>`;
+  }
+  // Lease label
+  if (tl.leaseLabel) {
+    const llMaxW = tl.leaseLabel.w ? `max-width:${s(tl.leaseLabel.w,scale)}px;` : '';
+    const llWrap = cfg.wrapText ? 'normal' : 'nowrap';
+    html += `<span style="position:absolute;left:${s(tl.leaseLabel.l,scale)}px;top:${s(tl.leaseLabel.top,scale)}px;font-size:${s(tl.leaseLabel.fontSize,scale)}px;font-weight:500;color:${labelColor};text-transform:uppercase;letter-spacing:0.4px;white-space:${llWrap};${llMaxW}">${offer.offerType} · ${offer.year} ${offer.make}</span>`;
+  }
+  // Price
+  if (tl.price) {
+    const priceFs  = s(tl.price.fontSize, scale);
+    const moFs     = Math.max(8, Math.round(priceFs * 0.28));
+    html += `<div style="position:absolute;left:${s(tl.price.l,scale)}px;top:${s(tl.price.top,scale)}px;display:flex;align-items:baseline;gap:1px;">`;
+    html += `<span style="font-size:${priceFs}px;font-weight:700;color:${priceColor};line-height:1;">$${offer.monthlyPayment}</span>`;
+    html += `<span style="font-size:${moFs}px;color:${moColor}">/mo.</span></div>`;
+  }
+  // Fine print
+  if (tl.finePrint) {
+    const fpText = `${offer.term} months  |  $${offer.dueAtSigning} due at signing  |  With approved credit`;
+    const fpWrap = cfg.wrapText ? 'normal' : 'nowrap';
+    html += `<span style="position:absolute;left:${s(tl.finePrint.l,scale)}px;top:${s(tl.finePrint.top,scale)}px;font-size:${s(tl.finePrint.fontSize,scale)}px;color:${termColor};${tl.finePrint.w?`max-width:${s(tl.finePrint.w,scale)}px;`:''}white-space:${fpWrap};">${fpText}</span>`;
+  }
+  // Legacy term/due labels
+  if (tl.termLabel) {
+    html += `<span style="position:absolute;left:${s(tl.termLabel.l,scale)}px;top:${s(tl.termLabel.top,scale)}px;font-size:${s(tl.termLabel.fontSize,scale)}px;color:${termColor};">for ${offer.term} months.</span>`;
+  }
+  if (tl.dueLabel) {
+    html += `<span style="position:absolute;left:${s(tl.dueLabel.l,scale)}px;top:${s(tl.dueLabel.top,scale)}px;font-size:${s(tl.dueLabel.fontSize,scale)}px;color:${termColor};">$${offer.dueAtSigning} due at signing</span>`;
+  }
+  // CTA button — hug text horizontally (white-space:nowrap + min-width from zone config)
+  if (tl.cta && tl.cta.w && tl.cta.h) {
+    const ctaW  = s(tl.cta.w, scale);
+    const ctaH  = s(tl.cta.h, scale);
+    const ctaFs = Math.max(7, s(tl.cta.fontSize, scale));
+    const ctaPad   = Math.max(4, Math.round(ctaH * 0.35));
+    const ctaMaxW  = displayW - s(tl.cta.l, scale) - 2;
+    html += `<div style="position:absolute;left:${s(tl.cta.l,scale)}px;top:${s(tl.cta.top,scale)}px;height:${ctaH}px;min-width:${ctaW}px;max-width:${ctaMaxW}px;display:inline-flex;align-items:center;justify-content:center;font-size:${ctaFs}px;font-weight:700;background-color:#111014;color:white;border-radius:${Math.max(2,s(4,scale))}px;white-space:nowrap;padding:0 ${ctaPad}px;overflow:hidden;">${ctaText}</div>`;
+  }
+  // Disclaimer
+  if (tl.disclaimer) {
+    const dfs = Math.max(6, s(tl.disclaimer.fontSize, scale));
+    html += `<span style="position:absolute;left:${s(tl.disclaimer.l,scale)}px;top:${s(tl.disclaimer.top,scale)}px;font-size:${dfs}px;color:${disclaimCol};${tl.disclaimer.w?`max-width:${s(tl.disclaimer.w,scale)}px;`:''}${tl.disclaimer.textAlign?`text-align:${tl.disclaimer.textAlign};`:''}">Photos for illustration purposes only.</span>`;
+  }
+
+  // Format chip
+  html += `<div class="card-chip-fmt" style="top:${chipTop}px;left:${chipL}px;">${displayW}×${displayH}</div>`;
+  html += `<div class="card-chip-draft" style="top:${chipTop}px;right:${chipR}px;">Draft</div>`;
+
+  html += '</div>';
+  return html;
+}
+
+// ── Compute display sizes ─────────────────────────────────────────────────────
+function computeSizes(canvasW, canvasH) {
+  const ar = canvasW / canvasH;
+  const FIXED_H = 160;
+  const MIN_SCALE = 0.25;
+
+  // Thumbnail
+  const wUncl = Math.round(FIXED_H * ar);
+  const wMin  = Math.min(540, Math.ceil(canvasW * MIN_SCALE));
+  const wEff  = Math.max(wUncl, wMin);
+  const thumbW = Math.min(wEff, 540);
+  const thumbH = wUncl > 540 ? Math.round(thumbW / ar) : (thumbW > wUncl ? Math.round(thumbW / ar) : FIXED_H);
+  const thumbScale = thumbW / canvasW;
+
+  // Preview — 50% of canvas, max 900px wide
+  const prevMaxW = 900;
+  const prevW = Math.min(prevMaxW, Math.round(canvasW * 0.5));
+  const prevH = Math.round(prevW / ar);
+  const prevScale = prevW / canvasW;
+
+  return { thumbW, thumbH, thumbScale, prevW, prevH, prevScale };
+}
+
+// ── Render all ────────────────────────────────────────────────────────────────
+function renderAll() {
+  const main = document.getElementById('main');
+  let html = '';
+  const hasBg = currentBg !== 'none';
+
+  const sections = [
+    { key:'new',    title:'New CTA Templates',     badge:'new',    templates:TEMPLATES.new    },
+    { key:'legacy', title:'Legacy Templates',       badge:'legacy', templates:TEMPLATES.legacy },
+  ];
+
+  sections.forEach(sec => {
+    const show = sec.key === 'new' ? showNew : showLegacy;
+    if (!show) return;
+
+    html += `<div class="section">`;
+    html += `<div class="section-header"><span class="section-title">${sec.title}</span><span class="section-count">${sec.templates.length}</span><div class="section-line"></div></div>`;
+    html += `<div style="display:flex;flex-direction:column;gap:16px;">`;
+
+    sec.templates.forEach(tpl => {
+      const cfg = ZONE_CONFIGS[tpl.id];
+      if (!cfg) return;
+      const { thumbW, thumbH, thumbScale, prevW, prevH, prevScale } = computeSizes(tpl.w, tpl.h);
+      const darkText = !!cfg.darkText;
+
+      html += `<div class="tpl-row">`;
+      html += `<div class="tpl-row-header">`;
+      html += `<span class="tpl-id">${tpl.id}</span>`;
+      html += `<span class="tpl-dims">${tpl.w}×${tpl.h}px · ${tpl.label}</span>`;
+      html += `<span class="tpl-badge ${sec.badge}">${sec.badge === 'new' ? 'New CTA' : 'Legacy'}</span>`;
+      if (darkText) html += `<span class="tpl-badge dark-text">Dark Text</span>`;
+      html += `<span class="tpl-note">Scale: thumb ${(thumbScale*100).toFixed(0)}% · preview ${(prevScale*100).toFixed(0)}%</span>`;
+      html += `</div>`;
+      html += `<div class="tpl-body">`;
+      html += `<div class="scales-row">`;
+
+      // Thumbnail
+      html += `<div class="scale-block">`;
+      html += `<span class="scale-label">Thumbnail — ${thumbW}×${thumbH}px</span>`;
+      html += `<div class="card-scroll">${renderCard(tpl.id, thumbW, thumbH, thumbScale, hasBg)}</div>`;
+      html += `</div>`;
+
+      // Preview
+      html += `<div class="scale-block">`;
+      html += `<span class="scale-label">Preview — ${prevW}×${prevH}px</span>`;
+      html += `<div class="card-scroll">${renderCard(tpl.id, prevW, prevH, prevScale, hasBg)}</div>`;
+      html += `</div>`;
+
+      html += `</div>`; // scales-row
+
+      // Info
+      const slot = cfg.productSlots[0];
+      const ctaFull = cfg.textLayout.cta;
+      html += `<div class="tpl-info">`;
+      html += `<div class="info-item"><span class="info-key">Canvas</span><span class="info-val">${cfg.canvasW}×${cfg.canvasH}</span></div>`;
+      html += `<div class="info-item"><span class="info-key">Car slot</span><span class="info-val">l=${slot.l} top=${slot.top} w=${slot.w} h=${slot.h}</span></div>`;
+      html += `<div class="info-item"><span class="info-key">CTA pos</span><span class="info-val">l=${ctaFull.l} top=${ctaFull.top} w=${ctaFull.w} h=${ctaFull.h}</span></div>`;
+      html += `<div class="info-item"><span class="info-key">Logo</span><span class="info-val">l=${cfg.logoP.l} top=${cfg.logoP.top} size=${cfg.logoP.size}</span></div>`;
+      html += `<div class="info-item"><span class="info-key">Text mode</span><span class="info-val ${darkText?'diff-ok':'diff-warn'}">${darkText?'DARK (Figma ✓)':'WHITE (light bg?)'}</span></div>`;
+      html += `</div>`;
+
+      html += `</div>`; // tpl-body
+      html += `</div>`; // tpl-row
+    });
+
+    html += `</div>`; // column
+    html += `</div>`; // section
+  });
+
+  main.innerHTML = html;
+  document.getElementById('lastUpdated').textContent = `Rendered: ${new Date().toLocaleTimeString()}`;
+}
+
+function rerender() { renderAll(); }
+
+function setBg(bgId, btn) {
+  currentBg = bgId;
+  document.querySelectorAll('.ctrl-btn').forEach(b => {
+    if (['dirt-road','gold-flare','purple-city','snow-house','none'].some(k => b.getAttribute('onclick')?.includes(k))) {
+      b.classList.remove('active');
+    }
+  });
+  btn.classList.add('active');
+  renderAll();
+}
+
+function toggleSection(key, btn) {
+  if (key === 'new')    showNew    = !showNew;
+  if (key === 'legacy') showLegacy = !showLegacy;
+  btn.classList.toggle('active');
+  renderAll();
+}
+
+// Initial render
+renderAll();
+</script>
+</body>
+</html>

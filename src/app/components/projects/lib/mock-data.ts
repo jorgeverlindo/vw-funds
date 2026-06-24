@@ -11,7 +11,7 @@ export const offerLibrary = [
     make: "Honda",
     model: "CR-V",
     trim: "TrailSport AWD",
-    image: "https://res.cloudinary.com/dvq75cqna/image/upload/v1780071654/vw-funds/public/cars/CR-V.png",
+    image: "https://public.dev-app.constech.io/jellybeans/2026/honda/crv/jellybean-ad4b3522-e1ef-415a-bfca-517f4dfd7d38.png",
     stock: 16,
     offerType: "Lease",
     tags: ["Regional"],
@@ -29,7 +29,7 @@ export const offerLibrary = [
     make: "Honda",
     model: "HR-V",
     trim: "Sport 2WD",
-    image: "https://res.cloudinary.com/dvq75cqna/image/upload/v1780071657/vw-funds/public/cars/HR-V.png",
+    image: "https://public.dev-app.constech.io/jellybeans/2026/honda/hrv/jellybean-50361aba-e638-49cc-9541-d3df45878d48.png",
     stock: 24,
     offerType: "Lease",
     tags: ["Regional"],
@@ -47,7 +47,7 @@ export const offerLibrary = [
     make: "Honda",
     model: "CR-V",
     trim: "LX AWD",
-    image: "https://res.cloudinary.com/dvq75cqna/image/upload/v1780071655/vw-funds/public/cars/CR-V2.png",
+    image: "https://public.dev-app.constech.io/jellybeans/2026/honda/crv/jellybean-6a3601ca-2c3b-43f8-ba04-1feb0563529f.png",
     stock: 6,
     offerType: "Lease",
     tags: ["Regional"],
@@ -65,7 +65,7 @@ export const offerLibrary = [
     make: "Honda",
     model: "Odyssey",
     trim: "EX-L",
-    image: "https://res.cloudinary.com/dvq75cqna/image/upload/v1780071663/vw-funds/public/cars/Odyssey.png",
+    image: "https://public.dev-app.constech.io/jellybeans/2026/honda/odyssey/jellybean-dd433a83-3a52-4f0e-9d1a-0949179bc052.png",
     stock: 25,
     offerType: "Lease",
     tags: ["Regional"],
@@ -81,9 +81,9 @@ export const offerLibrary = [
     id: "civic-hybrid",
     year: "2026",
     make: "Honda",
-    model: "Civic Sport",
-    trim: "Touring Hybrid",
-    image: "https://res.cloudinary.com/dvq75cqna/image/upload/v1780071656/vw-funds/public/cars/Civic.png",
+    model: "Civic",
+    trim: "Sport Touring Hybrid CVT",
+    image: "https://public.dev-app.constech.io/jellybeans/2026/honda/civic/jellybean-dbba5cf0-fab9-4286-b7a3-0e0bd3ef23ea.png",
     stock: 10,
     offerType: "Lease",
     tags: ["Regional"],
@@ -234,7 +234,7 @@ export const offerLibrary = [
 // products: number of offer slots the template renders simultaneously.
 
 export const templateLibrary = [
-  // ── Single-product, Honda-specific ──
+  // ── Legacy single-product formats (hidden — superseded by CTA templates below) ──
   {
     id: "website-2000x500",
     name: "Honda_Lease_Website_2000x500",
@@ -245,6 +245,7 @@ export const templateLibrary = [
     products: 1,
     tags: { makes: ["Honda"] },
     logoSlots: ["primary-square", "event-square"],
+    hidden: true,
   },
   {
     id: "display-970x250",
@@ -256,6 +257,7 @@ export const templateLibrary = [
     products: 1,
     tags: { makes: ["Honda"] },
     logoSlots: ["primary-square", "event-square"],
+    hidden: true,
   },
   {
     id: "display-300x250",
@@ -267,6 +269,7 @@ export const templateLibrary = [
     products: 1,
     tags: { makes: ["Honda"] },
     logoSlots: ["primary-square", "event-square"],
+    hidden: true,
   },
   {
     id: "social-1080x1080",
@@ -278,6 +281,7 @@ export const templateLibrary = [
     products: 1,
     tags: { makes: ["Honda"] },
     logoSlots: ["primary-square", "event-square"],
+    hidden: true,
   },
   {
     id: "website-600x450",
@@ -289,6 +293,7 @@ export const templateLibrary = [
     products: 1,
     tags: { makes: ["Honda"] },
     logoSlots: ["primary-square", "event-square"],
+    hidden: true,
   },
   {
     id: "website-600x1067",
@@ -300,6 +305,7 @@ export const templateLibrary = [
     products: 1,
     tags: { makes: ["Honda"] },
     logoSlots: ["primary-square", "event-square"],
+    hidden: true,
   },
   // ── New single-product formats ──
   {

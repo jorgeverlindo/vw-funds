@@ -1,5 +1,6 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 import Anthropic from "@anthropic-ai/sdk";
+import jellybeanCatalog from "../../src/data/jellybeans/jellybean-catalog.json";
 
 // Use Node.js runtime (not Edge) — the Anthropic SDK uses EventEmitter
 // which is a Node.js built-in not available in the Edge runtime.
@@ -54,9 +55,14 @@ function buildSystemPrompt(ctx: ProjectContext): string {
   const offerList = ctx.availableOffers
     .map(
       (o) =>
-        `  • ${o.id}: ${o.year} ${o.make} ${o.model} ${o.trim} | ${o.offerType} $${o.monthlyPayment}/mo × ${o.term}mo | PVI ${o.pvi} | Aging ${o.aging}d | Stock ${o.stock}`,
+        `  • ${o.id}: ${o.year} ${o.make} ${o.model} ${o.trim} | ${o.offerType} $${o.monthlyPayment}/mo × ${o.term}mo | PVI ${o.pvi} | Aging ${o.aging}d | Stock ${o.stock}${(o as any).exteriorColor ? ` | Color: ${(o as any).exteriorColor}` : ""}`,
     )
     .join("\n");
+
+  const jellybeanColorsList = ctx.availableOffers.map(o => {
+    const colors = jbListColors(o.model, o.year);
+    return colors.length ? `  • ${o.id} (${o.year} ${o.model}): ${colors.join(", ")}` : null;
+  }).filter(Boolean).join("\n");
 
   const templateList = ctx.availableTemplates
     .map(
@@ -177,7 +183,22 @@ Step 6 — Is a project open and the user asking to change a specific item?
           ⚠️ CTA / button text: call update_project_display { cta_text: "<exactly what the user said>" }.
              Use the user's exact words as the value — even if they seem unusual or unrelated to automotive.
              NEVER say the platform doesn't support this. NEVER ask which element. Just call the tool.
+        • Car color / jellybean change — ANY of these patterns → use JELLYBEAN COLORS table above + swap_jellybean_color:
+             "change color", "change the color", "change [vehicle] to [color]", "change [vehicle] to white/red/black/blue/silver/gray",
+             "show a blue CR-V", "show it in white", "I want it in red", "troca pra vermelho",
+             "change the car color", "muda a cor", "quero ver em preto", "cor do carro",
+             "exterior color", "what colors are available", ANY mention of a color word (white, red, black, blue, silver, gray, green, orange) in the context of a vehicle.
+          ⛔ CRITICAL: "change [car] to [color name]" is ALWAYS a jellybean swap — NEVER edit_offer trim/name.
+             "Change the HR-V to white" = swap_jellybean_color, NOT edit_offer { trim: "...White" }.
+          ⛔ NEVER use edit_offer for color. NEVER say the platform can't change vehicle colors.
+          ⚠️ Available colors are PRE-LOADED in the JELLYBEAN COLORS table above. Use them directly:
+             • Color requested AND it IS in the table → call swap_jellybean_color immediately. No list_jellybean_colors needed.
+             • Color requested AND it is NOT in the table → reply immediately with the available colors for that model. No tool call. Example: "Blue isn't available for the Odyssey. Available colors are: black, gray, silver, white. Which would you like?"
+             • No color specified → reply immediately with the available colors from the table and ask which one. Example: "Available colors for the 2026 HR-V: black, white, silver, red. Which would you like?"
+          ⛔ NEVER swap to a color that is not in the JELLYBEAN COLORS table for that offer. NEVER guess or use a color not listed.
+          Offer id, model, year and trim are ALL in the current offers list in context above.
         • Offer field change (price, term, due-at-signing, APR) → edit_offer
+          ⛔ Do NOT use edit_offer for vehicle color — use the jellybean tools above.
         • Add/remove/browse items → see ROUTING TABLE below
   NO  → answer conversationally.
 
@@ -253,6 +274,9 @@ Task owners: ${ctx.taskOwners && Object.keys(ctx.taskOwners).length > 0 ? Object
 
 ━━━ OFFER CATALOG (used only by propose_offers — other brands go through propose_parsed_offers) ━━━
 ${offerList || "  (empty — use propose_parsed_offers for all offer extraction)"}
+
+━━━ JELLYBEAN COLORS PER OFFER (pre-loaded — use this directly, no tool call needed) ━━━
+${jellybeanColorsList || "  (no jellybean data for current offers)"}
 
 ━━━ AVAILABLE TEMPLATE CATALOG ━━━
 ${templateList || "  (no templates available for this brand)"}
@@ -736,11 +760,11 @@ const agentTools: Anthropic.Tool[] = [
   {
     name: "edit_offer",
     description:
-      "Edit one or more fields of an existing offer already in the current project. " +
-      "Use this when the user asks to change a price, term, due-at-signing, APR, or any other field " +
-      "on a specific offer (e.g. 'change the monthly payment of offer X to $299', " +
-      "'update the term on the Civic to 48 months'). " +
-      "Pass only the fields that need changing — omit unchanged fields.",
+      "Edit financial or metadata fields of an existing offer — price, term, due-at-signing, APR, offer type. " +
+      "⛔ NEVER use this for vehicle color / exterior color changes. " +
+      "⛔ NEVER put a color word (white, red, black, blue, silver, gray, green, orange) inside trim, model, or any patch field. " +
+      "WRONG: edit_offer { patches: { trim: 'Sport 2WD White' } } — this is forbidden. " +
+      "RIGHT for color: call list_jellybean_colors then swap_jellybean_color instead.",
     input_schema: {
       type: "object" as const,
       properties: {
@@ -753,7 +777,8 @@ const agentTools: Anthropic.Tool[] = [
           description:
             "Fields to update. Valid keys: monthlyPayment (number), term (number), " +
             "totalDueAtSigning (number), apr (number), offerType (string), " +
-            "year (string), make (string), model (string), trim (string).",
+            "year (string), make (string), model (string), trim (string). " +
+            "⛔ If the user asked about a color — STOP. Do NOT call this tool. Call list_jellybean_colors instead.",
           additionalProperties: true,
         },
       },
@@ -1026,7 +1051,82 @@ const agentTools: Anthropic.Tool[] = [
       required: [],
     },
   },
+
+  // ── Jellybean color tools ─────────────────────────────────────────────────
+  {
+    name: "list_jellybean_colors",
+    description:
+      "Returns all available exterior color families for a given Honda model (and optionally year). " +
+      "Call this before swap_jellybean_color so you know which colors are available. " +
+      "Use when the user asks 'what colors are available?' or wants to change the car color.",
+    input_schema: {
+      type: "object" as const,
+      properties: {
+        model:  { type: "string", description: "Vehicle model, e.g. 'CR-V', 'Civic', 'HR-V', 'Odyssey'." },
+        year:   { type: "string", description: "Optional model year filter, e.g. '2026'." },
+      },
+      required: ["model"],
+    },
+  },
+
+  {
+    name: "swap_jellybean_color",
+    description:
+      "Changes the exterior color of a specific offer's jellybean image. " +
+      "Call list_jellybean_colors first to confirm the color family is available. " +
+      "Use when the user says 'change the car to blue', 'show a red CR-V', 'swap the color', etc.",
+    input_schema: {
+      type: "object" as const,
+      properties: {
+        offer_id:     { type: "string", description: "The ID of the offer whose jellybean image to swap." },
+        color_family: { type: "string", description: "Target color family: 'black', 'white', 'silver', 'gray', 'red', 'blue', 'green', 'orange'." },
+        year:         { type: "string", description: "Optional model year to narrow the match." },
+        model:        { type: "string", description: "Vehicle model, e.g. 'CR-V'." },
+        trim:         { type: "string", description: "Optional trim level to narrow the match." },
+      },
+      required: ["offer_id", "color_family", "model"],
+    },
+  },
 ];
+
+// ─── Jellybean catalog helpers (server-side, used by tool executor) ──────────
+
+interface JBEntry { year: number; make: string; model: string; modelSlug: string; trim: string; colorFamily: string; cloudinaryUrl: string; s3Url: string; id: string; colorRaw: string; }
+const JB = jellybeanCatalog as JBEntry[];
+
+function jbNorm(s: string): string { return s.toLowerCase().replace(/[^a-z0-9]/g, ""); }
+function jbModelMatch(a: string, b: string): boolean { return jbNorm(a) === jbNorm(b); }
+function jbTrimScore(ct: string, qt: string): number {
+  if (!qt) return 1;
+  const c = jbNorm(ct), q = jbNorm(qt);
+  if (c === q) return 3;
+  if (c.startsWith(q) || q.startsWith(c)) return 2;
+  const shared = q.split(/(?=[A-Z0-9])/).filter(t => t.length > 1 && c.includes(t.toLowerCase())).length;
+  return shared;
+}
+
+function jbListColors(model: string, year?: string): string[] {
+  const y = year ? parseInt(year) : undefined;
+  const families = [...new Set(
+    JB.filter(e => jbModelMatch(e.model, model) && (!y || e.year === y))
+       .map(e => e.colorFamily)
+       .filter(f => f !== "other"),
+  )];
+  return families.sort();
+}
+
+function jbResolve(model: string, colorFamily: string, year?: string, trim?: string): { url: string; id: string } | null {
+  const y = year ? parseInt(year) : undefined;
+  const candidates = JB.filter(e =>
+    jbModelMatch(e.model, model) &&
+    e.colorFamily === colorFamily &&
+    (!y || e.year === y),
+  );
+  if (!candidates.length) return null;
+  const scored = candidates.map(e => ({ e, score: trim ? jbTrimScore(e.trim, trim) : 0 }));
+  scored.sort((a, b) => b.score - a.score);
+  return { url: scored[0].e.s3Url, id: scored[0].e.id };
+}
 
 // ─── Tool Executor (inlined from _lib/tools) ──────────────────────────────────
 
@@ -1084,6 +1184,17 @@ function executeTool(
       return { success: true, notifyOwners: input, message: "Notify owners card ready." };
     case "propose_proactive_questions":
       return { success: true, proactiveQuestions: input, message: "Proactive questions card ready for user." };
+    case "list_jellybean_colors": {
+      const { model, year } = input as { model: string; year?: string };
+      const colors = jbListColors(model, year);
+      return { success: true, model, year, available_colors: colors, message: colors.length ? `Available colors for ${model}: ${colors.join(", ")}.` : `No jellybean entries found for model "${model}".` };
+    }
+    case "swap_jellybean_color": {
+      const { offer_id, color_family, model, year, trim } = input as { offer_id: string; color_family: string; model: string; year?: string; trim?: string };
+      const match = jbResolve(model, color_family, year, trim);
+      if (!match) return { success: false, message: `No jellybean found for ${model} in color family "${color_family}".` };
+      return { success: true, offer_id, color_family, jellybean_url: match.url, jellybean_id: match.id, message: `Jellybean swapped to ${color_family} for offer ${offer_id}.` };
+    }
     default:
       return { success: false, message: `Unknown tool: ${toolName}` };
   }

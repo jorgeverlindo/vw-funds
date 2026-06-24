@@ -106,15 +106,12 @@ export function OfferCard({ offer, selected = false, onSelect, onDelete, variant
           )}
 
           {/* Vehicle image */}
-          <div style={{
-            position: "absolute", inset: 0,
-            display: "flex", alignItems: "center", justifyContent: "center",
-          }}>
+          <div style={{ position: "absolute", inset: 0, overflow: "hidden" }}>
             {offer.image ? (
               <img
                 src={offer.image}
                 alt={fullName}
-                style={{ width: "100%", height: "100%", objectFit: "contain", padding: 4 }}
+                style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "center bottom" }}
               />
             ) : (
               <img

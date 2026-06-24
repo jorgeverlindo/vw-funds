@@ -94,6 +94,8 @@ export interface TemplateZoneConfig {
   logoP: LogoPosition;
   logoE: LogoPosition;
   textLayout: TextLayout;
+  /** When true, all text renders dark (#1f1d25) instead of white — use for light/bright backgrounds */
+  darkText?: boolean;
 }
 
 // ─── Pharma template types ────────────────────────────────────────────────────

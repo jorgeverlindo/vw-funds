@@ -76,6 +76,7 @@ export function SelectTemplateDialog({
   // ── Filtering ──────────────────────────────────────────────────────────────
 
   const visibleTemplates = templateLibrary.filter((t) => {
+    if ((t as any).hidden) return false;
     const matchesQuery =
       !query.trim() ||
       t.name.toLowerCase().includes(query.toLowerCase()) ||

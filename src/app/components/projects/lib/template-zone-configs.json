@@ -21,7 +21,7 @@
     "canvasH": 250,
     "darkText": true,
     "bgZone": { "l": 0, "top": 0, "w": 970, "h": 250 },
-    "productSlots": [{ "l": 120, "top": -26, "w": 730, "h": 302 }],
+    "productSlots": [{ "l": 230, "top": -18, "w": 511, "h": 302 }],
     "logoP": { "l": 891, "top": 17, "size": 56 },
     "logoE": { "l": -300, "top": 0, "size": 0 },
     "textLayout": {
@@ -106,20 +106,9 @@
     "canvasW": 1080,
     "canvasH": 1080,
     "darkText": true,
-    "bgZone": {
-      "l": 60,
-      "top": 380,
-      "w": 1020,
-      "h": 650
-    },
-    "productSlots": [
-      {
-        "l": 51,
-        "top": 0,
-        "w": 978,
-        "h": 1020
-      }
-    ],
+    "overflowCar": true,
+    "bgZone": { "l": 60, "top": 380, "w": 1020, "h": 650 },
+    "productSlots": [{ "l": -47, "top": 255, "w": 1173, "h": 765 }],
     "logoP": {
       "l": 849,
       "top": 41,
@@ -264,7 +253,7 @@
     "canvasH": 200,
     "darkText": true,
     "bgZone": { "l": 0, "top": 0, "w": 1920, "h": 200 },
-    "productSlots": [{ "l": 535, "top": -52, "w": 782, "h": 323 }],
+    "productSlots": [{ "l": 692, "top": 3, "w": 469, "h": 194 }],
     "logoP": { "l": 1796, "top": 4, "size": 97 },
     "logoE": { "l": -300, "top": 0, "size": 0 },
     "textLayout": {
@@ -281,7 +270,7 @@
     "canvasH": 90,
     "darkText": true,
     "bgZone": { "l": 0, "top": 0, "w": 728, "h": 90 },
-    "productSlots": [{ "l": 202, "top": -22, "w": 324, "h": 134 }],
+    "productSlots": [{ "l": 251, "top": 18, "w": 227, "h": 94 }],
     "logoP": { "l": 659, "top": 0, "size": 56 },
     "logoE": { "l": -300, "top": 0, "size": 0 },
     "textLayout": {
@@ -297,8 +286,10 @@
     "canvasW": 300,
     "canvasH": 600,
     "darkText": true,
+    "overflowCar": true,
+    "wrapText": true,
     "bgZone": { "l": 0, "top": 0, "w": 300, "h": 600 },
-    "productSlots": [{ "l": 18, "top": 144, "w": 264, "h": 336 }],
+    "productSlots": [{ "l": -59, "top": 245, "w": 418, "h": 235 }],
     "logoP": { "l": 200, "top": 0, "size": 97 },
     "logoE": { "l": -300, "top": 0, "size": 0 },
     "textLayout": {
@@ -314,8 +305,10 @@
     "canvasW": 160,
     "canvasH": 600,
     "darkText": true,
+    "overflowCar": true,
+    "wrapText": true,
     "bgZone": { "l": 0, "top": 0, "w": 160, "h": 600 },
-    "productSlots": [{ "l": 3, "top": 59, "w": 154, "h": 367 }],
+    "productSlots": [{ "l": -38, "top": 320, "w": 236, "h": 132 }],
     "logoP": { "l": 32, "top": 453, "size": 97 },
     "logoE": { "l": -300, "top": 0, "size": 0 },
     "textLayout": {
@@ -324,7 +317,7 @@
       "price": { "l": 10, "top": 148, "fontSize": 28, "w": 141 },
       "finePrint": { "l": 13, "top": 182, "fontSize": 7, "w": 124 },
       "cta": { "l": 22, "top": 542, "w": 116, "h": 42, "fontSize": 15 },
-      "disclaimer": { "l": 10, "top": 390, "fontSize": 6, "w": 140 }
+      "disclaimer": { "l": 10, "top": 443, "fontSize": 6, "w": 140 }
     }
   },
   "event-1900x776": {

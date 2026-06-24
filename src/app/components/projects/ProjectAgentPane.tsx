@@ -17,6 +17,7 @@ import {
   DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem,
 } from "../ui/dropdown-menu";
 import * as Tooltip from "@radix-ui/react-tooltip";
+import { resolveJellybean } from "@/data/jellybeans/jellybean-catalog";
 const imgAgentAvatar = 'https://res.cloudinary.com/dvq75cqna/image/upload/v1780071107/vw-funds/a66b3945941bddb97efa53207e606703467e02b3.png';
 import { AvatarInitials } from "../ui/AvatarInitials";
 import { PROJECT_OWNERS, PLATFORM_OPTIONS } from "./CreateProjectDialog";
@@ -117,41 +118,12 @@ export interface CustomOffer {
   apr?: string;
   notes?: string;
   image?: string;
+  exteriorColor?: string;
 }
 
 // ─── Car image resolver ───────────────────────────────────────────────────────
-// Data-driven: add one entry here whenever a new image is added to /public/cars/
-// All keywords in an entry must match (AND). More keywords = higher priority win.
-const CAR_IMAGE_CATALOG: Array<{ keywords: string[]; path: string }> = [
-  // BMW
-  { keywords: ["m5", "touring"],       path: "https://res.cloudinary.com/dvq75cqna/image/upload/v1780071658/vw-funds/public/cars/M5_Touring.png" },
-  { keywords: ["x5", "m60i"],          path: "https://res.cloudinary.com/dvq75cqna/image/upload/v1780071667/vw-funds/public/cars/X5_M60i.png" },
-  { keywords: ["x5", "competition"],   path: "https://res.cloudinary.com/dvq75cqna/image/upload/v1780071665/vw-funds/public/cars/X5_-_Competition.png" },
-  { keywords: ["x2"],                  path: "https://res.cloudinary.com/dvq75cqna/image/upload/v1780071664/vw-funds/public/cars/X2.png" },
-  { keywords: ["x5"],                  path: "https://res.cloudinary.com/dvq75cqna/image/upload/v1780071667/vw-funds/public/cars/X5_M60i.png" },
-  { keywords: ["x6"],                  path: "https://res.cloudinary.com/dvq75cqna/image/upload/v1780071668/vw-funds/public/cars/X6.png" },
-  // Honda
-  { keywords: ["cr-v"],                path: "https://res.cloudinary.com/dvq75cqna/image/upload/v1780071654/vw-funds/public/cars/CR-V.png" },
-  { keywords: ["civic"],               path: "https://res.cloudinary.com/dvq75cqna/image/upload/v1780071656/vw-funds/public/cars/Civic.png" },
-  { keywords: ["hr-v"],                path: "https://res.cloudinary.com/dvq75cqna/image/upload/v1780071657/vw-funds/public/cars/HR-V.png" },
-  { keywords: ["odyssey"],             path: "https://res.cloudinary.com/dvq75cqna/image/upload/v1780071663/vw-funds/public/cars/Odyssey.png" },
-  // Mercedes-Benz
-  { keywords: ["glc"],                 path: "https://res.cloudinary.com/dvq75cqna/image/upload/v1780071661/vw-funds/public/cars/Mercedes_GLC.png" },
-  { keywords: ["gls"],                 path: "https://res.cloudinary.com/dvq75cqna/image/upload/v1780071662/vw-funds/public/cars/Mercedes_GLS.png" },
-  { keywords: ["mercedes"],            path: "https://res.cloudinary.com/dvq75cqna/image/upload/v1780071660/vw-funds/public/cars/Mercedes_C.png" },
-];
-
-export function resolveCarImage(make: string, model: string, trim: string): string {
-  const haystack = `${make} ${model} ${trim}`.toLowerCase();
-  let bestPath = "";
-  let bestScore = 0;
-  for (const entry of CAR_IMAGE_CATALOG) {
-    if (entry.keywords.every(kw => haystack.includes(kw))) {
-      const score = entry.keywords.length;
-      if (score > bestScore) { bestScore = score; bestPath = entry.path; }
-    }
-  }
-  return bestPath;
+export function resolveCarImage(make: string, model: string, trim: string, year?: string, colorFamily?: string): string {
+  return resolveJellybean(make, model, trim, year, colorFamily);
 }
 
 export type AgentActionPayload =
@@ -171,7 +143,8 @@ export type AgentActionPayload =
   | { action: "set_dealer_bg_generating"; value: boolean }
   | { action: "remove_backgrounds"; backgroundIds: string[] }
   | { action: "duplicate_template"; templateId: string; newName?: string }
-  | { action: "update_project_display"; patches: { ctaText?: string; leaseLabel?: string; finePrint?: string; dealerName?: string } };
+  | { action: "update_project_display"; patches: { ctaText?: string; leaseLabel?: string; finePrint?: string; dealerName?: string } }
+  | { action: "swap_jellybean"; offerId: string; jellybeanUrl: string; jellybeanId: string; colorFamily: string };
 
 // ─── Multimodal API types ─────────────────────────────────────────────────────
 type ApiContentBlock =
@@ -2345,7 +2318,7 @@ function ParsedOffersCard({
     make:  row.make,
     model: row.model,
     trim:  row.trim ?? "",
-    image: resolveCarImage(row.make, row.model, row.trim ?? ""),
+    image: resolveCarImage(row.make, row.model, row.trim ?? "", row.year),
     stock: 0,
     offerType: row.offer_type,
     tags:  row.apr ? [`${row.apr}% APR`] : [],
@@ -2374,7 +2347,7 @@ function ParsedOffersCard({
           dueAtSigning:   c?.dueAtSigning   ?? r.due_at_signing ?? "0",
           apr:            r.apr,
           notes:          r.notes,
-          image:          resolveCarImage(r.make, r.model, r.trim ?? ""),
+          image:          resolveCarImage(r.make, r.model, r.trim ?? "", r.year),
         };
       });
     onApply(selected);
@@ -3083,6 +3056,11 @@ export function ProjectAgentPane({ isOpen, onClose, userType, activeUserName }: 
         if (toolInput.fine_print  != null) p.finePrint  = toolInput.fine_print  as string;
         if (toolInput.dealer_name != null) p.dealerName = toolInput.dealer_name as string;
         dispatchAction({ action: "update_project_display", patches: p });
+      }
+      else if (toolName === "swap_jellybean_color") {
+        const { offer_id, color_family, model, year, trim } = toolInput as { offer_id: string; color_family: string; model: string; year?: string; trim?: string };
+        const url = resolveJellybean("Honda", model, trim ?? "", year, color_family);
+        if (url) dispatchAction({ action: "swap_jellybean", offerId: offer_id, jellybeanUrl: url, jellybeanId: `jb-${model}-${color_family}`, colorFamily: color_family });
       }
     }
   }, [dispatchAction]);

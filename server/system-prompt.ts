@@ -1,3 +1,5 @@
+import { jbListColors } from "./tools.js";
+
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 export interface OfferSummary {
@@ -48,9 +50,14 @@ export function buildSystemPrompt(ctx: ProjectContext): CacheableTextBlock[] {
   const offerList = ctx.availableOffers
     .map(
       (o) =>
-        `  • ${o.id}: ${o.year} ${o.make} ${o.model} ${o.trim} | ${o.offerType} $${o.monthlyPayment}/mo × ${o.term}mo | PVI ${o.pvi} | Aging ${o.aging}d | Stock ${o.stock}`,
+        `  • ${o.id}: ${o.year} ${o.make} ${o.model} ${o.trim} | ${o.offerType} $${o.monthlyPayment}/mo × ${o.term}mo | PVI ${o.pvi} | Aging ${o.aging}d | Stock ${o.stock}${(o as any).exteriorColor ? ` | Color: ${(o as any).exteriorColor}` : ""}`,
     )
     .join("\n");
+
+  const jellybeanColorsList = ctx.availableOffers.map(o => {
+    const colors = jbListColors(o.model, o.year);
+    return colors.length ? `  • ${o.id} (${o.year} ${o.model}): ${colors.join(", ")}` : null;
+  }).filter(Boolean).join("\n");
 
   const templateList = ctx.availableTemplates
     .map(
@@ -334,6 +341,12 @@ INDIVIDUAL REQUESTS (project already open — respond to specific asks):
   - message contains "proactively" or "proactive" AND propose_proactive_questions not yet called → call propose_proactive_questions immediately
   - "complete" / "finish the rest" / "do the rest" / "continue building" → COMPLETION FLOW
   - "complete and notify owners" / "finish and send to task owners" / "complete … send to task owners" → COMPLETION FLOW + propose_notify_owners at end
+  - "change [car] to [color]" / "show in [color]" / "muda cor" / "troca pra [cor]" / any color word near a vehicle name → JELLYBEAN SWAP:
+    ⛔ NEVER use edit_offer for color. NEVER say the platform can't change colors.
+    • Check the JELLYBEAN COLORS table (in dynamic block) for that offer's available colors:
+      → Color IS listed: call swap_jellybean_color immediately (no confirmation, no extra text).
+      → Color is NOT listed: reply with available options — e.g. "Blue isn't available for the Odyssey. Available colors: black, gray, silver, white. Which would you like?" Do NOT call any tool.
+    ⛔ NEVER swap to a color that is not in the JELLYBEAN COLORS table for that offer.
   - "fix [field] on [offer]" / "change [field] to [value]" / "correct the [field]" → call edit_offer directly with the offer ID and patched field(s). Do NOT remove and re-add the offer.
   - "add offers" / "change offers" → call propose_offers directly
   - "add templates" / "change templates" → call propose_templates directly
@@ -502,6 +515,9 @@ Task owners: ${ctx.taskOwners && Object.keys(ctx.taskOwners).length > 0 ? Object
 
 ━━━ OFFER CATALOG (used only by propose_offers — other brands go through propose_parsed_offers) ━━━
 ${offerList || "  (empty — use propose_parsed_offers for all offer extraction)"}
+
+━━━ JELLYBEAN COLORS PER OFFER (pre-loaded — use this directly, no tool call needed) ━━━
+${jellybeanColorsList || "  (no jellybean data for current offers)"}
 
 ━━━ AVAILABLE TEMPLATE CATALOG ━━━
 ${templateList || "  (no templates available for this brand)"}

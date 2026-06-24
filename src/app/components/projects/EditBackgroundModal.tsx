@@ -244,16 +244,24 @@ export function EditBackgroundModal({ background, accountName = "Honda of Anywhe
     }
   };
 
+  // Wrap a temporary Replicate URL in a Cloudinary Fetch URL so it's permanently cached.
+  // Cloudinary caches the image on first request — the Replicate URL expiring after that is fine.
+  const toPersistentUrl = (url: string) => {
+    if (!url.startsWith('https://replicate.delivery') && !url.includes('replicate.com')) return url;
+    return `https://res.cloudinary.com/dvq75cqna/image/fetch/f_auto,q_auto/${encodeURIComponent(url)}`;
+  };
+
   const handleSave = () => {
     if (!canSave || !generatedUrl) return;
+    const persistentUrl = toPersistentUrl(generatedUrl);
     const newImages: Record<string, string> = {};
     for (const key of Object.keys(background.images)) {
-      newImages[key] = generatedUrl;
+      newImages[key] = persistentUrl;
     }
     onSave({
       id: `${background.id}-custom-${Date.now()}`,
       name: background.name,
-      thumbnail: generatedUrl,
+      thumbnail: persistentUrl,
       images: newImages,
     });
   };

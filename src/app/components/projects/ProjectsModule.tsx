@@ -1612,7 +1612,7 @@ function JellyBeanCard({
 
             {/* CTA button */}
             {tl.cta.w !== undefined && tl.cta.h !== undefined && (
-              <div style={{ position: "absolute", left: s(tl.cta.l), top: s(tl.cta.top), width: s(tl.cta.w), height: s(tl.cta.h), display: "flex", alignItems: "center", justifyContent: "center", fontSize: s(tl.cta.fontSize), fontWeight: 700, backgroundColor: "#111014", color: "white", borderRadius: Math.max(2, s(4)) }}>
+              <div style={{ position: "absolute", left: s(tl.cta.l), top: s(tl.cta.top), minWidth: s(tl.cta.w), height: s(tl.cta.h), paddingLeft: s(tl.cta.w ? tl.cta.w * 0.15 : 8), paddingRight: s(tl.cta.w ? tl.cta.w * 0.15 : 8), display: "flex", alignItems: "center", justifyContent: "center", whiteSpace: "nowrap", fontSize: s(tl.cta.fontSize), fontWeight: 700, backgroundColor: "#111014", color: "white", borderRadius: Math.max(2, s(4)) }}>
                 {ctaText || "Shop Now"}
               </div>
             )}

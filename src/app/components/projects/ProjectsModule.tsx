@@ -112,7 +112,14 @@ function loadCustomBackgroundLibrary(projectId: string): CustomBackground[] {
   try {
     const raw = localStorage.getItem(STORAGE_KEYS.CUSTOM_BACKGROUND_LIBRARY);
     const all: Record<string, CustomBackground[]> = raw ? JSON.parse(raw) : {};
-    return all[projectId] ?? [];
+    return (all[projectId] ?? []).map(bg => {
+      const badThumb = !bg.thumbnail || bg.thumbnail.startsWith('blob:') || bg.thumbnail.startsWith('data:');
+      if (badThumb && bg.images) {
+        const fallback = Object.values(bg.images).find(u => typeof u === 'string' && u.startsWith('http'));
+        if (fallback) return { ...bg, thumbnail: fallback };
+      }
+      return bg;
+    });
   } catch { return []; }
 }
 
@@ -126,12 +133,20 @@ function saveCustomBackgroundLibrary(projectId: string, bgs: CustomBackground[])
     // LOCAL_PROJECTS save throw QuotaExceededError and lose created projects.
     // Runtime callbacks read these fields from the in-memory object, never
     // from storage, so stripping here changes nothing functionally.
-    const slim = bgs.map(bg => Object.fromEntries(
-      Object.entries(bg as Record<string, unknown>)
-        .filter(([k, v]) => !k.startsWith('_') &&
-          // also never persist base64 blobs in any string field
-          !(typeof v === 'string' && v.startsWith('data:') && v.length > 50_000))
-    )) as unknown as CustomBackground[];
+    const slim = bgs.map(bg => {
+      const stripped = Object.fromEntries(
+        Object.entries(bg as Record<string, unknown>)
+          .filter(([k, v]) => !k.startsWith('_') &&
+            !(typeof v === 'string' && v.startsWith('blob:')) &&
+            !(typeof v === 'string' && v.startsWith('data:') && v.length > 50_000))
+      ) as Record<string, unknown>;
+      // If thumbnail was a base64 blob and got stripped, fall back to first images URL
+      if (!stripped.thumbnail && bg.images) {
+        const fallback = Object.values(bg.images).find(u => typeof u === 'string' && u.startsWith('http'));
+        if (fallback) stripped.thumbnail = fallback;
+      }
+      return stripped;
+    }) as unknown as CustomBackground[];
     all[projectId] = slim;
     localStorage.setItem(STORAGE_KEYS.CUSTOM_BACKGROUND_LIBRARY, JSON.stringify(all));
   } catch (e) {
@@ -2895,7 +2910,15 @@ function ProjectDetailViewInner({
                       boxShadow: selectedBgId === bg.id ? "0 0 0 4px rgba(71,59,171,0.15)" : "none",
                     }}
                   >
-                    <img src={bg.thumbnail} alt={bg.name} className="w-full h-full object-cover" />
+                    <img
+                      src={bg.thumbnail}
+                      alt={bg.name}
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        const fallback = Object.values(bg.images ?? {}).find(u => typeof u === 'string' && u.startsWith('http'));
+                        if (fallback && e.currentTarget.src !== fallback) e.currentTarget.src = fallback;
+                      }}
+                    />
                     {selectedBgId === bg.id && (
                       <div className="absolute inset-0 flex items-center justify-center"
                         style={{ background: "rgba(71,59,171,0.18)" }}>

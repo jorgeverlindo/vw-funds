@@ -385,11 +385,6 @@ export default function AppContent() {
     if (projectId) {
       setActiveAppSection('projects');
       setNotifOpenProjectId(projectId);
-      // Clean the query string from the URL without triggering a re-render loop
-      navigate(
-        buildUrl(userType, client.clientId, 'projects'),
-        { replace: true }
-      );
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // intentionally runs once on mount only
@@ -441,11 +436,13 @@ export default function AppContent() {
     if (id) {
       setCommentsContextId(id);
       setCommentsContextName(name);
+      navigate(buildUrl(userType, client.clientId, 'projects') + `?project=${encodeURIComponent(id)}`, { replace: true });
     } else {
       setCommentsContextId(`projects-main`);
       setCommentsContextName("");
+      navigate(buildUrl(userType, client.clientId, 'projects'), { replace: true });
     }
-  }, []);
+  }, [navigate, userType, client.clientId]);
 
   const handleCommentNotifNavigate = useCallback((notif: import('./components/comments/types').NotifItem) => {
     const targetCtxId = notif.projectId;

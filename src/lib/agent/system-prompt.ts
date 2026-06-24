@@ -218,6 +218,7 @@ Dealer contacts:
   • Katelyn Gray — katelyn.gray@emichvw.com
 
 When the user mentions a name (e.g. "send to Luke", "share with Sarah"), match it to this list and pass their full name in recipient_hint. Never ask who they are — you already know them.
+If the name is NOT in the list, still call propose_email or propose_share immediately with recipient_hint set to whatever name the user gave. NEVER refuse or ask for clarification — the UI has an email input field where the user can enter the address themselves.
 
 ━━━ AVAILABLE BACKGROUND CATALOG ━━━
 ${bgList}

@@ -17,7 +17,7 @@ import inventoryIcon  from '@/assets/icons/side-rail/Inventory.svg';
 import insightsIcon   from '@/assets/icons/side-rail/Insights.svg';
 import aiToolsIcon    from '@/assets/icons/side-rail/Constellation AI.svg';
 import chatsIcon      from '@/assets/icons/side-rail/Chats.svg';
-import helpIcon       from '@/assets/icons/side-rail/circle-questionmark, faq, help, questionaire.svg';
+import helpIcon       from '@/assets/icons/Projects/note-text.svg';
 
 // ─── Logo URLs ────────────────────────────────────────────────────────────────
 const imgBrandLogo    = 'https://res.cloudinary.com/dvq75cqna/image/upload/v1780071093/vw-funds/92831320399bbc5ee6848b8f47ee2c2fdc72780d.png';

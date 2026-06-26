@@ -335,6 +335,7 @@ const AVAILABLE_BRANDS   = ["Honda", "BMW", "Spiriva", "Volkswagen", "Audi", "Ge
 
 const MOCK_CONTACTS = [
   // Constellation team
+  { name: "Jorge Verlindo", email: "jorge.verlindo@helloconstellation.com", group: "constellation" as const },
   { name: "Luke Theobald", email: "luke.theobald@helloconstellation.com", group: "constellation" as const },
   { name: "Jenny Park",    email: "jenny.park@helloconstellation.com",    group: "constellation" as const },
   { name: "Sonya Koh",     email: "sonya.koh@helloconstellation.com",     group: "constellation" as const },
@@ -700,7 +701,9 @@ function ReviewerPickerCard({
   const [emailInput, setEmailInput] = useState("");
   const emailInputRef = useRef<HTMLInputElement>(null);
   const [channels, setChannels] = useState<Record<string, "platform" | "email">>(
-    () => Object.fromEntries(MOCK_CONTACTS.map(c => [c.email, c.group === "dealer" ? "email" : "platform"]))
+    () => Object.fromEntries(MOCK_CONTACTS.map(c => [c.email,
+      c.group === "dealer" || c.email === "jorge.verlindo@helloconstellation.com" ? "email" : "platform"
+    ]))
   );
 
   const toggleChannel = (email: string) =>
@@ -3954,6 +3957,59 @@ export function ProjectAgentPane({ isOpen, onClose, userType, activeUserName }: 
       id: `a-${Date.now()}`, role: "assistant", type: "text",
       content: parts.join(" "),
     } as TextMessage]);
+
+    // Fire real emails for contacts with email channel
+    const emailRecipients = selected.filter(c => channels[c.email] === "email");
+    if (emailRecipients.length > 0) {
+      const ctx = ctxRef.current;
+      const projectOffers = ctx
+        ? ctx.availableOffers.filter(o => ctx.currentOfferIds.includes(o.id))
+        : [];
+      const projectTemplates = ctx
+        ? ctx.availableTemplates.filter(t => ctx.currentTemplateIds.includes(t.id))
+        : [];
+
+      for (const contact of emailRecipients) {
+        fetch("/api/email/send-review", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            recipient_email: contact.email,
+            recipient_name:  contact.name.split(" ")[0],
+            message: _message,
+            project: {
+              projectId:      ctx?.projectId,
+              projectName:    ctx?.projectName ?? "Campaign",
+              oem:            ctx?.oem,
+              start_date:     ctx?.startDate,
+              end_date:       ctx?.endDate,
+              campaign_owner: ctx?.owner,
+              assetItems: (ctx?.generatedAssetPreviews ?? []).map(p => ({
+                bgUrl:          p.bgUrl,
+                vehicleUrl:     p.vehicleUrl,
+                offerName:      p.offerName,
+                dims:           p.dims,
+                offerType:      p.offerType,
+                monthlyPayment: p.monthlyPayment,
+                term:           p.term,
+                trim:           p.trim,
+                make:           p.make,
+              })),
+              offers: projectOffers.map(o => {
+                const rawImage = (o as { image?: string }).image ?? "";
+                const safeImage = rawImage.startsWith("blob:") || rawImage.startsWith("data:") ? "" : rawImage;
+                return { id: o.id, year: o.year, make: o.make, model: o.model, trim: o.trim,
+                  offerType: o.offerType, monthlyPayment: o.monthlyPayment, term: o.term, image: safeImage };
+              }),
+              templates: projectTemplates.map(t => ({ id: t.id, name: t.name, format: t.format })),
+            },
+          }),
+        })
+          .then(r => r.json())
+          .then(data => { if (!data.success && import.meta.env.DEV) console.warn("[reviewer-picker] email error:", data.error); })
+          .catch(err => { if (import.meta.env.DEV) console.warn("[reviewer-picker] email fetch failed:", err); });
+      }
+    }
 
     const projectId = ctxRef.current?.projectId;
     if (projectId) {

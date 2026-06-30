@@ -911,12 +911,22 @@ function ReviewerPickerCard({
   );
 }
 
-// ─── Competitor analysis data (Penske Honda, Indianapolis area — Jun 2026) ────
+// ─── Competitor map color tokens (from brand palette — never hardcode below this line) ────
+const COMP_TOKENS = {
+  home:     "#6356e1",  // Honda of Anywhere — swatch 1
+  positive: "#0f9890",  // lowest price indicator — swatch 2
+  negative: "#e55d50",  // highest price indicator — swatch 3
+  comp1:    "#1878b0",  // Great Lakes Honda — swatch 4
+  comp2:    "#d4951c",  // Ed Martin Honda — swatch 5
+  comp3:    "#8c2257",  // Hare Honda — swatch 6
+} as const;
+
+// ─── Competitor analysis data (Honda of Anywhere, Indianapolis area — Jun 2026) ────
 const COMPETITOR_DEALERS = [
-  { id: "penske",     name: "Penske Honda",                  shortName: "Penske",      distance: 0,    lat: 39.9017, lng: -86.0590, color: "#473bab", home: true  },
-  { id: "greatlakes", name: "Great Lakes Honda of Fishers",   shortName: "Great Lakes", distance: 6.6,  lat: 39.9570, lng: -86.0135, color: "#f97316", home: false },
-  { id: "edmartin",   name: "Ed Martin Honda",                shortName: "Ed Martin",   distance: 10.7, lat: 39.9840, lng: -85.9790, color: "#ef4444", home: false },
-  { id: "hare",       name: "Hare Honda",                     shortName: "Hare Honda",  distance: 18.2, lat: 39.8465, lng: -86.2140, color: "#f59e0b", home: false },
+  { id: "penske",     name: "Honda of Anywhere",             shortName: "Honda of Anywhere", distance: 0,    lat: 39.9017, lng: -86.0590, color: COMP_TOKENS.home,  home: true  },
+  { id: "greatlakes", name: "Great Lakes Honda of Fishers",   shortName: "Great Lakes",       distance: 6.6,  lat: 39.9570, lng: -86.0135, color: COMP_TOKENS.comp1, home: false },
+  { id: "edmartin",   name: "Ed Martin Honda",                shortName: "Ed Martin",         distance: 10.7, lat: 39.9840, lng: -85.9790, color: COMP_TOKENS.comp2, home: false },
+  { id: "hare",       name: "Hare Honda",                     shortName: "Hare Honda",        distance: 18.2, lat: 39.8465, lng: -86.2140, color: COMP_TOKENS.comp3, home: false },
 ] as const;
 
 type CompDealerId = typeof COMPETITOR_DEALERS[number]["id"];
@@ -946,34 +956,103 @@ const COMP_MODEL_COLORS: Record<string, string> = {
 };
 
 // ─── Leaflet helpers ──────────────────────────────────────────────────────────
-function FitBoundsToMarkers() {
+const LEAFLET_GOOGLE_CSS = `
+  .leaflet-container { font-family: 'Roboto', system-ui, -apple-system, sans-serif !important; }
+  .av3-pin { filter: drop-shadow(0 2px 4px rgba(0,0,0,.30)); transition: transform .12s ease; cursor: pointer; }
+  .av3-pin:hover { transform: scale(1.12); }
+  .leaflet-popup-content-wrapper {
+    border-radius: 10px !important; box-shadow: 0 2px 14px rgba(0,0,0,.18) !important; padding: 0 !important; overflow: hidden;
+  }
+  .leaflet-popup-content { margin: 0 !important; line-height: 1.5; }
+  .leaflet-popup-tip { box-shadow: 0 2px 8px rgba(0,0,0,.14) !important; }
+  .leaflet-bar { border-radius: 8px !important; overflow: hidden; border: none !important; box-shadow: 0 1px 5px rgba(0,0,0,.22) !important; }
+  .leaflet-bar a { border-bottom: 1px solid #eee !important; color: ${COMP_TOKENS.home} !important; font-weight: 600; background: #fff; width: 32px !important; height: 32px !important; line-height: 32px !important; }
+  .leaflet-bar a:last-child { border-bottom: none !important; }
+  .leaflet-bar a:hover { background: #f5f4f9 !important; }
+  .leaflet-control-attribution { font-size: 9px !important; }
+  .av3-home-btn a { display: flex !important; align-items: center !important; justify-content: center !important; margin-top: 4px !important; }
+`;
+
+let leafletCssInjected = false;
+function injectLeafletCSS() {
+  if (leafletCssInjected) return;
+  leafletCssInjected = true;
+  const style = document.createElement("style");
+  style.id = "av3-leaflet-css";
+  style.textContent = LEAFLET_GOOGLE_CSS;
+  document.head.appendChild(style);
+}
+
+function MapSetup() {
   const map = useMap();
   useEffect(() => {
     const bounds = L.latLngBounds(COMPETITOR_DEALERS.map(d => [d.lat, d.lng] as [number, number]));
-    map.fitBounds(bounds, { padding: [32, 32] });
+    map.fitBounds(bounds, { padding: [36, 36] });
+    map.attributionControl.setPrefix("");
+
+    // Single zoom control at bottom-right
+    const zoomCtrl = L.control.zoom({ position: "bottomright" });
+    zoomCtrl.addTo(map);
+
+    // "Back to view" home button — flies map back to full dealer bounds
+    const HomeControl = L.Control.extend({
+      onAdd(m: L.Map) {
+        const div = L.DomUtil.create("div", "leaflet-bar leaflet-control av3-home-btn");
+        const a = L.DomUtil.create("a", "", div);
+        a.title = "Back to Honda of Anywhere";
+        a.href = "#";
+        a.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="${COMP_TOKENS.home}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9.5L12 3l9 6.5V20a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1z"/><polyline points="9 21 9 12 15 12 15 21"/></svg>`;
+        L.DomEvent.on(a, "click", (e) => {
+          L.DomEvent.preventDefault(e);
+          const b = L.latLngBounds(COMPETITOR_DEALERS.map(d => [d.lat, d.lng] as [number, number]));
+          m.fitBounds(b, { padding: [36, 36] });
+        });
+        return div;
+      },
+      onRemove() {},
+    });
+    const homeCtrl = new HomeControl({ position: "bottomright" });
+    homeCtrl.addTo(map);
+
+    // ResizeObserver keeps the map full-width as the side panel animates open or resizes.
+    // invalidateSize() tells Leaflet to recalculate its viewport and load missing tiles.
+    let fitPending = false;
+    const observer = new ResizeObserver(() => {
+      map.invalidateSize();
+      if (!fitPending) {
+        fitPending = true;
+        requestAnimationFrame(() => {
+          fitPending = false;
+          const b = L.latLngBounds(COMPETITOR_DEALERS.map(d => [d.lat, d.lng] as [number, number]));
+          map.fitBounds(b, { padding: [36, 36] });
+        });
+      }
+    });
+    observer.observe(map.getContainer());
+
+    return () => {
+      observer.disconnect();
+      zoomCtrl.remove();
+      homeCtrl.remove();
+    };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   return null;
 }
 
-function dealerIcon(dealer: typeof COMPETITOR_DEALERS[number]) {
-  const size = dealer.home ? 36 : 28;
-  const label = dealer.home
-    ? "PH"
-    : dealer.shortName.split(" ").map((w: string) => w[0]).join("").slice(0, 2);
-  const html = `
-    <div style="
-      width:${size}px;height:${size}px;border-radius:50%;
-      background:${dealer.home ? dealer.color : "#fff"};
-      border:3px solid ${dealer.color};
-      box-shadow:0 2px 10px rgba(0,0,0,0.22);
-      display:flex;align-items:center;justify-content:center;
-      font-size:${dealer.home ? 11 : 10}px;font-weight:800;
-      color:${dealer.home ? "#fff" : dealer.color};
-      font-family:system-ui,sans-serif;
-      cursor:pointer;
-    ">${label}</div>`;
-  return L.divIcon({ className: "", html, iconSize: [size, size], iconAnchor: [size / 2, size / 2] });
+function dealerPin(color: string, isHome: boolean) {
+  const w = isHome ? 32 : 26, h = isHome ? 44 : 36;
+  const r = isHome ? 7 : 5.5;
+  return L.divIcon({
+    className: "av3-pin",
+    html: `<svg width="${w}" height="${h}" viewBox="0 0 30 42" xmlns="http://www.w3.org/2000/svg">
+      <path d="M15 0C6.716 0 0 6.716 0 15c0 10.5 15 27 15 27s15-16.5 15-27C30 6.716 23.284 0 15 0z" fill="${color}"/>
+      <circle cx="15" cy="15" r="${r}" fill="#fff"/>
+    </svg>`,
+    iconSize:    [w, h],
+    iconAnchor:  [w / 2, h],
+    popupAnchor: [0, -(h - 2)],
+  });
 }
 
 // ─── CompetitorMapCard ────────────────────────────────────────────────────────
@@ -1008,6 +1087,8 @@ function CompetitorMapCard({
   initialModels: string[];
   onRegenerate: (offers: ParsedOfferRow[], selectedModels: string[]) => void;
 }) {
+  useEffect(() => { injectLeafletCSS(); }, []);
+
   const ALL_MODELS = Object.keys(COMPETITOR_LEASE_DATA);
   const [selectedModels, setSelectedModels] = useState<string[]>(
     () => initialModels.length ? initialModels.filter(m => ALL_MODELS.includes(m)) : ALL_MODELS
@@ -1036,9 +1117,9 @@ function CompetitorMapCard({
     const min = Math.min(...valid), max = Math.max(...valid);
     if (max === min) return { background: "#f5f4f9", color: "#1f1d25" };
     const t = (price - min) / (max - min);
-    if (t <= 0.2)  return { background: "#dcfce7", color: "#166534" };
-    if (t >= 0.8)  return { background: "#fee2e2", color: "#991b1b" };
-    return { background: "#fef9c3", color: "#854d0e" };
+    if (t <= 0.2)  return { background: COMP_TOKENS.positive + "28", color: COMP_TOKENS.positive };
+    if (t >= 0.8)  return { background: COMP_TOKENS.negative + "28", color: COMP_TOKENS.negative };
+    return { background: "#f5f4f9", color: "#686576" };
   }
 
   const center: [number, number] = [
@@ -1051,7 +1132,7 @@ function CompetitorMapCard({
       {/* Header */}
       <div className="px-[18px] pt-[14px] pb-[12px] border-b border-[#f0eff5]">
         <p className="text-[11px] font-semibold tracking-[0.07em] text-[#8f8c9c] uppercase mb-[10px]">
-          Competitor Analysis · Penske Honda, Indianapolis
+          Competitor Analysis · Honda of Anywhere, Indianapolis
         </p>
         <div className="flex flex-wrap gap-[6px]">
           {ALL_MODELS.map(m => {
@@ -1072,33 +1153,83 @@ function CompetitorMapCard({
         </div>
       </div>
 
-      {/* Leaflet map — full width */}
-      <div style={{ height: 280, width: "100%" }}>
+      {/* Leaflet map — full width, Google Maps style */}
+      <div style={{ height: 300, width: "100%" }}>
         <MapContainer center={center} zoom={11} style={{ height: "100%", width: "100%" }}
-          zoomControl={true} scrollWheelZoom={true}>
+          zoomControl={false} scrollWheelZoom={true} zoomSnap={0.5}>
           <TileLayer
-            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-            attribution='&copy; <a href="https://openstreetmap.org">OpenStreetMap</a> contributors'
+            url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
+            subdomains="abcd"
+            maxZoom={20}
+            detectRetina={true}
+            attribution='&copy; <a href="https://openstreetmap.org">OpenStreetMap</a> &copy; <a href="https://carto.com">CARTO</a>'
           />
-          <FitBoundsToMarkers />
-          {COMPETITOR_DEALERS.map(d => (
-            <Marker key={d.id} position={[d.lat, d.lng]} icon={dealerIcon(d)}>
-              <Popup>
-                <div style={{ fontSize: 12, lineHeight: 1.5 }}>
-                  <strong style={{ color: d.color }}>{d.name}</strong>
-                  {d.home
-                    ? <div style={{ color: "#8f8c9c" }}>Your dealership</div>
-                    : <div style={{ color: "#686576" }}>{d.distance} mi away</div>
-                  }
-                </div>
-              </Popup>
-            </Marker>
-          ))}
+          <MapSetup />
+          {COMPETITOR_DEALERS.map(d => {
+            const dealerRows = tableRows.filter(r => r.prices[d.id as CompDealerId] !== undefined);
+            return (
+              <Marker key={d.id} position={[d.lat, d.lng]} icon={dealerPin(d.color, d.home)}>
+                <Popup minWidth={220}>
+                  <div style={{ padding: "10px 14px 8px" }}>
+                    {/* Header */}
+                    <div style={{ fontWeight: 700, fontSize: 13, color: d.color, marginBottom: 1 }}>{d.name}</div>
+                    <div style={{ fontSize: 11, color: "#8f8c9c", marginBottom: dealerRows.length ? 8 : 0 }}>
+                      {d.home ? "Your dealership" : `${d.distance} mi away`}
+                    </div>
+                    {/* Lease data mini-table */}
+                    {dealerRows.length > 0 && (
+                      <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 11 }}>
+                        <thead>
+                          <tr style={{ borderBottom: "1px solid #f0eff5" }}>
+                            <th style={{ textAlign: "left", padding: "3px 6px 3px 0", color: "#8f8c9c", fontWeight: 600, whiteSpace: "nowrap" }}>Model</th>
+                            <th style={{ textAlign: "left", padding: "3px 8px 3px 4px", color: "#8f8c9c", fontWeight: 600, whiteSpace: "nowrap" }}>Trim</th>
+                            <th style={{ textAlign: "right", padding: "3px 0 3px 8px", color: "#8f8c9c", fontWeight: 600, whiteSpace: "nowrap" }}>
+                              {d.home ? "Current" : "Lease/mo"}
+                            </th>
+                            {d.home && (
+                              <th style={{ textAlign: "right", padding: "3px 0 3px 8px", color: COMP_TOKENS.home, fontWeight: 600, whiteSpace: "nowrap" }}>Proposed</th>
+                            )}
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {dealerRows.map(({ model, trim, prices }) => {
+                            const price = prices[d.id as CompDealerId]!;
+                            const compPrices = Object.entries(prices)
+                              .filter(([k]) => k !== "penske")
+                              .map(([, p]) => p as number);
+                            const proposed = compPrices.length
+                              ? Math.max(Math.min(...compPrices) - margin, 1)
+                              : price;
+                            const modelColor = COMP_MODEL_COLORS[model] ?? COMP_TOKENS.home;
+                            return (
+                              <tr key={`${model}-${trim}`} style={{ borderBottom: "1px solid #f8f7fb" }}>
+                                <td style={{ padding: "4px 6px 4px 0", whiteSpace: "nowrap" }}>
+                                  <span style={{ fontSize: 10, fontWeight: 600, background: modelColor + "22", color: modelColor, padding: "1px 5px", borderRadius: 10 }}>{model}</span>
+                                </td>
+                                <td style={{ padding: "4px 8px 4px 4px", color: "#1f1d25", whiteSpace: "nowrap" }}>{trim}</td>
+                                <td style={{ padding: "4px 0 4px 8px", textAlign: "right", fontWeight: 600, color: "#1f1d25", whiteSpace: "nowrap" }}>${price}</td>
+                                {d.home && (
+                                  <td style={{ padding: "4px 0 4px 8px", textAlign: "right", fontWeight: 700, color: COMP_TOKENS.home, whiteSpace: "nowrap" }}>${proposed}</td>
+                                )}
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    )}
+                    {dealerRows.length === 0 && (
+                      <div style={{ fontSize: 11, color: "#ccc8d6", fontStyle: "italic" }}>No data for selected models</div>
+                    )}
+                  </div>
+                </Popup>
+              </Marker>
+            );
+          })}
         </MapContainer>
       </div>
 
-      {/* Comparison table — full width */}
-      <div className="overflow-x-auto">
+      {/* Comparison table — with horizontal breathing room */}
+      <div className="overflow-x-auto" style={{ padding: "12px 16px 0" }}>
         <table className="w-full border-collapse text-[12px]" style={{ minWidth: 360 }}>
           <thead>
             <tr className="border-b border-[#f0eff5]">
@@ -1106,19 +1237,28 @@ function CompetitorMapCard({
               {COMPETITOR_DEALERS.map(d => (
                 <th key={d.id} className="text-right px-[12px] py-[9px] font-semibold whitespace-nowrap"
                   style={{ color: d.color }}>
-                  {d.home ? "Penske" : d.shortName.split(" ").slice(0, 2).join(" ")}
+                  {d.home ? "Honda of Anywhere" : d.shortName.split(" ").slice(0, 2).join(" ")}
                 </th>
               ))}
+              <th className="text-right px-[12px] py-[9px] font-semibold whitespace-nowrap"
+                style={{ color: COMP_TOKENS.home, borderLeft: "2px solid #ece9f5" }}>
+                Proposed
+              </th>
             </tr>
           </thead>
           <tbody>
             {tableRows.map(({ model, trim, prices }) => {
               const allPrices = COMPETITOR_DEALERS.map(d => prices[d.id as CompDealerId]);
+              const compPrices = Object.entries(prices)
+                .filter(([k]) => k !== "penske")
+                .map(([, p]) => p as number);
+              const proposed = compPrices.length ? Math.max(Math.min(...compPrices) - margin, 1) : null;
+              const homePrice = prices["penske" as CompDealerId];
               return (
                 <tr key={`${model}-${trim}`} className="border-b border-[#f0eff5] last:border-0 hover:bg-[#fafaf9]">
                   <td className="px-[14px] py-[8px] whitespace-nowrap">
                     <span className="text-[10px] font-semibold px-[6px] py-[2px] rounded-full mr-[5px]"
-                      style={{ background: (COMP_MODEL_COLORS[model] ?? "#473bab") + "22", color: COMP_MODEL_COLORS[model] ?? "#473bab" }}>
+                      style={{ background: (COMP_MODEL_COLORS[model] ?? COMP_TOKENS.home) + "22", color: COMP_MODEL_COLORS[model] ?? COMP_TOKENS.home }}>
                       {model}
                     </span>
                     <span className="text-[#1f1d25]">{trim}</span>
@@ -1133,6 +1273,16 @@ function CompetitorMapCard({
                       </td>
                     );
                   })}
+                  <td className="px-[12px] py-[8px] text-right font-bold whitespace-nowrap"
+                    style={{
+                      borderLeft: "2px solid #ece9f5",
+                      color: proposed !== null ? COMP_TOKENS.home : "#ccc8d6",
+                      background: proposed !== null && homePrice && proposed < homePrice
+                        ? COMP_TOKENS.home + "18"
+                        : proposed !== null ? COMP_TOKENS.home + "0c" : "transparent",
+                    }}>
+                    {proposed !== null ? `$${proposed}` : "—"}
+                  </td>
                 </tr>
               );
             })}
@@ -1154,7 +1304,8 @@ function CompetitorMapCard({
         </div>
         {marginChanged && (
           <button onClick={() => { setMarginChanged(false); onRegenerate(computeCompetitiveOffers(selectedModels, margin), selectedModels); }}
-            className="px-[16px] py-[7px] rounded-full text-[12px] font-semibold bg-[#473bab] text-white hover:opacity-90 transition-opacity whitespace-nowrap">
+            className="px-[16px] py-[7px] rounded-full text-[12px] font-semibold text-white hover:opacity-90 transition-opacity whitespace-nowrap"
+            style={{ background: COMP_TOKENS.home }}>
             Regenerate Offers
           </button>
         )}
@@ -3315,7 +3466,7 @@ export function ProjectAgentPane({ isOpen, onClose, userType, activeUserName }: 
         { id: `comp-${now}`, role: "assistant", type: "competitor_map", applied: true, models } as CompetitorMapMsg,
         {
           id: `parsed-${now + 1}`, role: "assistant", type: "parsed_offers",
-          input: { source: "Competitor analysis — Penske Honda market comparison (Jun 2026)", offers: autoOffers } as ParsedOffersInput,
+          input: { source: "Competitor analysis — Honda of Anywhere market comparison (Jun 2026)", offers: autoOffers } as ParsedOffersInput,
           applied: false,
         } as ParsedOffersMsg,
       ]);
@@ -3565,13 +3716,13 @@ export function ProjectAgentPane({ isOpen, onClose, userType, activeUserName }: 
       const models = modelMatches ? [...new Set(modelMatches.map(m => m.replace(/-/g, "-")))] : Object.keys(COMPETITOR_LEASE_DATA);
       const autoOffers = computeCompetitiveOffers(models, 10);
       const now = Date.now();
-      const introText = "Aqui está a análise de concorrência dos dealers Honda próximos a Penske, com ofertas competitivas já preparadas:";
+      const introText = "Aqui está a análise de concorrência dos dealers Honda próximos a Honda of Anywhere, com ofertas competitivas já preparadas:";
       setMessages(prev => [...prev,
         userMsg,
         { id: `a-${now}`, role: "assistant", type: "text", content: introText } as TextMessage,
         { id: `comp-${now + 1}`, role: "assistant", type: "competitor_map", applied: true, models } as CompetitorMapMsg,
         { id: `parsed-${now + 2}`, role: "assistant", type: "parsed_offers",
-          input: { source: "Competitor analysis — Penske Honda market comparison (Jun 2026)", offers: autoOffers } as ParsedOffersInput,
+          input: { source: "Competitor analysis — Honda of Anywhere market comparison (Jun 2026)", offers: autoOffers } as ParsedOffersInput,
           applied: false,
         } as ParsedOffersMsg,
       ]);
@@ -4370,7 +4521,7 @@ export function ProjectAgentPane({ isOpen, onClose, userType, activeUserName }: 
     setMessages(prev => [...prev, {
       id: `parsed-${Date.now()}`, role: "assistant", type: "parsed_offers",
       input: {
-        source: "Competitor analysis — Penske Honda market comparison (updated margin)",
+        source: "Competitor analysis — Honda of Anywhere market comparison (updated margin)",
         offers,
       } as ParsedOffersInput,
       applied: false,

@@ -538,6 +538,24 @@ export const agentTools: Anthropic.Tool[] = [
   },
 
   {
+    name: "analyze_competition",
+    description:
+      "Shows an interactive competitor map and pricing comparison for Honda models in the Indianapolis area. " +
+      "Call when the user asks about competition, competitor pricing, market comparison, or wants to create competitive offers. " +
+      "Examples: 'Como está minha concorrência?', 'show competitor map', 'compare my prices to the market', 'create competitive offers'.",
+    input_schema: {
+      type: "object" as const,
+      properties: {
+        models: {
+          type: "array",
+          items: { type: "string" },
+          description: "Optional list of Honda models to focus on, e.g. ['Accord', 'CR-V']. If omitted, all available models are shown.",
+        },
+      },
+      required: [],
+    },
+  },
+  {
     name: "swap_jellybean_color",
     description:
       "Changes the exterior color of a specific offer's jellybean image. " +

@@ -468,6 +468,19 @@ GENERATE_DEALER_BACKGROUND RULES:
   ⚠️  Do NOT call this in any other flow_scope.
   Pass vehicle_context = the makes+models of all currently confirmed offers.
 
+━━━ COMPETITOR ANALYSIS FLOW ━━━
+
+Call analyze_competition (no preceding text) when:
+  • User asks about competition, competitor pricing, or market comparison:
+    "Como está minha concorrência?", "concorrência para X, Y, Z", "show competitor map",
+    "how do I compare to the market?", "what are competitors charging?", "create competitive offers"
+  • If the user names specific models (e.g. "Accord and CR-V"), pass them in the models array.
+  • If no models are mentioned, omit models and the card will show all available models.
+
+After the competitor map card is shown, the user can click "Generate Competitive Offers" to create
+a ParsedOffersCard pre-filled with pricing below the market minimum. Do NOT call propose_parsed_offers
+yourself — the frontend handles this transition from the competitor map card.
+
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`;
 
   // ── Dynamic block (never cached) ─────────────────────────────────────────

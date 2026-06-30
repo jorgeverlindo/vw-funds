@@ -208,7 +208,7 @@ interface DealerBgProposalMsg {
   applied: boolean;
 }
 
-type Message = TextMessage | ToolChipMsg | ProposalMsg | SetupMsg | OffersMsg | TemplatesMsg | BrandMsg | BackgroundsMsg | PreviewMsg | ContinuationMsg | EmailMsg | ShareMsg | UserFileMsg | ParsedOffersMsg | NotifyOwnersMsg | TaskOwnersMsg | ProactiveQuestionsMsg | DealerBgProposalMsg | ReviewerPickerMsg | CampaignCtaMsg;
+type Message = TextMessage | ToolChipMsg | ProposalMsg | SetupMsg | OffersMsg | TemplatesMsg | BrandMsg | BackgroundsMsg | PreviewMsg | ContinuationMsg | EmailMsg | ShareMsg | UserFileMsg | ParsedOffersMsg | NotifyOwnersMsg | TaskOwnersMsg | ProactiveQuestionsMsg | DealerBgProposalMsg | ReviewerPickerMsg | CampaignCtaMsg | CompetitorMapMsg;
 
 interface ProposalInput {
   project_name?: string;
@@ -283,6 +283,14 @@ interface ParsedOffersInput {
   source: string;
   offers: ParsedOfferRow[];
   extraction_notes?: string;
+}
+
+interface CompetitorMapMsg {
+  id: string;
+  role: "assistant";
+  type: "competitor_map";
+  applied: boolean;
+  models: string[];
 }
 
 // ─── Custom header icons (from exported SVGs — pixel-perfect, color via currentColor) ────
@@ -897,6 +905,248 @@ function ReviewerPickerCard({
 
       </div>
     </motion.div>
+  );
+}
+
+// ─── Competitor analysis data (Penske Honda, Indianapolis area — Jun 2026) ────
+const COMPETITOR_DEALERS = [
+  { id: "penske",     name: "Penske Honda",                  shortName: "Penske",      distance: 0,    x: 110, y: 110, color: "#473bab", home: true  },
+  { id: "greatlakes", name: "Great Lakes Honda of Fishers",   shortName: "Great Lakes", distance: 6.6,  x: 262, y: 52,  color: "#f97316", home: false },
+  { id: "edmartin",   name: "Ed Martin Honda",                shortName: "Ed Martin",   distance: 10.7, x: 305, y: 112, color: "#ef4444", home: false },
+  { id: "hare",       name: "Hare Honda",                     shortName: "Hare Honda",  distance: 18.2, x: 272, y: 188, color: "#f59e0b", home: false },
+] as const;
+
+type CompDealerId = typeof COMPETITOR_DEALERS[number]["id"];
+
+// Lease $/mo, 36-month term — from On-Brand Inventory Report Jun 2026
+const COMPETITOR_LEASE_DATA: Record<string, Record<string, Partial<Record<CompDealerId, number>>>> = {
+  "Accord": {
+    "Hybrid Sport": { penske: 439, greatlakes: 341 },
+    "LX":           { penske: 362, greatlakes: 292, edmartin: 249 },
+    "SE":           { penske: 410 },
+  },
+  "CR-V": {
+    "LX":    { penske: 434, greatlakes: 327, edmartin: 279 },
+    "Sport": { penske: 490, greatlakes: 350, hare: 319 },
+  },
+  "Civic": {
+    "LX":    { penske: 368, greatlakes: 252 },
+    "Sport": { penske: 365, greatlakes: 266, edmartin: 238 },
+  },
+  "Pilot": {
+    "EX-L": { penske: 608 },
+  },
+};
+
+const COMP_MODEL_COLORS: Record<string, string> = {
+  "Accord": "#6366f1", "CR-V": "#10b981", "Civic": "#f59e0b", "Pilot": "#ec4899",
+};
+
+// ─── CompetitorMapCard ────────────────────────────────────────────────────────
+function CompetitorMapCard({
+  applied, initialModels, onGenerate,
+}: {
+  applied: boolean;
+  initialModels: string[];
+  onGenerate: (offers: ParsedOfferRow[], selectedModels: string[]) => void;
+}) {
+  const ALL_MODELS = Object.keys(COMPETITOR_LEASE_DATA);
+  const [selectedModels, setSelectedModels] = useState<string[]>(
+    () => initialModels.length ? initialModels.filter(m => ALL_MODELS.includes(m)) : ALL_MODELS
+  );
+  const [margin, setMargin] = useState(10);
+
+  const toggleModel = (m: string) =>
+    setSelectedModels(prev =>
+      prev.includes(m) ? (prev.length > 1 ? prev.filter(x => x !== m) : prev) : [...prev, m]
+    );
+
+  const tableRows = selectedModels.flatMap(model =>
+    Object.entries(COMPETITOR_LEASE_DATA[model] ?? {}).map(([trim, prices]) => ({ model, trim, prices }))
+  );
+
+  function cellStyle(price: number | undefined, all: (number | undefined)[]): { background: string; color: string } {
+    if (!price) return { background: "transparent", color: "#ccc8d6" };
+    const valid = all.filter((p): p is number => p !== undefined);
+    if (valid.length < 2) return { background: "#f5f4f9", color: "#1f1d25" };
+    const min = Math.min(...valid), max = Math.max(...valid);
+    if (max === min) return { background: "#f5f4f9", color: "#1f1d25" };
+    const t = (price - min) / (max - min);
+    if (t <= 0.2)  return { background: "#dcfce7", color: "#166534" };
+    if (t >= 0.8)  return { background: "#fee2e2", color: "#991b1b" };
+    return { background: "#fef9c3", color: "#854d0e" };
+  }
+
+  const handleGenerate = () => {
+    if (applied) return;
+    const offers: ParsedOfferRow[] = [];
+    for (const model of selectedModels) {
+      for (const [trim, prices] of Object.entries(COMPETITOR_LEASE_DATA[model] ?? {})) {
+        const compPrices = Object.entries(prices)
+          .filter(([d]) => d !== "penske")
+          .map(([, p]) => p as number);
+        if (!compPrices.length) continue;
+        const marketMin = Math.min(...compPrices);
+        const competitive = Math.max(marketMin - margin, 1);
+        offers.push({
+          id: `comp-${model}-${trim.replace(/\s+/g, "-")}-${Date.now()}`,
+          year: "2026", make: "Honda", model, trim,
+          offer_type: "Lease",
+          monthly_payment: String(competitive),
+          term: "36",
+          due_at_signing: "0",
+          notes: `Competitive: market low $${marketMin}/mo${margin > 0 ? ` − $${margin}` : ""}`,
+          field_confidence: { monthly_payment: "high", term: "high", due_at_signing: "high" },
+        });
+      }
+    }
+    onGenerate(offers, selectedModels);
+  };
+
+  return (
+    <div className="rounded-[16px] border border-[#ece9f5] bg-white overflow-hidden">
+      {/* Header + model filters */}
+      <div className="px-[18px] pt-[14px] pb-[12px] border-b border-[#f0eff5]">
+        <p className="text-[11px] font-semibold tracking-[0.07em] text-[#8f8c9c] uppercase mb-[10px]">
+          Competitor Analysis · Penske Honda, Indianapolis
+        </p>
+        <div className="flex flex-wrap gap-[6px]">
+          {ALL_MODELS.map(m => {
+            const active = selectedModels.includes(m);
+            const c = COMP_MODEL_COLORS[m];
+            return (
+              <button key={m} onClick={() => toggleModel(m)}
+                className="px-[10px] py-[4px] rounded-full text-[12px] font-medium transition-all"
+                style={{
+                  background: active ? c + "22" : "#f5f4f9",
+                  color:      active ? c       : "#9c99a9",
+                  border:     `1.5px solid ${active ? c + "77" : "transparent"}`,
+                }}>
+                {m}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Map + table */}
+      <div className="flex">
+        {/* SVG map */}
+        <div className="w-[200px] shrink-0 p-[14px] border-r border-[#f0eff5] flex flex-col gap-[10px]">
+          <svg viewBox="0 0 340 250" width="172" height="127" xmlns="http://www.w3.org/2000/svg">
+            <rect width="340" height="250" rx="12" fill="#f5f4f9"/>
+            {COMPETITOR_DEALERS.filter(d => !d.home).map(d => (
+              <line key={d.id}
+                x1={COMPETITOR_DEALERS[0].x} y1={COMPETITOR_DEALERS[0].y}
+                x2={d.x} y2={d.y}
+                stroke="#d1cfdd" strokeWidth="1.5" strokeDasharray="5 4"/>
+            ))}
+            {COMPETITOR_DEALERS.map(d => (
+              <g key={d.id}>
+                <circle cx={d.x} cy={d.y} r={d.home ? 22 : 17}
+                  fill={d.home ? d.color : d.color + "22"}
+                  stroke={d.home ? "none" : d.color} strokeWidth="2"/>
+                <text x={d.x} y={d.y + 1} textAnchor="middle" dominantBaseline="middle"
+                  fontSize={d.home ? "10" : "9"} fontWeight="700"
+                  fill={d.home ? "#fff" : d.color} fontFamily="system-ui,sans-serif">
+                  {d.home ? "PH" : d.shortName.split(" ").map((w: string) => w[0]).join("").slice(0, 2)}
+                </text>
+                {!d.home && (
+                  <text x={d.x + (d.x > 200 ? 22 : -22)} y={d.y}
+                    textAnchor={d.x > 200 ? "start" : "end"}
+                    dominantBaseline="middle"
+                    fontSize="9" fill="#686576" fontFamily="system-ui,sans-serif">
+                    {d.distance}mi
+                  </text>
+                )}
+              </g>
+            ))}
+          </svg>
+
+          <div className="flex flex-col gap-[4px]">
+            {COMPETITOR_DEALERS.map(d => (
+              <div key={d.id} className="flex items-center gap-[5px]">
+                <div className="w-[7px] h-[7px] rounded-full shrink-0" style={{ background: d.color }}/>
+                <span className="text-[10px] text-[#686576] leading-none truncate">
+                  {d.home ? `${d.name} (you)` : `${d.shortName} · ${d.distance}mi`}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Comparison table */}
+        <div className="flex-1 overflow-x-auto">
+          <table className="w-full border-collapse text-[12px]" style={{ minWidth: 280 }}>
+            <thead>
+              <tr className="border-b border-[#f0eff5]">
+                <th className="text-left px-[12px] py-[9px] text-[#8f8c9c] font-semibold whitespace-nowrap">Model / Trim</th>
+                {COMPETITOR_DEALERS.map(d => (
+                  <th key={d.id} className="text-right px-[10px] py-[9px] font-semibold whitespace-nowrap"
+                    style={{ color: d.color }}>
+                    {d.home ? "Penske" : d.shortName.split(" ").slice(0, 2).join(" ")}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {tableRows.map(({ model, trim, prices }) => {
+                const allPrices = COMPETITOR_DEALERS.map(d => prices[d.id as CompDealerId]);
+                return (
+                  <tr key={`${model}-${trim}`} className="border-b border-[#f0eff5] last:border-0 hover:bg-[#fafaf9]">
+                    <td className="px-[12px] py-[7px] whitespace-nowrap">
+                      <span className="text-[10px] font-semibold px-[6px] py-[2px] rounded-full mr-[5px]"
+                        style={{ background: (COMP_MODEL_COLORS[model] ?? "#473bab") + "22", color: COMP_MODEL_COLORS[model] ?? "#473bab" }}>
+                        {model}
+                      </span>
+                      <span className="text-[#1f1d25]">{trim}</span>
+                    </td>
+                    {COMPETITOR_DEALERS.map(d => {
+                      const price = prices[d.id as CompDealerId];
+                      const style = cellStyle(price, allPrices);
+                      return (
+                        <td key={d.id} className="px-[10px] py-[7px] text-right font-medium whitespace-nowrap"
+                          style={style}>
+                          {price ? `$${price}` : "—"}
+                        </td>
+                      );
+                    })}
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* Footer */}
+      {!applied ? (
+        <div className="px-[18px] py-[11px] border-t border-[#f0eff5] flex items-center justify-between gap-[12px]">
+          <div className="flex items-center gap-[8px] text-[12px] text-[#686576]">
+            <span>Margin below market:</span>
+            <div className="flex items-center border border-[#cac9cf] rounded-[7px] overflow-hidden h-[28px]">
+              <button onClick={() => setMargin(m => Math.max(0, m - 5))}
+                className="w-[26px] h-full flex items-center justify-center hover:bg-gray-100 text-[#686576] transition-colors text-[14px]">−</button>
+              <span className="w-[36px] text-center text-[12px] font-medium text-[#1f1d25]">${margin}</span>
+              <button onClick={() => setMargin(m => m + 5)}
+                className="w-[26px] h-full flex items-center justify-center hover:bg-gray-100 text-[#686576] transition-colors text-[14px]">+</button>
+            </div>
+          </div>
+          <button onClick={handleGenerate}
+            className="px-[16px] py-[7px] rounded-full text-[12px] font-semibold bg-[#473bab] text-white hover:opacity-90 transition-opacity whitespace-nowrap">
+            Generate Competitive Offers
+          </button>
+        </div>
+      ) : (
+        <div className="px-[18px] py-[10px] border-t border-[#f0eff5] flex items-center gap-[6px]">
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+            <circle cx="7" cy="7" r="6.25" stroke="#10b981" strokeWidth="1.5"/>
+            <path d="M4.5 7l2 2 3-3" stroke="#10b981" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
+          <span className="text-[12px] text-[#8f8c9c]">Competitive offers generated</span>
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -3043,6 +3293,13 @@ export function ProjectAgentPane({ isOpen, onClose, userType, activeUserName }: 
           dispatchAction({ action: "set_dealer_bg_generating", value: false } as never);
         }
       })();
+    } else if (toolName === "analyze_competition") {
+      const rawInput = toolInput as Record<string, unknown>;
+      const models = Array.isArray(rawInput.models) ? (rawInput.models as string[]) : Object.keys(COMPETITOR_LEASE_DATA);
+      setMessages(prev => [...prev, {
+        id: `comp-${Date.now()}`, role: "assistant", type: "competitor_map",
+        applied: false, models,
+      } as CompetitorMapMsg]);
     } else if (toolName === "propose_parsed_offers") {
       // Normalize flat confidence_* fields back into a field_confidence Record
       const rawInput = toolInput as Record<string, unknown>;
@@ -4066,6 +4323,21 @@ export function ProjectAgentPane({ isOpen, onClose, userType, activeUserName }: 
     setMessages(prev => prev.filter(m => m.id !== msgId));
   }, []);
 
+  // ── Competitor map ───────────────────────────────────────────────────────────
+  const handleCompetitorMapGenerate = useCallback((msgId: string, offers: ParsedOfferRow[]) => {
+    setMessages(prev => [
+      ...prev.map(m => m.id === msgId ? { ...m, applied: true } as CompetitorMapMsg : m),
+      {
+        id: `parsed-${Date.now()}`, role: "assistant", type: "parsed_offers",
+        input: {
+          source: "Competitor analysis — Penske Honda market comparison",
+          offers,
+        } as ParsedOffersInput,
+        applied: false,
+      } as ParsedOffersMsg,
+    ]);
+  }, []);
+
   // ── Brand card ──────────────────────────────────────────────────────────────
   const handleBrandApply = useCallback((oem: string) => {
     dispatchAction({ action: "set_brand", oem });
@@ -4554,6 +4826,9 @@ export function ProjectAgentPane({ isOpen, onClose, userType, activeUserName }: 
                               } as TextMessage]);
                             }, 200);
                           }}
+                          onCompetitorMapGenerate={(offers, selectedModels) =>
+                            handleCompetitorMapGenerate(msg.id, offers)
+                          }
                         />
                       ));
                       })()}
@@ -4649,6 +4924,7 @@ function MessageBubble({
   dispatchAction,
   onDealerBgApprove,
   onDealerBgSkip,
+  onCompetitorMapGenerate,
 }: {
   message: Message;
   context: ProjectContextPayload | null;
@@ -4682,6 +4958,7 @@ function MessageBubble({
   dispatchAction?: (a: AgentActionPayload) => void;
   onDealerBgApprove?: (bgObject: { id: string; name: string; thumbnail: string; images: Record<string, string> }) => void;
   onDealerBgSkip?: () => void;
+  onCompetitorMapGenerate?: (offers: ParsedOfferRow[], selectedModels: string[]) => void;
 }) {
   if (message.type === "continuation") {
     return null;
@@ -4917,6 +5194,16 @@ function MessageBubble({
 
   if (message.type === "campaign_cta") {
     return <CampaignCtaCard />;
+  }
+
+  if (message.type === "competitor_map") {
+    return (
+      <CompetitorMapCard
+        applied={(message as CompetitorMapMsg).applied}
+        initialModels={(message as CompetitorMapMsg).models}
+        onGenerate={(offers, selectedModels) => onCompetitorMapGenerate?.(offers, selectedModels)}
+      />
+    );
   }
 
   if (message.type === "brand") {

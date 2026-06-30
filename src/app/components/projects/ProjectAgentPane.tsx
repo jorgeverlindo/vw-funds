@@ -1041,8 +1041,8 @@ function MapSetup() {
 }
 
 function dealerPin(color: string, isHome: boolean) {
-  const w = isHome ? 32 : 26, h = isHome ? 44 : 36;
-  const r = isHome ? 7 : 5.5;
+  const w = isHome ? 26 : 21, h = isHome ? 35 : 29;
+  const r = isHome ? 5.5 : 4.5;
   return L.divIcon({
     className: "av3-pin",
     html: `<svg width="${w}" height="${h}" viewBox="0 0 30 42" xmlns="http://www.w3.org/2000/svg">
@@ -1154,7 +1154,7 @@ function CompetitorMapCard({
       </div>
 
       {/* Leaflet map — full width, Google Maps style */}
-      <div style={{ height: 300, width: "100%" }}>
+      <div style={{ height: 350, width: "100%" }}>
         <MapContainer center={center} zoom={11} style={{ height: "100%", width: "100%" }}
           zoomControl={false} scrollWheelZoom={true} zoomSnap={0.5}>
           <TileLayer

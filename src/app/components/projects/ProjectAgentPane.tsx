@@ -3001,7 +3001,7 @@ function ToolChipView({ name, input }: { name: string; input: Record<string, unk
 }
 
 // ─── Category chips ────────────────────────────────────────────────────────────
-const PROJECT_CATEGORIES = ["Create a project", "Pick offers", "Pick templates", "Duplicate a project", "Create Automatic Project"];
+const PROJECT_CATEGORIES = ["Create a project", "Pick offers", "Pick templates", "Duplicate a project", "Competitive Insights", "Create Automatic Project"];
 
 // What each category chip sends to the agent — explicit phrasing ensures correct flow_scope
 const CATEGORY_MESSAGES: Record<string, string> = {
@@ -3009,7 +3009,8 @@ const CATEGORY_MESSAGES: Record<string, string> = {
   "Pick offers":               "I want to pick offers for a new project. Offers only — no need for templates, backgrounds, or brand.",
   "Pick templates":            "I want to pick templates for a new project. Templates only — no need for offers, backgrounds, or brand.",
   "Duplicate a project":       "Duplicate a project",
-  "Create Automatic Project":        "Create a proactive project",
+  "Competitive Insights":      "Show me the competitor map — how are nearby Honda dealers pricing their Accord, CR-V, Civic, and Pilot lease offers compared to Honda of Anywhere?",
+  "Create Automatic Project":  "Create a proactive project",
 };
 
 const CategoryChip = forwardRef<HTMLButtonElement, { label: string } & ButtonHTMLAttributes<HTMLButtonElement>>(

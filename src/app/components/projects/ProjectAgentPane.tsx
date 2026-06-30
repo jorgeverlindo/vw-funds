@@ -1255,7 +1255,7 @@ function CompetitorMapCard({
                             const marketMin = compPrices.length ? Math.min(...compPrices) : effectivePrice;
                             const isLosing = d.home && effectivePrice > marketMin;
                             const proposed = compPrices.length
-                              ? Math.max(marketMin - margin, 1)
+                              ? Math.max(marketMin - getRowMargin(model, trim), 1)
                               : effectivePrice;
                             const modelColor = COMP_MODEL_COLORS[model] ?? COMP_TOKENS.home;
                             return (

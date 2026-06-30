@@ -1143,14 +1143,16 @@ function CompetitorMapCard({
           .filter(([k]) => k !== "penske")
           .map(([, v]) => v as number);
         if (compPrices.length) {
-          map[`${model}|${trim.toLowerCase()}`] = Math.max(Math.min(...compPrices) - 15, 1);
+          map[`${model}|${trim.toLowerCase()}`] = Math.max(Math.min(...compPrices) - margin, 1);
         }
       }
     }
     return map;
-  }, [analysisMode, propOfferRows]);
+  }, [analysisMode, propOfferRows, margin]);
 
   const getHomePrice = (model: string, trim: string, rawPrice: number | undefined): number | undefined => {
+    // "real" + propOfferRows: home price is already embedded as prices["penske"] in tableRows
+    if (analysisMode === "real" && propOfferRows) return rawPrice;
     if (analysisMode === "real")    return homePriceLookup[`${model}|${trim.toLowerCase().trim()}`];
     if (analysisMode === "optimal" && !propOfferRows) return optimalPriceLookup[`${model}|${trim.toLowerCase()}`] ?? rawPrice;
     return rawPrice;
@@ -1247,7 +1249,7 @@ function CompetitorMapCard({
                             <th style={{ textAlign: "left", padding: "3px 6px 3px 0", color: "#8f8c9c", fontWeight: 600, whiteSpace: "nowrap" }}>Model</th>
                             <th style={{ textAlign: "left", padding: "3px 8px 3px 4px", color: "#8f8c9c", fontWeight: 600, whiteSpace: "nowrap" }}>Trim</th>
                             <th style={{ textAlign: "right", padding: "3px 0 3px 8px", color: "#8f8c9c", fontWeight: 600, whiteSpace: "nowrap" }}>
-                              {d.home ? "Current" : "Lease/mo"}
+                              {d.home ? (analysisMode === "optimal" ? "Market Leader" : analysisMode === "real" ? "Your Price" : "Current") : "Lease/mo"}
                             </th>
                             {d.home && analysisMode !== "optimal" && (
                               <th style={{ textAlign: "right", padding: "3px 0 3px 8px", color: COMP_TOKENS.home, fontWeight: 600, whiteSpace: "nowrap" }}>Proposed</th>
@@ -3303,6 +3305,9 @@ export function ProjectAgentPane({ isOpen, onClose, userType, activeUserName }: 
   const stagedFilesRef = useRef<File[]>([]);
   // Excel/PDF files the user staged alongside "Create a project" — held until setup completes.
   const pendingOffersFilesRef = useRef<File[] | null>(null);
+  // Set when user sends a message with attachments and competitive analysis intent —
+  // after propose_parsed_offers resolves, triggers automatic competitor comparison.
+  const competitiveAnalysisAfterExtractRef = useRef(false);
   // Set to true right before create_project is dispatched so the project-ID-change effect
   // doesn't wipe the conversation history (the project was created BY this conversation).
   const projectCreatedByConversationRef = useRef(false);
@@ -3569,7 +3574,7 @@ export function ProjectAgentPane({ isOpen, onClose, userType, activeUserName }: 
         applied: false,
       };
       setMessages(prev => [...prev,
-        { id: `comp-${now}`, role: "assistant", type: "competitor_map", applied: true, models } as CompetitorMapMsg,
+        { id: `comp-${now}`, role: "assistant", type: "competitor_map", applied: true, models, analysisMode: "optimal" } as CompetitorMapMsg,
       ]);
       setTimeout(() => {
         setMessages(prev => [...prev,
@@ -3601,10 +3606,78 @@ export function ProjectAgentPane({ isOpen, onClose, userType, activeUserName }: 
         offers: normalizedOffers as ParsedOfferRow[],
         extraction_notes: rawInput.extraction_notes as string | undefined,
       };
+      const parsedId = `parsed-${Date.now()}`;
       setMessages(prev => [...prev, {
-        id: `parsed-${Date.now()}`, role: "assistant", type: "parsed_offers",
+        id: parsedId, role: "assistant", type: "parsed_offers",
         input: normalizedInput, applied: false,
       } as ParsedOffersMsg]);
+
+      // Auto competitive analysis — fires when user uploaded offers with competitive intent
+      if (competitiveAnalysisAfterExtractRef.current) {
+        competitiveAnalysisAfterExtractRef.current = false;
+        const leaseRows = normalizedInput.offers.filter(
+          o => o.offer_type === "Lease" && parseFloat(o.monthly_payment) > 0
+        );
+        if (leaseRows.length > 0) {
+          // Build offerRows using real extracted prices vs actual COMPETITOR_LEASE_DATA mins per model
+          const offerRows: OfferCompRow[] = leaseRows.map(o => {
+            const homePrice = Math.round(parseFloat(o.monthly_payment));
+            const modelData = COMPETITOR_LEASE_DATA[o.model] ?? {};
+            const compPricesByDealer: Record<string, number[]> = {};
+            for (const trimPrices of Object.values(modelData)) {
+              for (const [dealerId, p] of Object.entries(trimPrices)) {
+                if (dealerId === "penske") continue;
+                if (!compPricesByDealer[dealerId]) compPricesByDealer[dealerId] = [];
+                compPricesByDealer[dealerId].push(p as number);
+              }
+            }
+            const compPrices: Record<string, number> = {};
+            for (const [id, prices] of Object.entries(compPricesByDealer)) {
+              compPrices[id] = Math.min(...prices);
+            }
+            return { model: o.model, trim: o.trim ?? "", homePrice, compPrices };
+          });
+
+          const marketMins = offerRows.map(r => Math.min(...Object.values(r.compPrices)));
+          const losingRows = offerRows.filter((r, i) => r.homePrice > marketMins[i]);
+
+          if (losingRows.length > 0) {
+            const correctedOffers: ParsedOfferRow[] = losingRows.map((r, idx) => {
+              const correctedPrice = Math.max(marketMins[offerRows.indexOf(r)] - 10, 1);
+              const original = leaseRows.find(o => o.model === r.model && (o.trim ?? "") === r.trim)!;
+              return {
+                ...original,
+                id: `corrected-${idx}-${Date.now()}`,
+                monthly_payment: String(correctedPrice),
+                notes: `Optimized from $${r.homePrice}/mo — market low $${marketMins[offerRows.indexOf(r)]}/mo`,
+                field_confidence: { monthly_payment: "high", term: "high" },
+              };
+            });
+
+            const models = [...new Set(offerRows.map(r => r.model))];
+            const now2 = Date.now() + 10;
+            setTimeout(() => {
+              setMessages(prev => [...prev,
+                {
+                  id: `a-${now2}`, role: "assistant", type: "text",
+                  content: `I noticed ${losingRows.length} of your ${leaseRows.length} offers are priced above nearby Honda dealers. Here's the market comparison — and I've prepared optimized pricing below:`,
+                } as TextMessage,
+                {
+                  id: `comp-${now2 + 1}`, role: "assistant", type: "competitor_map", applied: true,
+                  models, analysisMode: "real", offerRows,
+                } as CompetitorMapMsg,
+                {
+                  id: `parsed-${now2 + 2}`, role: "assistant", type: "parsed_offers", applied: false,
+                  input: {
+                    source: "Optimized offers — priced competitively vs nearby Honda dealers",
+                    offers: correctedOffers,
+                  },
+                } as ParsedOffersMsg,
+              ]);
+            }, 600);
+          }
+        }
+      }
     } else {
       setMessages(prev => [...prev, {
         id: `tool-${Date.now()}`, role: "assistant", type: "tool", name: toolName, input: toolInput,
@@ -3818,6 +3891,15 @@ export function ProjectAgentPane({ isOpen, onClose, userType, activeUserName }: 
     // Intercept "compare my offers vs competition" — show contextual analysis card
     const isOfferComparisonQuery = /how\s+(are|do|is|were)\s+(my|our)\s+(offer|pric|lease)|compare\s+(my|our)\s+(offer|pric|lease)|how\s+(am\s+i|are\s+we)\s+(?:doing\s+)?(?:vs|against|compared|pric)|am\s+i\s+competitive|are\s+my\s+(offer|pric)\s+(?:good|competitive|in\s+line|right)|minhas?\s+offers?\s+(vs|contra|em\s+rela|compar)|como\s+(?:est[aã]o|ficaram|ficou)\s+(?:minhas?|as)\s+offers?|(?:eval|review|check|assess)\s+(?:my|our)\s+(?:offer|pric)|(?:my|our)\s+offer.*(?:vs|against|compet|market)|estou\s+competit|minhas\s+offers\s+boas|como\s+minhas\s+offers|minhas\s+offers.*mercado|as\s+offers.*concorr/i.test(text.trim());
 
+    // When uploading offers WITH competitive intent, flag so post-extraction handler auto-runs comparison
+    const hasCompetitiveUploadIntent = attachments.length > 0 && (
+      isOfferComparisonQuery ||
+      /anali[sz]|compare|compet|concorr|vs\s+(?:comp|concorr|market)|how.*stack/i.test(text)
+    );
+    if (hasCompetitiveUploadIntent) {
+      competitiveAnalysisAfterExtractRef.current = true;
+    }
+
     if (isOfferComparisonQuery && !attachments.length) {
       const userMsg: TextMessage = { id: `u-${Date.now()}`, role: "user", type: "text", content: text };
       const now = Date.now();
@@ -3896,7 +3978,7 @@ export function ProjectAgentPane({ isOpen, onClose, userType, activeUserName }: 
       setMessages(prev => [...prev,
         userMsg,
         { id: `a-${now}`, role: "assistant", type: "text", content: "Here's the competitor map for Honda dealers near Honda of Anywhere:" } as TextMessage,
-        { id: `comp-${now + 1}`, role: "assistant", type: "competitor_map", applied: true, models } as CompetitorMapMsg,
+        { id: `comp-${now + 1}`, role: "assistant", type: "competitor_map", applied: true, models, analysisMode: "optimal" } as CompetitorMapMsg,
       ]);
 
       // Step 2: loading cue for offers

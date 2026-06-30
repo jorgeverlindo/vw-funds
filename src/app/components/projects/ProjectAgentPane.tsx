@@ -294,6 +294,8 @@ interface CompetitorMapMsg {
   type: "competitor_map";
   applied: boolean;
   models: string[];
+  analysisMode?: "standard" | "optimal" | "real";
+  homeOffers?: ParsedOfferRow[];
 }
 
 // ─── Custom header icons (from exported SVGs — pixel-perfect, color via currentColor) ────
@@ -1082,10 +1084,12 @@ function computeCompetitiveOffers(models: string[], margin: number): ParsedOffer
 }
 
 function CompetitorMapCard({
-  initialModels, onRegenerate,
+  initialModels, onRegenerate, analysisMode = "standard", homeOffers,
 }: {
   initialModels: string[];
   onRegenerate: (offers: ParsedOfferRow[], selectedModels: string[]) => void;
+  analysisMode?: "standard" | "optimal" | "real";
+  homeOffers?: ParsedOfferRow[];
 }) {
   useEffect(() => { injectLeafletCSS(); }, []);
 
@@ -1104,6 +1108,43 @@ function CompetitorMapCard({
   const handleMargin = (delta: number) => {
     setMargin(m => Math.max(0, m + delta));
     setMarginChanged(true);
+  };
+
+  // "real" mode: build lookup from uploaded offers { "Model|trim" -> price }
+  const homePriceLookup = useMemo((): Record<string, number> => {
+    if (analysisMode !== "real" || !homeOffers) return {};
+    const map: Record<string, number> = {};
+    for (const offer of homeOffers) {
+      if (offer.offer_type !== "Lease") continue;
+      const price = parseFloat(offer.monthly_payment);
+      if (isNaN(price)) continue;
+      const key = `${offer.model}|${(offer.trim ?? "").toLowerCase().trim()}`;
+      map[key] = price;
+    }
+    return map;
+  }, [analysisMode, homeOffers]);
+
+  // "optimal" mode: compute prices that beat all competitors by a margin
+  const optimalPriceLookup = useMemo((): Record<string, number> => {
+    if (analysisMode !== "optimal") return {};
+    const map: Record<string, number> = {};
+    for (const model of ALL_MODELS) {
+      for (const [trim, prices] of Object.entries(COMPETITOR_LEASE_DATA[model] ?? {})) {
+        const compPrices = Object.entries(prices)
+          .filter(([k]) => k !== "penske")
+          .map(([, v]) => v as number);
+        if (compPrices.length) {
+          map[`${model}|${trim.toLowerCase()}`] = Math.max(Math.min(...compPrices) - 15, 1);
+        }
+      }
+    }
+    return map;
+  }, [analysisMode]);
+
+  const getHomePrice = (model: string, trim: string, rawPrice: number | undefined): number | undefined => {
+    if (analysisMode === "real")    return homePriceLookup[`${model}|${trim.toLowerCase().trim()}`];
+    if (analysisMode === "optimal") return optimalPriceLookup[`${model}|${trim.toLowerCase()}`] ?? rawPrice;
+    return rawPrice;
   };
 
   const tableRows = selectedModels.flatMap(model =>
@@ -1132,7 +1173,11 @@ function CompetitorMapCard({
       {/* Header */}
       <div className="px-[18px] pt-[14px] pb-[12px] border-b border-[#f0eff5]">
         <p className="text-[11px] font-semibold tracking-[0.07em] text-[#8f8c9c] uppercase mb-[10px]">
-          Competitor Analysis · Honda of Anywhere, Indianapolis
+          {analysisMode === "optimal"
+            ? "Competitive Position · Honda of Anywhere — Market Leader"
+            : analysisMode === "real"
+            ? "Offer Review · Honda of Anywhere vs Market"
+            : "Competitor Analysis · Honda of Anywhere, Indianapolis"}
         </p>
         <div className="flex flex-wrap gap-[6px]">
           {ALL_MODELS.map(m => {
@@ -1186,20 +1231,23 @@ function CompetitorMapCard({
                             <th style={{ textAlign: "right", padding: "3px 0 3px 8px", color: "#8f8c9c", fontWeight: 600, whiteSpace: "nowrap" }}>
                               {d.home ? "Current" : "Lease/mo"}
                             </th>
-                            {d.home && (
+                            {d.home && analysisMode !== "optimal" && (
                               <th style={{ textAlign: "right", padding: "3px 0 3px 8px", color: COMP_TOKENS.home, fontWeight: 600, whiteSpace: "nowrap" }}>Proposed</th>
                             )}
                           </tr>
                         </thead>
                         <tbody>
                           {dealerRows.map(({ model, trim, prices }) => {
-                            const price = prices[d.id as CompDealerId]!;
+                            const rawPrice = prices[d.id as CompDealerId]!;
+                            const effectivePrice = d.home ? (getHomePrice(model, trim, rawPrice) ?? rawPrice) : rawPrice;
                             const compPrices = Object.entries(prices)
                               .filter(([k]) => k !== "penske")
                               .map(([, p]) => p as number);
+                            const marketMin = compPrices.length ? Math.min(...compPrices) : effectivePrice;
+                            const isLosing = d.home && effectivePrice > marketMin;
                             const proposed = compPrices.length
-                              ? Math.max(Math.min(...compPrices) - margin, 1)
-                              : price;
+                              ? Math.max(marketMin - margin, 1)
+                              : effectivePrice;
                             const modelColor = COMP_MODEL_COLORS[model] ?? COMP_TOKENS.home;
                             return (
                               <tr key={`${model}-${trim}`} style={{ borderBottom: "1px solid #f8f7fb" }}>
@@ -1207,9 +1255,17 @@ function CompetitorMapCard({
                                   <span style={{ fontSize: 10, fontWeight: 600, background: modelColor + "22", color: modelColor, padding: "1px 5px", borderRadius: 10 }}>{model}</span>
                                 </td>
                                 <td style={{ padding: "4px 8px 4px 4px", color: "#1f1d25", whiteSpace: "nowrap" }}>{trim}</td>
-                                <td style={{ padding: "4px 0 4px 8px", textAlign: "right", fontWeight: 600, color: "#1f1d25", whiteSpace: "nowrap" }}>${price}</td>
-                                {d.home && (
-                                  <td style={{ padding: "4px 0 4px 8px", textAlign: "right", fontWeight: 700, color: COMP_TOKENS.home, whiteSpace: "nowrap" }}>${proposed}</td>
+                                <td style={{ padding: "4px 0 4px 8px", textAlign: "right", fontWeight: 600, whiteSpace: "nowrap",
+                                  color: d.home && analysisMode === "optimal" ? COMP_TOKENS.positive
+                                       : d.home && isLosing ? COMP_TOKENS.negative
+                                       : "#1f1d25" }}>
+                                  ${effectivePrice}
+                                </td>
+                                {d.home && analysisMode !== "optimal" && (
+                                  <td style={{ padding: "4px 0 4px 8px", textAlign: "right", fontWeight: 700,
+                                    color: isLosing ? COMP_TOKENS.home : "#ccc8d6", whiteSpace: "nowrap" }}>
+                                    {isLosing ? `$${proposed}` : "✓"}
+                                  </td>
                                 )}
                               </tr>
                             );
@@ -1240,20 +1296,27 @@ function CompetitorMapCard({
                   {d.home ? "Honda of Anywhere" : d.shortName.split(" ").slice(0, 2).join(" ")}
                 </th>
               ))}
-              <th className="text-right px-[12px] py-[9px] font-semibold whitespace-nowrap"
-                style={{ color: COMP_TOKENS.home, borderLeft: "2px solid #ece9f5" }}>
-                Proposed
-              </th>
+              {analysisMode !== "optimal" && (
+                <th className="text-right px-[12px] py-[9px] font-semibold whitespace-nowrap"
+                  style={{ color: COMP_TOKENS.home, borderLeft: "2px solid #ece9f5" }}>
+                  {analysisMode === "real" ? "Correction" : "Proposed"}
+                </th>
+              )}
             </tr>
           </thead>
           <tbody>
             {tableRows.map(({ model, trim, prices }) => {
-              const allPrices = COMPETITOR_DEALERS.map(d => prices[d.id as CompDealerId]);
+              const rawHomePrice = prices["penske" as CompDealerId];
+              const effectiveHomePrice = getHomePrice(model, trim, rawHomePrice);
+              const allPrices = COMPETITOR_DEALERS.map(d =>
+                d.home ? effectiveHomePrice : prices[d.id as CompDealerId]
+              );
               const compPrices = Object.entries(prices)
                 .filter(([k]) => k !== "penske")
                 .map(([, p]) => p as number);
-              const proposed = compPrices.length ? Math.max(Math.min(...compPrices) - margin, 1) : null;
-              const homePrice = prices["penske" as CompDealerId];
+              const marketMin = compPrices.length ? Math.min(...compPrices) : null;
+              const proposed = marketMin !== null ? Math.max(marketMin - margin, 1) : null;
+              const isLosing = effectiveHomePrice !== undefined && marketMin !== null && effectiveHomePrice > marketMin;
               return (
                 <tr key={`${model}-${trim}`} className="border-b border-[#f0eff5] last:border-0 hover:bg-[#fafaf9]">
                   <td className="px-[14px] py-[8px] whitespace-nowrap">
@@ -1264,25 +1327,36 @@ function CompetitorMapCard({
                     <span className="text-[#1f1d25]">{trim}</span>
                   </td>
                   {COMPETITOR_DEALERS.map(d => {
-                    const price = prices[d.id as CompDealerId];
-                    const style = cellStyle(price, allPrices);
+                    const price = d.home ? effectiveHomePrice : prices[d.id as CompDealerId];
+                    const styleFn = cellStyle(price, allPrices);
+                    const forceGreen = d.home && analysisMode === "optimal";
+                    const forceRed   = d.home && analysisMode === "real" && isLosing;
+                    const forcePositive = d.home && analysisMode === "real" && !isLosing && effectiveHomePrice !== undefined;
+                    const finalStyle = forceGreen    ? { background: COMP_TOKENS.positive + "28", color: COMP_TOKENS.positive }
+                                     : forceRed      ? { background: COMP_TOKENS.negative + "28", color: COMP_TOKENS.negative }
+                                     : forcePositive ? { background: COMP_TOKENS.positive + "28", color: COMP_TOKENS.positive }
+                                     : styleFn;
                     return (
                       <td key={d.id} className="px-[12px] py-[8px] text-right font-medium whitespace-nowrap"
-                        style={style}>
-                        {price ? `$${price}` : "—"}
+                        style={finalStyle}>
+                        {price !== undefined ? `$${price}` : "—"}
                       </td>
                     );
                   })}
-                  <td className="px-[12px] py-[8px] text-right font-bold whitespace-nowrap"
-                    style={{
-                      borderLeft: "2px solid #ece9f5",
-                      color: proposed !== null ? COMP_TOKENS.home : "#ccc8d6",
-                      background: proposed !== null && homePrice && proposed < homePrice
-                        ? COMP_TOKENS.home + "18"
-                        : proposed !== null ? COMP_TOKENS.home + "0c" : "transparent",
-                    }}>
-                    {proposed !== null ? `$${proposed}` : "—"}
-                  </td>
+                  {analysisMode !== "optimal" && (
+                    <td className="px-[12px] py-[8px] text-right font-bold whitespace-nowrap"
+                      style={{
+                        borderLeft: "2px solid #ece9f5",
+                        color: (analysisMode === "real" ? isLosing : proposed !== null && effectiveHomePrice !== undefined && proposed < (effectiveHomePrice ?? Infinity))
+                          ? COMP_TOKENS.home : "#ccc8d6",
+                        background: (analysisMode === "real" ? isLosing : proposed !== null && effectiveHomePrice !== undefined && proposed < (effectiveHomePrice ?? Infinity))
+                          ? COMP_TOKENS.home + "18" : "transparent",
+                      }}>
+                      {analysisMode === "real"
+                        ? (isLosing && proposed !== null ? `$${proposed}` : "✓")
+                        : (proposed !== null ? `$${proposed}` : "—")}
+                    </td>
+                  )}
                 </tr>
               );
             })}
@@ -1290,10 +1364,16 @@ function CompetitorMapCard({
         </table>
       </div>
 
-      {/* Footer — margin stepper + regenerate */}
+      {/* Footer */}
+      {analysisMode === "optimal" ? (
+        <div className="px-[18px] py-[11px] border-t border-[#f0eff5] flex items-center gap-[8px]">
+          <span style={{ fontSize: 11, color: COMP_TOKENS.positive, fontWeight: 600 }}>✓</span>
+          <span className="text-[12px] text-[#686576]">Your offers are priced below all nearby competitors.</span>
+        </div>
+      ) : (
       <div className="px-[18px] py-[11px] border-t border-[#f0eff5] flex items-center justify-between gap-[12px]">
         <div className="flex items-center gap-[8px] text-[12px] text-[#686576]">
-          <span>Margin below market:</span>
+          <span>{analysisMode === "real" ? "Correction margin:" : "Margin below market:"}</span>
           <div className="flex items-center border border-[#cac9cf] rounded-[7px] overflow-hidden h-[28px]">
             <button onClick={() => handleMargin(-5)}
               className="w-[26px] h-full flex items-center justify-center hover:bg-gray-100 text-[#686576] transition-colors text-[14px]">−</button>
@@ -1302,14 +1382,15 @@ function CompetitorMapCard({
               className="w-[26px] h-full flex items-center justify-center hover:bg-gray-100 text-[#686576] transition-colors text-[14px]">+</button>
           </div>
         </div>
-        {marginChanged && (
+        {(marginChanged || analysisMode === "real") && (
           <button onClick={() => { setMarginChanged(false); onRegenerate(computeCompetitiveOffers(selectedModels, margin), selectedModels); }}
             className="px-[16px] py-[7px] rounded-full text-[12px] font-semibold text-white hover:opacity-90 transition-opacity whitespace-nowrap"
             style={{ background: COMP_TOKENS.home }}>
-            Regenerate Offers
+            {analysisMode === "real" ? "Apply Corrections" : "Regenerate Offers"}
           </button>
         )}
       </div>
+      )}
     </div>
   );
 }
@@ -3716,6 +3797,36 @@ export function ProjectAgentPane({ isOpen, onClose, userType, activeUserName }: 
     // Detect proactive intent early — bypasses the "already open" intercept below.
     const isProactiveIntent = /\b(proactive|proactively|automatic|automatically|auto(?:pilot|create)?|autopilot)\b|do\s+(?:it\s+all|everything)\s*(?:for\s+me|automatically)?|(?:build|create|make|generate|set\s+up|wrap\s+up|put\s+together)\s+(?:the\s+)?(?:whole|entire|full|complete)\s+(?:campaign|project)|(?:build|create|make|finish|complete)\s+(?:the\s+)?(?:campaign|project)\s+for\s+me|build\s+it\s+(?:start\s+to\s+finish|end\s+to\s+end)|handle\s+the\s+whole\s+thing|take\s+it\s+from\s+here|take\s+care\s+of\s+the\s+whole\s+project|run\s+(?:with\s+it|the\s+full\s+project)|you\s+decide\s+everything|pick\s+everything\s+for\s+me|one[- ]click\s+campaign|just\s+make\s+it\s+happen|no\s+input\s+needed|don.?t\s+ask\s+me/i.test(text);
 
+    // Intercept "compare my offers vs competition" — show contextual analysis card
+    const isOfferComparisonQuery = /how\s+(are|do|is|were)\s+(my|our)\s+(offer|pric|lease)|compare\s+(my|our)\s+(offer|pric|lease)|how\s+(am\s+i|are\s+we)\s+(?:doing\s+)?(?:vs|against|compared|pric)|am\s+i\s+competitive|are\s+my\s+(offer|pric)\s+(?:good|competitive|in\s+line|right)|minhas?\s+offers?\s+(vs|contra|em\s+rela|compar)|como\s+(?:est[aã]o|ficaram|ficou)\s+(?:minhas?|as)\s+offers?|(?:eval|review|check|assess)\s+(?:my|our)\s+(?:offer|pric)|(?:my|our)\s+offer.*(?:vs|against|compet|market)|estou\s+competit|minhas\s+offers\s+boas|como\s+minhas\s+offers|minhas\s+offers.*mercado|as\s+offers.*concorr/i.test(text.trim());
+
+    if (isOfferComparisonQuery && !attachments.length) {
+      const userMsg: TextMessage = { id: `u-${Date.now()}`, role: "user", type: "text", content: text };
+      const appliedOffers = messages
+        .filter((m): m is ParsedOffersMsg => m.type === "parsed_offers" && (m as ParsedOffersMsg).applied)
+        .flatMap(m => (m as ParsedOffersMsg).input.offers);
+      const hasRealOffers = appliedOffers.length > 0;
+      const analysisMode: "optimal" | "real" = hasRealOffers ? "real" : "optimal";
+      const modelMatches = text.match(/\b(Accord|CR-V|Civic|Pilot)\b/gi);
+      const models = modelMatches
+        ? [...new Set(modelMatches.map(m => m))]
+        : Object.keys(COMPETITOR_LEASE_DATA);
+      const now = Date.now();
+      const introText = hasRealOffers
+        ? "Here's how your current offers compare to nearby Honda dealers:"
+        : "Here's how your offers stack up against the competition:";
+      setMessages(prev => [...prev,
+        userMsg,
+        { id: `a-${now}`, role: "assistant", type: "text", content: introText } as TextMessage,
+        {
+          id: `comp-${now + 1}`, role: "assistant", type: "competitor_map", applied: true,
+          models, analysisMode,
+          homeOffers: hasRealOffers ? appliedOffers : undefined,
+        } as CompetitorMapMsg,
+      ]);
+      return;
+    }
+
     // Intercept competition/competitor queries — bypass the LLM and call the tool directly
     const isCompetitionQuery = /concorr[eê]nci|concorrentes?|competitor|competition|como\s+(t[oô]|estou|estamos|est[aá])\s+(em\s+rela[cç][aã]o|no\s+mercado)|mapa\s+de\s+concorr|o\s+que\s+os\s+outros\s+(cobram|est[aã]o\s+cobrando)|preço\s+dos\s+outros|outros\s+dealers?|dealers?\s+prox|how\s+is\s+my\s+competi|show.*competitor|nearby\s+dealer|competitor\s+pric|market\s+comp/i.test(text.trim());
 
@@ -5425,9 +5536,12 @@ function MessageBubble({
   }
 
   if (message.type === "competitor_map") {
+    const cm = message as CompetitorMapMsg;
     return (
       <CompetitorMapCard
-        initialModels={(message as CompetitorMapMsg).models}
+        initialModels={cm.models}
+        analysisMode={cm.analysisMode ?? "standard"}
+        homeOffers={cm.homeOffers}
         onRegenerate={(offers, selectedModels) => onCompetitorMapGenerate?.(offers, selectedModels)}
       />
     );

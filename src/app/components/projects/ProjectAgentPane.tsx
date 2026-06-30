@@ -41,6 +41,9 @@ import {
 } from "./agent/utils";
 import type { AgentThread } from "./agent/utils";
 import { useAgentStream } from "./agent/useAgentStream";
+import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
+import L from "leaflet";
+import "leaflet/dist/leaflet.css";
 
 // ─── Shared event constants ────────────────────────────────────────────────────
 export const PROJECT_CONTEXT_EVENT         = "project-context-update";
@@ -910,10 +913,10 @@ function ReviewerPickerCard({
 
 // ─── Competitor analysis data (Penske Honda, Indianapolis area — Jun 2026) ────
 const COMPETITOR_DEALERS = [
-  { id: "penske",     name: "Penske Honda",                  shortName: "Penske",      distance: 0,    x: 110, y: 110, color: "#473bab", home: true  },
-  { id: "greatlakes", name: "Great Lakes Honda of Fishers",   shortName: "Great Lakes", distance: 6.6,  x: 262, y: 52,  color: "#f97316", home: false },
-  { id: "edmartin",   name: "Ed Martin Honda",                shortName: "Ed Martin",   distance: 10.7, x: 305, y: 112, color: "#ef4444", home: false },
-  { id: "hare",       name: "Hare Honda",                     shortName: "Hare Honda",  distance: 18.2, x: 272, y: 188, color: "#f59e0b", home: false },
+  { id: "penske",     name: "Penske Honda",                  shortName: "Penske",      distance: 0,    lat: 39.9017, lng: -86.0590, color: "#473bab", home: true  },
+  { id: "greatlakes", name: "Great Lakes Honda of Fishers",   shortName: "Great Lakes", distance: 6.6,  lat: 39.9570, lng: -86.0135, color: "#f97316", home: false },
+  { id: "edmartin",   name: "Ed Martin Honda",                shortName: "Ed Martin",   distance: 10.7, lat: 39.9840, lng: -85.9790, color: "#ef4444", home: false },
+  { id: "hare",       name: "Hare Honda",                     shortName: "Hare Honda",  distance: 18.2, lat: 39.8465, lng: -86.2140, color: "#f59e0b", home: false },
 ] as const;
 
 type CompDealerId = typeof COMPETITOR_DEALERS[number]["id"];
@@ -942,24 +945,85 @@ const COMP_MODEL_COLORS: Record<string, string> = {
   "Accord": "#6366f1", "CR-V": "#10b981", "Civic": "#f59e0b", "Pilot": "#ec4899",
 };
 
+// ─── Leaflet helpers ──────────────────────────────────────────────────────────
+function FitBoundsToMarkers() {
+  const map = useMap();
+  useEffect(() => {
+    const bounds = L.latLngBounds(COMPETITOR_DEALERS.map(d => [d.lat, d.lng] as [number, number]));
+    map.fitBounds(bounds, { padding: [32, 32] });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  return null;
+}
+
+function dealerIcon(dealer: typeof COMPETITOR_DEALERS[number]) {
+  const size = dealer.home ? 36 : 28;
+  const label = dealer.home
+    ? "PH"
+    : dealer.shortName.split(" ").map((w: string) => w[0]).join("").slice(0, 2);
+  const html = `
+    <div style="
+      width:${size}px;height:${size}px;border-radius:50%;
+      background:${dealer.home ? dealer.color : "#fff"};
+      border:3px solid ${dealer.color};
+      box-shadow:0 2px 10px rgba(0,0,0,0.22);
+      display:flex;align-items:center;justify-content:center;
+      font-size:${dealer.home ? 11 : 10}px;font-weight:800;
+      color:${dealer.home ? "#fff" : dealer.color};
+      font-family:system-ui,sans-serif;
+      cursor:pointer;
+    ">${label}</div>`;
+  return L.divIcon({ className: "", html, iconSize: [size, size], iconAnchor: [size / 2, size / 2] });
+}
+
 // ─── CompetitorMapCard ────────────────────────────────────────────────────────
+function computeCompetitiveOffers(models: string[], margin: number): ParsedOfferRow[] {
+  const offers: ParsedOfferRow[] = [];
+  for (const model of models) {
+    for (const [trim, prices] of Object.entries(COMPETITOR_LEASE_DATA[model] ?? {})) {
+      const compPrices = Object.entries(prices)
+        .filter(([d]) => d !== "penske")
+        .map(([, p]) => p as number);
+      if (!compPrices.length) continue;
+      const marketMin = Math.min(...compPrices);
+      const competitive = Math.max(marketMin - margin, 1);
+      offers.push({
+        id: `comp-${model}-${trim.replace(/\s+/g, "-")}`,
+        year: "2026", make: "Honda", model, trim,
+        offer_type: "Lease",
+        monthly_payment: String(competitive),
+        term: "36",
+        due_at_signing: "0",
+        notes: `Market low $${marketMin}/mo${margin > 0 ? ` − $${margin} margin` : ""}`,
+        field_confidence: { monthly_payment: "high", term: "high", due_at_signing: "high" },
+      });
+    }
+  }
+  return offers;
+}
+
 function CompetitorMapCard({
-  applied, initialModels, onGenerate,
+  initialModels, onRegenerate,
 }: {
-  applied: boolean;
   initialModels: string[];
-  onGenerate: (offers: ParsedOfferRow[], selectedModels: string[]) => void;
+  onRegenerate: (offers: ParsedOfferRow[], selectedModels: string[]) => void;
 }) {
   const ALL_MODELS = Object.keys(COMPETITOR_LEASE_DATA);
   const [selectedModels, setSelectedModels] = useState<string[]>(
     () => initialModels.length ? initialModels.filter(m => ALL_MODELS.includes(m)) : ALL_MODELS
   );
   const [margin, setMargin] = useState(10);
+  const [marginChanged, setMarginChanged] = useState(false);
 
   const toggleModel = (m: string) =>
     setSelectedModels(prev =>
       prev.includes(m) ? (prev.length > 1 ? prev.filter(x => x !== m) : prev) : [...prev, m]
     );
+
+  const handleMargin = (delta: number) => {
+    setMargin(m => Math.max(0, m + delta));
+    setMarginChanged(true);
+  };
 
   const tableRows = selectedModels.flatMap(model =>
     Object.entries(COMPETITOR_LEASE_DATA[model] ?? {}).map(([trim, prices]) => ({ model, trim, prices }))
@@ -977,35 +1041,14 @@ function CompetitorMapCard({
     return { background: "#fef9c3", color: "#854d0e" };
   }
 
-  const handleGenerate = () => {
-    if (applied) return;
-    const offers: ParsedOfferRow[] = [];
-    for (const model of selectedModels) {
-      for (const [trim, prices] of Object.entries(COMPETITOR_LEASE_DATA[model] ?? {})) {
-        const compPrices = Object.entries(prices)
-          .filter(([d]) => d !== "penske")
-          .map(([, p]) => p as number);
-        if (!compPrices.length) continue;
-        const marketMin = Math.min(...compPrices);
-        const competitive = Math.max(marketMin - margin, 1);
-        offers.push({
-          id: `comp-${model}-${trim.replace(/\s+/g, "-")}-${Date.now()}`,
-          year: "2026", make: "Honda", model, trim,
-          offer_type: "Lease",
-          monthly_payment: String(competitive),
-          term: "36",
-          due_at_signing: "0",
-          notes: `Competitive: market low $${marketMin}/mo${margin > 0 ? ` − $${margin}` : ""}`,
-          field_confidence: { monthly_payment: "high", term: "high", due_at_signing: "high" },
-        });
-      }
-    }
-    onGenerate(offers, selectedModels);
-  };
+  const center: [number, number] = [
+    COMPETITOR_DEALERS.reduce((s, d) => s + d.lat, 0) / COMPETITOR_DEALERS.length,
+    COMPETITOR_DEALERS.reduce((s, d) => s + d.lng, 0) / COMPETITOR_DEALERS.length,
+  ];
 
   return (
     <div className="rounded-[16px] border border-[#ece9f5] bg-white overflow-hidden">
-      {/* Header + model filters */}
+      {/* Header */}
       <div className="px-[18px] pt-[14px] pb-[12px] border-b border-[#f0eff5]">
         <p className="text-[11px] font-semibold tracking-[0.07em] text-[#8f8c9c] uppercase mb-[10px]">
           Competitor Analysis · Penske Honda, Indianapolis
@@ -1029,123 +1072,93 @@ function CompetitorMapCard({
         </div>
       </div>
 
-      {/* Map + table */}
-      <div className="flex">
-        {/* SVG map */}
-        <div className="w-[200px] shrink-0 p-[14px] border-r border-[#f0eff5] flex flex-col gap-[10px]">
-          <svg viewBox="0 0 340 250" width="172" height="127" xmlns="http://www.w3.org/2000/svg">
-            <rect width="340" height="250" rx="12" fill="#f5f4f9"/>
-            {COMPETITOR_DEALERS.filter(d => !d.home).map(d => (
-              <line key={d.id}
-                x1={COMPETITOR_DEALERS[0].x} y1={COMPETITOR_DEALERS[0].y}
-                x2={d.x} y2={d.y}
-                stroke="#d1cfdd" strokeWidth="1.5" strokeDasharray="5 4"/>
-            ))}
-            {COMPETITOR_DEALERS.map(d => (
-              <g key={d.id}>
-                <circle cx={d.x} cy={d.y} r={d.home ? 22 : 17}
-                  fill={d.home ? d.color : d.color + "22"}
-                  stroke={d.home ? "none" : d.color} strokeWidth="2"/>
-                <text x={d.x} y={d.y + 1} textAnchor="middle" dominantBaseline="middle"
-                  fontSize={d.home ? "10" : "9"} fontWeight="700"
-                  fill={d.home ? "#fff" : d.color} fontFamily="system-ui,sans-serif">
-                  {d.home ? "PH" : d.shortName.split(" ").map((w: string) => w[0]).join("").slice(0, 2)}
-                </text>
-                {!d.home && (
-                  <text x={d.x + (d.x > 200 ? 22 : -22)} y={d.y}
-                    textAnchor={d.x > 200 ? "start" : "end"}
-                    dominantBaseline="middle"
-                    fontSize="9" fill="#686576" fontFamily="system-ui,sans-serif">
-                    {d.distance}mi
-                  </text>
-                )}
-              </g>
-            ))}
-          </svg>
-
-          <div className="flex flex-col gap-[4px]">
-            {COMPETITOR_DEALERS.map(d => (
-              <div key={d.id} className="flex items-center gap-[5px]">
-                <div className="w-[7px] h-[7px] rounded-full shrink-0" style={{ background: d.color }}/>
-                <span className="text-[10px] text-[#686576] leading-none truncate">
-                  {d.home ? `${d.name} (you)` : `${d.shortName} · ${d.distance}mi`}
-                </span>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Comparison table */}
-        <div className="flex-1 overflow-x-auto">
-          <table className="w-full border-collapse text-[12px]" style={{ minWidth: 280 }}>
-            <thead>
-              <tr className="border-b border-[#f0eff5]">
-                <th className="text-left px-[12px] py-[9px] text-[#8f8c9c] font-semibold whitespace-nowrap">Model / Trim</th>
-                {COMPETITOR_DEALERS.map(d => (
-                  <th key={d.id} className="text-right px-[10px] py-[9px] font-semibold whitespace-nowrap"
-                    style={{ color: d.color }}>
-                    {d.home ? "Penske" : d.shortName.split(" ").slice(0, 2).join(" ")}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {tableRows.map(({ model, trim, prices }) => {
-                const allPrices = COMPETITOR_DEALERS.map(d => prices[d.id as CompDealerId]);
-                return (
-                  <tr key={`${model}-${trim}`} className="border-b border-[#f0eff5] last:border-0 hover:bg-[#fafaf9]">
-                    <td className="px-[12px] py-[7px] whitespace-nowrap">
-                      <span className="text-[10px] font-semibold px-[6px] py-[2px] rounded-full mr-[5px]"
-                        style={{ background: (COMP_MODEL_COLORS[model] ?? "#473bab") + "22", color: COMP_MODEL_COLORS[model] ?? "#473bab" }}>
-                        {model}
-                      </span>
-                      <span className="text-[#1f1d25]">{trim}</span>
-                    </td>
-                    {COMPETITOR_DEALERS.map(d => {
-                      const price = prices[d.id as CompDealerId];
-                      const style = cellStyle(price, allPrices);
-                      return (
-                        <td key={d.id} className="px-[10px] py-[7px] text-right font-medium whitespace-nowrap"
-                          style={style}>
-                          {price ? `$${price}` : "—"}
-                        </td>
-                      );
-                    })}
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
+      {/* Leaflet map — full width */}
+      <div style={{ height: 280, width: "100%" }}>
+        <MapContainer center={center} zoom={11} style={{ height: "100%", width: "100%" }}
+          zoomControl={true} scrollWheelZoom={true}>
+          <TileLayer
+            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+            attribution='&copy; <a href="https://openstreetmap.org">OpenStreetMap</a> contributors'
+          />
+          <FitBoundsToMarkers />
+          {COMPETITOR_DEALERS.map(d => (
+            <Marker key={d.id} position={[d.lat, d.lng]} icon={dealerIcon(d)}>
+              <Popup>
+                <div style={{ fontSize: 12, lineHeight: 1.5 }}>
+                  <strong style={{ color: d.color }}>{d.name}</strong>
+                  {d.home
+                    ? <div style={{ color: "#8f8c9c" }}>Your dealership</div>
+                    : <div style={{ color: "#686576" }}>{d.distance} mi away</div>
+                  }
+                </div>
+              </Popup>
+            </Marker>
+          ))}
+        </MapContainer>
       </div>
 
-      {/* Footer */}
-      {!applied ? (
-        <div className="px-[18px] py-[11px] border-t border-[#f0eff5] flex items-center justify-between gap-[12px]">
-          <div className="flex items-center gap-[8px] text-[12px] text-[#686576]">
-            <span>Margin below market:</span>
-            <div className="flex items-center border border-[#cac9cf] rounded-[7px] overflow-hidden h-[28px]">
-              <button onClick={() => setMargin(m => Math.max(0, m - 5))}
-                className="w-[26px] h-full flex items-center justify-center hover:bg-gray-100 text-[#686576] transition-colors text-[14px]">−</button>
-              <span className="w-[36px] text-center text-[12px] font-medium text-[#1f1d25]">${margin}</span>
-              <button onClick={() => setMargin(m => m + 5)}
-                className="w-[26px] h-full flex items-center justify-center hover:bg-gray-100 text-[#686576] transition-colors text-[14px]">+</button>
-            </div>
+      {/* Comparison table — full width */}
+      <div className="overflow-x-auto">
+        <table className="w-full border-collapse text-[12px]" style={{ minWidth: 360 }}>
+          <thead>
+            <tr className="border-b border-[#f0eff5]">
+              <th className="text-left px-[14px] py-[9px] text-[#8f8c9c] font-semibold whitespace-nowrap">Model / Trim</th>
+              {COMPETITOR_DEALERS.map(d => (
+                <th key={d.id} className="text-right px-[12px] py-[9px] font-semibold whitespace-nowrap"
+                  style={{ color: d.color }}>
+                  {d.home ? "Penske" : d.shortName.split(" ").slice(0, 2).join(" ")}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {tableRows.map(({ model, trim, prices }) => {
+              const allPrices = COMPETITOR_DEALERS.map(d => prices[d.id as CompDealerId]);
+              return (
+                <tr key={`${model}-${trim}`} className="border-b border-[#f0eff5] last:border-0 hover:bg-[#fafaf9]">
+                  <td className="px-[14px] py-[8px] whitespace-nowrap">
+                    <span className="text-[10px] font-semibold px-[6px] py-[2px] rounded-full mr-[5px]"
+                      style={{ background: (COMP_MODEL_COLORS[model] ?? "#473bab") + "22", color: COMP_MODEL_COLORS[model] ?? "#473bab" }}>
+                      {model}
+                    </span>
+                    <span className="text-[#1f1d25]">{trim}</span>
+                  </td>
+                  {COMPETITOR_DEALERS.map(d => {
+                    const price = prices[d.id as CompDealerId];
+                    const style = cellStyle(price, allPrices);
+                    return (
+                      <td key={d.id} className="px-[12px] py-[8px] text-right font-medium whitespace-nowrap"
+                        style={style}>
+                        {price ? `$${price}` : "—"}
+                      </td>
+                    );
+                  })}
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+
+      {/* Footer — margin stepper + regenerate */}
+      <div className="px-[18px] py-[11px] border-t border-[#f0eff5] flex items-center justify-between gap-[12px]">
+        <div className="flex items-center gap-[8px] text-[12px] text-[#686576]">
+          <span>Margin below market:</span>
+          <div className="flex items-center border border-[#cac9cf] rounded-[7px] overflow-hidden h-[28px]">
+            <button onClick={() => handleMargin(-5)}
+              className="w-[26px] h-full flex items-center justify-center hover:bg-gray-100 text-[#686576] transition-colors text-[14px]">−</button>
+            <span className="w-[36px] text-center text-[12px] font-medium text-[#1f1d25]">${margin}</span>
+            <button onClick={() => handleMargin(5)}
+              className="w-[26px] h-full flex items-center justify-center hover:bg-gray-100 text-[#686576] transition-colors text-[14px]">+</button>
           </div>
-          <button onClick={handleGenerate}
+        </div>
+        {marginChanged && (
+          <button onClick={() => { setMarginChanged(false); onRegenerate(computeCompetitiveOffers(selectedModels, margin), selectedModels); }}
             className="px-[16px] py-[7px] rounded-full text-[12px] font-semibold bg-[#473bab] text-white hover:opacity-90 transition-opacity whitespace-nowrap">
-            Generate Competitive Offers
+            Regenerate Offers
           </button>
-        </div>
-      ) : (
-        <div className="px-[18px] py-[10px] border-t border-[#f0eff5] flex items-center gap-[6px]">
-          <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-            <circle cx="7" cy="7" r="6.25" stroke="#10b981" strokeWidth="1.5"/>
-            <path d="M4.5 7l2 2 3-3" stroke="#10b981" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-          </svg>
-          <span className="text-[12px] text-[#8f8c9c]">Competitive offers generated</span>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 }
@@ -3296,10 +3309,16 @@ export function ProjectAgentPane({ isOpen, onClose, userType, activeUserName }: 
     } else if (toolName === "analyze_competition") {
       const rawInput = toolInput as Record<string, unknown>;
       const models = Array.isArray(rawInput.models) ? (rawInput.models as string[]) : Object.keys(COMPETITOR_LEASE_DATA);
-      setMessages(prev => [...prev, {
-        id: `comp-${Date.now()}`, role: "assistant", type: "competitor_map",
-        applied: false, models,
-      } as CompetitorMapMsg]);
+      const autoOffers = computeCompetitiveOffers(models, 10);
+      const now = Date.now();
+      setMessages(prev => [...prev,
+        { id: `comp-${now}`, role: "assistant", type: "competitor_map", applied: true, models } as CompetitorMapMsg,
+        {
+          id: `parsed-${now + 1}`, role: "assistant", type: "parsed_offers",
+          input: { source: "Competitor analysis — Penske Honda market comparison (Jun 2026)", offers: autoOffers } as ParsedOffersInput,
+          applied: false,
+        } as ParsedOffersMsg,
+      ]);
     } else if (toolName === "propose_parsed_offers") {
       // Normalize flat confidence_* fields back into a field_confidence Record
       const rawInput = toolInput as Record<string, unknown>;
@@ -3535,6 +3554,29 @@ export function ProjectAgentPane({ isOpen, onClose, userType, activeUserName }: 
 
     // Detect proactive intent early — bypasses the "already open" intercept below.
     const isProactiveIntent = /\b(proactive|proactively|automatic|automatically|auto(?:pilot|create)?|autopilot)\b|do\s+(?:it\s+all|everything)\s*(?:for\s+me|automatically)?|(?:build|create|make|generate|set\s+up|wrap\s+up|put\s+together)\s+(?:the\s+)?(?:whole|entire|full|complete)\s+(?:campaign|project)|(?:build|create|make|finish|complete)\s+(?:the\s+)?(?:campaign|project)\s+for\s+me|build\s+it\s+(?:start\s+to\s+finish|end\s+to\s+end)|handle\s+the\s+whole\s+thing|take\s+it\s+from\s+here|take\s+care\s+of\s+the\s+whole\s+project|run\s+(?:with\s+it|the\s+full\s+project)|you\s+decide\s+everything|pick\s+everything\s+for\s+me|one[- ]click\s+campaign|just\s+make\s+it\s+happen|no\s+input\s+needed|don.?t\s+ask\s+me/i.test(text);
+
+    // Intercept competition/competitor queries — bypass the LLM and call the tool directly
+    const isCompetitionQuery = /concorr[eê]nci|concorrentes?|competitor|competition|como\s+(t[oô]|estou|estamos|est[aá])\s+(em\s+rela[cç][aã]o|no\s+mercado)|mapa\s+de\s+concorr|o\s+que\s+os\s+outros\s+(cobram|est[aã]o\s+cobrando)|preço\s+dos\s+outros|outros\s+dealers?|dealers?\s+prox|how\s+is\s+my\s+competi|show.*competitor|nearby\s+dealer|competitor\s+pric|market\s+comp/i.test(text.trim());
+
+    if (isCompetitionQuery && !attachments.length) {
+      const userMsg: TextMessage = { id: `u-${Date.now()}`, role: "user", type: "text", content: text };
+      // Extract model names if any (Accord, CR-V, Civic, Pilot)
+      const modelMatches = text.match(/\b(Accord|CR-V|Civic|Pilot)\b/gi);
+      const models = modelMatches ? [...new Set(modelMatches.map(m => m.replace(/-/g, "-")))] : Object.keys(COMPETITOR_LEASE_DATA);
+      const autoOffers = computeCompetitiveOffers(models, 10);
+      const now = Date.now();
+      const introText = "Aqui está a análise de concorrência dos dealers Honda próximos a Penske, com ofertas competitivas já preparadas:";
+      setMessages(prev => [...prev,
+        userMsg,
+        { id: `a-${now}`, role: "assistant", type: "text", content: introText } as TextMessage,
+        { id: `comp-${now + 1}`, role: "assistant", type: "competitor_map", applied: true, models } as CompetitorMapMsg,
+        { id: `parsed-${now + 2}`, role: "assistant", type: "parsed_offers",
+          input: { source: "Competitor analysis — Penske Honda market comparison (Jun 2026)", offers: autoOffers } as ParsedOffersInput,
+          applied: false,
+        } as ParsedOffersMsg,
+      ]);
+      return;
+    }
 
     // Intercept "create a project" / "build a project" when one is already open (skip for proactive)
     if (!isProactiveIntent && !attachments.length && ctxRef.current?.projectId &&
@@ -4323,19 +4365,16 @@ export function ProjectAgentPane({ isOpen, onClose, userType, activeUserName }: 
     setMessages(prev => prev.filter(m => m.id !== msgId));
   }, []);
 
-  // ── Competitor map ───────────────────────────────────────────────────────────
-  const handleCompetitorMapGenerate = useCallback((msgId: string, offers: ParsedOfferRow[]) => {
-    setMessages(prev => [
-      ...prev.map(m => m.id === msgId ? { ...m, applied: true } as CompetitorMapMsg : m),
-      {
-        id: `parsed-${Date.now()}`, role: "assistant", type: "parsed_offers",
-        input: {
-          source: "Competitor analysis — Penske Honda market comparison",
-          offers,
-        } as ParsedOffersInput,
-        applied: false,
-      } as ParsedOffersMsg,
-    ]);
+  // ── Competitor map — regenerate with new margin ──────────────────────────────
+  const handleCompetitorMapGenerate = useCallback((_msgId: string, offers: ParsedOfferRow[]) => {
+    setMessages(prev => [...prev, {
+      id: `parsed-${Date.now()}`, role: "assistant", type: "parsed_offers",
+      input: {
+        source: "Competitor analysis — Penske Honda market comparison (updated margin)",
+        offers,
+      } as ParsedOffersInput,
+      applied: false,
+    } as ParsedOffersMsg]);
   }, []);
 
   // ── Brand card ──────────────────────────────────────────────────────────────
@@ -5199,9 +5238,8 @@ function MessageBubble({
   if (message.type === "competitor_map") {
     return (
       <CompetitorMapCard
-        applied={(message as CompetitorMapMsg).applied}
         initialModels={(message as CompetitorMapMsg).models}
-        onGenerate={(offers, selectedModels) => onCompetitorMapGenerate?.(offers, selectedModels)}
+        onRegenerate={(offers, selectedModels) => onCompetitorMapGenerate?.(offers, selectedModels)}
       />
     );
   }

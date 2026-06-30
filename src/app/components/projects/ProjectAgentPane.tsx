@@ -3565,25 +3565,10 @@ export function ProjectAgentPane({ isOpen, onClose, userType, activeUserName }: 
     } else if (toolName === "analyze_competition") {
       const rawInput = toolInput as Record<string, unknown>;
       const models = Array.isArray(rawInput.models) ? (rawInput.models as string[]) : Object.keys(COMPETITOR_LEASE_DATA);
-      const autoOffers = computeCompetitiveOffers(models, 10);
       const now = Date.now();
-      const loadingId = `loading-${now}`;
-      const offersMsg: ParsedOffersMsg = {
-        id: `parsed-${now + 1}`, role: "assistant", type: "parsed_offers",
-        input: { source: "Competitor analysis — Honda of Anywhere market comparison (Jun 2026)", offers: autoOffers } as ParsedOffersInput,
-        applied: false,
-      };
       setMessages(prev => [...prev,
         { id: `comp-${now}`, role: "assistant", type: "competitor_map", applied: true, models, analysisMode: "optimal" } as CompetitorMapMsg,
       ]);
-      setTimeout(() => {
-        setMessages(prev => [...prev,
-          { id: loadingId, role: "assistant", type: "text", content: "Calculating competitive offers based on market analysis..." } as TextMessage,
-        ]);
-      }, 900);
-      setTimeout(() => {
-        setMessages(prev => prev.map(m => m.id === loadingId ? offersMsg : m));
-      }, 2400);
     } else if (toolName === "propose_parsed_offers") {
       // Normalize flat confidence_* fields back into a field_confidence Record
       const rawInput = toolInput as Record<string, unknown>;
@@ -3965,33 +3950,13 @@ export function ProjectAgentPane({ isOpen, onClose, userType, activeUserName }: 
       const userMsg: TextMessage = { id: `u-${Date.now()}`, role: "user", type: "text", content: text };
       const modelMatches = text.match(/\b(Accord|CR-V|Civic|Pilot)\b/gi);
       const models = modelMatches ? [...new Set(modelMatches.map(m => m.replace(/-/g, "-")))] : Object.keys(COMPETITOR_LEASE_DATA);
-      const autoOffers = computeCompetitiveOffers(models, 10);
       const now = Date.now();
-      const loadingId = `loading-${now}`;
-      const offersMsg: ParsedOffersMsg = {
-        id: `parsed-${now + 2}`, role: "assistant", type: "parsed_offers",
-        input: { source: "Competitor analysis — Honda of Anywhere market comparison (Jun 2026)", offers: autoOffers } as ParsedOffersInput,
-        applied: false,
-      };
 
-      // Step 1: show user message + intro text + map card
       setMessages(prev => [...prev,
         userMsg,
         { id: `a-${now}`, role: "assistant", type: "text", content: "Here's the competitor map for Honda dealers near Honda of Anywhere:" } as TextMessage,
         { id: `comp-${now + 1}`, role: "assistant", type: "competitor_map", applied: true, models, analysisMode: "optimal" } as CompetitorMapMsg,
       ]);
-
-      // Step 2: loading cue for offers
-      setTimeout(() => {
-        setMessages(prev => [...prev,
-          { id: loadingId, role: "assistant", type: "text", content: "Calculating competitive offers based on market analysis..." } as TextMessage,
-        ]);
-      }, 900);
-
-      // Step 3: replace loading cue with actual offers
-      setTimeout(() => {
-        setMessages(prev => prev.map(m => m.id === loadingId ? offersMsg : m));
-      }, 2400);
 
       return;
     }

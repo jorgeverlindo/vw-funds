@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect, useCallback, useMemo, forwardRef, type ButtonHTMLAttributes } from "react";
+import { useState, useRef, useEffect, useCallback, useMemo, forwardRef, Fragment, type ButtonHTMLAttributes } from "react";
 import { useUsabilityTesting } from "../../contexts/UsabilityTestingContext";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "motion/react";
@@ -1320,7 +1320,7 @@ function CompetitorMapCard({
               const modelDataRows = tableRows.filter(r => r.model === model);
               const colSpan = COMPETITOR_DEALERS.length + 1 + (analysisMode !== "optimal" ? 1 : 0);
               return (
-                <React.Fragment key={model}>
+                <Fragment key={model}>
                   {/* Clickable model group header row */}
                   <tr className="cursor-pointer select-none border-b border-[#f0eff5]"
                     style={{ background: isActive ? modelColor + "10" : "#f9f8fc" }}
@@ -1391,7 +1391,7 @@ function CompetitorMapCard({
                       </tr>
                     );
                   })}
-                </React.Fragment>
+                </Fragment>
               );
             })}
           </tbody>

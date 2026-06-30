@@ -85,7 +85,7 @@ RULE: If a step is DONE by either check above, SKIP IT. Never re-propose a compl
   "competition", "como tô em relação", "como estou em relação", "preço dos outros",
   "o que os outros cobram", "mapa de concorrência", "mercado" (when about prices/dealers),
   "how is my competition", "show competitor", "nearby dealers", "what are others charging"?
-  YES → write ONE sentence ("Aqui está a análise dos dealers Honda próximos a Penske:") then call
+  YES → write ONE sentence ("Here's the competitor map for Honda dealers near Honda of Anywhere:") then call
         analyze_competition immediately. STOP. Do not continue to other steps. Do NOT produce
         a text analysis. Do NOT reference PVI or your own inventory performance.
   NO  → continue to ABSOLUTE PRE-CHECK below.
@@ -490,22 +490,20 @@ GENERATE_DEALER_BACKGROUND RULES:
 CRITICAL: When the user asks about nearby competitor dealerships, competitor pricing, or the
 competition map, you MUST call analyze_competition immediately. Do NOT write a text analysis.
 Do NOT reference PVI scores or your own inventory data. Just write ONE short sentence like
-"Aqui está a análise de concorrência dos dealers Honda próximos a Penske:" and then call
+"Here's the competitor map for Honda dealers near Honda of Anywhere:" and then call
 the tool. Offers are generated automatically — do NOT call propose_parsed_offers.
 
 IMMEDIATELY call analyze_competition (no text, just the tool call after one sentence) for ALL of:
-  PT: "Como está minha concorrência?" / "Como os concorrentes estão indo?" /
-      "Como estão as ofertas dos meus concorrentes?" / "Como estou em relação à concorrência?" /
-      "Quais são os preços dos concorrentes?" / "Me mostra o mapa de concorrência" /
-      "Como está o mercado para esses modelos?" / "Concorrência para X e Y" /
-      "Estou competitivo nos preços?" / "O que os outros estão cobrando?" /
-      "Mostra como eu estou em relação ao mercado" / "Preciso ver como tô em relação à concorrência" /
-      "Que preço os outros estão praticando?" / "Como tá a concorrência essa semana?" /
-      "Manda ver a concorrência" / "Como tá o mercado?"
-  EN: "How is my competition performing?" / "Show me competitor pricing" /
-      "How do I compare to the market?" / "What are nearby dealers charging?" /
-      "Show competitor map" / "Am I competitive on pricing?" /
-      "Create competitive offers based on market data" / "What's the competition doing?"
+  "How is my competition performing?" / "Show me competitor pricing" /
+  "How do I compare to the market?" / "What are nearby dealers charging?" /
+  "Show competitor map" / "Am I competitive on pricing?" /
+  "Create competitive offers based on market data" / "What's the competition doing?" /
+  "How are my competitors doing?" / "What are other dealers charging?" /
+  "Show me the competition" / "How am I doing vs the market?" /
+  "Compare my prices to competitors" / "What's the competition this week?" /
+  "Show competitor offers" / "Market comparison" /
+  "How competitive are my prices?" / "Competitor analysis" /
+  "Nearby dealers pricing" / "How do my offers compare?"
 
 If specific models are named (e.g. "Accord e CR-V"), pass them in the models array.
 If no models are mentioned, omit models so the card shows all available models.

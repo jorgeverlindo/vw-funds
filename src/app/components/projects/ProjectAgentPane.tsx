@@ -3473,7 +3473,7 @@ export function ProjectAgentPane({ isOpen, onClose, userType, activeUserName }: 
       ]);
       setTimeout(() => {
         setMessages(prev => [...prev,
-          { id: loadingId, role: "assistant", type: "text", content: "Calculando ofertas competitivas com base na análise do mercado..." } as TextMessage,
+          { id: loadingId, role: "assistant", type: "text", content: "Calculating competitive offers based on market analysis..." } as TextMessage,
         ]);
       }, 900);
       setTimeout(() => {
@@ -3734,14 +3734,14 @@ export function ProjectAgentPane({ isOpen, onClose, userType, activeUserName }: 
       // Step 1: show user message + intro text + map card
       setMessages(prev => [...prev,
         userMsg,
-        { id: `a-${now}`, role: "assistant", type: "text", content: "Aqui está o mapa de concorrência dos dealers Honda próximos a Honda of Anywhere:" } as TextMessage,
+        { id: `a-${now}`, role: "assistant", type: "text", content: "Here's the competitor map for Honda dealers near Honda of Anywhere:" } as TextMessage,
         { id: `comp-${now + 1}`, role: "assistant", type: "competitor_map", applied: true, models } as CompetitorMapMsg,
       ]);
 
       // Step 2: loading cue for offers
       setTimeout(() => {
         setMessages(prev => [...prev,
-          { id: loadingId, role: "assistant", type: "text", content: "Calculando ofertas competitivas com base na análise do mercado..." } as TextMessage,
+          { id: loadingId, role: "assistant", type: "text", content: "Calculating competitive offers based on market analysis..." } as TextMessage,
         ]);
       }, 900);
 

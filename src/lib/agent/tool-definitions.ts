@@ -542,7 +542,7 @@ export const agentTools: Anthropic.Tool[] = [
     description:
       "Shows an interactive competitor map and pricing comparison for Honda models in the Indianapolis area. " +
       "Call when the user asks about competition, competitor pricing, market comparison, or wants to create competitive offers. " +
-      "Examples: 'Como está minha concorrência?', 'show competitor map', 'compare my prices to the market', 'create competitive offers'.",
+      "Examples: 'How is my competition?', 'show competitor map', 'compare my prices to the market', 'create competitive offers'.",
     input_schema: {
       type: "object" as const,
       properties: {

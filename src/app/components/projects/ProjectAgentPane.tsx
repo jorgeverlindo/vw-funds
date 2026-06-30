@@ -4936,9 +4936,19 @@ export function ProjectAgentPane({ isOpen, onClose, userType, activeUserName }: 
                         const setupPlatforms = messages
                           .filter((m): m is SetupMsg => m.type === "setup" && m.applied)
                           .at(-1)?.input.platforms ?? [];
-                        return messages.map(msg => (
+                        return (
+                        <AnimatePresence initial={false}>
+                        {messages.map(msg => (
+                        <motion.div
+                          key={msg.id}
+                          initial={{ opacity: 0, y: 8 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, y: -4 }}
+                          transition={{ duration: 0.25, ease: [0.25, 0.1, 0.25, 1] }}
+                          layout="position"
+                        >
                         <MessageBubble
-                          key={msg.id} message={msg} context={filteredContext}
+                          message={msg} context={filteredContext}
                           projectName={projectContext?.projectName ?? "this project"}
                           existingProjectNames={knownProjectNames}
                           confirmedBackgroundIds={confirmedBgIds}
@@ -5045,7 +5055,10 @@ export function ProjectAgentPane({ isOpen, onClose, userType, activeUserName }: 
                             handleCompetitorMapGenerate(msg.id, offers)
                           }
                         />
-                      ));
+                        </motion.div>
+                      ))}
+                      </AnimatePresence>
+                        );
                       })()}
 
                       {/* Streaming — suppressed when bgProcessing to avoid duplicate indicator */}

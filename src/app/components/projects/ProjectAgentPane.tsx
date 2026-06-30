@@ -1044,18 +1044,22 @@ function MapSetup() {
   return null;
 }
 
-function dealerPin(color: string, isHome: boolean) {
+function dealerPin(color: string, isHome: boolean, name: string) {
   const w = isHome ? 26 : 21, h = isHome ? 35 : 29;
   const r = isHome ? 5.5 : 4.5;
+  const labelFontSize = isHome ? 10 : 9;
   return L.divIcon({
     className: "av3-pin",
-    html: `<svg width="${w}" height="${h}" viewBox="0 0 30 42" xmlns="http://www.w3.org/2000/svg">
-      <path d="M15 0C6.716 0 0 6.716 0 15c0 10.5 15 27 15 27s15-16.5 15-27C30 6.716 23.284 0 15 0z" fill="${color}"/>
-      <circle cx="15" cy="15" r="${r}" fill="#fff"/>
-    </svg>`,
-    iconSize:    [w, h],
+    html: `<div style="display:flex;flex-direction:column;align-items:center;">
+      <svg width="${w}" height="${h}" viewBox="0 0 30 42" xmlns="http://www.w3.org/2000/svg">
+        <path d="M15 0C6.716 0 0 6.716 0 15c0 10.5 15 27 15 27s15-16.5 15-27C30 6.716 23.284 0 15 0z" fill="${color}"/>
+        <circle cx="15" cy="15" r="${r}" fill="#fff"/>
+      </svg>
+      <div style="background:white;border-radius:3px;padding:2px 5px;font-size:${labelFontSize}px;font-weight:700;color:${color};white-space:nowrap;box-shadow:0 1px 4px rgba(0,0,0,0.22);margin-top:2px;border:1.5px solid ${color}55;line-height:1.35;font-family:system-ui,sans-serif;">${name}</div>
+    </div>`,
+    iconSize:    [w, h + 20],
     iconAnchor:  [w / 2, h],
-    popupAnchor: [0, -(h - 2)],
+    popupAnchor: [0, -(h + 4)],
   });
 }
 
@@ -1106,18 +1110,19 @@ function CompetitorMapCard({
       ? initialModels.filter(m => availableModels.includes(m))
       : availableModels
   );
-  const [margin, setMargin] = useState(10);
-  const [marginChanged, setMarginChanged] = useState(false);
+  const [rowMargins, setRowMargins] = useState<Record<string, number>>({});
 
   const toggleModel = (m: string) =>
     setSelectedModels(prev =>
       prev.includes(m) ? (prev.length > 1 ? prev.filter(x => x !== m) : prev) : [...prev, m]
     );
 
-  const handleMargin = (delta: number) => {
-    setMargin(m => Math.max(0, m + delta));
-    setMarginChanged(true);
-  };
+  const getRowMargin = (model: string, trim: string) => rowMargins[`${model}|${trim}`] ?? 10;
+  const adjustRowMargin = (model: string, trim: string, delta: number) =>
+    setRowMargins(prev => {
+      const key = `${model}|${trim}`;
+      return { ...prev, [key]: Math.max(0, (prev[key] ?? 10) + delta) };
+    });
 
   // "real" mode: build lookup from uploaded offers { "Model|trim" -> price }
   const homePriceLookup = useMemo((): Record<string, number> => {
@@ -1133,7 +1138,7 @@ function CompetitorMapCard({
     return map;
   }, [analysisMode, homeOffers]);
 
-  // "optimal" (no offerRows): compute prices that beat all competitors
+  // "optimal" (no offerRows): compute prices that beat all competitors, per-row margin
   const optimalPriceLookup = useMemo((): Record<string, number> => {
     if (analysisMode !== "optimal" || propOfferRows) return {};
     const map: Record<string, number> = {};
@@ -1143,12 +1148,13 @@ function CompetitorMapCard({
           .filter(([k]) => k !== "penske")
           .map(([, v]) => v as number);
         if (compPrices.length) {
-          map[`${model}|${trim.toLowerCase()}`] = Math.max(Math.min(...compPrices) - margin, 1);
+          const m = rowMargins[`${model}|${trim}`] ?? 10;
+          map[`${model}|${trim.toLowerCase()}`] = Math.max(Math.min(...compPrices) - m, 1);
         }
       }
     }
     return map;
-  }, [analysisMode, propOfferRows, margin]);
+  }, [analysisMode, propOfferRows, rowMargins]);
 
   const getHomePrice = (model: string, trim: string, rawPrice: number | undefined): number | undefined => {
     // "real" + propOfferRows: home price is already embedded as prices["penske"] in tableRows
@@ -1190,32 +1196,15 @@ function CompetitorMapCard({
 
   return (
     <div className="rounded-[16px] border border-[#ece9f5] bg-white overflow-hidden">
-      {/* Header */}
-      <div className="px-[18px] pt-[14px] pb-[12px] border-b border-[#f0eff5]">
-        <p className="text-[11px] font-semibold tracking-[0.07em] text-[#8f8c9c] uppercase mb-[10px]">
+      {/* Minimal header — no chips */}
+      <div className="px-[18px] pt-[12px] pb-[10px] border-b border-[#f0eff5]">
+        <p className="text-[11px] font-semibold tracking-[0.07em] text-[#8f8c9c] uppercase">
           {analysisMode === "optimal"
             ? "Competitive Position · Honda of Anywhere — Market Leader"
             : analysisMode === "real"
             ? "Offer Review · Honda of Anywhere vs Market"
             : "Competitor Analysis · Honda of Anywhere, Indianapolis"}
         </p>
-        <div className="flex flex-wrap gap-[6px]">
-          {availableModels.map(m => {
-            const active = selectedModels.includes(m);
-            const c = COMP_MODEL_COLORS[m];
-            return (
-              <button key={m} onClick={() => toggleModel(m)}
-                className="px-[10px] py-[4px] rounded-full text-[12px] font-medium transition-all"
-                style={{
-                  background: active ? c + "22" : "#f5f4f9",
-                  color:      active ? c       : "#9c99a9",
-                  border:     `1.5px solid ${active ? c + "77" : "transparent"}`,
-                }}>
-                {m}
-              </button>
-            );
-          })}
-        </div>
       </div>
 
       {/* Leaflet map — full width, Google Maps style */}
@@ -1223,7 +1212,7 @@ function CompetitorMapCard({
         <MapContainer center={center} zoom={11} style={{ height: "100%", width: "100%" }}
           zoomControl={false} scrollWheelZoom={true} zoomSnap={0.5}>
           <TileLayer
-            url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
+            url="https://{s}.basemaps.cartocdn.com/rastertiles/light_all/{z}/{x}/{y}{r}.png"
             subdomains="abcd"
             maxZoom={20}
             detectRetina={true}
@@ -1233,7 +1222,7 @@ function CompetitorMapCard({
           {COMPETITOR_DEALERS.map(d => {
             const dealerRows = tableRows.filter(r => r.prices[d.id as CompDealerId] !== undefined);
             return (
-              <Marker key={d.id} position={[d.lat, d.lng]} icon={dealerPin(d.color, d.home)}>
+              <Marker key={d.id} position={[d.lat, d.lng]} icon={dealerPin(d.color, d.home, d.shortName)}>
                 <Popup minWidth={220}>
                   <div style={{ padding: "10px 14px 8px" }}>
                     {/* Header */}
@@ -1309,7 +1298,7 @@ function CompetitorMapCard({
         <table className="w-full border-collapse text-[12px]" style={{ minWidth: 360 }}>
           <thead>
             <tr className="border-b border-[#f0eff5]">
-              <th className="text-left px-[14px] py-[9px] text-[#8f8c9c] font-semibold whitespace-nowrap">Model / Trim</th>
+              <th className="text-left px-[14px] py-[9px] text-[#8f8c9c] font-semibold whitespace-nowrap">Trim</th>
               {COMPETITOR_DEALERS.map(d => (
                 <th key={d.id} className="text-right px-[12px] py-[9px] font-semibold whitespace-nowrap"
                   style={{ color: d.color }}>
@@ -1325,59 +1314,84 @@ function CompetitorMapCard({
             </tr>
           </thead>
           <tbody>
-            {tableRows.map(({ model, trim, prices }) => {
-              const rawHomePrice = prices["penske" as CompDealerId];
-              const effectiveHomePrice = getHomePrice(model, trim, rawHomePrice);
-              const allPrices = COMPETITOR_DEALERS.map(d =>
-                d.home ? effectiveHomePrice : prices[d.id as CompDealerId]
-              );
-              const compPrices = Object.entries(prices)
-                .filter(([k]) => k !== "penske")
-                .map(([, p]) => p as number);
-              const marketMin = compPrices.length ? Math.min(...compPrices) : null;
-              const proposed = marketMin !== null ? Math.max(marketMin - margin, 1) : null;
-              const isLosing = effectiveHomePrice !== undefined && marketMin !== null && effectiveHomePrice > marketMin;
+            {availableModels.map(model => {
+              const isActive = selectedModels.includes(model);
+              const modelColor = COMP_MODEL_COLORS[model] ?? COMP_TOKENS.home;
+              const modelDataRows = tableRows.filter(r => r.model === model);
+              const colSpan = COMPETITOR_DEALERS.length + 1 + (analysisMode !== "optimal" ? 1 : 0);
               return (
-                <tr key={`${model}-${trim}`} className="border-b border-[#f0eff5] last:border-0 hover:bg-[#fafaf9]">
-                  <td className="px-[14px] py-[8px] whitespace-nowrap">
-                    <span className="text-[10px] font-semibold px-[6px] py-[2px] rounded-full mr-[5px]"
-                      style={{ background: (COMP_MODEL_COLORS[model] ?? COMP_TOKENS.home) + "22", color: COMP_MODEL_COLORS[model] ?? COMP_TOKENS.home }}>
-                      {model}
-                    </span>
-                    <span className="text-[#1f1d25]">{trim}</span>
-                  </td>
-                  {COMPETITOR_DEALERS.map(d => {
-                    const price = d.home ? effectiveHomePrice : prices[d.id as CompDealerId];
-                    const styleFn = cellStyle(price, allPrices);
-                    const forceGreen = d.home && analysisMode === "optimal";
-                    const forceRed   = d.home && analysisMode === "real" && isLosing;
-                    const forcePositive = d.home && analysisMode === "real" && !isLosing && effectiveHomePrice !== undefined;
-                    const finalStyle = forceGreen    ? { background: COMP_TOKENS.positive + "28", color: COMP_TOKENS.positive }
-                                     : forceRed      ? { background: COMP_TOKENS.negative + "28", color: COMP_TOKENS.negative }
-                                     : forcePositive ? { background: COMP_TOKENS.positive + "28", color: COMP_TOKENS.positive }
-                                     : styleFn;
+                <React.Fragment key={model}>
+                  {/* Clickable model group header row */}
+                  <tr className="cursor-pointer select-none border-b border-[#f0eff5]"
+                    style={{ background: isActive ? modelColor + "10" : "#f9f8fc" }}
+                    onClick={() => toggleModel(model)}>
+                    <td colSpan={colSpan} className="px-[14px] py-[6px]">
+                      <div className="flex items-center gap-[5px]">
+                        <span className="text-[11px] font-bold" style={{ color: modelColor }}>{model}</span>
+                        <span className="text-[9px]" style={{ color: modelColor + "99" }}>{isActive ? "▾" : "▸"}</span>
+                      </div>
+                    </td>
+                  </tr>
+                  {/* Data rows — only when model is active */}
+                  {isActive && modelDataRows.map(({ trim, prices }) => {
+                    const rawHomePrice = prices["penske" as CompDealerId];
+                    const effectiveHomePrice = getHomePrice(model, trim, rawHomePrice);
+                    const allPrices = COMPETITOR_DEALERS.map(d =>
+                      d.home ? effectiveHomePrice : prices[d.id as CompDealerId]
+                    );
+                    const compPrices = Object.entries(prices)
+                      .filter(([k]) => k !== "penske")
+                      .map(([, p]) => p as number);
+                    const marketMin = compPrices.length ? Math.min(...compPrices) : null;
+                    const rowMargin = getRowMargin(model, trim);
+                    const proposed = marketMin !== null ? Math.max(marketMin - rowMargin, 1) : null;
+                    const isLosing = effectiveHomePrice !== undefined && marketMin !== null && effectiveHomePrice > marketMin;
+                    const proposedActive = analysisMode === "real" ? isLosing : (proposed !== null && effectiveHomePrice !== undefined && proposed < (effectiveHomePrice ?? Infinity));
                     return (
-                      <td key={d.id} className="px-[12px] py-[8px] text-right font-medium whitespace-nowrap"
-                        style={finalStyle}>
-                        {price !== undefined ? `$${price}` : "—"}
-                      </td>
+                      <tr key={`${model}-${trim}`} className="border-b border-[#f0eff5] last:border-0 hover:bg-[#fafaf9]">
+                        <td className="py-[7px] whitespace-nowrap" style={{ paddingLeft: 22, paddingRight: 14 }}>
+                          <span className="text-[12px] text-[#1f1d25]">{trim}</span>
+                        </td>
+                        {COMPETITOR_DEALERS.map(d => {
+                          const price = d.home ? effectiveHomePrice : prices[d.id as CompDealerId];
+                          const styleFn = cellStyle(price, allPrices);
+                          const forceGreen    = d.home && analysisMode === "optimal";
+                          const forceRed      = d.home && analysisMode === "real" && isLosing;
+                          const forcePositive = d.home && analysisMode === "real" && !isLosing && effectiveHomePrice !== undefined;
+                          const finalStyle = forceGreen    ? { background: COMP_TOKENS.positive + "28", color: COMP_TOKENS.positive }
+                                           : forceRed      ? { background: COMP_TOKENS.negative + "28", color: COMP_TOKENS.negative }
+                                           : forcePositive ? { background: COMP_TOKENS.positive + "28", color: COMP_TOKENS.positive }
+                                           : styleFn;
+                          return (
+                            <td key={d.id} className="px-[12px] py-[7px] text-right font-medium whitespace-nowrap" style={finalStyle}>
+                              {price !== undefined ? `$${price}` : "—"}
+                            </td>
+                          );
+                        })}
+                        {analysisMode !== "optimal" && (
+                          <td className="whitespace-nowrap" style={{ borderLeft: "2px solid #ece9f5", padding: "4px 6px" }}>
+                            {(analysisMode === "real" ? isLosing && proposed !== null : proposed !== null) ? (
+                              <div className="flex items-center justify-end gap-[1px]">
+                                <button
+                                  onClick={e => { e.stopPropagation(); adjustRowMargin(model, trim, -5); }}
+                                  className="w-[18px] h-[20px] flex items-center justify-center rounded hover:bg-[#f0eff5] text-[#686576] text-[12px] transition-colors">−</button>
+                                <span className="min-w-[34px] text-center text-[11px] font-bold"
+                                  style={{ color: proposedActive ? COMP_TOKENS.home : "#ccc8d6" }}>
+                                  {`$${proposed}`}
+                                </span>
+                                <button
+                                  onClick={e => { e.stopPropagation(); adjustRowMargin(model, trim, 5); }}
+                                  className="w-[18px] h-[20px] flex items-center justify-center rounded hover:bg-[#f0eff5] text-[#686576] text-[12px] transition-colors">+</button>
+                              </div>
+                            ) : (
+                              <span className="block text-right pr-[6px] text-[11px] font-bold" style={{ color: "#ccc8d6" }}>✓</span>
+                            )}
+                          </td>
+                        )}
+                      </tr>
                     );
                   })}
-                  {analysisMode !== "optimal" && (
-                    <td className="px-[12px] py-[8px] text-right font-bold whitespace-nowrap"
-                      style={{
-                        borderLeft: "2px solid #ece9f5",
-                        color: (analysisMode === "real" ? isLosing : proposed !== null && effectiveHomePrice !== undefined && proposed < (effectiveHomePrice ?? Infinity))
-                          ? COMP_TOKENS.home : "#ccc8d6",
-                        background: (analysisMode === "real" ? isLosing : proposed !== null && effectiveHomePrice !== undefined && proposed < (effectiveHomePrice ?? Infinity))
-                          ? COMP_TOKENS.home + "18" : "transparent",
-                      }}>
-                      {analysisMode === "real"
-                        ? (isLosing && proposed !== null ? `$${proposed}` : "✓")
-                        : (proposed !== null ? `$${proposed}` : "—")}
-                    </td>
-                  )}
-                </tr>
+                </React.Fragment>
               );
             })}
           </tbody>
@@ -1391,25 +1405,33 @@ function CompetitorMapCard({
           <span className="text-[12px] text-[#686576]">Your offers are priced below all nearby competitors.</span>
         </div>
       ) : (
-      <div className="px-[18px] py-[11px] border-t border-[#f0eff5] flex items-center justify-between gap-[12px]">
-        <div className="flex items-center gap-[8px] text-[12px] text-[#686576]">
-          <span>{analysisMode === "real" ? "Correction margin:" : "Margin below market:"}</span>
-          <div className="flex items-center border border-[#cac9cf] rounded-[7px] overflow-hidden h-[28px]">
-            <button onClick={() => handleMargin(-5)}
-              className="w-[26px] h-full flex items-center justify-center hover:bg-gray-100 text-[#686576] transition-colors text-[14px]">−</button>
-            <span className="w-[36px] text-center text-[12px] font-medium text-[#1f1d25]">${margin}</span>
-            <button onClick={() => handleMargin(5)}
-              className="w-[26px] h-full flex items-center justify-center hover:bg-gray-100 text-[#686576] transition-colors text-[14px]">+</button>
-          </div>
-        </div>
-        {(marginChanged || analysisMode === "real") && (
-          <button onClick={() => { setMarginChanged(false); onRegenerate(computeCompetitiveOffers(selectedModels, margin), selectedModels); }}
+        <div className="px-[18px] py-[11px] border-t border-[#f0eff5] flex items-center justify-end">
+          <button
+            onClick={() => {
+              const offers = propOfferRows
+                ? tableRows.flatMap(r => {
+                    const compPrices = Object.entries(r.prices).filter(([k]) => k !== "penske").map(([, p]) => p as number);
+                    const mm = compPrices.length ? Math.min(...compPrices) : null;
+                    if (!mm || (r.prices["penske" as CompDealerId] ?? Infinity) <= mm) return [];
+                    const rm = getRowMargin(r.model, r.trim);
+                    return [{ id: `corr-${r.model}-${r.trim.replace(/\s+/g, "-")}`, year: "2026", make: "Honda", model: r.model, trim: r.trim, offer_type: "Lease", monthly_payment: String(Math.max(mm - rm, 1)), term: "36", due_at_signing: "0", field_confidence: { monthly_payment: "high", term: "high" } } as ParsedOfferRow];
+                  })
+                : selectedModels.flatMap(m =>
+                    Object.entries(COMPETITOR_LEASE_DATA[m] ?? {}).flatMap(([trim, prices]) => {
+                      const cp = Object.entries(prices).filter(([k]) => k !== "penske").map(([, p]) => p as number);
+                      if (!cp.length) return [];
+                      const mm = Math.min(...cp);
+                      const rm = getRowMargin(m, trim);
+                      return [{ id: `comp-${m}-${trim.replace(/\s+/g, "-")}`, year: "2026", make: "Honda", model: m, trim, offer_type: "Lease", monthly_payment: String(Math.max(mm - rm, 1)), term: "36", due_at_signing: "0", notes: `Market low $${mm}/mo − $${rm} margin`, field_confidence: { monthly_payment: "high", term: "high", due_at_signing: "high" } } as ParsedOfferRow];
+                    })
+                  );
+              onRegenerate(offers, selectedModels);
+            }}
             className="px-[16px] py-[7px] rounded-full text-[12px] font-semibold text-white hover:opacity-90 transition-opacity whitespace-nowrap"
             style={{ background: COMP_TOKENS.home }}>
             {analysisMode === "real" ? "Apply Corrections" : "Regenerate Offers"}
           </button>
-        )}
-      </div>
+        </div>
       )}
     </div>
   );
@@ -2940,11 +2962,11 @@ function ParsedOffersCard({
           <FileText size={14} className="text-[var(--brand-accent)]" />
         </div>
         <div className="flex-1 min-w-0">
-          <p className="text-[12px] text-[var(--ink)] truncate" style={{ fontWeight: 500 }}>
-            {input.source}
-          </p>
-          <p className="text-[11px] text-[var(--ink-secondary)]">
+          <p className="text-[12px] text-[var(--ink)] truncate" style={{ fontWeight: 600 }}>
             {input.offers.length} offer{input.offers.length === 1 ? "" : "s"} extracted
+          </p>
+          <p className="text-[11px] text-[var(--ink-secondary)] truncate">
+            {input.source}
           </p>
         </div>
         <button onClick={onDismiss} className="shrink-0 text-[var(--ink-tertiary)] hover:text-[var(--ink-secondary)] transition-colors">
@@ -3654,7 +3676,7 @@ export function ProjectAgentPane({ isOpen, onClose, userType, activeUserName }: 
                 {
                   id: `parsed-${now2 + 2}`, role: "assistant", type: "parsed_offers", applied: false,
                   input: {
-                    source: "Optimized offers — priced competitively vs nearby Honda dealers",
+                    source: "Honda of Anywhere · optimized vs market",
                     offers: correctedOffers,
                   },
                 } as ParsedOffersMsg,
@@ -4753,7 +4775,7 @@ export function ProjectAgentPane({ isOpen, onClose, userType, activeUserName }: 
     setMessages(prev => [...prev, {
       id: `parsed-${Date.now()}`, role: "assistant", type: "parsed_offers",
       input: {
-        source: "Competitor analysis — Honda of Anywhere market comparison (updated margin)",
+        source: "Honda of Anywhere · Jun 2026",
         offers,
       } as ParsedOffersInput,
       applied: false,

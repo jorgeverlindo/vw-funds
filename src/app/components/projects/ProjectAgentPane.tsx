@@ -288,6 +288,7 @@ interface ParsedOffersInput {
   extraction_notes?: string;
 }
 
+interface OfferCompRow { model: string; trim: string; homePrice: number; compPrices: Record<string, number> }
 interface CompetitorMapMsg {
   id: string;
   role: "assistant";
@@ -296,6 +297,7 @@ interface CompetitorMapMsg {
   models: string[];
   analysisMode?: "standard" | "optimal" | "real";
   homeOffers?: ParsedOfferRow[];
+  offerRows?: OfferCompRow[];
 }
 
 // ─── Custom header icons (from exported SVGs — pixel-perfect, color via currentColor) ────
@@ -1084,18 +1086,25 @@ function computeCompetitiveOffers(models: string[], margin: number): ParsedOffer
 }
 
 function CompetitorMapCard({
-  initialModels, onRegenerate, analysisMode = "standard", homeOffers,
+  initialModels, onRegenerate, analysisMode = "standard", homeOffers, offerRows: propOfferRows,
 }: {
   initialModels: string[];
   onRegenerate: (offers: ParsedOfferRow[], selectedModels: string[]) => void;
   analysisMode?: "standard" | "optimal" | "real";
   homeOffers?: ParsedOfferRow[];
+  offerRows?: OfferCompRow[];
 }) {
   useEffect(() => { injectLeafletCSS(); }, []);
 
   const ALL_MODELS = Object.keys(COMPETITOR_LEASE_DATA);
+  // When offerRows are provided, only show those models; otherwise show all
+  const availableModels = propOfferRows
+    ? [...new Set(propOfferRows.map(r => r.model))]
+    : ALL_MODELS;
   const [selectedModels, setSelectedModels] = useState<string[]>(
-    () => initialModels.length ? initialModels.filter(m => ALL_MODELS.includes(m)) : ALL_MODELS
+    () => initialModels.length
+      ? initialModels.filter(m => availableModels.includes(m))
+      : availableModels
   );
   const [margin, setMargin] = useState(10);
   const [marginChanged, setMarginChanged] = useState(false);
@@ -1124,9 +1133,9 @@ function CompetitorMapCard({
     return map;
   }, [analysisMode, homeOffers]);
 
-  // "optimal" mode: compute prices that beat all competitors by a margin
+  // "optimal" (no offerRows): compute prices that beat all competitors
   const optimalPriceLookup = useMemo((): Record<string, number> => {
-    if (analysisMode !== "optimal") return {};
+    if (analysisMode !== "optimal" || propOfferRows) return {};
     const map: Record<string, number> = {};
     for (const model of ALL_MODELS) {
       for (const [trim, prices] of Object.entries(COMPETITOR_LEASE_DATA[model] ?? {})) {
@@ -1139,17 +1148,26 @@ function CompetitorMapCard({
       }
     }
     return map;
-  }, [analysisMode]);
+  }, [analysisMode, propOfferRows]);
 
   const getHomePrice = (model: string, trim: string, rawPrice: number | undefined): number | undefined => {
     if (analysisMode === "real")    return homePriceLookup[`${model}|${trim.toLowerCase().trim()}`];
-    if (analysisMode === "optimal") return optimalPriceLookup[`${model}|${trim.toLowerCase()}`] ?? rawPrice;
+    if (analysisMode === "optimal" && !propOfferRows) return optimalPriceLookup[`${model}|${trim.toLowerCase()}`] ?? rawPrice;
     return rawPrice;
   };
 
-  const tableRows = selectedModels.flatMap(model =>
-    Object.entries(COMPETITOR_LEASE_DATA[model] ?? {}).map(([trim, prices]) => ({ model, trim, prices }))
-  );
+  // When offerRows are provided, convert them into the standard prices map format
+  const tableRows = propOfferRows
+    ? propOfferRows
+        .filter(r => selectedModels.includes(r.model))
+        .map(r => ({
+          model: r.model,
+          trim: r.trim,
+          prices: { penske: r.homePrice, ...r.compPrices } as Record<string, number>,
+        }))
+    : selectedModels.flatMap(model =>
+        Object.entries(COMPETITOR_LEASE_DATA[model] ?? {}).map(([trim, prices]) => ({ model, trim, prices }))
+      );
 
   function cellStyle(price: number | undefined, all: (number | undefined)[]): { background: string; color: string } {
     if (!price) return { background: "transparent", color: "#ccc8d6" };
@@ -1180,7 +1198,7 @@ function CompetitorMapCard({
             : "Competitor Analysis · Honda of Anywhere, Indianapolis"}
         </p>
         <div className="flex flex-wrap gap-[6px]">
-          {ALL_MODELS.map(m => {
+          {availableModels.map(m => {
             const active = selectedModels.includes(m);
             const c = COMP_MODEL_COLORS[m];
             return (
@@ -3802,26 +3820,57 @@ export function ProjectAgentPane({ isOpen, onClose, userType, activeUserName }: 
 
     if (isOfferComparisonQuery && !attachments.length) {
       const userMsg: TextMessage = { id: `u-${Date.now()}`, role: "user", type: "text", content: text };
-      const appliedOffers = messages
-        .filter((m): m is ParsedOffersMsg => m.type === "parsed_offers" && (m as ParsedOffersMsg).applied)
-        .flatMap(m => (m as ParsedOffersMsg).input.offers);
-      const hasRealOffers = appliedOffers.length > 0;
-      const analysisMode: "optimal" | "real" = hasRealOffers ? "real" : "optimal";
-      const modelMatches = text.match(/\b(Accord|CR-V|Civic|Pilot)\b/gi);
-      const models = modelMatches
-        ? [...new Set(modelMatches.map(m => m))]
-        : Object.keys(COMPETITOR_LEASE_DATA);
       const now = Date.now();
-      const introText = hasRealOffers
-        ? "Here's how your current offers compare to nearby Honda dealers:"
-        : "Here's how your offers stack up against the competition:";
+
+      // Read real project offers from context (selected offer IDs + available offers pool)
+      const ctx = filteredCtxRef.current ?? ctxRef.current;
+      const selectedIds = new Set(ctx?.currentOfferIds ?? []);
+      const projectLeaseOffers = (ctx?.availableOffers ?? [])
+        .filter(o => selectedIds.has(o.id) && o.offerType?.toLowerCase() === "lease" && o.monthlyPayment > 0);
+
+      // Also check chat history for any agent-generated offers applied in this session
+      const chatLeaseOffers = messages
+        .filter((m): m is ParsedOffersMsg => m.type === "parsed_offers" && (m as ParsedOffersMsg).applied)
+        .flatMap(m => (m as ParsedOffersMsg).input.offers)
+        .filter(o => o.offer_type === "Lease" && parseFloat(o.monthly_payment) > 0);
+
+      // Prefer project context offers; fall back to chat-applied offers
+      const leaseOffers: Array<{ model: string; trim?: string; monthlyPayment: number }> =
+        projectLeaseOffers.length > 0
+          ? projectLeaseOffers.map(o => ({ model: o.model, trim: o.trim, monthlyPayment: o.monthlyPayment }))
+          : chatLeaseOffers.map(o => ({ model: o.model, trim: o.trim, monthlyPayment: parseFloat(o.monthly_payment) }));
+
+      if (leaseOffers.length === 0) {
+        // No offers in project — ask if user wants to create them
+        setMessages(prev => [...prev,
+          userMsg,
+          {
+            id: `a-${now}`, role: "assistant", type: "text",
+            content: "Your project doesn't have any lease offers yet. Would you like me to create some for you?",
+          } as TextMessage,
+        ]);
+        return;
+      }
+
+      // Build offer rows: real home prices + invented competitor prices (always higher)
+      const COMP_PREMIUMS: Record<string, number> = { greatlakes: 18, edmartin: 29, hare: 23 };
+      const offerRows: OfferCompRow[] = leaseOffers.map(o => {
+        const homePrice = Math.round(o.monthlyPayment);
+        const compPrices: Record<string, number> = {};
+        for (const [id, premium] of Object.entries(COMP_PREMIUMS)) {
+          compPrices[id] = homePrice + premium;
+        }
+        return { model: o.model, trim: o.trim ?? "", homePrice, compPrices };
+      });
+
+      const models = [...new Set(offerRows.map(r => r.model))];
+
       setMessages(prev => [...prev,
         userMsg,
-        { id: `a-${now}`, role: "assistant", type: "text", content: introText } as TextMessage,
+        { id: `a-${now}`, role: "assistant", type: "text", content: "Here's how your offers stack up against the competition:" } as TextMessage,
         {
           id: `comp-${now + 1}`, role: "assistant", type: "competitor_map", applied: true,
-          models, analysisMode,
-          homeOffers: hasRealOffers ? appliedOffers : undefined,
+          models, analysisMode: "optimal", offerRows,
         } as CompetitorMapMsg,
       ]);
       return;
@@ -5542,6 +5591,7 @@ function MessageBubble({
         initialModels={cm.models}
         analysisMode={cm.analysisMode ?? "standard"}
         homeOffers={cm.homeOffers}
+        offerRows={cm.offerRows}
         onRegenerate={(offers, selectedModels) => onCompetitorMapGenerate?.(offers, selectedModels)}
       />
     );

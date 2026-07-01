@@ -975,6 +975,8 @@ const LEAFLET_GOOGLE_CSS = `
   .leaflet-bar a:hover { background: #f5f4f9 !important; }
   .leaflet-control-attribution { font-size: 9px !important; }
   .av3-home-btn a { display: flex !important; align-items: center !important; justify-content: center !important; margin-top: 4px !important; }
+  @keyframes av3-dot-bounce { 0%,80%,100%{transform:translateY(0);opacity:.4} 40%{transform:translateY(-6px);opacity:1} }
+  .av3-dot { display:inline-block; width:7px; height:7px; border-radius:50%; animation:av3-dot-bounce 1.1s ease-in-out infinite; }
 `;
 
 let leafletCssInjected = false;
@@ -1100,6 +1102,20 @@ function CompetitorMapCard({
 }) {
   useEffect(() => { injectLeafletCSS(); }, []);
 
+  // Simulated fetch sequence before revealing the map
+  const [loadPhase, setLoadPhase] = useState<"local" | "competitor" | "ready">("local");
+  const cardRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const t1 = setTimeout(() => setLoadPhase("competitor"), 900);
+    const t2 = setTimeout(() => {
+      setLoadPhase("ready");
+      requestAnimationFrame(() => {
+        cardRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+      });
+    }, 1800);
+    return () => { clearTimeout(t1); clearTimeout(t2); };
+  }, []);
+
   const ALL_MODELS = Object.keys(COMPETITOR_LEASE_DATA);
   // When offerRows are provided, only show those models; otherwise show all
   const availableModels = propOfferRows
@@ -1194,16 +1210,55 @@ function CompetitorMapCard({
     COMPETITOR_DEALERS.reduce((s, d) => s + d.lng, 0) / COMPETITOR_DEALERS.length,
   ];
 
+  const modeLabel = analysisMode === "optimal"
+    ? "Competitive Position · Honda of Anywhere — Market Leader"
+    : analysisMode === "real"
+    ? "Offer Review · Honda of Anywhere vs Market"
+    : "Competitor Analysis · Honda of Anywhere, Indianapolis";
+
+  // ── Loading state ─────────────────────────────────────────────────────────────
+  if (loadPhase !== "ready") {
+    const steps = [
+      { phase: "local",      label: "Fetching local dealership data…"  },
+      { phase: "competitor", label: "Fetching competitor pricing…" },
+    ] as const;
+    const currentStep = steps.findIndex(s => s.phase === loadPhase);
+    return (
+      <div className="rounded-[16px] border border-[#ece9f5] bg-white overflow-hidden">
+        <div className="px-[18px] pt-[12px] pb-[10px] border-b border-[#f0eff5]">
+          <p className="text-[11px] font-semibold tracking-[0.07em] text-[#8f8c9c] uppercase">{modeLabel}</p>
+        </div>
+        <div className="flex flex-col items-center justify-center gap-[16px]" style={{ height: 200 }}>
+          {/* Bouncing dots */}
+          <div style={{ display: "flex", gap: 6 }}>
+            {[0, 1, 2].map(i => (
+              <span key={i} className="av3-dot" style={{ background: COMP_TOKENS.home, animationDelay: `${i * 0.18}s` }} />
+            ))}
+          </div>
+          {/* Step list */}
+          <div className="flex flex-col items-center gap-[6px]">
+            {steps.map((s, i) => {
+              const done    = i < currentStep;
+              const active  = i === currentStep;
+              return (
+                <p key={s.phase} className="text-[12px] transition-all duration-300"
+                  style={{ color: active ? "#1f1d25" : done ? COMP_TOKENS.positive : "#d0cee0", fontWeight: active ? 600 : 400 }}>
+                  {done ? "✓ " : ""}{s.label}
+                </p>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="rounded-[16px] border border-[#ece9f5] bg-white overflow-hidden">
+    <div ref={cardRef} className="rounded-[16px] border border-[#ece9f5] bg-white overflow-hidden">
       {/* Minimal header — no chips */}
       <div className="px-[18px] pt-[12px] pb-[10px] border-b border-[#f0eff5]">
         <p className="text-[11px] font-semibold tracking-[0.07em] text-[#8f8c9c] uppercase">
-          {analysisMode === "optimal"
-            ? "Competitive Position · Honda of Anywhere — Market Leader"
-            : analysisMode === "real"
-            ? "Offer Review · Honda of Anywhere vs Market"
-            : "Competitor Analysis · Honda of Anywhere, Indianapolis"}
+          {modeLabel}
         </p>
       </div>
 

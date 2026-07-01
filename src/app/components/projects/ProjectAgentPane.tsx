@@ -1106,13 +1106,13 @@ function CompetitorMapCard({
   const [loadPhase, setLoadPhase] = useState<"local" | "competitor" | "ready">("local");
   const cardRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
-    const t1 = setTimeout(() => setLoadPhase("competitor"), 900);
+    const t1 = setTimeout(() => setLoadPhase("competitor"), 1800);
     const t2 = setTimeout(() => {
       setLoadPhase("ready");
       requestAnimationFrame(() => {
         cardRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
       });
-    }, 1800);
+    }, 3500);
     return () => { clearTimeout(t1); clearTimeout(t2); };
   }, []);
 
@@ -1232,7 +1232,7 @@ function CompetitorMapCard({
           {/* Bouncing dots */}
           <div style={{ display: "flex", gap: 6 }}>
             {[0, 1, 2].map(i => (
-              <span key={i} className="av3-dot" style={{ background: COMP_TOKENS.home, animationDelay: `${i * 0.18}s` }} />
+              <span key={i} className="av3-dot" style={{ background: "#9996a8", animationDelay: `${i * 0.18}s` }} />
             ))}
           </div>
           {/* Step list */}
@@ -1242,7 +1242,7 @@ function CompetitorMapCard({
               const active  = i === currentStep;
               return (
                 <p key={s.phase} className="text-[12px] transition-all duration-300"
-                  style={{ color: active ? "#1f1d25" : done ? COMP_TOKENS.positive : "#d0cee0", fontWeight: active ? 600 : 400 }}>
+                  style={{ color: active ? "#1f1d25" : done ? "#686576" : "#ccc8d6", fontWeight: active ? 600 : 400 }}>
                   {done ? "✓ " : ""}{s.label}
                 </p>
               );

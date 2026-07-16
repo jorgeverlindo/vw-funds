@@ -4070,20 +4070,29 @@ export function ProjectAgentPane({ isOpen, onClose, userType, activeUserName }: 
               field_confidence: { monthly_payment: "high", term: "high" },
             },
           ];
+          const chipTextId = `a-${now}`;
           setMessages(prev => [...prev,
             {
-              id: `a-${now}`, role: "assistant", type: "text",
-              content: "2 of your current offers are priced above nearby Honda dealers. Here's the market comparison — I've prepared optimized pricing below:",
+              id: chipTextId, role: "assistant", type: "text",
+              content: "I analyzed your offers — **2 are priced above nearby Honda dealers** and need correction. Here's the full market breakdown:",
             } as TextMessage,
             {
               id: `comp-${now + 1}`, role: "assistant", type: "competitor_map", applied: true,
               models: ["Accord", "CR-V", "Civic", "Pilot"], analysisMode: "real", offerRows,
             } as CompetitorMapMsg,
             {
-              id: `parsed-${now + 2}`, role: "assistant", type: "parsed_offers", applied: false,
+              id: `inst-${now + 2}`, role: "assistant", type: "text",
+              content: "I've proposed the adjusted offers in the table below. Review the optimized pricing and click **Apply Corrections** to apply the changes.",
+            } as TextMessage,
+            {
+              id: `parsed-${now + 3}`, role: "assistant", type: "parsed_offers", applied: false,
               input: { source: "Honda of Anywhere · optimized vs market", offers: correctedOffers },
             } as ParsedOffersMsg,
           ]);
+          requestAnimationFrame(() => {
+            document.querySelector(`[data-msg-id="${chipTextId}"]`)
+              ?.scrollIntoView({ behavior: "smooth", block: "start" });
+          });
         } else {
           setMessages(prev => [...prev,
             { id: `a-${now}`, role: "assistant", type: "text", content: "Here's the competitor map for Honda dealers near Honda of Anywhere:" } as TextMessage,
@@ -4977,6 +4986,10 @@ export function ProjectAgentPane({ isOpen, onClose, userType, activeUserName }: 
         { id: `parsed-${now + 3}`, role: "assistant", type: "parsed_offers", applied: false,
           input: { source: "Honda of Anywhere · optimized vs market", offers: adjustedOffers } } as ParsedOffersMsg,
       ]);
+      requestAnimationFrame(() => {
+        document.querySelector(`[data-msg-id="${textMsgId}"]`)
+          ?.scrollIntoView({ behavior: "smooth", block: "start" });
+      });
     }, 3200);
   }, []);
 

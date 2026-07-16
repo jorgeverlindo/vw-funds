@@ -230,7 +230,6 @@ const translations: Record<Language, Record<string, string>> = {
     'Low': 'Low',
     'Audit': 'Audit',
     'Dispute': 'Dispute',
-    'Compliance': 'Compliance',
     // PaymentStatusTable
     'Paid out': 'Paid out',
     // DateRangePicker fallback

@@ -3224,6 +3224,7 @@ export function ProjectAgentPane({ isOpen, onClose, userType, activeUserName }: 
 
   const [messages,      setMessages]      = useState<Message[]>([]);
   const [streamingText, setStreamingText] = useState("");
+  const [scrollToId,   setScrollToId]   = useState<string | null>(null);
   const [bgProcessing, setBgProcessing] = useState(false);
   const [projectContext, setProjectContext] = useState<ProjectContextPayload | null>(null);
   const [showHistory,      setShowHistory]      = useState(false);
@@ -3344,6 +3345,25 @@ export function ProjectAgentPane({ isOpen, onClose, userType, activeUserName }: 
     if (recentMessages.some(m => m.type === "competitor_map")) return;
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, streamingText]);
+
+  // Targeted scroll: after competitor_map messages are committed to DOM,
+  // scroll so the intro text (first message of the group) is at the top.
+  // useEffect is guaranteed to run after commit, unlike requestAnimationFrame.
+  useEffect(() => {
+    if (!scrollToId) return;
+    const el = document.querySelector(`[data-msg-id="${scrollToId}"]`) as HTMLElement | null;
+    if (el) {
+      const container = el.closest('.custom-scrollbar') as HTMLElement | null;
+      if (container) {
+        const containerRect = container.getBoundingClientRect();
+        const elRect = el.getBoundingClientRect();
+        container.scrollTo({ top: container.scrollTop + elRect.top - containerRect.top - 8, behavior: "smooth" });
+      } else {
+        el.scrollIntoView({ behavior: "smooth", block: "start" });
+      }
+    }
+    setScrollToId(null);
+  }, [scrollToId]);
 
   // Dispatch to ProjectsModule
   const dispatchAction = useCallback((a: AgentActionPayload) =>
@@ -4089,10 +4109,7 @@ export function ProjectAgentPane({ isOpen, onClose, userType, activeUserName }: 
               input: { source: "Honda of Anywhere · optimized vs market", offers: correctedOffers },
             } as ParsedOffersMsg,
           ]);
-          requestAnimationFrame(() => {
-            document.querySelector(`[data-msg-id="${chipTextId}"]`)
-              ?.scrollIntoView({ behavior: "smooth", block: "start" });
-          });
+          setScrollToId(chipTextId);
         } else {
           setMessages(prev => [...prev,
             { id: `a-${now}`, role: "assistant", type: "text", content: "Here's the competitor map for Honda dealers near Honda of Anywhere:" } as TextMessage,
@@ -4986,10 +5003,7 @@ export function ProjectAgentPane({ isOpen, onClose, userType, activeUserName }: 
         { id: `parsed-${now + 3}`, role: "assistant", type: "parsed_offers", applied: false,
           input: { source: "Honda of Anywhere · optimized vs market", offers: adjustedOffers } } as ParsedOffersMsg,
       ]);
-      requestAnimationFrame(() => {
-        document.querySelector(`[data-msg-id="${textMsgId}"]`)
-          ?.scrollIntoView({ behavior: "smooth", block: "start" });
-      });
+      setScrollToId(textMsgId);
     }, 3200);
   }, []);
 

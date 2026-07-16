@@ -3233,7 +3233,7 @@ interface ProjectAgentPaneProps { isOpen: boolean; onClose: () => void; userType
 
 export function ProjectAgentPane({ isOpen, onClose, userType, activeUserName }: ProjectAgentPaneProps) {
   const { triggerEvent } = useUsabilityTesting();
-  const [paneWidth, setPaneWidth] = useState(400);
+  const [paneWidth, setPaneWidth] = useState(450);
   const [isResizing, setIsResizing] = useState(false);
   const isDraggingPane = useRef(false);
   const dragStartX = useRef(0);

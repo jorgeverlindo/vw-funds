@@ -4094,18 +4094,14 @@ export function ProjectAgentPane({ isOpen, onClose, userType, activeUserName }: 
           setMessages(prev => [...prev,
             {
               id: chipTextId, role: "assistant", type: "text",
-              content: "I analyzed your offers — **2 are priced above nearby Honda dealers** and need correction. Here's the full market breakdown:",
+              content: "I analyzed your offers — **2 are priced above nearby Honda dealers** and need correction. Here's the full market breakdown — review the adjusted pricing in the table and click **Apply Corrections** to apply the changes.",
             } as TextMessage,
             {
               id: `comp-${now + 1}`, role: "assistant", type: "competitor_map", applied: true,
               models: ["Accord", "CR-V", "Civic", "Pilot"], analysisMode: "real", offerRows,
             } as CompetitorMapMsg,
             {
-              id: `inst-${now + 2}`, role: "assistant", type: "text",
-              content: "I've proposed the adjusted offers in the table below. Review the optimized pricing and click **Apply Corrections** to apply the changes.",
-            } as TextMessage,
-            {
-              id: `parsed-${now + 3}`, role: "assistant", type: "parsed_offers", applied: false,
+              id: `parsed-${now + 2}`, role: "assistant", type: "parsed_offers", applied: false,
               input: { source: "Honda of Anywhere · optimized vs market", offers: correctedOffers },
             } as ParsedOffersMsg,
           ]);
@@ -4983,11 +4979,8 @@ export function ProjectAgentPane({ isOpen, onClose, userType, activeUserName }: 
     });
     const models = [...new Set(offerRows.map(r => r.model))];
     const introText = losingRows.length > 0
-      ? `I analyzed your ${leaseRows.length} offer${leaseRows.length !== 1 ? "s" : ""} — **${losingRows.length} ${losingRows.length === 1 ? "is" : "are"} priced above nearby Honda dealers** and need correction. Here's the full market breakdown:`
+      ? `I analyzed your ${leaseRows.length} offer${leaseRows.length !== 1 ? "s" : ""} — **${losingRows.length} ${losingRows.length === 1 ? "is" : "are"} priced above nearby Honda dealers** and need correction. Here's the full market breakdown — review the adjusted pricing in the table and click **Apply Corrections** to apply the changes.`
       : `I compared your ${leaseRows.length} offer${leaseRows.length !== 1 ? "s" : ""} against nearby Honda dealers — all are priced competitively. Here's the full market comparison:`;
-    const instructionText = losingRows.length > 0
-      ? `I've proposed the adjusted offers in the table below. Review the optimized pricing and click **Apply Corrections** to apply the changes.`
-      : `Your offers look great — no adjustments needed.`;
     setSimulatingStreamLabel("Fetching competitor pricing…");
     setSimulatingStream(true);
     setTimeout(() => setSimulatingStreamLabel("Analyzing your offers…"), 1800);
@@ -4999,8 +4992,7 @@ export function ProjectAgentPane({ isOpen, onClose, userType, activeUserName }: 
       setMessages(prev => [...prev,
         { id: textMsgId, role: "assistant", type: "text", content: introText } as TextMessage,
         { id: `comp-${now + 1}`, role: "assistant", type: "competitor_map", applied: true, models, analysisMode: "real", offerRows } as CompetitorMapMsg,
-        { id: `a2-${now + 2}`, role: "assistant", type: "text", content: instructionText } as TextMessage,
-        { id: `parsed-${now + 3}`, role: "assistant", type: "parsed_offers", applied: false,
+        { id: `parsed-${now + 2}`, role: "assistant", type: "parsed_offers", applied: false,
           input: { source: "Honda of Anywhere · optimized vs market", offers: adjustedOffers } } as ParsedOffersMsg,
       ]);
       setScrollToId(textMsgId);

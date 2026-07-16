@@ -3726,17 +3726,19 @@ export function ProjectAgentPane({ isOpen, onClose, userType, activeUserName }: 
 
           const models = [...new Set(offerRows.map(r => r.model))];
           const introText = losingRows.length > 0
-            ? `I analyzed your ${leaseRows.length} offer${leaseRows.length !== 1 ? "s" : ""} — ${losingRows.length} ${losingRows.length === 1 ? "is" : "are"} priced above nearby Honda dealers. Here's the market comparison and the optimized pricing below:`
-            : `I analyzed your ${leaseRows.length} offer${leaseRows.length !== 1 ? "s" : ""} — all are priced competitively vs nearby Honda dealers. Here's the full market comparison:`;
+            ? `I analyzed your ${leaseRows.length} offer${leaseRows.length !== 1 ? "s" : ""} — **${losingRows.length} ${losingRows.length === 1 ? "is" : "are"} priced above nearby Honda dealers** and need correction. Here's the full market breakdown — review the adjusted pricing in the table and click **Apply Corrections** to apply the changes.`
+            : `I compared your ${leaseRows.length} offer${leaseRows.length !== 1 ? "s" : ""} against nearby Honda dealers — all are priced competitively. Here's the full market comparison:`;
 
           const now2 = Date.now() + 10;
+          const introId = `a-${now2}`;
           setTimeout(() => {
             setMessages(prev => [...prev,
-              { id: `a-${now2}`, role: "assistant", type: "text", content: introText } as TextMessage,
+              { id: introId, role: "assistant", type: "text", content: introText } as TextMessage,
               { id: `comp-${now2 + 1}`, role: "assistant", type: "competitor_map", applied: true, models, analysisMode: "real", offerRows } as CompetitorMapMsg,
               { id: `parsed-${now2 + 2}`, role: "assistant", type: "parsed_offers", applied: false,
                 input: { source: "Honda of Anywhere · optimized vs market", offers: adjustedOffers } } as ParsedOffersMsg,
             ]);
+            setScrollToId(introId);
           }, 600);
         }
       } else {

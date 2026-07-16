@@ -1050,6 +1050,15 @@ function MapSetup() {
   return null;
 }
 
+function ScrollWheelController({ locked }: { locked: boolean }) {
+  const map = useMap();
+  useEffect(() => {
+    if (locked) map.scrollWheelZoom.disable();
+    else        map.scrollWheelZoom.enable();
+  }, [map, locked]);
+  return null;
+}
+
 function dealerPin(color: string, isHome: boolean, name: string) {
   const w = isHome ? 26 : 21, h = isHome ? 35 : 29;
   const r = isHome ? 5.5 : 4.5;
@@ -1119,6 +1128,7 @@ function CompetitorMapCard({
   );
   const [proposedPrices, setProposedPrices] = useState<Record<string, string>>({});
   const [correctionApplied, setCorrectionApplied] = useState(false);
+  const [scrollLocked, setScrollLocked] = useState(true);
 
   const toggleModel = (m: string) =>
     setSelectedModels(prev =>
@@ -1219,9 +1229,9 @@ function CompetitorMapCard({
       </div>
 
       {/* Leaflet map — full width, Google Maps style */}
-      <div style={{ height: 350, width: "100%" }}>
+      <div style={{ height: 350, width: "100%", position: "relative" }}>
         <MapContainer center={center} zoom={11} style={{ height: "100%", width: "100%" }}
-          zoomControl={false} scrollWheelZoom={true} zoomSnap={0.5}>
+          zoomControl={false} scrollWheelZoom={false} zoomSnap={0.5}>
           <TileLayer
             url="https://{s}.basemaps.cartocdn.com/rastertiles/light_all/{z}/{x}/{y}{r}.png"
             subdomains="abcd"
@@ -1230,6 +1240,7 @@ function CompetitorMapCard({
             attribution='&copy; <a href="https://openstreetmap.org">OpenStreetMap</a> &copy; <a href="https://carto.com">CARTO</a>'
           />
           <MapSetup />
+          <ScrollWheelController locked={scrollLocked} />
           {COMPETITOR_DEALERS.map(d => {
             const dealerRows = tableRows.filter(r => r.prices[d.id as CompDealerId] !== undefined);
             return (
@@ -1301,6 +1312,35 @@ function CompetitorMapCard({
             );
           })}
         </MapContainer>
+
+        {/* Scroll lock overlay — locked by default, click to enable scroll zoom */}
+        <button
+          onClick={() => setScrollLocked(v => !v)}
+          title={scrollLocked ? "Scroll locked — click to enable" : "Scroll enabled — click to lock"}
+          style={{
+            position: "absolute", top: 10, right: 10, zIndex: 1001,
+            width: 28, height: 28, borderRadius: 6, cursor: "pointer",
+            display: "flex", alignItems: "center", justifyContent: "center",
+            background: scrollLocked ? "white" : COMP_TOKENS.home,
+            border: `1.5px solid ${scrollLocked ? "rgba(0,0,0,0.15)" : COMP_TOKENS.home}`,
+            boxShadow: "0 1px 4px rgba(0,0,0,0.18)",
+            transition: "background 0.18s, border-color 0.18s",
+          }}
+        >
+          {scrollLocked ? (
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
+              stroke="#686576" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <rect x="3" y="11" width="18" height="11" rx="2"/>
+              <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+            </svg>
+          ) : (
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
+              stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <rect x="3" y="11" width="18" height="11" rx="2"/>
+              <path d="M7 11V7a5 5 0 0 1 9.9-1"/>
+            </svg>
+          )}
+        </button>
       </div>
 
       {/* Comparison table — with horizontal breathing room */}

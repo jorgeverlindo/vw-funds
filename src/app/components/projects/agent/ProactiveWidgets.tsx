@@ -123,6 +123,54 @@ export function ProactiveAutoApplyBar({ delay, onCancel }: { delay: number; onCa
   );
 }
 
+// ─── Campaign Mode Card ───────────────────────────────────────────────────────
+// Renders only the two action buttons — the agent writes the explanation text
+// as a normal text bubble before calling this tool.
+export function CampaignModeCard({
+  applied,
+  onLetMeConfirm,
+  onSetUpForMe,
+}: {
+  applied: boolean;
+  onLetMeConfirm: () => void;
+  onSetUpForMe: () => void;
+}) {
+  if (applied) {
+    return (
+      <div className="ml-[32px] mt-[4px]">
+        <ConfirmedChip label="Campaign setup started" />
+      </div>
+    );
+  }
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 4 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="ml-[32px] mt-[8px] flex flex-col gap-[10px]"
+    >
+      <p className="text-[13px] text-[var(--ink-secondary)] leading-[1.5]">
+        How would you like to build this project?
+      </p>
+      <div className="flex items-center gap-[8px]">
+        <button
+          onClick={onLetMeConfirm}
+          className="px-[16px] py-[8px] rounded-full text-[12px] font-medium border border-[rgba(0,0,0,0.15)] text-[var(--ink-secondary)] hover:bg-black/5 transition-colors cursor-pointer whitespace-nowrap"
+        >
+          Let Me Confirm
+        </button>
+        <button
+          onClick={onSetUpForMe}
+          className="px-[16px] py-[8px] rounded-full text-white text-[12px] font-medium cursor-pointer transition-opacity hover:opacity-90 whitespace-nowrap"
+          style={{ background: "linear-gradient(135deg, var(--brand-accent) 0%, var(--brand-mid) 100%)" }}
+        >
+          Set Up For Me
+        </button>
+      </div>
+    </motion.div>
+  );
+}
+
 // ─── Proactive Questions Card ─────────────────────────────────────────────────
 const PROACTIVE_OPTIONS = {
   goal:       ["Brand Awareness", "Conquest", "Retention", "Service Drive"] as const,

@@ -34,6 +34,8 @@ interface AnglePreviewModalProps {
   defaultSrc: string;
   /** Initial active tab */
   defaultTab?: ModalTab;
+  /** When true, the Source tab is hidden — used by "Check Generated Image" drawer button */
+  hideSourceTab?: boolean;
   /** Navigate to previous angle */
   onPrev?: () => void;
   /** Navigate to next angle */
@@ -50,6 +52,7 @@ export function AnglePreviewModal({
   previousSrc = null,
   defaultSrc,
   defaultTab = 'generated',
+  hideSourceTab = false,
   onPrev,
   onNext,
 }: AnglePreviewModalProps) {
@@ -85,7 +88,7 @@ export function AnglePreviewModal({
   const visibleTabs: Array<{ id: ModalTab; label: string }> = [
     { id: 'generated', label: 'Generated Image' },
     ...(hasPrevious ? [{ id: 'previous' as ModalTab, label: 'Previous Version' }] : []),
-    { id: 'source', label: 'Source' },
+    ...(!hideSourceTab ? [{ id: 'source' as ModalTab, label: 'Source' }] : []),
   ];
 
   return (

@@ -80,6 +80,8 @@ export function executeTool(
       }
       return { success: true, offer_id, color_family, jellybean_url: match.url, jellybean_id: match.id, message: `Jellybean swapped to ${color_family} for offer ${offer_id}.` };
     }
+    case "propose_campaign_mode":
+      return { success: true, message: "Campaign mode selection card ready." };
     default:
       return { success: false, message: `Unknown tool: ${toolName}` };
   }

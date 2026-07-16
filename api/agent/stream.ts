@@ -63,7 +63,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       "propose_backgrounds", "propose_brand", "propose_project",
       "propose_email", "propose_share", "propose_parsed_offers",
       "propose_task_owners", "propose_notify_owners",
-      "propose_proactive_questions",
+      "propose_proactive_questions", "propose_campaign_mode",
     ]);
 
     // Diagnostic: log tool names so we can verify in Vercel logs

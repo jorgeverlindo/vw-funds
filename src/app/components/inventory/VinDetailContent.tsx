@@ -31,6 +31,8 @@ import { BreadcrumbBar }  from '../BreadcrumbBar';
 import { CommentsButton } from '../comments';
 import { PriceToMarketChip, PriorityScoreChip } from './VehicleInventoryGrid';
 import { AngleStripVin } from './AngleStripVin';
+import { SourceImagesGrid } from './SourceImagesGrid';
+import type { SourceImageRecord } from '../../../data/inventory/sourceImages';
 
 // ─── Typography ────────────────────────────────────────────────────────────────
 const BODY1   = "font-['Roboto',sans-serif] font-normal text-[14px] leading-[1.5] tracking-[0.15px]";
@@ -256,6 +258,49 @@ export function VinDetailContent({ record, onBack, variant = 'auto' }: VinDetail
   const aiConfig = record.aiConfigId ? (findAIConfig(record.aiConfigId) ?? null) : null;
   const vg       = record.vehicleGroup ?? null;
 
+  // Derive source image records from this VIN's vehicleGroup.sourceAngles.
+  // One row per VIN (the active collection); thumbnail is always the 3/4 L angle.
+  const ANGLE_ORDER_SI: AngleKey[] = ['34l', 'front', '34r', 'right', 'rear', 'left'];
+  const ANGLE_LABELS_SI: Record<AngleKey, string> = {
+    '34l': '3/4 L', front: 'Front', '34r': '3/4 R', right: 'Right', rear: 'Rear', left: 'Left',
+  };
+
+  const sourceImages: SourceImageRecord[] = vg?.sourceAngles
+    ? [{
+        id:           `si-${record.id}`,
+        thumbnail:    vg.sourceAngles['34l'] ?? record.thumbnail,
+        imageCount:   Object.values(vg.sourceAngles).filter(Boolean).length,
+        name:         `${record.vin}_${record.year}_${record.make}_${record.model.replace(/\s+/g, '_')}_Sources.jpg`,
+        format:       'JPG',
+        dimensions:   '4032×3024',
+        status:       'Active',
+        tags:         [record.make, record.model, record.trim].filter(Boolean),
+        source:       'Manual',
+        date:         '2025-08-15',
+        vehicleName:  `${record.year} ${record.make} ${record.model}`,
+        generatedAngles: vg.angles as Record<string, string | null>,
+        angleGroups: ANGLE_ORDER_SI.map(key => {
+          const src = vg.sourceAngles![key] ?? null;
+          const label = ANGLE_LABELS_SI[key];
+          const cardId = src ? `${record.id}-${key}-0` : null;
+          return {
+            key,
+            label,
+            activeCardId: cardId,
+            cards: src
+              ? [{
+                  id:       cardId!,
+                  src,
+                  filename: `${record.vin}_${label.replace(/[^a-zA-Z0-9]/g, '_')}_20250815.jpg`,
+                  source:   'Manual' as const,
+                  date:     '2025-08-15 14:23',
+                }]
+              : [],
+          };
+        }),
+      }]
+    : [];
+
   // OEM users can click "Config Used" to jump directly to that config's edit view.
   // Dealer users see the name as read-only text.
   const isOem = typeof window !== 'undefined' && window.location.pathname.includes('/oem/');
@@ -389,8 +434,8 @@ export function VinDetailContent({ record, onBack, variant = 'auto' }: VinDetail
       {/* Divider under tabs */}
       <div className="flex-none h-px bg-[rgba(0,0,0,0.12)]" />
 
-      {/* ── Sport variant body ───────────────────────────────────────────── */}
-      {variant === 'sport' ? (
+      {/* ── Sport variant body — only when the details tab is active ───────── */}
+      {variant === 'sport' && activeTab === 'details' ? (
         <div className="flex-1 overflow-y-auto min-h-0">
           <div className="flex flex-wrap gap-[24px] p-[16px]">
 
@@ -542,11 +587,11 @@ export function VinDetailContent({ record, onBack, variant = 'auto' }: VinDetail
             </div>{/* end right data columns */}
           </div>
         </div>
-      ) : activeTab !== 'details' ? (
+      ) : activeTab === 'source' ? (
+        <SourceImagesGrid records={sourceImages} />
+      ) : activeTab === 'generated' ? (
         <div className="flex-1 flex items-center justify-center text-[rgba(17,16,20,0.38)]">
-          <span className="font-['Roboto',sans-serif] text-[14px]">
-            {activeTab === 'generated' ? 'Generated Images coming soon' : 'Source Images coming soon'}
-          </span>
+          <span className="font-['Roboto',sans-serif] text-[14px]">Generated Images coming soon</span>
         </div>
       ) : (
         <div className="flex-1 overflow-y-auto min-h-0">

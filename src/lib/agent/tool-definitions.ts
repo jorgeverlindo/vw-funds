@@ -573,4 +573,20 @@ export const agentTools: Anthropic.Tool[] = [
       required: ["offer_id", "color_family", "model"],
     },
   },
+
+  // ── Campaign mode selection — shown before any new project creation ───────
+  {
+    name: "propose_campaign_mode",
+    description:
+      "Show a mode-selection card asking the user how they'd like to build the campaign — " +
+      "step by step with confirmation (Standard Flow) or fully automated (Proactive Flow). " +
+      "Call this as the FIRST step whenever the user asks to build, create, or set up a new campaign or project " +
+      "AND 'Project ID' is empty AND propose_campaign_mode has NOT already been called in this conversation. " +
+      "Do NOT call this if a proactive flow is already in progress or if a continuation message is present.",
+    input_schema: {
+      type: "object" as const,
+      properties: {},
+      required: [],
+    },
+  },
 ];

@@ -30,7 +30,7 @@ import { TemplateZoneEditor } from "@projects/templates/TemplateZoneEditor";
 import { inlineMarkdown, MarkdownContent } from "./agent/markdown";
 import { ResponseActions } from "./agent/ResponseActions";
 import { ConstellationArcMark, useConstellationAnim } from "./agent/ConstellationArcMark";
-import { ProactiveAutoApplyBar, ProactiveQuestionsCard } from "./agent/ProactiveWidgets";
+import { ProactiveAutoApplyBar, ProactiveQuestionsCard, CampaignModeCard } from "./agent/ProactiveWidgets";
 import { AgentSelect, AgentAddSelect, ConfirmedChip, WhyThese } from "./agent/AgentSelects";
 import { SetupProjectCard } from "./agent/SetupProjectCard";
 import { OffersProposalCard } from "./agent/OffersProposalCard";
@@ -188,6 +188,12 @@ interface ProactiveQuestionsMsg {
   input: ProactiveQuestionsInput;
   applied: boolean;
 }
+interface CampaignModeMsg {
+  id: string;
+  role: "assistant";
+  type: "campaign_mode";
+  applied: boolean;
+}
 // File upload message (shown in chat as user bubble with file chip)
 interface UserFileMsg     { id: string; role: "user"; type: "user_file"; text: string; files: { name: string; type: string }[]; apiContent: ApiContentBlock[] }
 // Parsed offers from AI extraction of uploaded file
@@ -211,7 +217,7 @@ interface DealerBgProposalMsg {
   applied: boolean;
 }
 
-type Message = TextMessage | ToolChipMsg | ProposalMsg | SetupMsg | OffersMsg | TemplatesMsg | BrandMsg | BackgroundsMsg | PreviewMsg | ContinuationMsg | EmailMsg | ShareMsg | UserFileMsg | ParsedOffersMsg | NotifyOwnersMsg | TaskOwnersMsg | ProactiveQuestionsMsg | DealerBgProposalMsg | ReviewerPickerMsg | CampaignCtaMsg | CompetitorMapMsg;
+type Message = TextMessage | ToolChipMsg | ProposalMsg | SetupMsg | OffersMsg | TemplatesMsg | BrandMsg | BackgroundsMsg | PreviewMsg | ContinuationMsg | EmailMsg | ShareMsg | UserFileMsg | ParsedOffersMsg | NotifyOwnersMsg | TaskOwnersMsg | ProactiveQuestionsMsg | CampaignModeMsg | DealerBgProposalMsg | ReviewerPickerMsg | CampaignCtaMsg | CompetitorMapMsg;
 
 interface ProposalInput {
   project_name?: string;
@@ -975,8 +981,6 @@ const LEAFLET_GOOGLE_CSS = `
   .leaflet-bar a:hover { background: #f5f4f9 !important; }
   .leaflet-control-attribution { font-size: 9px !important; }
   .av3-home-btn a { display: flex !important; align-items: center !important; justify-content: center !important; margin-top: 4px !important; }
-  @keyframes av3-dot-bounce { 0%,80%,100%{transform:translateY(0);opacity:.4} 40%{transform:translateY(-6px);opacity:1} }
-  .av3-dot { display:inline-block; width:7px; height:7px; border-radius:50%; animation:av3-dot-bounce 1.1s ease-in-out infinite; }
 `;
 
 let leafletCssInjected = false;
@@ -1092,29 +1096,16 @@ function computeCompetitiveOffers(models: string[], margin: number): ParsedOffer
 }
 
 function CompetitorMapCard({
-  initialModels, onRegenerate, analysisMode = "standard", homeOffers, offerRows: propOfferRows,
+  initialModels, onRegenerate, onRevert, analysisMode = "standard", homeOffers, offerRows: propOfferRows,
 }: {
   initialModels: string[];
   onRegenerate: (offers: ParsedOfferRow[], selectedModels: string[]) => void;
+  onRevert?: () => void;
   analysisMode?: "standard" | "optimal" | "real";
   homeOffers?: ParsedOfferRow[];
   offerRows?: OfferCompRow[];
 }) {
   useEffect(() => { injectLeafletCSS(); }, []);
-
-  // Simulated fetch sequence before revealing the map
-  const [loadPhase, setLoadPhase] = useState<"local" | "competitor" | "ready">("local");
-  const cardRef = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    const t1 = setTimeout(() => setLoadPhase("competitor"), 1800);
-    const t2 = setTimeout(() => {
-      setLoadPhase("ready");
-      requestAnimationFrame(() => {
-        cardRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
-      });
-    }, 3500);
-    return () => { clearTimeout(t1); clearTimeout(t2); };
-  }, []);
 
   const ALL_MODELS = Object.keys(COMPETITOR_LEASE_DATA);
   // When offerRows are provided, only show those models; otherwise show all
@@ -1126,19 +1117,21 @@ function CompetitorMapCard({
       ? initialModels.filter(m => availableModels.includes(m))
       : availableModels
   );
-  const [rowMargins, setRowMargins] = useState<Record<string, number>>({});
+  const [proposedPrices, setProposedPrices] = useState<Record<string, string>>({});
+  const [correctionApplied, setCorrectionApplied] = useState(false);
 
   const toggleModel = (m: string) =>
     setSelectedModels(prev =>
       prev.includes(m) ? (prev.length > 1 ? prev.filter(x => x !== m) : prev) : [...prev, m]
     );
 
-  const getRowMargin = (model: string, trim: string) => rowMargins[`${model}|${trim}`] ?? 10;
-  const adjustRowMargin = (model: string, trim: string, delta: number) =>
-    setRowMargins(prev => {
-      const key = `${model}|${trim}`;
-      return { ...prev, [key]: Math.max(0, (prev[key] ?? 10) + delta) };
-    });
+  const getProposed = (model: string, trim: string, marketMin: number | null): number | null => {
+    if (marketMin === null) return null;
+    const key = `${model}|${trim}`;
+    const custom = proposedPrices[key];
+    if (custom !== undefined) { const n = parseInt(custom, 10); return isNaN(n) ? null : Math.max(n, 1); }
+    return Math.max(marketMin - 10, 1);
+  };
 
   // "real" mode: build lookup from uploaded offers { "Model|trim" -> price }
   const homePriceLookup = useMemo((): Record<string, number> => {
@@ -1164,13 +1157,13 @@ function CompetitorMapCard({
           .filter(([k]) => k !== "penske")
           .map(([, v]) => v as number);
         if (compPrices.length) {
-          const m = rowMargins[`${model}|${trim}`] ?? 10;
-          map[`${model}|${trim.toLowerCase()}`] = Math.max(Math.min(...compPrices) - m, 1);
+          const proposed = getProposed(model, trim, Math.min(...compPrices));
+          map[`${model}|${trim.toLowerCase()}`] = proposed ?? Math.max(Math.min(...compPrices) - 10, 1);
         }
       }
     }
     return map;
-  }, [analysisMode, propOfferRows, rowMargins]);
+  }, [analysisMode, propOfferRows, proposedPrices]);
 
   const getHomePrice = (model: string, trim: string, rawPrice: number | undefined): number | undefined => {
     // "real" + propOfferRows: home price is already embedded as prices["penske"] in tableRows
@@ -1216,48 +1209,11 @@ function CompetitorMapCard({
     ? "Offer Review · Honda of Anywhere vs Market"
     : "Competitor Analysis · Honda of Anywhere, Indianapolis";
 
-  // ── Loading state ─────────────────────────────────────────────────────────────
-  if (loadPhase !== "ready") {
-    const steps = [
-      { phase: "local",      label: "Fetching local dealership data…"  },
-      { phase: "competitor", label: "Fetching competitor pricing…" },
-    ] as const;
-    const currentStep = steps.findIndex(s => s.phase === loadPhase);
-    return (
-      <div className="rounded-[16px] border border-[#ece9f5] bg-white overflow-hidden">
-        <div className="px-[18px] pt-[12px] pb-[10px] border-b border-[#f0eff5]">
-          <p className="text-[11px] font-semibold tracking-[0.07em] text-[#8f8c9c] uppercase">{modeLabel}</p>
-        </div>
-        <div className="flex flex-col items-center justify-center gap-[16px]" style={{ height: 200 }}>
-          {/* Bouncing dots */}
-          <div style={{ display: "flex", gap: 6 }}>
-            {[0, 1, 2].map(i => (
-              <span key={i} className="av3-dot" style={{ background: "#9996a8", animationDelay: `${i * 0.18}s` }} />
-            ))}
-          </div>
-          {/* Step list */}
-          <div className="flex flex-col items-center gap-[6px]">
-            {steps.map((s, i) => {
-              const done    = i < currentStep;
-              const active  = i === currentStep;
-              return (
-                <p key={s.phase} className="text-[12px] transition-all duration-300"
-                  style={{ color: active ? "#1f1d25" : done ? "#686576" : "#ccc8d6", fontWeight: active ? 600 : 400 }}>
-                  {done ? "✓ " : ""}{s.label}
-                </p>
-              );
-            })}
-          </div>
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div ref={cardRef} className="rounded-[16px] border border-[#ece9f5] bg-white overflow-hidden">
+    <div className="rounded-[16px] border border-[#ece9f5] bg-white overflow-hidden">
       {/* Minimal header — no chips */}
       <div className="px-[18px] pt-[12px] pb-[10px] border-b border-[#f0eff5]">
-        <p className="text-[11px] font-semibold tracking-[0.07em] text-[#8f8c9c] uppercase">
+        <p className="text-[10px] font-semibold uppercase tracking-[0.06em] text-[var(--ink-tertiary)]">
           {modeLabel}
         </p>
       </div>
@@ -1310,13 +1266,12 @@ function CompetitorMapCard({
                             const marketMin = compPrices.length ? Math.min(...compPrices) : effectivePrice;
                             const isLosing = d.home && effectivePrice > marketMin;
                             const proposed = compPrices.length
-                              ? Math.max(marketMin - getRowMargin(model, trim), 1)
+                              ? (getProposed(model, trim, marketMin) ?? Math.max(marketMin - 10, 1))
                               : effectivePrice;
-                            const modelColor = COMP_MODEL_COLORS[model] ?? COMP_TOKENS.home;
                             return (
                               <tr key={`${model}-${trim}`} style={{ borderBottom: "1px solid #f8f7fb" }}>
                                 <td style={{ padding: "4px 6px 4px 0", whiteSpace: "nowrap" }}>
-                                  <span style={{ fontSize: 10, fontWeight: 600, background: modelColor + "22", color: modelColor, padding: "1px 5px", borderRadius: 10 }}>{model}</span>
+                                  <span style={{ fontSize: 10, fontWeight: 600, background: "#eeecf5", color: "#686576", padding: "1px 5px", borderRadius: 10 }}>{model}</span>
                                 </td>
                                 <td style={{ padding: "4px 8px 4px 4px", color: "#1f1d25", whiteSpace: "nowrap" }}>{trim}</td>
                                 <td style={{ padding: "4px 0 4px 8px", textAlign: "right", fontWeight: 600, whiteSpace: "nowrap",
@@ -1357,13 +1312,13 @@ function CompetitorMapCard({
               {COMPETITOR_DEALERS.map(d => (
                 <th key={d.id} className="text-right px-[12px] py-[9px] font-semibold whitespace-nowrap"
                   style={{ color: d.color }}>
-                  {d.home ? "Honda of Anywhere" : d.shortName.split(" ").slice(0, 2).join(" ")}
+                  {d.home ? "You" : d.shortName.split(" ").slice(0, 2).join(" ")}
                 </th>
               ))}
               {analysisMode !== "optimal" && (
                 <th className="text-right px-[12px] py-[9px] font-semibold whitespace-nowrap"
                   style={{ color: COMP_TOKENS.home, borderLeft: "2px solid #ece9f5" }}>
-                  {analysisMode === "real" ? "Correction" : "Proposed"}
+                  Proposed
                 </th>
               )}
             </tr>
@@ -1371,19 +1326,18 @@ function CompetitorMapCard({
           <tbody>
             {availableModels.map(model => {
               const isActive = selectedModels.includes(model);
-              const modelColor = COMP_MODEL_COLORS[model] ?? COMP_TOKENS.home;
               const modelDataRows = tableRows.filter(r => r.model === model);
               const colSpan = COMPETITOR_DEALERS.length + 1 + (analysisMode !== "optimal" ? 1 : 0);
               return (
                 <Fragment key={model}>
                   {/* Clickable model group header row */}
                   <tr className="cursor-pointer select-none border-b border-[#f0eff5]"
-                    style={{ background: isActive ? modelColor + "10" : "#f9f8fc" }}
+                    style={{ background: isActive ? "#f0eff5" : "#f9f8fc" }}
                     onClick={() => toggleModel(model)}>
                     <td colSpan={colSpan} className="px-[14px] py-[6px]">
                       <div className="flex items-center gap-[5px]">
-                        <span className="text-[11px] font-bold" style={{ color: modelColor }}>{model}</span>
-                        <span className="text-[9px]" style={{ color: modelColor + "99" }}>{isActive ? "▾" : "▸"}</span>
+                        <span className="text-[11px] font-bold text-[var(--ink)]">{model}</span>
+                        <span className="text-[9px] text-[var(--ink-tertiary)]">{isActive ? "▾" : "▸"}</span>
                       </div>
                     </td>
                   </tr>
@@ -1398,8 +1352,7 @@ function CompetitorMapCard({
                       .filter(([k]) => k !== "penske")
                       .map(([, p]) => p as number);
                     const marketMin = compPrices.length ? Math.min(...compPrices) : null;
-                    const rowMargin = getRowMargin(model, trim);
-                    const proposed = marketMin !== null ? Math.max(marketMin - rowMargin, 1) : null;
+                    const proposed = getProposed(model, trim, marketMin);
                     const isLosing = effectiveHomePrice !== undefined && marketMin !== null && effectiveHomePrice > marketMin;
                     const proposedActive = analysisMode === "real" ? isLosing : (proposed !== null && effectiveHomePrice !== undefined && proposed < (effectiveHomePrice ?? Infinity));
                     return (
@@ -1424,24 +1377,31 @@ function CompetitorMapCard({
                           );
                         })}
                         {analysisMode !== "optimal" && (
-                          <td className="whitespace-nowrap" style={{ borderLeft: "2px solid #ece9f5", padding: "4px 6px" }}>
-                            {(analysisMode === "real" ? isLosing && proposed !== null : proposed !== null) ? (
-                              <div className="flex items-center justify-end gap-[1px]">
-                                <button
-                                  onClick={e => { e.stopPropagation(); adjustRowMargin(model, trim, -5); }}
-                                  className="w-[18px] h-[20px] flex items-center justify-center rounded hover:bg-[#f0eff5] text-[#686576] text-[12px] transition-colors">−</button>
-                                <span className="min-w-[34px] text-center text-[11px] font-bold"
-                                  style={{ color: proposedActive ? COMP_TOKENS.home : "#ccc8d6" }}>
-                                  {`$${proposed}`}
-                                </span>
-                                <button
-                                  onClick={e => { e.stopPropagation(); adjustRowMargin(model, trim, 5); }}
-                                  className="w-[18px] h-[20px] flex items-center justify-center rounded hover:bg-[#f0eff5] text-[#686576] text-[12px] transition-colors">+</button>
-                              </div>
-                            ) : (
-                              <span className="block text-right pr-[6px] text-[11px] font-bold" style={{ color: "#ccc8d6" }}>✓</span>
-                            )}
-                          </td>
+                          (() => {
+                            const proposedOverMarket = proposedActive && proposed !== null && marketMin !== null && proposed > marketMin;
+                            const proposedColor = proposedOverMarket ? COMP_TOKENS.negative : COMP_TOKENS.home;
+                            const proposedBg = proposedOverMarket ? COMP_TOKENS.negative + "28" : "transparent";
+                            return (
+                              <td className="whitespace-nowrap" style={{ borderLeft: "2px solid #ece9f5", padding: "4px 10px 4px 8px", background: proposedBg, transition: "background 0.15s" }}>
+                                {(analysisMode === "real" ? isLosing && proposed !== null : proposed !== null) ? (
+                                  <div className="flex items-center justify-end gap-[3px]">
+                                    <span className="text-[11px] font-semibold" style={{ color: proposedActive ? proposedColor : "#ccc8d6" }}>$</span>
+                                    <input
+                                      type="number"
+                                      min="1"
+                                      value={proposedPrices[`${model}|${trim}`] ?? String(proposed)}
+                                      onChange={e => { e.stopPropagation(); setProposedPrices(prev => ({ ...prev, [`${model}|${trim}`]: e.target.value })); }}
+                                      onClick={e => e.stopPropagation()}
+                                      className="w-[42px] text-right text-[11px] font-bold border-0 bg-transparent outline-none p-0 appearance-none [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                                      style={{ color: proposedActive ? proposedColor : "#ccc8d6" }}
+                                    />
+                                  </div>
+                                ) : (
+                                  <span className="block text-right text-[11px] font-bold" style={{ color: "#ccc8d6" }}>✓</span>
+                                )}
+                              </td>
+                            );
+                          })()
                         )}
                       </tr>
                     );
@@ -1460,24 +1420,35 @@ function CompetitorMapCard({
           <span className="text-[12px] text-[#686576]">Your offers are priced below all nearby competitors.</span>
         </div>
       ) : (
-        <div className="px-[18px] py-[11px] border-t border-[#f0eff5] flex items-center justify-end">
+        <div className="px-[18px] py-[11px] border-t border-[#f0eff5] flex items-center justify-between gap-[8px]">
+          {correctionApplied && propOfferRows && onRevert && (
+            <button
+              onClick={onRevert}
+              className="px-[14px] py-[7px] rounded-full text-[12px] font-semibold text-[#686576] border border-[#ddd9eb] hover:bg-[#f5f4f9] transition-colors whitespace-nowrap">
+              Revert my offers
+            </button>
+          )}
+          <div className="flex-1" />
           <button
             onClick={() => {
+              setCorrectionApplied(true);
               const offers = propOfferRows
                 ? tableRows.flatMap(r => {
                     const compPrices = Object.entries(r.prices).filter(([k]) => k !== "penske").map(([, p]) => p as number);
                     const mm = compPrices.length ? Math.min(...compPrices) : null;
                     if (!mm || (r.prices["penske" as CompDealerId] ?? Infinity) <= mm) return [];
-                    const rm = getRowMargin(r.model, r.trim);
-                    return [{ id: `corr-${r.model}-${r.trim.replace(/\s+/g, "-")}`, year: "2026", make: "Honda", model: r.model, trim: r.trim, offer_type: "Lease", monthly_payment: String(Math.max(mm - rm, 1)), term: "36", due_at_signing: "0", field_confidence: { monthly_payment: "high", term: "high" } } as ParsedOfferRow];
+                    const proposed = getProposed(r.model, r.trim, mm);
+                    const price = proposed ?? Math.max(mm - 10, 1);
+                    return [{ id: `corr-${r.model}-${r.trim.replace(/\s+/g, "-")}`, year: "2026", make: "Honda", model: r.model, trim: r.trim, offer_type: "Lease", monthly_payment: String(price), term: "36", due_at_signing: "0", field_confidence: { monthly_payment: "high", term: "high" } } as ParsedOfferRow];
                   })
                 : selectedModels.flatMap(m =>
                     Object.entries(COMPETITOR_LEASE_DATA[m] ?? {}).flatMap(([trim, prices]) => {
                       const cp = Object.entries(prices).filter(([k]) => k !== "penske").map(([, p]) => p as number);
                       if (!cp.length) return [];
                       const mm = Math.min(...cp);
-                      const rm = getRowMargin(m, trim);
-                      return [{ id: `comp-${m}-${trim.replace(/\s+/g, "-")}`, year: "2026", make: "Honda", model: m, trim, offer_type: "Lease", monthly_payment: String(Math.max(mm - rm, 1)), term: "36", due_at_signing: "0", notes: `Market low $${mm}/mo − $${rm} margin`, field_confidence: { monthly_payment: "high", term: "high", due_at_signing: "high" } } as ParsedOfferRow];
+                      const proposed = getProposed(m, trim, mm);
+                      const price = proposed ?? Math.max(mm - 10, 1);
+                      return [{ id: `comp-${m}-${trim.replace(/\s+/g, "-")}`, year: "2026", make: "Honda", model: m, trim, offer_type: "Lease", monthly_payment: String(price), term: "36", due_at_signing: "0", notes: `Market low $${mm}/mo`, field_confidence: { monthly_payment: "high", term: "high", due_at_signing: "high" } } as ParsedOfferRow];
                     })
                   );
               onRegenerate(offers, selectedModels);
@@ -2899,12 +2870,13 @@ function PreviewStrip({ msg, context }: { msg: PreviewMsg; context: ProjectConte
 // ─── ParsedOffersCard ─────────────────────────────────────────────────────────
 // Offer rows extracted from a file — rendered as regular OfferCards (no metrics)
 function ParsedOffersCard({
-  input, applied, onApply, onDismiss,
+  input, applied, onApply, onDismiss, onCompare,
 }: {
   input: ParsedOffersInput;
   applied: boolean;
   onApply: (offers: CustomOffer[]) => void;
   onDismiss: () => void;
+  onCompare?: (offers: ParsedOfferRow[]) => void;
 }) {
   const [checkedIds, setCheckedIds] = useState<Set<string>>(
     () => new Set(input.offers.map(o => o.id))
@@ -3124,6 +3096,14 @@ function ParsedOffersCard({
             ? "Select offers to add"
             : `Add ${checkedCount} offer${checkedCount === 1 ? "" : "s"} to project`}
         </button>
+        {onCompare && !applied && (
+          <button
+            onClick={() => onCompare(input.offers)}
+            className="px-[14px] py-[8px] rounded-full text-[13px] font-medium border border-[rgba(0,0,0,0.12)] text-[var(--ink-secondary)] hover:bg-black/5 transition-colors cursor-pointer shrink-0 whitespace-nowrap"
+          >
+            Compare
+          </button>
+        )}
         <button
           onClick={() => setCustomizeMode(m => !m)}
           className={cn(
@@ -3256,6 +3236,7 @@ export function ProjectAgentPane({ isOpen, onClose, userType, activeUserName }: 
     } catch { return []; }
   });
   const [simulatingStream,   setSimulatingStream]   = useState(false);
+  const [simulatingStreamLabel, setSimulatingStreamLabel] = useState("Setting up your project…");
   const [historySearch, setHistorySearch] = useState("");
   const currentThreadIdRef = useRef<string | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -3356,7 +3337,13 @@ export function ProjectAgentPane({ isOpen, onClose, userType, activeUserName }: 
     return () => window.removeEventListener(AGENT_ASSETS_GENERATED_EVENT, handler);
   }, [triggerEvent]);
 
-  useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages, streamingText]);
+  useEffect(() => {
+    // Don't auto-scroll when a competitor_map group was just added —
+    // user should stay at the intro text and scroll down themselves.
+    const recentMessages = messages.slice(Math.max(0, messages.length - 4));
+    if (recentMessages.some(m => m.type === "competitor_map")) return;
+    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages, streamingText]);
 
   // Dispatch to ProjectsModule
   const dispatchAction = useCallback((a: AgentActionPayload) =>
@@ -3518,6 +3505,11 @@ export function ProjectAgentPane({ isOpen, onClose, userType, activeUserName }: 
         id: `proactive-${Date.now()}`, role: "assistant", type: "proactive_questions",
         input: toolInput as ProactiveQuestionsInput, applied: false,
       } as ProactiveQuestionsMsg]);
+    } else if (toolName === "propose_campaign_mode") {
+      setMessages(prev => [...prev, {
+        id: `campaign-mode-${Date.now()}`, role: "assistant", type: "campaign_mode",
+        applied: false,
+      } as CampaignModeMsg]);
     } else if (toolName === "generate_dealer_background") {
       // ── PHASE 1: Fast preview (runs now, ~30s) ───────────────────────────
       // Remove any trailing assistant text message committed in the same turn —
@@ -3658,7 +3650,6 @@ export function ProjectAgentPane({ isOpen, onClose, userType, activeUserName }: 
         for (const k of confidenceKeys) {
           const flat = o[`confidence_${k}`] as string | undefined;
           if (flat) fc[k] = flat as "high" | "medium" | "low";
-          // Remove the flat key so it doesn't confuse the UI
           delete o[`confidence_${k}`];
         }
         return { ...o, field_confidence: fc };
@@ -3668,23 +3659,20 @@ export function ProjectAgentPane({ isOpen, onClose, userType, activeUserName }: 
         offers: normalizedOffers as ParsedOfferRow[],
         extraction_notes: rawInput.extraction_notes as string | undefined,
       };
-      const parsedId = `parsed-${Date.now()}`;
-      setMessages(prev => [...prev, {
-        id: parsedId, role: "assistant", type: "parsed_offers",
-        input: normalizedInput, applied: false,
-      } as ParsedOffersMsg]);
 
-      // Auto competitive analysis — fires when user uploaded offers with competitive intent
+      // Competitive upload flow — skip original ParsedOffersMsg; show map + adjusted offers
       if (competitiveAnalysisAfterExtractRef.current) {
         competitiveAnalysisAfterExtractRef.current = false;
         const leaseRows = normalizedInput.offers.filter(
-          o => o.offer_type === "Lease" && parseFloat(o.monthly_payment) > 0
+          o => o.offer_type?.toLowerCase() === "lease" && parseFloat(o.monthly_payment) > 0
         );
         if (leaseRows.length > 0) {
-          // Build offerRows using real extracted prices vs actual COMPETITOR_LEASE_DATA mins per model
           const offerRows: OfferCompRow[] = leaseRows.map(o => {
             const homePrice = Math.round(parseFloat(o.monthly_payment));
-            const modelData = COMPETITOR_LEASE_DATA[o.model] ?? {};
+            // Normalize model name: strip "Honda " prefix, strip trailing trim words
+            const rawModel = o.model ?? "";
+            const baseModel = rawModel.replace(/^Honda\s+/i, "").replace(/\s+(Sport|LX|EX|EX-L|Hybrid|AWD|2WD|4WD|Touring|SE|Sport AWD|TrailSport).*$/i, "").trim();
+            const modelData = COMPETITOR_LEASE_DATA[rawModel] ?? COMPETITOR_LEASE_DATA[baseModel] ?? {};
             const compPricesByDealer: Record<string, number[]> = {};
             for (const trimPrices of Object.values(modelData)) {
               for (const [dealerId, p] of Object.entries(trimPrices)) {
@@ -3697,48 +3685,46 @@ export function ProjectAgentPane({ isOpen, onClose, userType, activeUserName }: 
             for (const [id, prices] of Object.entries(compPricesByDealer)) {
               compPrices[id] = Math.min(...prices);
             }
-            return { model: o.model, trim: o.trim ?? "", homePrice, compPrices };
+            return { model: baseModel || rawModel, trim: o.trim ?? "", homePrice, compPrices };
           });
 
-          const marketMins = offerRows.map(r => Math.min(...Object.values(r.compPrices)));
+          const marketMins = offerRows.map(r =>
+            Object.values(r.compPrices).length ? Math.min(...Object.values(r.compPrices)) : Infinity
+          );
           const losingRows = offerRows.filter((r, i) => r.homePrice > marketMins[i]);
 
-          if (losingRows.length > 0) {
-            const correctedOffers: ParsedOfferRow[] = losingRows.map((r, idx) => {
-              const correctedPrice = Math.max(marketMins[offerRows.indexOf(r)] - 10, 1);
-              const original = leaseRows.find(o => o.model === r.model && (o.trim ?? "") === r.trim)!;
-              return {
-                ...original,
-                id: `corrected-${idx}-${Date.now()}`,
-                monthly_payment: String(correctedPrice),
-                notes: `Optimized from $${r.homePrice}/mo — market low $${marketMins[offerRows.indexOf(r)]}/mo`,
-                field_confidence: { monthly_payment: "high", term: "high" },
-              };
-            });
+          // All rows adjusted: correct losing, keep winning as-is
+          const adjustedOffers: ParsedOfferRow[] = leaseRows.map((o, i) => {
+            const mm = marketMins[i];
+            const isLosing = offerRows[i].homePrice > mm && mm < Infinity;
+            return isLosing
+              ? { ...o, id: `adj-${i}-${Date.now()}`, monthly_payment: String(Math.max(mm - 10, 1)),
+                  notes: `Optimized from $${offerRows[i].homePrice}/mo — market low $${mm}/mo`,
+                  field_confidence: { monthly_payment: "high", term: "high" } }
+              : { ...o, id: `adj-${i}-${Date.now()}` };
+          });
 
-            const models = [...new Set(offerRows.map(r => r.model))];
-            const now2 = Date.now() + 10;
-            setTimeout(() => {
-              setMessages(prev => [...prev,
-                {
-                  id: `a-${now2}`, role: "assistant", type: "text",
-                  content: `I noticed ${losingRows.length} of your ${leaseRows.length} offers are priced above nearby Honda dealers. Here's the market comparison — and I've prepared optimized pricing below:`,
-                } as TextMessage,
-                {
-                  id: `comp-${now2 + 1}`, role: "assistant", type: "competitor_map", applied: true,
-                  models, analysisMode: "real", offerRows,
-                } as CompetitorMapMsg,
-                {
-                  id: `parsed-${now2 + 2}`, role: "assistant", type: "parsed_offers", applied: false,
-                  input: {
-                    source: "Honda of Anywhere · optimized vs market",
-                    offers: correctedOffers,
-                  },
-                } as ParsedOffersMsg,
-              ]);
-            }, 600);
-          }
+          const models = [...new Set(offerRows.map(r => r.model))];
+          const introText = losingRows.length > 0
+            ? `I analyzed your ${leaseRows.length} offer${leaseRows.length !== 1 ? "s" : ""} — ${losingRows.length} ${losingRows.length === 1 ? "is" : "are"} priced above nearby Honda dealers. Here's the market comparison and the optimized pricing below:`
+            : `I analyzed your ${leaseRows.length} offer${leaseRows.length !== 1 ? "s" : ""} — all are priced competitively vs nearby Honda dealers. Here's the full market comparison:`;
+
+          const now2 = Date.now() + 10;
+          setTimeout(() => {
+            setMessages(prev => [...prev,
+              { id: `a-${now2}`, role: "assistant", type: "text", content: introText } as TextMessage,
+              { id: `comp-${now2 + 1}`, role: "assistant", type: "competitor_map", applied: true, models, analysisMode: "real", offerRows } as CompetitorMapMsg,
+              { id: `parsed-${now2 + 2}`, role: "assistant", type: "parsed_offers", applied: false,
+                input: { source: "Honda of Anywhere · optimized vs market", offers: adjustedOffers } } as ParsedOffersMsg,
+            ]);
+          }, 600);
         }
+      } else {
+        // Normal flow: show original extracted offers
+        setMessages(prev => [...prev, {
+          id: `parsed-${Date.now()}`, role: "assistant", type: "parsed_offers",
+          input: normalizedInput, applied: false,
+        } as ParsedOffersMsg]);
       }
     } else {
       setMessages(prev => [...prev, {
@@ -3953,12 +3939,18 @@ export function ProjectAgentPane({ isOpen, onClose, userType, activeUserName }: 
     // Intercept "compare my offers vs competition" — show contextual analysis card
     const isOfferComparisonQuery = /how\s+(are|do|is|were)\s+(my|our)\s+(offer|pric|lease)|compare\s+(my|our)\s+(offer|pric|lease)|how\s+(am\s+i|are\s+we)\s+(?:doing\s+)?(?:vs|against|compared|pric)|am\s+i\s+competitive|are\s+my\s+(offer|pric)\s+(?:good|competitive|in\s+line|right)|minhas?\s+offers?\s+(vs|contra|em\s+rela|compar)|como\s+(?:est[aã]o|ficaram|ficou)\s+(?:minhas?|as)\s+offers?|(?:eval|review|check|assess)\s+(?:my|our)\s+(?:offer|pric)|(?:my|our)\s+offer.*(?:vs|against|compet|market)|estou\s+competit|minhas\s+offers\s+boas|como\s+minhas\s+offers|minhas\s+offers.*mercado|as\s+offers.*concorr/i.test(text.trim());
 
-    // When uploading offers WITH competitive intent, flag so post-extraction handler auto-runs comparison
-    const hasCompetitiveUploadIntent = attachments.length > 0 && (
-      isOfferComparisonQuery ||
-      /anali[sz]|compare|compet|concorr|vs\s+(?:comp|concorr|market)|how.*stack/i.test(text)
+    // Always run competitive analysis when an offer file (Excel/PDF) is attached —
+    // regardless of the user's text. If the LLM calls propose_parsed_offers, the
+    // post-extraction handler will fire the map + adjusted offers automatically.
+    const hasOfferFile = attachments.some(f =>
+      /\.xlsx?$/i.test(f.name) ||
+      /\.(jpe?g|png|webp|gif)$/i.test(f.name) ||
+      f.type.includes("spreadsheet") ||
+      f.type.includes("excel") ||
+      f.type.startsWith("image/") ||
+      f.type === "application/pdf"
     );
-    if (hasCompetitiveUploadIntent) {
+    if (hasOfferFile) {
       competitiveAnalysisAfterExtractRef.current = true;
     }
 
@@ -4027,13 +4019,78 @@ export function ProjectAgentPane({ isOpen, onClose, userType, activeUserName }: 
       const userMsg: TextMessage = { id: `u-${Date.now()}`, role: "user", type: "text", content: text };
       const modelMatches = text.match(/\b(Accord|CR-V|Civic|Pilot)\b/gi);
       const models = modelMatches ? [...new Set(modelMatches.map(m => m.replace(/-/g, "-")))] : Object.keys(COMPETITOR_LEASE_DATA);
-      const now = Date.now();
 
-      setMessages(prev => [...prev,
-        userMsg,
-        { id: `a-${now}`, role: "assistant", type: "text", content: "Here's the competitor map for Honda dealers near Honda of Anywhere:" } as TextMessage,
-        { id: `comp-${now + 1}`, role: "assistant", type: "competitor_map", applied: true, models, analysisMode: "optimal" } as CompetitorMapMsg,
-      ]);
+      // Competitive Insights chip: full demo use-case with real losing offers + auto corrections
+      const isInsightsChip = text.includes("how are nearby Honda dealers pricing");
+
+      // Chip requires an open project
+      if (isInsightsChip && !ctxRef.current?.projectId) {
+        setMessages(prev => [...prev,
+          userMsg,
+          { id: `a-${Date.now()}`, role: "assistant", type: "text",
+            content: "Open a project first and I'll show you exactly how your current offers stack up against nearby Honda dealers." } as TextMessage,
+        ]);
+        return;
+      }
+
+      setMessages(prev => [...prev, userMsg]);
+      setSimulatingStreamLabel("Fetching local dealership data…");
+      setSimulatingStream(true);
+
+      setTimeout(() => setSimulatingStreamLabel("Fetching competitor pricing…"), 1800);
+      setTimeout(() => {
+        setSimulatingStream(false);
+        setSimulatingStreamLabel("Setting up your project…");
+        const now = Date.now();
+
+        if (isInsightsChip) {
+          // Full table: most offers winning, Civic LX + CR-V LX are losing (above market)
+          const offerRows: OfferCompRow[] = [
+            { model: "Accord", trim: "Hybrid Sport", homePrice: 320, compPrices: { greatlakes: 341 } },
+            { model: "Accord", trim: "LX",           homePrice: 239, compPrices: { greatlakes: 292, edmartin: 249 } },
+            { model: "CR-V",   trim: "LX",           homePrice: 310, compPrices: { greatlakes: 327, edmartin: 279 } }, // losing
+            { model: "CR-V",   trim: "Sport",        homePrice: 305, compPrices: { greatlakes: 350, hare: 319 } },
+            { model: "Civic",  trim: "LX",           homePrice: 279, compPrices: { greatlakes: 252 } },               // losing
+            { model: "Civic",  trim: "Sport",        homePrice: 225, compPrices: { greatlakes: 266, edmartin: 238 } },
+            { model: "Pilot",  trim: "EX-L",         homePrice: 595, compPrices: {} },
+          ];
+          const correctedOffers: ParsedOfferRow[] = [
+            {
+              id: `ci-civic-${now}`,
+              offer_type: "Lease", make: "Honda", model: "Civic", trim: "LX", year: "2025",
+              monthly_payment: "242", term: "36", due_at_signing: "2999",
+              notes: "Optimized from $279/mo — market low $252/mo (Great Lakes)",
+              field_confidence: { monthly_payment: "high", term: "high" },
+            },
+            {
+              id: `ci-crv-${now + 1}`,
+              offer_type: "Lease", make: "Honda", model: "CR-V", trim: "LX", year: "2025",
+              monthly_payment: "269", term: "36", due_at_signing: "2999",
+              notes: "Optimized from $310/mo — market low $279/mo (Ed Martin)",
+              field_confidence: { monthly_payment: "high", term: "high" },
+            },
+          ];
+          setMessages(prev => [...prev,
+            {
+              id: `a-${now}`, role: "assistant", type: "text",
+              content: "2 of your current offers are priced above nearby Honda dealers. Here's the market comparison — I've prepared optimized pricing below:",
+            } as TextMessage,
+            {
+              id: `comp-${now + 1}`, role: "assistant", type: "competitor_map", applied: true,
+              models: ["Accord", "CR-V", "Civic", "Pilot"], analysisMode: "real", offerRows,
+            } as CompetitorMapMsg,
+            {
+              id: `parsed-${now + 2}`, role: "assistant", type: "parsed_offers", applied: false,
+              input: { source: "Honda of Anywhere · optimized vs market", offers: correctedOffers },
+            } as ParsedOffersMsg,
+          ]);
+        } else {
+          setMessages(prev => [...prev,
+            { id: `a-${now}`, role: "assistant", type: "text", content: "Here's the competitor map for Honda dealers near Honda of Anywhere:" } as TextMessage,
+            { id: `comp-${now + 1}`, role: "assistant", type: "competitor_map", applied: true, models, analysisMode: "optimal" } as CompetitorMapMsg,
+          ]);
+        }
+      }, 3500);
 
       return;
     }
@@ -4152,7 +4209,14 @@ export function ProjectAgentPane({ isOpen, onClose, userType, activeUserName }: 
     // store the image for later use at the backgrounds step instead of routing to offer extraction.
     const isImageUpload = isFileUpload && (userMsg as UserFileMsg).files.some(f => f.type.startsWith("image/"));
     const lowerTextForBg = text.toLowerCase();
-    const hasBgIntent = isImageUpload && (
+    // Competitive keywords override background intent — treat image as offer document
+    const hasCompetitiveIntent = isImageUpload && (
+      lowerTextForBg.includes("competitor") || lowerTextForBg.includes("competitive") ||
+      lowerTextForBg.includes("compet") || lowerTextForBg.includes("concorr") ||
+      lowerTextForBg.includes("offer") || lowerTextForBg.includes("compare") ||
+      lowerTextForBg.includes("pricing") || lowerTextForBg.includes("market")
+    );
+    const hasBgIntent = isImageUpload && !hasCompetitiveIntent && (
       !lowerTextForBg.trim() ||            // bare image upload (no text) = bg intent
       lowerTextForBg.includes("background") || lowerTextForBg.includes("project") ||
       lowerTextForBg.includes("campaign") || lowerTextForBg.includes("include") ||
@@ -4546,6 +4610,18 @@ export function ProjectAgentPane({ isOpen, onClose, userType, activeUserName }: 
     ), 200);
   }, [sendInternal]);
 
+  // ── Campaign mode selection ─────────────────────────────────────────────────
+  const handleCampaignModeChoice = useCallback((choice: "standard" | "proactive") => {
+    setMessages(prev => prev.map(m =>
+      m.type === "campaign_mode" && !(m as CampaignModeMsg).applied
+        ? { ...m, applied: true } as CampaignModeMsg : m
+    ));
+    const continuation = choice === "standard"
+      ? "Campaign mode: standard flow"
+      : "Campaign mode: proactive flow";
+    setTimeout(() => sendInternal(continuation), 200);
+  }, [sendInternal]);
+
   // ── Offers card ─────────────────────────────────────────────────────────────
   const handleOffersApply = useCallback((offerIds: string[], editedOfferIds: string[] = []) => {
     dispatchAction({ action: "add_offers", offerIds, editedOfferIds });
@@ -4835,6 +4911,73 @@ export function ProjectAgentPane({ isOpen, onClose, userType, activeUserName }: 
       } as ParsedOffersInput,
       applied: false,
     } as ParsedOffersMsg]);
+  }, []);
+
+  const handleCompetitorMapRevert = useCallback(() => {
+    setMessages(prev => [...prev, {
+      id: `a-${Date.now()}`, role: "assistant", type: "text",
+      content: "Got it — keeping your original offers as uploaded. No changes applied.",
+    } as TextMessage]);
+  }, []);
+
+  const handleParsedOffersCompare = useCallback((offers: ParsedOfferRow[]) => {
+    const leaseRows = offers.filter(o => o.offer_type?.toLowerCase() === "lease" && parseFloat(o.monthly_payment) > 0);
+    if (leaseRows.length === 0) return;
+    const offerRows: OfferCompRow[] = leaseRows.map(o => {
+      const homePrice = Math.round(parseFloat(o.monthly_payment));
+      const rawModel = o.model ?? "";
+      const baseModel = rawModel.replace(/^Honda\s+/i, "").replace(/\s+(Sport|LX|EX|EX-L|Hybrid|AWD|2WD|4WD|Touring|SE|Sport AWD|TrailSport).*$/i, "").trim();
+      const modelData = COMPETITOR_LEASE_DATA[rawModel] ?? COMPETITOR_LEASE_DATA[baseModel] ?? {};
+      const compPricesByDealer: Record<string, number[]> = {};
+      for (const trimPrices of Object.values(modelData)) {
+        for (const [dealerId, p] of Object.entries(trimPrices)) {
+          if (dealerId === "penske") continue;
+          if (!compPricesByDealer[dealerId]) compPricesByDealer[dealerId] = [];
+          compPricesByDealer[dealerId].push(p as number);
+        }
+      }
+      const compPrices: Record<string, number> = {};
+      for (const [id, prices] of Object.entries(compPricesByDealer)) {
+        compPrices[id] = Math.min(...prices);
+      }
+      return { model: baseModel || rawModel, trim: o.trim ?? "", homePrice, compPrices };
+    });
+    const marketMins = offerRows.map(r =>
+      Object.values(r.compPrices).length ? Math.min(...Object.values(r.compPrices)) : Infinity
+    );
+    const losingRows = offerRows.filter((r, i) => r.homePrice > marketMins[i]);
+    const adjustedOffers: ParsedOfferRow[] = leaseRows.map((o, i) => {
+      const mm = marketMins[i];
+      const isLosing = offerRows[i].homePrice > mm && mm < Infinity;
+      return isLosing
+        ? { ...o, id: `adj-${i}-${Date.now()}`, monthly_payment: String(Math.max(mm - 10, 1)),
+            notes: `Optimized from $${offerRows[i].homePrice}/mo — market low $${mm}/mo`,
+            field_confidence: { monthly_payment: "high", term: "high" } }
+        : { ...o, id: `adj-${i}-${Date.now()}` };
+    });
+    const models = [...new Set(offerRows.map(r => r.model))];
+    const introText = losingRows.length > 0
+      ? `I analyzed your ${leaseRows.length} offer${leaseRows.length !== 1 ? "s" : ""} — **${losingRows.length} ${losingRows.length === 1 ? "is" : "are"} priced above nearby Honda dealers** and need correction. Here's the full market breakdown:`
+      : `I compared your ${leaseRows.length} offer${leaseRows.length !== 1 ? "s" : ""} against nearby Honda dealers — all are priced competitively. Here's the full market comparison:`;
+    const instructionText = losingRows.length > 0
+      ? `I've proposed the adjusted offers in the table below. Review the optimized pricing and click **Apply Corrections** to apply the changes.`
+      : `Your offers look great — no adjustments needed.`;
+    setSimulatingStreamLabel("Fetching competitor pricing…");
+    setSimulatingStream(true);
+    setTimeout(() => setSimulatingStreamLabel("Analyzing your offers…"), 1800);
+    setTimeout(() => {
+      setSimulatingStream(false);
+      setSimulatingStreamLabel("Setting up your project…");
+      const now = Date.now();
+      const textMsgId = `a-${now}`;
+      setMessages(prev => [...prev,
+        { id: textMsgId, role: "assistant", type: "text", content: introText } as TextMessage,
+        { id: `comp-${now + 1}`, role: "assistant", type: "competitor_map", applied: true, models, analysisMode: "real", offerRows } as CompetitorMapMsg,
+        { id: `a2-${now + 2}`, role: "assistant", type: "text", content: instructionText } as TextMessage,
+        { id: `parsed-${now + 3}`, role: "assistant", type: "parsed_offers", applied: false,
+          input: { source: "Honda of Anywhere · optimized vs market", offers: adjustedOffers } } as ParsedOffersMsg,
+      ]);
+    }, 3200);
   }, []);
 
   // ── Brand card ──────────────────────────────────────────────────────────────
@@ -5225,11 +5368,13 @@ export function ProjectAgentPane({ isOpen, onClose, userType, activeUserName }: 
                         {messages.map(msg => (
                         <motion.div
                           key={msg.id}
+                          data-msg-id={msg.id}
                           initial={{ opacity: 0, y: 8 }}
                           animate={{ opacity: 1, y: 0 }}
                           exit={{ opacity: 0, y: -4 }}
                           transition={{ duration: 0.25, ease: [0.25, 0.1, 0.25, 1] }}
                           layout="position"
+                          style={msg.type === "competitor_map" ? { marginTop: -6 } : undefined}
                         >
                         <MessageBubble
                           message={msg} context={filteredContext}
@@ -5267,6 +5412,7 @@ export function ProjectAgentPane({ isOpen, onClose, userType, activeUserName }: 
                           }}
                           proactive={proactiveMode}
                           onProactiveQuestionsApply={handleProactiveQuestionsSubmit}
+                          onCampaignModeChoice={handleCampaignModeChoice}
                           dispatchAction={dispatchAction}
                           onDealerBgApprove={(bgObject) => {
                             // ── PHASE 2: Generate per-template clean bgs + per-offer composites ──
@@ -5338,6 +5484,8 @@ export function ProjectAgentPane({ isOpen, onClose, userType, activeUserName }: 
                           onCompetitorMapGenerate={(offers, selectedModels) =>
                             handleCompetitorMapGenerate(msg.id, offers)
                           }
+                          onCompetitorMapRevert={handleCompetitorMapRevert}
+                          onParsedOffersCompare={handleParsedOffersCompare}
                         />
                         </motion.div>
                       ))}
@@ -5369,7 +5517,7 @@ export function ProjectAgentPane({ isOpen, onClose, userType, activeUserName }: 
                           <img src={imgAgentAvatar} alt="AI" className="w-[22px] h-[22px] rounded-full object-cover shrink-0" />
                           <div className="flex items-center gap-[6px]">
                             <ConstellationArcMark arcs={arcState} size={18} />
-                            <span className="text-[12px] text-[var(--ink-secondary)] tracking-[0.4px]">{simulatingStream ? "Setting up your project…" : loadingLabel}</span>
+                            <span className="text-[12px] text-[var(--ink-secondary)] tracking-[0.4px]">{simulatingStream ? simulatingStreamLabel : loadingLabel}</span>
                           </div>
                         </div>
                       )}
@@ -5433,10 +5581,13 @@ function MessageBubble({
   onTaskOwnersApply,
   proactive,
   onProactiveQuestionsApply,
+  onCampaignModeChoice,
   dispatchAction,
   onDealerBgApprove,
   onDealerBgSkip,
   onCompetitorMapGenerate,
+  onCompetitorMapRevert,
+  onParsedOffersCompare,
 }: {
   message: Message;
   context: ProjectContextPayload | null;
@@ -5467,10 +5618,13 @@ function MessageBubble({
   onTaskOwnersApply: (owners: Record<string, string>) => void;
   proactive?: boolean;
   onProactiveQuestionsApply?: (goal: string, timeline: string, offerFocus: string) => void;
+  onCampaignModeChoice?: (choice: "standard" | "proactive") => void;
   dispatchAction?: (a: AgentActionPayload) => void;
   onDealerBgApprove?: (bgObject: { id: string; name: string; thumbnail: string; images: Record<string, string> }) => void;
   onDealerBgSkip?: () => void;
   onCompetitorMapGenerate?: (offers: ParsedOfferRow[], selectedModels: string[]) => void;
+  onCompetitorMapRevert?: () => void;
+  onParsedOffersCompare?: (offers: ParsedOfferRow[]) => void;
 }) {
   if (message.type === "continuation") {
     return null;
@@ -5482,6 +5636,16 @@ function MessageBubble({
         input={message.input}
         applied={message.applied}
         onSubmit={onProactiveQuestionsApply ?? (() => {})}
+      />
+    );
+  }
+
+  if (message.type === "campaign_mode") {
+    return (
+      <CampaignModeCard
+        applied={message.applied}
+        onLetMeConfirm={() => onCampaignModeChoice?.("standard")}
+        onSetUpForMe={() => onCampaignModeChoice?.("proactive")}
       />
     );
   }
@@ -5515,6 +5679,7 @@ function MessageBubble({
         applied={message.applied}
         onApply={onParsedOffersApply}
         onDismiss={onParsedOffersDismiss}
+        onCompare={onParsedOffersCompare}
       />
     );
   }
@@ -5717,6 +5882,7 @@ function MessageBubble({
         homeOffers={cm.homeOffers}
         offerRows={cm.offerRows}
         onRegenerate={(offers, selectedModels) => onCompetitorMapGenerate?.(offers, selectedModels)}
+        onRevert={onCompetitorMapRevert}
       />
     );
   }

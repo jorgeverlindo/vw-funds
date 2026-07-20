@@ -200,3 +200,79 @@ export const SOURCE_IMAGES_RAPTOR_002817: SourceImageRecord[] = [
     date: '2025-08-15',
   },
 ];
+
+// ─── VIN-specific full source-image records ───────────────────────────────────
+// Pre-built SourceImageRecord keyed by VIN string.
+// VinDetailContent checks this map first; if found, uses it directly instead of
+// building a single-card-per-angle record from vehicleGroup.sourceAngles.
+
+const R_34L   = 'https://res.cloudinary.com/dvq75cqna/image/upload/v1780071228/vw-funds/inventory/vehicles/Blue/72_2026_YFM70RSCTL_DPBSE_US_06_YY_11_RGB_1.png';
+const R_FRONT = 'https://res.cloudinary.com/dvq75cqna/image/upload/v1780071221/vw-funds/inventory/vehicles/Blue/72_2026_YFM70RSCTL_DPBSE_US_01_YY_07_RGB_1.png';
+const R_34R   = 'https://res.cloudinary.com/dvq75cqna/image/upload/v1780071224/vw-funds/inventory/vehicles/Blue/72_2026_YFM70RSCTL_DPBSE_US_04_YY_09_RGB_1.png';
+const R_RIGHT = 'https://res.cloudinary.com/dvq75cqna/image/upload/v1780071223/vw-funds/inventory/vehicles/Blue/72_2026_YFM70RSCTL_DPBSE_US_03_YY_08_RGB_1.png';
+const R_REAR  = 'https://res.cloudinary.com/dvq75cqna/image/upload/v1780071227/vw-funds/inventory/vehicles/Blue/72_2026_YFM70RSCTL_DPBSE_US_05_YY_10_RGB_1.png';
+const R_LEFT  = 'https://res.cloudinary.com/dvq75cqna/image/upload/v1780071230/vw-funds/inventory/vehicles/Blue/72_2026_YFM70RSCTL_DPBSE_US_07_YY_12_RGB_1.png';
+
+export const VIN_SOURCE_RECORDS: Record<string, SourceImageRecord> = {
+  'JY4AM03RNRA019034': {
+    id:          'si-vin05',
+    thumbnail:   R_34L,
+    imageCount:  15,
+    name:        'JY4AM03RNRA019034_2024_Yamaha_Raptor_700R_SE_Sources.jpg',
+    format:      'JPG',
+    dimensions:  '4032×3024',
+    status:      'Active',
+    tags:        ['Yamaha', 'Raptor', '700R SE'],
+    source:      'vAuto',
+    subtype:     'StockPhotos',
+    date:        '2025-08-15',
+    vehicleName: '2024 Yamaha Raptor 700R SE',
+    angleGroups: [
+      {
+        key: '34l', label: '3/4 L', activeCardId: 'vin05-34l-0',
+        cards: [
+          { id: 'vin05-34l-0', src: R_34L, filename: 'JY4AM03RNRA019034_34L_vAuto_001.jpg',      source: 'vAuto',       date: '2025-08-15 14:23' },
+          { id: 'vin05-34l-1', src: R_34L, filename: 'JY4AM03RNRA019034_34L_JDP_001.jpg',        source: 'JDP',         date: '2025-06-10 09:15' },
+          { id: 'vin05-34l-2', src: R_34L, filename: 'JY4AM03RNRA019034_34L_MarketCheck_001.jpg', source: 'MarketCheck', date: '2025-04-22 16:40' },
+          { id: 'vin05-34l-3', src: R_34L, filename: 'JY4AM03RNRA019034_34L_JDP_002.jpg',        source: 'JDP',         date: '2025-02-01 11:00' },
+        ],
+      },
+      {
+        key: 'front', label: 'Front', activeCardId: 'vin05-front-0',
+        cards: [
+          { id: 'vin05-front-0', src: R_FRONT, filename: 'JY4AM03RNRA019034_Front_vAuto_001.jpg',  source: 'vAuto',       date: '2025-08-15 14:25' },
+          { id: 'vin05-front-1', src: R_FRONT, filename: 'JY4AM03RNRA019034_Front_JDP_001.jpg',    source: 'JDP',         date: '2025-06-10 09:18' },
+          { id: 'vin05-front-2', src: R_FRONT, filename: 'JY4AM03RNRA019034_Front_Manual_001.jpg', source: 'Manual',      date: '2025-03-14 08:30' },
+        ],
+      },
+      {
+        key: '34r', label: '3/4 R', activeCardId: 'vin05-34r-0',
+        cards: [
+          { id: 'vin05-34r-0', src: R_34R, filename: 'JY4AM03RNRA019034_34R_vAuto_001.jpg', source: 'vAuto', date: '2025-08-15 14:27' },
+        ],
+      },
+      {
+        key: 'right', label: 'Right', activeCardId: 'vin05-right-0',
+        cards: [
+          { id: 'vin05-right-0', src: R_RIGHT, filename: 'JY4AM03RNRA019034_Right_MarketCheck_001.jpg', source: 'MarketCheck', date: '2025-08-15 14:29' },
+          { id: 'vin05-right-1', src: R_RIGHT, filename: 'JY4AM03RNRA019034_Right_JDP_001.jpg',         source: 'JDP',         date: '2025-05-20 10:45' },
+        ],
+      },
+      {
+        key: 'rear', label: 'Rear', activeCardId: 'vin05-rear-0',
+        cards: [
+          { id: 'vin05-rear-0', src: R_REAR, filename: 'JY4AM03RNRA019034_Rear_vAuto_001.jpg', source: 'vAuto', date: '2025-08-15 14:31' },
+        ],
+      },
+      {
+        key: 'left', label: 'Left', activeCardId: 'vin05-left-0',
+        cards: [
+          { id: 'vin05-left-0', src: R_LEFT, filename: 'JY4AM03RNRA019034_Left_vAuto_001.jpg',      source: 'vAuto',       date: '2025-08-15 14:33' },
+          { id: 'vin05-left-1', src: R_LEFT, filename: 'JY4AM03RNRA019034_Left_JDP_001.jpg',        source: 'JDP',         date: '2025-06-10 09:22' },
+          { id: 'vin05-left-2', src: R_LEFT, filename: 'JY4AM03RNRA019034_Left_MarketCheck_001.jpg', source: 'MarketCheck', date: '2025-04-22 17:05' },
+          { id: 'vin05-left-3', src: R_LEFT, filename: 'JY4AM03RNRA019034_Left_Manual_001.jpg',     source: 'Manual',      date: '2025-01-08 15:00' },
+        ],
+      },
+    ],
+  },
+};

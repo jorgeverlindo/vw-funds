@@ -33,6 +33,7 @@ import { PriceToMarketChip, PriorityScoreChip } from './VehicleInventoryGrid';
 import { AngleStripVin } from './AngleStripVin';
 import { SourceImagesGrid } from './SourceImagesGrid';
 import type { SourceImageRecord } from '../../../data/inventory/sourceImages';
+import { VIN_SOURCE_RECORDS } from '../../../data/inventory/sourceImages';
 
 // ─── Typography ────────────────────────────────────────────────────────────────
 const BODY1   = "font-['Roboto',sans-serif] font-normal text-[14px] leading-[1.5] tracking-[0.15px]";
@@ -265,42 +266,45 @@ export function VinDetailContent({ record, onBack, variant = 'auto' }: VinDetail
     '34l': '3/4 L', front: 'Front', '34r': '3/4 R', right: 'Right', rear: 'Rear', left: 'Left',
   };
 
-  const sourceImages: SourceImageRecord[] = vg?.sourceAngles
-    ? [{
-        id:           `si-${record.id}`,
-        thumbnail:    vg.sourceAngles['34l'] ?? record.thumbnail,
-        imageCount:   Object.values(vg.sourceAngles).filter(Boolean).length,
-        name:         `${record.vin}_${record.year}_${record.make}_${record.model.replace(/\s+/g, '_')}_Sources.jpg`,
-        format:       'JPG',
-        dimensions:   '4032×3024',
-        status:       'Active',
-        tags:         [record.make, record.model, record.trim].filter(Boolean),
-        source:       'vAuto' as const,
-        subtype:      'StockPhotos',
-        date:         '2025-08-15',
-        vehicleName:  `${record.year} ${record.make} ${record.model}`,
-        generatedAngles: vg.angles as Record<string, string | null>,
-        angleGroups: ANGLE_ORDER_SI.map(key => {
-          const src = vg.sourceAngles![key] ?? null;
-          const label = ANGLE_LABELS_SI[key];
-          const cardId = src ? `${record.id}-${key}-0` : null;
-          return {
-            key,
-            label,
-            activeCardId: cardId,
-            cards: src
-              ? [{
-                  id:       cardId!,
-                  src,
-                  filename: `${record.vin}_${label.replace(/[^a-zA-Z0-9]/g, '_')}_20250815.jpg`,
-                  source:   'Manual' as const,
-                  date:     '2025-08-15 14:23',
-                }]
-              : [],
-          };
-        }),
-      }]
-    : [];
+  const vinOverride = VIN_SOURCE_RECORDS[record.vin] ?? null;
+  const sourceImages: SourceImageRecord[] = vinOverride
+    ? [{ ...vinOverride, generatedAngles: vg?.angles as Record<string, string | null> | undefined }]
+    : vg?.sourceAngles
+      ? [{
+          id:           `si-${record.id}`,
+          thumbnail:    vg.sourceAngles['34l'] ?? record.thumbnail,
+          imageCount:   Object.values(vg.sourceAngles).filter(Boolean).length,
+          name:         `${record.vin}_${record.year}_${record.make}_${record.model.replace(/\s+/g, '_')}_Sources.jpg`,
+          format:       'JPG',
+          dimensions:   '4032×3024',
+          status:       'Active',
+          tags:         [record.make, record.model, record.trim].filter(Boolean),
+          source:       'vAuto' as const,
+          subtype:      'StockPhotos',
+          date:         '2025-08-15',
+          vehicleName:  `${record.year} ${record.make} ${record.model}`,
+          generatedAngles: vg.angles as Record<string, string | null>,
+          angleGroups: ANGLE_ORDER_SI.map(key => {
+            const src = vg.sourceAngles![key] ?? null;
+            const label = ANGLE_LABELS_SI[key];
+            const cardId = src ? `${record.id}-${key}-0` : null;
+            return {
+              key,
+              label,
+              activeCardId: cardId,
+              cards: src
+                ? [{
+                    id:       cardId!,
+                    src,
+                    filename: `${record.vin}_${label.replace(/[^a-zA-Z0-9]/g, '_')}_20250815.jpg`,
+                    source:   'vAuto' as const,
+                    date:     '2025-08-15 14:23',
+                  }]
+                : [],
+            };
+          }),
+        }]
+      : [];
 
   // OEM users can click "Config Used" to jump directly to that config's edit view.
   // Dealer users see the name as read-only text.

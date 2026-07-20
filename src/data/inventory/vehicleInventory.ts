@@ -61,6 +61,17 @@ function jb(model: string, uuid: string): string {
 
 export const VEHICLE_INVENTORY: VinInventoryRecord[] = [
 
+  // ── vin-05: Raptor 700R SE — example VIN with full multi-angle source images ──
+  {
+    id: 'vin-05', vin: 'JY4AM03RNRA019034',
+    condition: 'New',  year: 2024, make: 'Yamaha', model: 'Raptor', trim: '700R SE',
+    price: 9499, aiGeneration: 'enabled', aiConfigApplied: true,
+    vehicleGroup: { ...BLUE_VEHICLE_GROUP, id: 'raptor-vg-05', vin: 'JY4AM03RNRA019034' },
+    syndication: 'syndicated',    exteriorColor: 'Dark Gray Metallic',
+    vehicleStatus: 'In Transit',  dol: 35, priceToMarket: 'close',      priorityScore: 4,
+    thumbnail: raptorThumb,
+  },
+
   // ── vin-01: TW200T — AI-generated angles ──────────────────────────────────
   {
     id: 'vin-01', vin: 'WBA8D9C50JK678112',
@@ -85,7 +96,7 @@ export const VEHICLE_INVENTORY: VinInventoryRecord[] = [
     thumbnail: raptorThumb,
   },
 
-  // ── vin-03 – vin-05: 3 specific VINs (user-requested) ─────────────────────
+  // ── vin-03 – vin-04: 2 specific VINs (user-requested) ─────────────────────
   {
     id: 'vin-03', vin: 'JY4AY45XPRA007634',
     condition: 'New',  year: 2024, make: 'Yamaha', model: 'YFZ450R', trim: 'SE',
@@ -103,15 +114,6 @@ export const VEHICLE_INVENTORY: VinInventoryRecord[] = [
     vehicleStatus: 'In Transit',  dol: 10, priceToMarket: 'below',      priorityScore: 6,
     thumbnail: kodiakThumb,
   },
-  {
-    id: 'vin-05', vin: 'JY4AM03RNRA019034',
-    condition: 'New',  year: 2024, make: 'Yamaha', model: 'Raptor', trim: '700R SE',
-    price: 9499, aiGeneration: 'enabled', aiConfigApplied: true,
-    syndication: 'syndicated',    exteriorColor: 'Dark Gray Metallic',
-    vehicleStatus: 'In Transit',  dol: 35, priceToMarket: 'close',      priorityScore: 4,
-    thumbnail: raptorThumb,
-  },
-
   // ── vin-06 – vin-10: Kodiak 450 (needed for AI Config flows) ────────────────
   {
     id: 'vin-06', vin: 'JY4AK05RNRA003782',

@@ -10,11 +10,13 @@
 //          · current · source · subtype · timestamp · activeUrl
 
 import React, { useState } from 'react';
-import { Link, Check } from 'lucide-react';
+import { Link } from 'lucide-react';
 import { cn } from '../../../lib/utils';
 import { StatusChip } from '../shared/StatusIcon';
 import { SourceImagesDrawer } from './SourceImagesDrawer';
 import type { SourceImageRecord } from '../../../data/inventory/sourceImages';
+import { emitSnackbar } from '../Snackbar';
+import { Tooltip, TooltipTrigger, TooltipContent } from '../ui/tooltip';
 
 // ─── Relative date helper ─────────────────────────────────────────────────────
 function relativeDate(dateStr: string): string {
@@ -39,32 +41,41 @@ const ANGLE_LABELS: Record<string, string> = {
 
 // ─── AngleUrlChip ─────────────────────────────────────────────────────────────
 function AngleUrlChip({ label, url }: { label: string; url: string }) {
-  const [copied, setCopied] = useState(false);
-
   const handleClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     navigator.clipboard.writeText(url).catch(() => {});
-    setCopied(true);
-    setTimeout(() => setCopied(false), 3000);
+    emitSnackbar('URL copied to clipboard');
   };
 
   return (
-    <button
-      onClick={handleClick}
-      className="inline-flex items-center gap-[4px] h-[24px] px-[6px] rounded-[6px] bg-[#f0f2f4] shrink-0 transition-colors hover:bg-[#e4e6ea]"
-      title={url}
-    >
-      {copied
-        ? <Check size={10} className="text-[#1b5e20] shrink-0" strokeWidth={2.5} />
-        : <Link size={10} className="text-[#1f1d25] shrink-0" strokeWidth={2} />
-      }
-      <span
-        style={{ fontSize: 11, fontFamily: "'Roboto',sans-serif", letterSpacing: '0.16px', transition: 'color 150ms' }}
-        className={copied ? 'text-[#1b5e20]' : 'text-[#1f1d25]'}
-      >
-        {label}
-      </span>
-    </button>
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <button
+          onClick={handleClick}
+          className="inline-flex items-center gap-[4px] h-[24px] px-[6px] rounded-[6px] bg-[#f0f2f4] shrink-0 transition-colors hover:bg-[#e4e6ea]"
+        >
+          <Link size={10} className="text-[#1f1d25] shrink-0" strokeWidth={2} />
+          <span
+            style={{
+              fontSize: 11,
+              fontFamily: "'Roboto',sans-serif",
+              letterSpacing: '0.16px',
+              maxWidth: 180,
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+              display: 'block',
+            }}
+            className="text-[#1f1d25]"
+          >
+            {label}
+          </span>
+        </button>
+      </TooltipTrigger>
+      <TooltipContent side="top" className="max-w-[320px] break-all text-[11px]">
+        {url}
+      </TooltipContent>
+    </Tooltip>
   );
 }
 

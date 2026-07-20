@@ -429,7 +429,7 @@ export function SourceImagesGrid({ records }: SourceImagesGridProps) {
                         overflow: 'clip',
                       } as React.CSSProperties}
                     >
-                      <div style={{ overflow: 'clip', minWidth: 0 } as React.CSSProperties}>
+                      <div style={{ overflow: 'hidden', minWidth: 0 }}>
                         <SourceImagesDrawer record={record} containerWidth={containerWidth} />
                       </div>
                     </div>

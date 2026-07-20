@@ -49,8 +49,6 @@ export function SourceImagesDrawer({ record, containerWidth }: SourceImagesDrawe
           marginBottom: 16,
           paddingLeft: 62,
           paddingRight: 12,
-          position: 'sticky',
-          left: 0,
         }}
       >
         <span className="font-['Roboto',sans-serif] font-medium text-[14px] leading-[1.57] tracking-[0.1px] text-[#1f1d25]">

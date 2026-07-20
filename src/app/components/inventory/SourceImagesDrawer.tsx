@@ -40,12 +40,12 @@ export function SourceImagesDrawer({ record }: SourceImagesDrawerProps) {
 
   return (
     <div
-      className="bg-[#f7f7f7] w-full"
+      className="bg-[#f7f7f7] w-full overflow-hidden"
       style={{ paddingTop: 16, paddingBottom: 24, paddingLeft: 62, paddingRight: 12 }}
     >
-      {/* ── Header — 30px, space-between ── */}
+      {/* ── Header — 30px, space-between — always visible, never scrolls ── */}
       <div
-        className="flex items-center justify-between"
+        className="flex items-center justify-between flex-shrink-0"
         style={{ height: 30, marginBottom: 16 }}
       >
         <span className="font-['Roboto',sans-serif] font-medium text-[14px] leading-[1.57] tracking-[0.1px] text-[#1f1d25]">

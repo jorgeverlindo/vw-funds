@@ -9,7 +9,7 @@
 // Columns: expand (chevron) · checkbox · thumbnail (simple img + count badge)
 //          · current · source · subtype · timestamp · activeUrl
 
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Link } from 'lucide-react';
 import { cn } from '../../../lib/utils';
 import { StatusChip } from '../shared/StatusIcon';
@@ -160,6 +160,18 @@ export function SourceImagesGrid({ records }: SourceImagesGridProps) {
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
   const [currentId,    setCurrentId]    = useState<string | null>(() => records[0]?.id ?? null);
 
+  const scrollContainerRef              = useRef<HTMLDivElement>(null);
+  const [containerWidth, setContainerWidth] = useState(0);
+  useEffect(() => {
+    const el = scrollContainerRef.current;
+    if (!el) return;
+    const obs = new ResizeObserver(entries => {
+      setContainerWidth(entries[0].contentRect.width);
+    });
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, []);
+
   const toggleExpand = (id: string) =>
     setExpandedRows(prev => {
       const next = new Set(prev);
@@ -189,7 +201,7 @@ export function SourceImagesGrid({ records }: SourceImagesGridProps) {
   });
 
   return (
-    <div className="flex-1 overflow-y-auto overflow-x-auto min-h-0">
+    <div ref={scrollContainerRef} className="flex-1 overflow-y-auto overflow-x-auto min-h-0">
       <table
         className="border-collapse"
         style={{ tableLayout: 'fixed', width: 'max-content', minWidth: '100%' }}
@@ -408,16 +420,17 @@ export function SourceImagesGrid({ records }: SourceImagesGridProps) {
               {/* ── Expansion drawer row — animated 450ms ── */}
               {hasDrawer && (
                 <tr className="border-b border-[rgba(0,0,0,0.12)]">
-                  <td colSpan={8} className="p-0">
+                  <td colSpan={8} className="p-0" style={{ overflow: 'clip' } as React.CSSProperties}>
                     <div
                       style={{
                         display: 'grid',
                         gridTemplateRows: isExpanded ? '1fr' : '0fr',
                         transition: 'grid-template-rows 450ms ease-in-out',
-                      }}
+                        overflow: 'clip',
+                      } as React.CSSProperties}
                     >
-                      <div style={{ overflow: 'hidden' }}>
-                        <SourceImagesDrawer record={record} />
+                      <div style={{ overflow: 'clip', minWidth: 0 } as React.CSSProperties}>
+                        <SourceImagesDrawer record={record} containerWidth={containerWidth} />
                       </div>
                     </div>
                   </td>

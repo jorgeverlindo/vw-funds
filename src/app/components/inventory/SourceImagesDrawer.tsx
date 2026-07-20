@@ -17,9 +17,10 @@ const ANGLE_ORDER = ['34l', 'front', '34r', 'right', 'rear', 'left'];
 
 interface SourceImagesDrawerProps {
   record: SourceImageRecord;
+  containerWidth?: number;
 }
 
-export function SourceImagesDrawer({ record }: SourceImagesDrawerProps) {
+export function SourceImagesDrawer({ record, containerWidth }: SourceImagesDrawerProps) {
   const angleGroups: AngleGroup[] = record.angleGroups ?? [];
   const generatedAngles           = record.generatedAngles ?? {};
 
@@ -39,14 +40,18 @@ export function SourceImagesDrawer({ record }: SourceImagesDrawerProps) {
   const currentAngle = anglesWithGenerated[modalIndex] ?? null;
 
   return (
-    <div
-      className="bg-[#f7f7f7] w-full overflow-hidden"
-      style={{ paddingTop: 16, paddingBottom: 24, paddingLeft: 62, paddingRight: 12 }}
-    >
-      {/* ── Header — 30px, space-between — always visible, never scrolls ── */}
+    <div className="bg-[#f7f7f7]" style={{ paddingTop: 16, paddingBottom: 24 }}>
+      {/* ── Header — sticky to left viewport edge so it stays visible when table scrolls ── */}
       <div
         className="flex items-center justify-between flex-shrink-0"
-        style={{ height: 30, marginBottom: 16 }}
+        style={{
+          height: 30,
+          marginBottom: 16,
+          paddingLeft: 62,
+          paddingRight: 12,
+          position: 'sticky',
+          left: 0,
+        }}
       >
         <span className="font-['Roboto',sans-serif] font-medium text-[14px] leading-[1.57] tracking-[0.1px] text-[#1f1d25]">
           Source Images
@@ -67,15 +72,17 @@ export function SourceImagesDrawer({ record }: SourceImagesDrawerProps) {
         )}
       </div>
 
-      {/* ── Angle columns — horizontal flex, each angle is a column with gray wrapper ── */}
+      {/* ── Angle columns — constrained to scroll container width → own horizontal scroll ── */}
       <div
         style={{
           display: 'flex',
           flexDirection: 'row',
           gap: 8,
           overflowX: 'auto',
-          scrollbarWidth: 'none',
-          msOverflowStyle: 'none',
+          scrollbarWidth: 'thin',
+          paddingLeft: 62,
+          paddingRight: 12,
+          ...(containerWidth ? { width: containerWidth } : {}),
         } as React.CSSProperties}
       >
         {orderedGroups.map(group => (

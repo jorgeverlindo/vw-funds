@@ -6,20 +6,67 @@
 //   • Per-row checkbox + select-all
 //   • Row height 90px, row hover states
 //
-// Columns: expand (chevron) · checkbox · thumbnail (stacked) · name
-//          · format · dimensions · status · tags
-//
-// Expansion drawer (shows angle breakdown) is NOT implemented here — chevrons are
-// always dimmed. A future iteration will replace this component with the full
-// accordion (Figma node 4073:450941).
+// Columns: expand (chevron) · checkbox · thumbnail (simple img + count badge)
+//          · current · source · subtype · timestamp · activeUrl
 
 import React, { useState } from 'react';
+import { Link, Check } from 'lucide-react';
 import { cn } from '../../../lib/utils';
-import { StackedThumbnail } from './StackedThumbnail';
 import { StatusChip } from '../shared/StatusIcon';
-import { ChannelChip } from '../ui/ChannelChip';
 import { SourceImagesDrawer } from './SourceImagesDrawer';
 import type { SourceImageRecord } from '../../../data/inventory/sourceImages';
+
+// ─── Relative date helper ─────────────────────────────────────────────────────
+function relativeDate(dateStr: string): string {
+  const d = new Date(dateStr);
+  const diff = Math.floor((Date.now() - d.getTime()) / 86400000);
+  if (diff === 0) return 'Today';
+  if (diff === 1) return 'Yesterday';
+  if (diff < 30) return `${diff} days ago`;
+  const months = Math.floor(diff / 30);
+  return `${months} month${months > 1 ? 's' : ''} ago`;
+}
+
+// ─── Angle labels ─────────────────────────────────────────────────────────────
+const ANGLE_LABELS: Record<string, string> = {
+  '34l': '3/4 L',
+  front: 'Front',
+  '34r': '3/4 R',
+  right: 'Right',
+  rear: 'Rear',
+  left: 'Left',
+};
+
+// ─── AngleUrlChip ─────────────────────────────────────────────────────────────
+function AngleUrlChip({ label, url }: { label: string; url: string }) {
+  const [copied, setCopied] = useState(false);
+
+  const handleClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    navigator.clipboard.writeText(url).catch(() => {});
+    setCopied(true);
+    setTimeout(() => setCopied(false), 3000);
+  };
+
+  return (
+    <button
+      onClick={handleClick}
+      className="inline-flex items-center gap-[4px] h-[24px] px-[6px] rounded-[6px] bg-[#f0f2f4] shrink-0 transition-colors hover:bg-[#e4e6ea]"
+      title={url}
+    >
+      {copied
+        ? <Check size={10} className="text-[#1b5e20] shrink-0" strokeWidth={2.5} />
+        : <Link size={10} className="text-[#1f1d25] shrink-0" strokeWidth={2} />
+      }
+      <span
+        style={{ fontSize: 11, fontFamily: "'Roboto',sans-serif", letterSpacing: '0.16px', transition: 'color 150ms' }}
+        className={copied ? 'text-[#1b5e20]' : 'text-[#1f1d25]'}
+      >
+        {label}
+      </span>
+    </button>
+  );
+}
 
 // ─── Arrow Down Icon (Figma: ArrowDownwardFilled 18×18) ───────────────────────
 function ArrowDownIcon() {
@@ -68,30 +115,28 @@ function HeaderDivider({
 
 // ─── Column widths ─────────────────────────────────────────────────────────────
 interface ColWidths {
-  expand:     number;
-  checkbox:   number;
-  thumbnail:  number;
-  name:       number;
-  format:     number;
-  dimensions: number;
-  status:     number;
-  tags:       number;
+  expand:    number;
+  checkbox:  number;
+  thumbnail: number;
+  current:   number;
+  source:    number;
+  subtype:   number;
+  timestamp: number;
 }
 
 const DEFAULT_WIDTHS: ColWidths = {
-  expand:     24,
-  checkbox:   42,
-  thumbnail:  76,
-  name:       240,
-  format:     80,
-  dimensions: 120,
-  status:     140,
-  tags:       200,
+  expand:    24,
+  checkbox:  42,
+  thumbnail: 76,
+  current:   160,
+  source:    100,
+  subtype:   120,
+  timestamp: 120,
 };
 
 // ─── Typography (mirrors DataGrid constants) ───────────────────────────────────
-const BODY2         = "font-['Roboto',sans-serif] font-normal text-[12px] leading-[1.43] tracking-[0.17px]";
-const HEADER_LABEL  = "font-['Roboto',sans-serif] font-medium text-[14px] leading-[24px] tracking-[0.17px] text-[#1f1d25] whitespace-nowrap";
+const BODY2        = "font-['Roboto',sans-serif] font-normal text-[12px] leading-[1.43] tracking-[0.17px]";
+const HEADER_LABEL = "font-['Roboto',sans-serif] font-medium text-[14px] leading-[24px] tracking-[0.17px] text-[#1f1d25] whitespace-nowrap";
 
 // ─── SourceImagesGrid ──────────────────────────────────────────────────────────
 interface SourceImagesGridProps {
@@ -102,6 +147,7 @@ export function SourceImagesGrid({ records }: SourceImagesGridProps) {
   const [selected,     setSelected]     = useState<Set<string>>(new Set());
   const [widths,       setWidths]       = useState<ColWidths>(DEFAULT_WIDTHS);
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
+  const [currentId,    setCurrentId]    = useState<string | null>(() => records[0]?.id ?? null);
 
   const toggleExpand = (id: string) =>
     setExpandedRows(prev => {
@@ -160,56 +206,56 @@ export function SourceImagesGrid({ records }: SourceImagesGridProps) {
             {/* Thumbnail — invisible per Figma (Card Image opacity-0 pattern) */}
             <th style={{ ...w('thumbnail'), opacity: 0 }} />
 
-            {/* Name — left divider resizes thumbnail col */}
-            <th className="text-left h-[52px] p-0" style={w('name')}>
+            {/* Current — left divider resizes thumbnail col */}
+            <th className="text-left h-[52px] p-0" style={w('current')}>
               <div className="flex items-center h-full">
                 <HeaderDivider prevWidth={widths.thumbnail} onPrevWidthChange={setW('thumbnail')} />
                 <div className="flex items-center gap-4 pr-[16px] py-[16px] flex-1 min-w-0">
-                  <span className={HEADER_LABEL}>Name</span>
+                  <span className={HEADER_LABEL}>Current Source Image</span>
                   <ArrowDownIcon />
                 </div>
               </div>
             </th>
 
-            {/* Format — left divider resizes name */}
-            <th className="text-left h-[52px] p-0" style={w('format')}>
+            {/* Source — left divider resizes current */}
+            <th className="text-left h-[52px] p-0" style={w('source')}>
               <div className="flex items-center h-full">
-                <HeaderDivider prevWidth={widths.name} onPrevWidthChange={setW('name')} />
+                <HeaderDivider prevWidth={widths.current} onPrevWidthChange={setW('current')} />
                 <div className="flex items-center gap-4 pr-[16px] py-[16px] flex-1 min-w-0">
-                  <span className={HEADER_LABEL}>Format</span>
+                  <span className={HEADER_LABEL}>Source</span>
                   <ArrowDownIcon />
                 </div>
               </div>
             </th>
 
-            {/* Dimensions — left divider resizes format */}
-            <th className="text-left h-[52px] p-0" style={w('dimensions')}>
+            {/* Subtype — left divider resizes source */}
+            <th className="text-left h-[52px] p-0" style={w('subtype')}>
               <div className="flex items-center h-full">
-                <HeaderDivider prevWidth={widths.format} onPrevWidthChange={setW('format')} />
+                <HeaderDivider prevWidth={widths.source} onPrevWidthChange={setW('source')} />
                 <div className="flex items-center gap-4 pr-[16px] py-[16px] flex-1 min-w-0">
-                  <span className={HEADER_LABEL}>Dimensions</span>
+                  <span className={HEADER_LABEL}>Subtype</span>
                   <ArrowDownIcon />
                 </div>
               </div>
             </th>
 
-            {/* Status — left divider resizes dimensions */}
-            <th className="text-left h-[52px] p-0" style={w('status')}>
+            {/* Timestamp — left divider resizes subtype */}
+            <th className="text-left h-[52px] p-0" style={w('timestamp')}>
               <div className="flex items-center h-full">
-                <HeaderDivider prevWidth={widths.dimensions} onPrevWidthChange={setW('dimensions')} />
+                <HeaderDivider prevWidth={widths.subtype} onPrevWidthChange={setW('subtype')} />
                 <div className="flex items-center gap-4 pr-[16px] py-[16px] flex-1 min-w-0">
-                  <span className={HEADER_LABEL}>Status</span>
+                  <span className={HEADER_LABEL}>Timestamp</span>
                   <ArrowDownIcon />
                 </div>
               </div>
             </th>
 
-            {/* Tags — left divider resizes status; last column */}
-            <th className="text-left h-[52px] p-0" style={w('tags')}>
+            {/* Active image URL — fill; left divider resizes timestamp */}
+            <th className="text-left h-[52px] p-0" style={{ minWidth: 280, flex: 1 }}>
               <div className="flex items-center h-full">
-                <HeaderDivider prevWidth={widths.status} onPrevWidthChange={setW('status')} />
+                <HeaderDivider prevWidth={widths.timestamp} onPrevWidthChange={setW('timestamp')} />
                 <div className="flex items-center gap-4 pr-[16px] py-[16px] flex-1 min-w-0">
-                  <span className={HEADER_LABEL}>Tags</span>
+                  <span className={HEADER_LABEL}>Active image URL</span>
                   <ArrowDownIcon />
                 </div>
               </div>
@@ -223,13 +269,28 @@ export function SourceImagesGrid({ records }: SourceImagesGridProps) {
           {records.map(record => {
             const isSelected = selected.has(record.id);
             const isExpanded = expandedRows.has(record.id);
+            const isCurrent  = record.id === currentId;
             const hasDrawer  = (record.angleGroups?.length ?? 0) > 0;
+
+            // Compute angle URL chips from angleGroups
+            const angleChips: { label: string; url: string }[] = [];
+            if (record.angleGroups) {
+              for (const group of record.angleGroups) {
+                if (group.cards.length === 0) continue;
+                const activeSrc =
+                  group.cards.find(c => c.id === group.activeCardId)?.src
+                  ?? group.cards[0]?.src;
+                if (!activeSrc) continue;
+                const label = ANGLE_LABELS[group.key] ?? group.label;
+                angleChips.push({ label, url: activeSrc });
+              }
+            }
 
             return (
               <React.Fragment key={record.id}>
               <tr
                 className={cn(
-                  'group h-[90px] transition-colors border-b border-[rgba(0,0,0,0.12)]',
+                  'group/row h-[90px] transition-colors border-b border-[rgba(0,0,0,0.12)]',
                   isSelected
                     ? 'bg-[rgba(99,86,225,0.08)] hover:bg-[rgba(99,86,225,0.12)]'
                     : 'bg-white hover:bg-[rgba(31,29,37,0.04)]',
@@ -276,50 +337,57 @@ export function SourceImagesGrid({ records }: SourceImagesGridProps) {
                   </div>
                 </td>
 
-                {/* Stacked thumbnail */}
+                {/* Thumbnail — simple img with numeric badge overlay */}
                 <td style={w('thumbnail')}>
-                  <StackedThumbnail
-                    src={record.thumbnail}
-                    alt={record.name}
-                    count={record.imageCount}
-                  />
+                  <div className="relative w-[60px] h-[60px] mx-[8px] shrink-0">
+                    <img
+                      src={record.thumbnail}
+                      alt=""
+                      className="w-full h-full object-cover rounded-[4px]"
+                    />
+                    {/* Count badge */}
+                    <span className="absolute bottom-0 right-0 translate-x-[4px] translate-y-[4px] min-w-[18px] h-[18px] rounded-full bg-white border border-[rgba(0,0,0,0.12)] flex items-center justify-center px-[3px]">
+                      <span className="text-[10px] font-medium text-[#1f1d25] leading-none" style={{ fontFamily: "'Roboto',sans-serif" }}>
+                        {record.imageCount}
+                      </span>
+                    </span>
+                  </div>
                 </td>
 
-                {/* Name — primary purple, truncated */}
-                <td className="px-4" style={w('name')}>
-                  <p className={cn(
-                    BODY2,
-                    'text-[#473bab] overflow-hidden text-ellipsis whitespace-nowrap cursor-pointer hover:underline',
-                  )}>
-                    {record.name}
-                  </p>
+                {/* Current column */}
+                <td className="px-4" style={w('current')}>
+                  {isCurrent ? (
+                    <StatusChip variant="check" label="Current" />
+                  ) : (
+                    <button
+                      onClick={() => setCurrentId(record.id)}
+                      className="opacity-0 group-hover/row:opacity-100 transition-opacity"
+                    >
+                      <StatusChip variant="pause" label="Make current" />
+                    </button>
+                  )}
                 </td>
 
-                {/* Format */}
-                <td className="px-4" style={w('format')}>
-                  <p className={cn(BODY2, 'text-[#1f1d25]')}>{record.format}</p>
+                {/* Source */}
+                <td className="px-4" style={w('source')}>
+                  <p className={cn(BODY2, 'text-[#1f1d25]')}>{record.source}</p>
                 </td>
 
-                {/* Dimensions — tabular numerals */}
-                <td className="px-4" style={w('dimensions')}>
-                  <p
-                    className={cn(BODY2, 'text-[#1f1d25] whitespace-nowrap')}
-                    style={{ fontVariantNumeric: 'tabular-nums' }}
-                  >
-                    {record.dimensions}
-                  </p>
+                {/* Subtype */}
+                <td className="px-4" style={w('subtype')}>
+                  <p className={cn(BODY2, 'text-[#1f1d25]')}>{record.subtype ?? 'StockPhotos'}</p>
                 </td>
 
-                {/* Status chip — only shown for Active rows; Paused rows are blank */}
-                <td className="px-4" style={w('status')}>
-                  {record.status === 'Active' && <StatusChip variant="check" />}
+                {/* Timestamp */}
+                <td className="px-4" style={w('timestamp')}>
+                  <p className={cn(BODY2, 'text-[#1f1d25] whitespace-nowrap')}>{relativeDate(record.date)}</p>
                 </td>
 
-                {/* Tags — ChannelChip without icon or remove */}
-                <td className="px-4" style={w('tags')}>
+                {/* Active image URL chips */}
+                <td className="px-4" style={{ minWidth: 280, flex: 1 }}>
                   <div className="flex items-center flex-wrap gap-[4px] py-[4px]">
-                    {record.tags.map(tag => (
-                      <ChannelChip key={tag} label={tag} />
+                    {angleChips.map(chip => (
+                      <AngleUrlChip key={chip.label} label={chip.label} url={chip.url} />
                     ))}
                   </div>
                 </td>

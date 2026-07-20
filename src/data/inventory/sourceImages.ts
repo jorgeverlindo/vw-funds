@@ -4,7 +4,7 @@
 // angle (3/4 L, Front, 3/4 R, Right) — matches Figma CP-12009 node 4073:450941.
 
 export type SourceImageFormat = 'JPG' | 'PNG' | 'RAW' | 'TIFF';
-export type SourceImageSource = 'Manual' | 'JDP' | 'MarketCheck';
+export type SourceImageSource = 'Manual' | 'JDP' | 'MarketCheck' | 'vAuto';
 
 export interface AngleCard {
   id: string;
@@ -36,6 +36,7 @@ export interface SourceImageRecord {
   status: 'Active' | 'Paused';
   tags: string[];
   source: SourceImageSource;
+  subtype?: string;
   date: string;
   /** Vehicle name shown in the drawer header (e.g. "2026 Yamaha Raptor 700R SE") */
   vehicleName?: string;
@@ -61,7 +62,8 @@ export const SOURCE_IMAGES_RAPTOR_002817: SourceImageRecord[] = [
     dimensions: '4032×3024',
     status: 'Active',
     tags: ['3/4 L', 'Raptor 700R SE', 'Sport ATV', '2024'],
-    source: 'Manual',
+    source: 'vAuto',
+    subtype: 'StockPhotos',
     date: '2025-08-15',
   },
   {
@@ -74,6 +76,7 @@ export const SOURCE_IMAGES_RAPTOR_002817: SourceImageRecord[] = [
     status: 'Active',
     tags: ['3/4 L', 'JDP Feed', 'Raptor 700R SE'],
     source: 'JDP',
+    subtype: 'StockPhotos',
     date: '2025-08-15',
   },
   {
@@ -86,6 +89,7 @@ export const SOURCE_IMAGES_RAPTOR_002817: SourceImageRecord[] = [
     status: 'Active',
     tags: ['3/4 L', 'JDP Feed', 'Wide'],
     source: 'JDP',
+    subtype: 'StockPhotos',
     date: '2025-08-15',
   },
   {
@@ -97,7 +101,8 @@ export const SOURCE_IMAGES_RAPTOR_002817: SourceImageRecord[] = [
     dimensions: '1920×1080',
     status: 'Paused',
     tags: ['3/4 L', 'MarketCheck', 'Sport ATV'],
-    source: 'MarketCheck',
+    source: 'vAuto',
+    subtype: 'StockPhotos',
     date: '2025-08-15',
   },
   // ── Front ─────────────────────────────────────────────────────────────────────
@@ -110,7 +115,8 @@ export const SOURCE_IMAGES_RAPTOR_002817: SourceImageRecord[] = [
     dimensions: '4032×3024',
     status: 'Active',
     tags: ['Front', 'Raptor 700R SE', 'Sport ATV', '2024'],
-    source: 'Manual',
+    source: 'MarketCheck',
+    subtype: 'StockPhotos',
     date: '2025-08-15',
   },
   {
@@ -122,7 +128,8 @@ export const SOURCE_IMAGES_RAPTOR_002817: SourceImageRecord[] = [
     dimensions: '4032×3024',
     status: 'Active',
     tags: ['Front', 'JDP Feed'],
-    source: 'JDP',
+    source: 'MarketCheck',
+    subtype: 'StockPhotos',
     date: '2025-08-15',
   },
   {
@@ -135,6 +142,7 @@ export const SOURCE_IMAGES_RAPTOR_002817: SourceImageRecord[] = [
     status: 'Active',
     tags: ['Front', 'JDP Feed', 'Transparent BG'],
     source: 'JDP',
+    subtype: 'StockPhotos',
     date: '2025-08-15',
   },
   // ── 3/4 R ─────────────────────────────────────────────────────────────────────
@@ -147,7 +155,8 @@ export const SOURCE_IMAGES_RAPTOR_002817: SourceImageRecord[] = [
     dimensions: '4032×3024',
     status: 'Active',
     tags: ['3/4 R', 'Raptor 700R SE', '2024'],
-    source: 'Manual',
+    source: 'vAuto',
+    subtype: 'StockPhotos',
     date: '2025-08-15',
   },
   {
@@ -159,7 +168,8 @@ export const SOURCE_IMAGES_RAPTOR_002817: SourceImageRecord[] = [
     dimensions: '1920×1080',
     status: 'Active',
     tags: ['3/4 R', 'JDP Feed'],
-    source: 'JDP',
+    source: 'vAuto',
+    subtype: 'StockPhotos',
     date: '2025-08-15',
   },
   // ── Right ─────────────────────────────────────────────────────────────────────
@@ -172,7 +182,8 @@ export const SOURCE_IMAGES_RAPTOR_002817: SourceImageRecord[] = [
     dimensions: '4032×3024',
     status: 'Active',
     tags: ['Right', 'Raptor 700R SE', 'Sport ATV'],
-    source: 'Manual',
+    source: 'MarketCheck',
+    subtype: 'StockPhotos',
     date: '2025-08-15',
   },
   {
@@ -184,7 +195,8 @@ export const SOURCE_IMAGES_RAPTOR_002817: SourceImageRecord[] = [
     dimensions: '1920×1080',
     status: 'Paused',
     tags: ['Right', 'MarketCheck'],
-    source: 'MarketCheck',
+    source: 'JDP',
+    subtype: 'StockPhotos',
     date: '2025-08-15',
   },
 ];

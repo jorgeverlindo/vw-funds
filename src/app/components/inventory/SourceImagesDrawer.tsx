@@ -9,7 +9,7 @@
 //   Dividers   — 1px rgba(0,0,0,0.12), centered in the 16px gap between rows
 
 import React, { useState } from 'react';
-import { AngleRow } from './AngleRow';
+import { AngleColumn } from './AngleColumn';
 import { AnglePreviewModal } from './AnglePreviewModal';
 import type { SourceImageRecord, AngleGroup } from '../../../data/inventory/sourceImages';
 
@@ -67,11 +67,20 @@ export function SourceImagesDrawer({ record }: SourceImagesDrawerProps) {
         )}
       </div>
 
-      {/* ── Angle rows — 16px gap with 1px centered divider between each ── */}
-      {orderedGroups.map((group, index) => (
-        <React.Fragment key={group.key}>
-          {index > 0 && <div style={{ height: 16 }} />}
-          <AngleRow
+      {/* ── Angle columns — horizontal flex, each angle is a column with gray wrapper ── */}
+      <div
+        style={{
+          display: 'flex',
+          flexDirection: 'row',
+          gap: 8,
+          overflowX: 'auto',
+          scrollbarWidth: 'none',
+          msOverflowStyle: 'none',
+        } as React.CSSProperties}
+      >
+        {orderedGroups.map(group => (
+          <AngleColumn
+            key={group.key}
             angleName={group.label}
             cards={group.cards}
             activeCardId={activeCardIds[group.key] ?? null}
@@ -79,8 +88,8 @@ export function SourceImagesDrawer({ record }: SourceImagesDrawerProps) {
               setActiveCardIds(prev => ({ ...prev, [group.key]: cardId }))
             }
           />
-        </React.Fragment>
-      ))}
+        ))}
+      </div>
 
       {/* ── AnglePreviewModal — generated images only ── */}
       {currentAngle && (

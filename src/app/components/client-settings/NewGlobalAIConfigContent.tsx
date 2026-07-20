@@ -2134,7 +2134,7 @@ export function NewGlobalAIConfigContent({
                                 <button
                                   onClick={
                                     editingAngleIndex !== null
-                                      ? handleGenerateSingleAngle
+                                      ? () => handleGenerateSingleAngle()
                                       : isKodiak
                                         ? handleGenerateImages
                                         : handleGenerateBg

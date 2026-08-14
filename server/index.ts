@@ -5,6 +5,8 @@ import { cors } from "hono/cors";
 import Anthropic from "@anthropic-ai/sdk";
 import { agentTools, executeTool } from "./tools.js";
 import { buildSystemPrompt, type ProjectContext } from "./system-prompt.js";
+import { captureScreenshot } from "./playwright.js";
+import { buildDmpPrompt, type ScanChannel } from "./dmpPrompt.js";
 
 // ─── App ──────────────────────────────────────────────────────────────────────
 
@@ -280,6 +282,116 @@ app.post("/api/agent/extract", async (c) => {
       "X-Accel-Buffering": "no",
     },
   });
+});
+
+// ─── DMP Compliance: Screenshot Capture ──────────────────────────────────────
+// POST /api/compliance/scan
+// Body: { dealershipName, channel, urlOrHandle }
+// Returns: ScreenshotResult | ScreenshotError
+
+app.post("/api/compliance/scan", async (c) => {
+  const apiKey = process.env.ANTHROPIC_KEY;
+  if (!apiKey) return c.json({ error: "ANTHROPIC_KEY not set" }, 500);
+
+  let body: { dealershipName?: string; channel?: string; urlOrHandle?: string };
+  try { body = await c.req.json(); } catch { return c.json({ error: "Invalid JSON" }, 400); }
+
+  const { dealershipName, channel, urlOrHandle } = body;
+  if (!channel || !urlOrHandle) return c.json({ error: "channel and urlOrHandle are required" }, 400);
+
+  // Resolve handle → full URL
+  let url = urlOrHandle.trim();
+  if (channel === "instagram") {
+    const handle = url.replace(/^@/, "");
+    url = `https://www.instagram.com/${handle}/`;
+  } else if (channel === "metaAds") {
+    const q = url.replace(/^@/, "");
+    url = `https://www.facebook.com/ads/library/?active_status=active&ad_type=all&country=US&is_targeted_country=false&media_type=all&q=${encodeURIComponent(q)}&search_type=keyword_unordered&sort_data[direction]=desc&sort_data[mode]=total_impressions`;
+  } else if (!/^https?:\/\//i.test(url)) {
+    url = `https://${url}`;
+  }
+
+  console.log(`[compliance/scan] ${channel} – ${dealershipName} – ${url}`);
+  const result = await captureScreenshot(url, channel);
+  return c.json(result);
+});
+
+// ─── DMP Compliance: Claude Vision Analysis ───────────────────────────────────
+// POST /api/compliance/analyze
+// Body: { screenshotBase64, screenshotMimeType, channel, dealershipName, pageUrl }
+// Returns: { violations: ScanViolation[] }
+
+export interface ScanViolation {
+  ruleCode: string;
+  ruleName: string;
+  category: "A" | "B";
+  description: string;
+  confidence: "high" | "medium" | "low";
+  quotedText: string;
+}
+
+app.post("/api/compliance/analyze", async (c) => {
+  const apiKey = process.env.ANTHROPIC_KEY;
+  if (!apiKey) return c.json({ error: "ANTHROPIC_KEY not set" }, 500);
+
+  let body: {
+    screenshotBase64?: string;
+    screenshotMimeType?: string;
+    channel?: string;
+    dealershipName?: string;
+    pageUrl?: string;
+  };
+  try { body = await c.req.json(); } catch { return c.json({ error: "Invalid JSON" }, 400); }
+
+  const { screenshotBase64, screenshotMimeType = "image/jpeg", channel, dealershipName = "", pageUrl = "" } = body;
+  if (!screenshotBase64 || !channel) return c.json({ error: "screenshotBase64 and channel are required" }, 400);
+
+  const prompt = buildDmpPrompt(channel as ScanChannel, dealershipName, pageUrl);
+  const anthropic = new Anthropic({ apiKey });
+
+  console.log(`[compliance/analyze] ${channel} – ${dealershipName}`);
+
+  try {
+    const response = await anthropic.messages.create({
+      model: "claude-opus-4-6",
+      max_tokens: 2048,
+      messages: [
+        {
+          role: "user",
+          content: [
+            {
+              type: "image",
+              source: {
+                type: "base64",
+                media_type: screenshotMimeType as "image/jpeg" | "image/png",
+                data: screenshotBase64,
+              },
+            },
+            { type: "text", text: prompt },
+          ],
+        },
+      ],
+    });
+
+    const rawText =
+      response.content[0]?.type === "text" ? response.content[0].text.trim() : "[]";
+
+    // Extract JSON array from response (Claude may wrap in markdown fences)
+    const match = rawText.match(/\[[\s\S]*\]/);
+    let violations: ScanViolation[] = [];
+    if (match) {
+      try { violations = JSON.parse(match[0]); } catch { violations = []; }
+    }
+
+    // Filter to only high/medium confidence
+    violations = violations.filter((v) => v.confidence !== "low");
+
+    console.log(`[compliance/analyze] ✓ ${violations.length} violation(s) found – tokens: ${response.usage.output_tokens}`);
+    return c.json({ violations });
+  } catch (err) {
+    console.error("[compliance/analyze error]", err);
+    return c.json({ error: String(err) }, 500);
+  }
 });
 
 // ─── Start ────────────────────────────────────────────────────────────────────

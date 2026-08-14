@@ -2,11 +2,13 @@
 import { useState, useRef, ChangeEvent, DragEvent, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'motion/react';
-import { X, Check, FileText, UploadCloud, ChevronDown, Plus, Trash2, ExternalLink, Mail } from 'lucide-react';
+import { X, Check, FileText, UploadCloud, ChevronDown, Plus, Trash2, ExternalLink, Mail, Loader2 } from 'lucide-react';
 import { useTranslation } from '../contexts/LanguageContext';
 import { SchedulePanel } from './ShareReportModal';
 import { emitSnackbar } from './Snackbar';
 import { cn } from '../../lib/utils';
+import { useComplianceScan } from '../hooks/useComplianceScan';
+import { useCompliance } from '../contexts/ComplianceContext';
 
 interface DealershipEntry {
   id: string;
@@ -50,6 +52,8 @@ interface WebMonitoringConfigModalProps {
 export function WebMonitoringConfigModal({ open, onClose }: WebMonitoringConfigModalProps) {
   const { t } = useTranslation();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const { scanAllDealerships, isScanning, progress } = useComplianceScan();
+  const { addInfraction } = useCompliance();
 
   const [dealerships, setDealerships]           = useState<DealershipEntry[]>(DEFAULT_DEALERSHIPS);
   const [selectedIds, setSelectedIds]           = useState<Set<string>>(new Set(DEFAULT_DEALERSHIPS.map(d => d.id)));
@@ -144,12 +148,33 @@ export function WebMonitoringConfigModal({ open, onClose }: WebMonitoringConfigM
     if (f) handleFile(f);
   }
 
-  function handleSave() {
-    emitSnackbar(t('Web Monitoring configuration saved'));
+  async function handleSave() {
+    const selected = dealerships.filter((d) => selectedIds.has(d.id));
     onClose();
+    emitSnackbar(t('Scan started — checking dealerships for DMP violations…'));
+
+    await scanAllDealerships(selected, (item) => {
+      addInfraction(item);
+    });
+
+    emitSnackbar(t('Scan complete — new infractions logged in Web Monitoring'));
   }
 
-  return createPortal(
+  // Scan progress pill — persists outside modal so the user sees it while working
+  const scanProgressPill = isScanning && progress
+    ? createPortal(
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[99999] flex items-center gap-2.5 px-5 py-3 bg-[#1f1d25] text-white text-sm font-medium rounded-full shadow-xl">
+          <Loader2 className="w-4 h-4 animate-spin text-[#7B6FD4]" />
+          <span>{progress}</span>
+        </div>,
+        document.body,
+      )
+    : null;
+
+  return (
+    <>
+      {scanProgressPill}
+      {createPortal(
     <AnimatePresence>
       {open && (
         <motion.div
@@ -496,10 +521,11 @@ export function WebMonitoringConfigModal({ open, onClose }: WebMonitoringConfigM
               </button>
               <button
                 onClick={handleSave}
-                className="flex items-center gap-2 px-6 py-2 bg-[#473BAB] hover:bg-[#3D3295] text-white rounded-full text-sm font-medium transition-colors shadow-sm cursor-pointer whitespace-nowrap"
+                disabled={isScanning}
+                className="flex items-center gap-2 px-6 py-2 bg-[#473BAB] hover:bg-[#3D3295] disabled:opacity-60 text-white rounded-full text-sm font-medium transition-colors shadow-sm cursor-pointer whitespace-nowrap"
               >
-                <Check className="w-4 h-4" />
-                {t('Save Configuration')}
+                {isScanning ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
+                {isScanning ? t('Scanning…') : t('Save & Scan')}
               </button>
             </div>
 
@@ -508,6 +534,8 @@ export function WebMonitoringConfigModal({ open, onClose }: WebMonitoringConfigM
       )}
     </AnimatePresence>,
     document.body,
+  )}
+    </>
   );
 }
 

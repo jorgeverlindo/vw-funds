@@ -64,6 +64,9 @@
     "motion": "12.23.24",
     "next-themes": "0.4.6",
     "pdfjs-dist": "^3.11.174",
+    "playwright-core": "^1.62.1",
+    "playwright-extra": "^4.3.6",
+    "puppeteer-extra-plugin-stealth": "^2.11.2",
     "react-day-picker": "8.10.1",
     "react-dnd": "16.0.1",
     "react-dnd-html5-backend": "16.0.1",
@@ -87,6 +90,7 @@
   },
   "devDependencies": {
     "@napi-rs/canvas": "^1.0.0",
+    "@playwright/test": "^1.62.1",
     "@tailwindcss/vite": "4.1.12",
     "@types/react": "^18.3.1",
     "@types/react-dom": "^18.3.1",

@@ -1484,6 +1484,10 @@ export function NewGlobalAIConfigContent({
   const overlayFileRef = useRef<HTMLInputElement>(null);
 
   const displayName = configName.trim() || 'New Global AI Config';
+  const editingAngleLabel = editingAngleIndex !== null ? ANGLES[editingAngleIndex]?.label : null;
+  const displayNameWithAngle = editingAngleLabel
+    ? `${displayName} (Editing ${editingAngleLabel} Angle)`
+    : displayName;
 
   // ── File helpers ──
   const handleBgUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -1946,7 +1950,7 @@ export function NewGlobalAIConfigContent({
           </button>
 
           <h1 className="font-['Roboto',sans-serif] font-medium text-[16px] leading-[1.5] tracking-[0.15px] text-[#1f1d25] truncate">
-            {displayName}
+            {displayNameWithAngle}
           </h1>
 
           <div className="flex items-center gap-2 ml-1 shrink-0">

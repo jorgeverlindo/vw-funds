@@ -76,6 +76,7 @@ interface TopNavBarProps {
   onOpenCaseUpdateFromNotif?: (id: string) => void;
   onOpenSolutionFromNotif?: (id: string) => void;
   onOpenReportedFromNotif?: (id: string) => void;
+  onOpenAppealFromNotif?: (id: string) => void;
   // Comment notifications (bridged via window event in AppContent)
   commentNotifs?: CommentNotifItem[];
   commentUnreadCount?: number;
@@ -99,6 +100,7 @@ export function TopNavBar({
   onOpenCaseUpdateFromNotif,
   onOpenSolutionFromNotif,
   onOpenReportedFromNotif,
+  onOpenAppealFromNotif,
   commentNotifs = [],
   commentUnreadCount = 0,
   onMarkCommentNotifRead,
@@ -121,6 +123,9 @@ export function TopNavBar({
     oemReportedNotifs,
     oemSeenReportedIds,
     oemReportedUnread,
+    oemAppealUpdates,
+    oemSeenAppealIds,
+    oemAppealUnread,
     seenCaseUpdateIds,
     dealerInfractionNotifs: getDealerInfractionNotifs,
     dealerInfractionUnread: getDealerInfractionUnread,
@@ -159,7 +164,7 @@ export function TopNavBar({
 
   // Badge total: workflow unread + compliance notifs + comment notifs
   const badgeCount = userType === 'oem'
-    ? oemUnreadCount + oemSolutionUnread + oemReportedUnread + commentUnreadCount
+    ? oemUnreadCount + oemSolutionUnread + oemReportedUnread + oemAppealUnread + commentUnreadCount
     : dealerUnreadCount + dealerInfractionUnread + dealerSubmittedUnread + dealerCaseUpdateUnread + commentUnreadCount;
   const [isNotificationOpen, setIsNotificationOpen] = useState(false);
   const notificationRef = useRef<HTMLDivElement>(null);
@@ -312,6 +317,9 @@ export function TopNavBar({
                   reportedNotifs={oemReportedNotifs}
                   seenReportedIds={oemSeenReportedIds}
                   onOpenReported={onOpenReportedFromNotif}
+                  appealNotifs={oemAppealUpdates}
+                  seenAppealIds={oemSeenAppealIds}
+                  onOpenAppeal={onOpenAppealFromNotif}
                   commentNotifs={commentNotifs}
                   onMarkCommentNotifRead={onMarkCommentNotifRead}
                   onCommentNotifNavigate={onCommentNotifNavigate}

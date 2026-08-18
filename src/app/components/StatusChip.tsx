@@ -1,4 +1,4 @@
-import { Check, MoreHorizontal, Eye, Hourglass, XCircle, FileCheck, Banknote, CreditCard, AlertTriangle } from 'lucide-react';
+import { Check, MoreHorizontal, Eye, Hourglass, XCircle, FileCheck, Banknote, CreditCard, AlertTriangle, Bell, RefreshCw, CheckCircle2, Scale, Clock } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { useTranslation } from '../contexts/LanguageContext';
 
@@ -128,6 +128,62 @@ export function StatusChip({ status, className }: StatusChipProps) {
       );
       break;
     // [FV] fim
+
+    // ── DMP Lifecycle statuses ──────────────────────────────────────────────
+    case 'Detected':
+      styles = "bg-[#E1F5FE] text-[#014361]";
+      icon = (
+        <div className="w-3.5 h-3.5 mr-1.5 flex items-center justify-center rounded-full border border-[#03A9F4] text-[#03A9F4]">
+          <MoreHorizontal className="w-2.5 h-2.5" />
+        </div>
+      );
+      break;
+    case 'Notified':
+      styles = "bg-[rgba(210,50,63,0.08)] text-[#be0e1c]";
+      icon = <Bell className="w-3.5 h-3.5 mr-1.5 text-[#D2323F]" />;
+      break;
+    case 'Remediation Pending':
+      styles = "bg-[rgba(225,118,19,0.08)] text-[#613f02]";
+      icon = <Hourglass className="w-3.5 h-3.5 mr-1.5 text-[#E17613]" />;
+      break;
+    case 'Re-Monitoring':
+      styles = "bg-[#E8F5FD] text-[#0277BD]";
+      icon = <RefreshCw className="w-3.5 h-3.5 mr-1.5 text-[#0288D1]" />;
+      break;
+    case 'Dismissed':
+      styles = "bg-[#F3F4F6] text-[#686576]";
+      icon = <XCircle className="w-3.5 h-3.5 mr-1.5 text-[#9C99A9]" />;
+      break;
+    case 'Cured':
+      styles = "bg-[#E8F5E9] text-[#1b5e20]";
+      icon = <CheckCircle2 className="w-3.5 h-3.5 mr-1.5 text-[#4CAF50]" />;
+      break;
+    case 'Appeal Granted':
+      styles = "bg-[#E8F5E9] text-[#1b5e20]";
+      icon = (
+        <div className="w-3.5 h-3.5 mr-1.5 flex items-center justify-center rounded-full border border-[#4CAF50]">
+          <Check className="w-2.5 h-2.5 text-[#4CAF50]" strokeWidth={3} />
+        </div>
+      );
+      break;
+    case 'Appeal Denied':
+      styles = "bg-[rgba(210,50,63,0.08)] text-[#be0e1c]";
+      icon = <XCircle className="w-3.5 h-3.5 mr-1.5 text-[#D2323F]" />;
+      break;
+    case 'Escalated':
+      styles = "bg-[rgba(210,50,63,0.12)] text-[#7f0000]";
+      icon = <AlertTriangle className="w-3.5 h-3.5 mr-1.5 text-[#C62828]" />;
+      break;
+    case 'Scale':
+      styles = "bg-[#F3E5F5] text-[#4A148C]";
+      icon = <Scale className="w-3.5 h-3.5 mr-1.5 text-[#7B1FA2]" />;
+      break;
+    case 'Appeal Pending':
+      styles = "bg-[rgba(225,118,19,0.12)] text-[#613f02]";
+      icon = <Clock className="w-3.5 h-3.5 mr-1.5 text-[#E17613]" />;
+      break;
+    // ── fim DMP ─────────────────────────────────────────────────────────────
+
     default:
       // Fallback for unknown statuses
       styles = "bg-gray-100 text-gray-600";

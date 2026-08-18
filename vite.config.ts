@@ -237,7 +237,7 @@ export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '')
   return {
     server: {
-      port: 5173,
+      port: Number(process.env.PORT) || 5173,
       strictPort: false,
       proxy: {
         // Forward /api/* to the Hono agent server (never exposed in the browser bundle)

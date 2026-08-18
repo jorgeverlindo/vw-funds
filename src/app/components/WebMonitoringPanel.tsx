@@ -5,6 +5,7 @@ import { WCMItem } from './WebMonitoringContent';
 import { WebMonitoringViewPanel } from './WebMonitoringViewPanel';
 import { WebMonitoringCreateForm } from './WebMonitoringCreateForm';
 import type { WCMComment } from '../../data/types/compliance';
+import type { ComplianceConfig } from '../../data/types/client';
 
 // [FV] minimal shape needed by the panel (full type lives in ComplianceContext)
 export interface PanelCaseSolution {
@@ -31,6 +32,8 @@ interface WebMonitoringPanelProps {
   onMarkSolved?: () => void;
   // OEM accepts a dealer-reported infraction (Pending → Open)
   onAcceptReport?: () => void;
+  // OEM patches (pins, violationType) after reviewing findings
+  onPatchItem?: (patch: Partial<WCMItem>) => void;
   // [FV] current dealer identity (used by the create form for dealer-report flow)
   currentDealerName?: string;
   currentReporterName?: string;
@@ -38,14 +41,27 @@ interface WebMonitoringPanelProps {
   wcmComments?: WCMComment[];
   onAddComment?: (text: string) => void;
   currentUserName?: string;
+  // DMP Lifecycle actions
+  onOpenCase?: () => void;
+  onIssueNotificationLetter?: (notificationNumber: number, caseCategory: 'A' | 'B') => void;
+  onDismissCase?: () => void;
+  onSubmitAppeal?: () => void;
+  onDecideAppeal?: (decision: 'granted' | 'denied') => void;
+  onMarkReMonitored?: () => void;
+  onMarkCured?: () => void;
+  onEscalateCase?: () => void;
+  complianceConfig?: ComplianceConfig | null;
   // [FV] fim
 }
 
 export function WebMonitoringPanel({
   item, onClose, onOpenModal, mode = 'view', onSave, userType = 'oem',
-  solution, onSubmitSolution, onMarkSolved, onAcceptReport,
+  solution, onSubmitSolution, onMarkSolved, onAcceptReport, onPatchItem,
   currentDealerName, currentReporterName,
   wcmComments, onAddComment, currentUserName,
+  onOpenCase, onIssueNotificationLetter, onDismissCase,
+  onSubmitAppeal, onDecideAppeal, onMarkReMonitored, onMarkCured, onEscalateCase,
+  complianceConfig,
 }: WebMonitoringPanelProps) {
   // [FV] route to create-mode form (OEM Add Infraction or dealer-side report)
   if (mode === 'create') {
@@ -75,10 +91,20 @@ export function WebMonitoringPanel({
       onSubmitSolution={onSubmitSolution}
       onMarkSolved={onMarkSolved}
       onAcceptReport={onAcceptReport}
+      onPatchItem={onPatchItem}
       currentDealerName={currentDealerName}
       wcmComments={wcmComments}
       onAddComment={onAddComment}
       currentUserName={currentUserName}
+      onOpenCase={onOpenCase}
+      onIssueNotificationLetter={onIssueNotificationLetter}
+      onDismissCase={onDismissCase}
+      onSubmitAppeal={onSubmitAppeal}
+      onDecideAppeal={onDecideAppeal}
+      onMarkReMonitored={onMarkReMonitored}
+      onMarkCured={onMarkCured}
+      onEscalateCase={onEscalateCase}
+      complianceConfig={complianceConfig}
     />
   );
 }

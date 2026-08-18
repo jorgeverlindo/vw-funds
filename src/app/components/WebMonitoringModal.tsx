@@ -1,11 +1,12 @@
 import { useState } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'motion/react';
-import { X, ShieldAlert, Check } from 'lucide-react';
+import { X } from 'lucide-react';
 import { useTranslation } from '../contexts/LanguageContext';
 import { WCMItem } from './WebMonitoringContent';
 import { ImageWithFallback } from './figma/ImageWithFallback';
 import { InteractiveAnnotation } from './pre-approval/InteractiveAnnotation';
+import { getPinsForItem } from './WebMonitoringViewPanel';
 
 // Full-size Jack Daniels VW inventory screenshot — from Dialog.tsx Figma component
 const imgDialog = 'https://res.cloudinary.com/dvq75cqna/image/upload/v1780071137/vw-funds/e77c7a2ee09d8ca869445423a77526a5edbb0b4e.png';
@@ -14,16 +15,17 @@ interface WebMonitoringModalProps {
   item: WCMItem;
   open: boolean;
   onClose: () => void;
+  userType?: 'dealer' | 'dealer-singular' | 'dealer-emich' | 'oem';
 }
 
 export function WebMonitoringModal({ item, open, onClose }: WebMonitoringModalProps) {
   const { t } = useTranslation();
-  // FIX 2 — annotation toggle state; start closed (pin) per spec
-  const [annotationStates, setAnnotationStates] = useState({ '1': false, '2': false });
+  const [annotationStates, setAnnotationStates] = useState<Record<string, boolean>>({});
 
-  // [FV] manually-added infractions show their own screenshot + a pin on the logo for OEM-logo violations
-  const screenshotSrc = item.screenshotDataUrl ?? imgDialog;
-  const showLogoPin = item.source === 'Manually Added' && /oem logo/i.test(item.violationType);
+  const screenshotSrc = item.screenshotHash
+    ? `http://localhost:3001/api/compliance/screenshot/${item.screenshotHash}`
+    : item.screenshotDataUrl || imgDialog;
+  const pins = getPinsForItem(item, t);
 
   return createPortal(
     <AnimatePresence>
@@ -51,7 +53,7 @@ export function WebMonitoringModal({ item, open, onClose }: WebMonitoringModalPr
             {/* ── Title bar ── */}
             <div className="flex items-center justify-between px-4 pt-4 pb-2 border-b border-[rgba(0,0,0,0.08)] flex-shrink-0">
               <p className="font-['Roboto'] font-medium text-[20px] tracking-[0.15px] text-[#1f1d25] leading-tight">
-                {item.id} - {t('Website Compliance Case')}
+                {item.id} — {item.channel === 'metaAds' ? t('Meta Ads Compliance Case') : t('Website Compliance Case')}
               </p>
               <button
                 onClick={onClose}
@@ -77,80 +79,29 @@ export function WebMonitoringModal({ item, open, onClose }: WebMonitoringModalPr
                   />
                 </div>
 
-                {/* [FV] início — manually-added OEM-logo violations get a single pin on the logo area */}
-                {showLogoPin ? (
-                  <InteractiveAnnotation
-                    id="modal-logo-pin"
-                    number={1}
-                    category="WCM"
-                    title={t('Incorrect OEM logo usage')}
-                    description={t('The logo formatting, with address info between the OEM and the dealership logo, is a compliance infraction.')}
-                    x={26 /* [FV] over the address text — between VW and Jack Daniels logos */}
-                    y={5}
-                    isOpen={annotationStates['1']}
-                    onToggle={() => setAnnotationStates(prev => ({ ...prev, '1': !prev['1'] }))}
-                    direction="top-left"
-                    showCategory={false}
-                  />
-                ) : (
-                  <>
-                    {/* Annotation 1 — x={22} y={54} direction="top-right" */}
+                {pins.map((pin, idx) => {
+                  const key = String(idx + 1);
+                  return (
                     <InteractiveAnnotation
-                      id="modal-1"
-                      number={1}
-                      category="WCM"
-                      title={t('Missing Legal Disclaimer')}
-                      description={t('Offer card displays payment terms without required disclaimer language visible near the promotional copy.')}
-                      x={22}
-                      y={54}
-                      isOpen={annotationStates['1']}
-                      onToggle={() => setAnnotationStates(prev => ({ ...prev, '1': !prev['1'] }))}
-                      direction="top-right"
-                      showCategory={false}
+                      key={key}
+                      id={`modal-pin-${key}`}
+                      number={idx + 1}
+                      category={pin.category ?? 'A'}
+                      ruleNumber={pin.ruleNumber}
+                      title={pin.title}
+                      description={pin.description}
+                      x={pin.x}
+                      y={pin.y}
+                      isOpen={!!annotationStates[key]}
+                      onToggle={() => setAnnotationStates(prev => ({ ...prev, [key]: !prev[key] }))}
+                      direction={pin.direction}
+                      showCategory={!!(pin.category)}
                     />
-
-                    {/* Annotation 2 — x={50} y={54} direction="top-left" */}
-                    <InteractiveAnnotation
-                      id="modal-2"
-                      number={2}
-                      category="WCM"
-                      title={t('Missing Legal Disclaimer')}
-                      description={t('Offer card displays payment terms without required disclaimer language visible near the promotional copy.')}
-                      x={50}
-                      y={54}
-                      isOpen={annotationStates['2']}
-                      onToggle={() => setAnnotationStates(prev => ({ ...prev, '2': !prev['2'] }))}
-                      direction="top-left"
-                      showCategory={false}
-                    />
-                  </>
-                )}
-                {/* [FV] fim */}
+                  );
+                })}
               </div>
             </div>
 
-            {/* ── Actions ── */}
-            <div className="border-t border-[rgba(0,0,0,0.08)] px-4 py-4 flex items-center justify-end gap-2 flex-shrink-0">
-              {/* Assign Penalty — Error color, red outlined (matches Denied/PenaltyApplied palette) */}
-              <button className="flex items-center gap-2 rounded-full border border-[#D2323F] text-[#be0e1c] px-4 py-1.5 text-[14px] font-medium hover:bg-[rgba(210,50,63,0.08)] transition-colors cursor-pointer whitespace-nowrap">
-                <ShieldAlert size={14} />
-                {t('Assign Penalty')}
-              </button>
-
-              {/* Cancel — text-only, ClaimsPanel pattern */}
-              <button
-                onClick={onClose}
-                className="px-6 py-2 rounded-full text-sm font-medium text-[#111014]/60 hover:bg-black/5 transition-colors cursor-pointer whitespace-nowrap"
-              >
-                {t('Cancel')}
-              </button>
-
-              {/* Mark As Reviewed — contained primary */}
-              <button className="flex items-center gap-2 bg-[#473BAB] text-white rounded-full px-4 py-1.5 text-[14px] font-medium hover:bg-[#3d329b] transition-colors cursor-pointer whitespace-nowrap">
-                <Check size={14} />
-                {t('Mark As Reviewed')}
-              </button>
-            </div>
 
           </motion.div>
         </motion.div>

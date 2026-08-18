@@ -122,16 +122,22 @@ export default function AppContent() {
     oemReportedNotifs,
     oemSeenReportedIds,
     oemReportedUnread,
+    oemAppealUpdates,
+    oemSeenAppealIds,
+    oemAppealUnread,
     wcmComments,
     addInfraction,
     deleteInfraction,
+    duplicateInfraction,
     updateInfractionStatus,
+    patchInfraction,
     markSeenInfraction,
     markSeenSubmitted,
     submitCaseSolution,
     markCaseSolved,
     markOemSeenSolution,
     markOemSeenReported,
+    markOemSeenAppeal,
     addWcmComment,
     dealerInfractionNotifs,
     dealerInfractionUnread,
@@ -143,6 +149,17 @@ export default function AppContent() {
     markSeenCaseUpdate,
     dealerCaseUpdateNotifs,
     dealerCaseUpdateUnread,
+    getEffectiveItem,
+    patchAnyItem,
+    issueNotificationLetter,
+    dismissCase,
+    submitAppeal,
+    decideAppeal,
+    markReMonitored,
+    markCured,
+    escalateCase,
+    resetStaticOverride,
+    rejectCaseSolution,
   } = useCompliance();
 
   // Sync data-mode to <html> so portals (rendered outside the wrapper div) also inherit CSS vars
@@ -519,11 +536,15 @@ export default function AppContent() {
 
   const selectedWCMItem = useMemo(() => {
     if (!selectedWebMonitoringId) return null;
-    // [FV] also search user-added infractions
-    return userAddedInfractions.find(i => i.id === selectedWebMonitoringId)
-        ?? WCM_DATA.find(i => i.id === selectedWebMonitoringId)
-        ?? null;
-  }, [selectedWebMonitoringId, userAddedInfractions]);
+    const userAdded = userAddedInfractions.find(i => i.id === selectedWebMonitoringId);
+    const staticRow = WCM_DATA.find(i => i.id === selectedWebMonitoringId);
+    // Static entries with notification history are seeded records — they win over a fresh DMP scan
+    if (staticRow && (staticRow.notificationNumber ?? 0) > 0) {
+      return getEffectiveItem(staticRow);
+    }
+    if (userAdded) return userAdded;
+    return staticRow ? getEffectiveItem(staticRow) : null;
+  }, [selectedWebMonitoringId, userAddedInfractions, getEffectiveItem]);
 
   const showLanguageToggle = activeAppSection === 'campaigns';
 
@@ -592,6 +613,14 @@ export default function AppContent() {
           markOemSeenReported(id);
           setActiveTab('web-monitoring');
           setSelectedWebMonitoringId(id);
+          setIsCreatingInfraction(false);
+          navigate(buildUrl(userType, client.clientId, 'web-monitoring'), { replace: true });
+        }}
+        onOpenAppealFromNotif={(id) => {
+          markOemSeenAppeal(id);
+          setActiveTab('web-monitoring');
+          const update = oemAppealUpdates.find(u => u.id === id);
+          if (update) setSelectedWebMonitoringId(update.itemId);
           setIsCreatingInfraction(false);
           navigate(buildUrl(userType, client.clientId, 'web-monitoring'), { replace: true });
         }}
@@ -796,6 +825,8 @@ export default function AppContent() {
                       setSelectedWebMonitoringId(prev => (prev === id ? null : prev));
                     }}
                     onReopenInfraction={(id) => updateInfractionStatus(id, 'Open')}
+                    onDuplicateInfraction={(id) => duplicateInfraction(id)}
+                    onResetInfraction={(id) => { resetStaticOverride(id); setSelectedWebMonitoringId(prev => (prev === id ? null : prev)); }}
                     // [FV] fim
                   />
                 )}
@@ -896,6 +927,7 @@ export default function AppContent() {
                         addDealerCaseUpdate(selectedWCMItem.id, `Compliance case resolved · ${selectedWCMItem.violationType ?? 'Infraction'}`, selectedWCMItem.dealership);
                       }
                     }}
+                    onPatchItem={(patch) => patchAnyItem(selectedWCMItem.id, patch)}
                     onAcceptReport={() => {
                       updateInfractionStatus(selectedWCMItem.id, 'Open');
                       if (userType === 'oem' && selectedWCMItem.dealership) {
@@ -912,6 +944,19 @@ export default function AppContent() {
                       }
                     }}
                     currentUserName={userType === 'oem' ? 'OEM' : currentDealerIdentity.userName}
+                    // DMP Lifecycle
+                    complianceConfig={client.complianceConfig}
+                    onOpenCase={() => patchAnyItem(selectedWCMItem.id, { lifecycleStatus: 'IN_REVIEW' })}
+                    onIssueNotificationLetter={(num, cat) =>
+                      issueNotificationLetter(selectedWCMItem.id, num, userType === 'oem' ? 'OEM' : currentDealerIdentity.userName, selectedWCMItem.dealership, cat)
+                    }
+                    onDismissCase={() => dismissCase(selectedWCMItem.id, userType === 'oem' ? 'OEM' : currentDealerIdentity.userName, selectedWCMItem.dealership)}
+                    onSubmitAppeal={() => submitAppeal(selectedWCMItem.id, currentDealerIdentity.userName, selectedWCMItem.dealership)}
+                    onDecideAppeal={(decision) => decideAppeal(selectedWCMItem.id, 'OEM', decision, selectedWCMItem.dealership)}
+                    onMarkReMonitored={() => markReMonitored(selectedWCMItem.id, 'OEM')}
+                    onMarkCured={() => markCured(selectedWCMItem.id, 'OEM', selectedWCMItem.dealership)}
+                    onEscalateCase={() => escalateCase(selectedWCMItem.id, 'OEM', selectedWCMItem.dealership)}
+                    onRejectSolution={() => rejectCaseSolution(selectedWCMItem.id)}
                   />
                 </RightPane>
               </div>
@@ -995,6 +1040,7 @@ export default function AppContent() {
           item={selectedWCMItem}
           open={isWebMonitoringModalOpen}
           onClose={() => setIsWebMonitoringModalOpen(false)}
+          userType={userType}
         />
       )}
 

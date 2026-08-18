@@ -32,7 +32,10 @@ export const DMP_RULES: DmpRule[] = [
     ruleCode: "CAT-A-1B",
     ruleName: "Rule 1B — Non-Compliant Vehicle Placement",
     category: "A",
-    channels: ["website", "instagram", "metaAds"],
+    channels: ["instagram", "metaAds"],
+    // WEBSITE EXCLUDED: dealer websites predominantly use HQ photography provided by VWoA via AdLab.
+    // The dealer is not the author of that imagery, so 1B cannot be attributed to them.
+    // 1B only applies to dealer-produced paid advertising (social, Meta Ads, print).
     check:
       "Vehicle is NOT shown on a defined road, within lane lines (if present), or legitimately parked " +
       "in a defined parking space with pavement markings (if present). " +
@@ -73,19 +76,22 @@ export const DMP_RULES: DmpRule[] = [
   },
   {
     ruleCode: "CAT-A-3B",
-    ruleName: "Rule 3B — DBA Name Missing or Oversized",
+    ruleName: "Rule 3B — DBA Name Missing",
     category: "A",
     channels: ["website", "instagram", "metaAds"],
     check:
       "The full official Volkswagen Dealership DBA name must appear in all advertising. " +
-      "Flag if: (1) no dealership name is visible at all, or (2) the dealership name text height visibly " +
-      "exceeds 125% of the VW logo height (the DBA name appears dramatically larger than the VW logo).",
+      "Flag ONLY if no dealership name is visible at all in this screenshot. " +
+      "Do NOT flag based on the relative size of the name versus the logo — size alone is not a violation.",
   },
   {
     ruleCode: "CAT-A-3H",
     ruleName: "Rule 3H — Logo Count or Quality Violation",
     category: "A",
-    channels: ["website", "instagram", "metaAds"],
+    channels: ["instagram", "metaAds"],
+    // WEBSITE EXCLUDED: DMP Guidelines page 36 states explicitly:
+    // "Exception: There is no quantity restriction on websites or CRM (email & direct mail)."
+    // 3H only applies to paid advertising (social posts, Meta Ads). Not to dealer websites.
     check:
       "No more than 2 logos may appear on screen simultaneously. Flag if: " +
       "(1) more than 2 distinct logos are visible at the same time in this screenshot, or " +
@@ -223,7 +229,10 @@ export const DMP_RULES: DmpRule[] = [
     ruleCode: "CAT-B-2F",
     ruleName: "Rule 2F — New and CPO Vehicles Mixed in Same Creative",
     category: "B",
-    channels: ["website", "instagram", "metaAds"],
+    channels: ["instagram", "metaAds"],
+    // WEBSITE EXCLUDED: Rule 2F targets "advertising creative" (paid ads, social posts).
+    // A dealer homepage with navigation sections for "New" and "CPO" vehicles is standard
+    // website UI, not an advertisement creative. Flagging nav links is a false positive.
     check:
       "New vehicles and CPO/Certified Pre-Owned/Pre-Owned vehicles must not appear together in the same " +
       "advertisement creative. Flag if the same ad, banner, or post promotes both new AND used/CPO inventory " +
@@ -307,12 +316,37 @@ export function buildDmpPrompt(
     `  "category": "A" or "B",\n` +
     `  "description": "<one sentence: exactly what is visible in the image that constitutes this violation>",\n` +
     `  "confidence": "high" | "medium" | "low",\n` +
-    `  "quotedText": "<the exact text or element visible in the image, or empty string if no text>"\n` +
+    `  "quotedText": "<the exact text or element visible in the image, or empty string if no text>",\n` +
+    `  "pinX": <number 0-100, horizontal % position of the violation within the screenshot>,\n` +
+    `  "pinY": <number 0-100, vertical % position of the violation within the screenshot>,\n` +
+    `  "pinDirection": "top-left" | "top-right" | "bottom-left" | "bottom-right"\n` +
     `}\n\n` +
+    `COORDINATE GUIDANCE for pinX / pinY:\n` +
+    `- pinX is the horizontal center of the offending element as a percentage of the image width (0 = left edge, 100 = right edge).\n` +
+    `- pinY is the vertical center of the offending element as a percentage of the image height (0 = top edge, 100 = bottom edge).\n` +
+    `- pinDirection: choose the bubble direction so the callout opens AWAY from the nearest corner of the image.\n` +
+    `  e.g., if the violation is in the top-left area, use "bottom-right" so the bubble expands toward the center.\n` +
+    `- Be precise: measure where the violating element actually appears in the screenshot. Do NOT default to the top.\n` +
+    (channel === "metaAds"
+      ? `- IMPORTANT for Meta Ads Library: the platform header (Meta logo, search bar, filters) occupies roughly the top 30% of the screenshot. ` +
+        `The actual dealer ad cards appear BELOW that, typically between 35–90% from the top. ` +
+        `Point the pin at the specific element INSIDE the ad card that violates the rule (e.g. the VW logo inside the card, the ad copy text, etc.), NOT at the platform UI above it.\n`
+      : ``) +
+    (channel === "instagram"
+      ? `- IMPORTANT for Instagram: the Instagram header (logo, navigation) is at the top ~10%. The feed posts start below that. ` +
+        `Point the pin at the element inside the post that violates the rule.\n`
+      : ``) +
+    `\n` +
     `IMPORTANT RULES:\n` +
     `- Only report violations with confidence "high" or "medium". Do NOT include "low" confidence findings.\n` +
     `- Do NOT speculate or infer. Only flag what is clearly visible in this screenshot.\n` +
     `- Do NOT flag the same violation twice.\n` +
+    (channel === "metaAds"
+      ? `- SIZE IS NOT A VIOLATION FOR META ADS: Ad creatives are inherently small-format. ` +
+        `Do NOT flag the VW logo, dealership name, or any brand element as a violation because it appears small. ` +
+        `Small size is expected and is NOT non-compliance. Only flag if the element is completely ABSENT, ` +
+        `uses the wrong color, wrong version, or is otherwise qualitatively wrong — never because it is small.\n`
+      : ``) +
     `- Return ONLY the JSON array. No markdown, no explanation, no preamble.\n` +
     `- If nothing is visible that violates any rule, return exactly: []`
   );

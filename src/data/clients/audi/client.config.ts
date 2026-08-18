@@ -10,4 +10,5 @@ export const audiConfig: ClientConfig = {
   preApprovalCodePrefix: 'AFA',
   fundTypes: ['AoA - Media Costs', 'AoA - Hard Costs', 'AoA - Events'],
   userLabel: { dealer: 'Dealer', oem: 'AoA' },
+  complianceConfig: null,
 };

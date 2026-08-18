@@ -383,7 +383,7 @@ export function SourceImagesGrid({ records }: SourceImagesGridProps) {
                     <StatusChip variant="check" label="Current" />
                   ) : (
                     <button
-                      onClick={() => setCurrentId(record.id)}
+                      onClick={() => { if (currentId !== record.id) { setCurrentId(record.id); emitSnackbar('Source image updated successfully'); } }}
                       className="opacity-0 group-hover/row:opacity-100 transition-opacity"
                     >
                       <StatusChip variant="pause" label="Make current" />

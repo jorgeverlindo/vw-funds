@@ -14,6 +14,8 @@ export interface MonitorState {
 
 interface ActivityMonitorProps extends MonitorState {
   onClose: () => void;
+  icon?: React.ReactNode;
+  stageLabels?: Partial<Record<MonitorStage, string>>;
 }
 
 // ─── Design tokens (matches Figma "Activity Monitor 2.0") ────────────────────
@@ -115,7 +117,7 @@ const iconBtn: React.CSSProperties = {
 
 // ─── Main component ───────────────────────────────────────────────────────────
 
-export function ActivityMonitor({ stage, displayName, blobUrl, onClose }: ActivityMonitorProps) {
+export function ActivityMonitor({ stage, displayName, blobUrl, onClose, icon, stageLabels }: ActivityMonitorProps) {
   const [collapsed,  setCollapsed]  = useState(false);
   const [isExiting,  setIsExiting]  = useState(false);
 
@@ -134,10 +136,10 @@ export function ActivityMonitor({ stage, displayName, blobUrl, onClose }: Activi
   const borderColor = isError ? T.borderRed : T.borderBlue;
 
   const stageLabel: Record<MonitorStage, string> = {
-    preparing: 'Preparing download',
-    complete:  'Download complete',
-    error:     'Download failed',
-    cancelled: 'Download cancelled',
+    preparing: stageLabels?.preparing ?? 'Preparing download',
+    complete:  stageLabels?.complete  ?? 'Download complete',
+    error:     stageLabels?.error     ?? 'Download failed',
+    cancelled: stageLabels?.cancelled ?? 'Download cancelled',
   };
 
   const node = (
@@ -233,7 +235,7 @@ export function ActivityMonitor({ stage, displayName, blobUrl, onClose }: Activi
                   transition: 'transform 0.4s cubic-bezier(0.4,0,0.2,1)',
                 }}
               >
-                <PdfFileIcon />
+                {icon ?? <PdfFileIcon />}
 
                 <span style={{
                   flex:         1,

@@ -9,9 +9,10 @@ import { X, Check, UploadCloud, Sparkles, Loader2, AlertTriangle } from 'lucide-
 import { useTranslation } from '../contexts/LanguageContext';
 import { WCMItem } from './WebMonitoringContent';
 import { StatusChip } from './StatusChip';
-import { InteractiveAnnotation } from './pre-approval/InteractiveAnnotation';
+import { InteractiveAnnotation, type PinDirection } from './pre-approval/InteractiveAnnotation';
 import { CustomSelect } from './ui/CustomSelect';
 import { emitSnackbar } from './Snackbar';
+import { WebMonitoringModal } from './WebMonitoringModal';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -39,6 +40,60 @@ const AI_POOL = {
 function pickRandom<T>(arr: readonly T[]): T {
   return arr[Math.floor(Math.random() * arr.length)];
 }
+
+// ─── Detected violation shape (from AI analysis) ──────────────────────────────
+
+interface DetectedViolation {
+  title: string;
+  description: string;
+  ruleCode: string;
+  severity: 'Low' | 'Medium' | 'High';
+  x: number;
+  y: number;
+  direction: PinDirection;
+  category: 'A' | 'B';
+  ruleNumber: string;
+}
+
+// [FV] demo — the 4 violations identified on the Emich VW used-cars page
+const EMICH_VIOLATIONS: DetectedViolation[] = [
+  {
+    title: 'Rule 3B — DBA Name Oversized',
+    description: '"EMICH" dealership name appears significantly larger than the VW logo, violating DMP hierarchy rules.',
+    ruleCode: 'CAT-A-3B',
+    severity: 'High',
+    x: 9, y: 1.1,
+    direction: 'bottom-right',
+    category: 'A', ruleNumber: '3B',
+  },
+  {
+    title: 'Rule 2 — Third-Party Badges in VW Logo Exclusion Zone',
+    description: 'Two third-party award badges (shield/crest and "Lifetime") placed directly adjacent to the VW logo, violating the required clear space.',
+    ruleCode: 'CAT-A-2',
+    severity: 'Medium',
+    x: 19, y: 1.1,
+    direction: 'bottom-right',
+    category: 'A', ruleNumber: '2',
+  },
+  {
+    title: 'Rule 4J — VW Brand Exclusivity Violated',
+    description: 'Non-VW brand vehicles (Kia Sportage, Jeep, Subaru, Chevrolet, Acura) promoted on VW dealership site. Multiple photos carry "EMICH KIA" watermarks.',
+    ruleCode: 'CAT-A-4J',
+    severity: 'High',
+    x: 21, y: 4.5,
+    direction: 'bottom-right',
+    category: 'A', ruleNumber: '4J',
+  },
+  {
+    title: 'Rule 6D — Conditional Offer Missing Full Disclosure',
+    description: '2026 Tiguan "$239/mo" and Atlas "1.9% APR" offers lack required financial disclosures (term, down payment, MSRP, mileage limit).',
+    ruleCode: 'CAT-B-6D',
+    severity: 'Medium',
+    x: 65, y: 6.8,
+    direction: 'bottom-left',
+    category: 'B', ruleNumber: '6D',
+  },
+];
 
 function todayFormatted(): string {
   const now = new Date();
@@ -90,11 +145,17 @@ export function WebMonitoringCreateForm({
   const reporterName    = currentReporterName ?? DEALER_REPORTING_USER_NAME_FALLBACK;
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const [screenshot, setScreenshot]       = useState<string | null>(null);
-  const [isAnalyzing, setIsAnalyzing]     = useState(false);
-  const [aiFilled, setAiFilled]           = useState(false);
-  const [dropError, setDropError]         = useState<string | null>(null);
-  const [isDragOver, setIsDragOver]       = useState(false);
+  const [screenshot, setScreenshot]             = useState<string | null>(null);
+  const [isAnalyzing, setIsAnalyzing]           = useState(false);
+  const [aiFilled, setAiFilled]                 = useState(false);
+  const [dropError, setDropError]               = useState<string | null>(null);
+  const [isDragOver, setIsDragOver]             = useState(false);
+
+  // [FV] multi-violation AI analysis results (dealer-report flow)
+  const [detectedViolations, setDetectedViolations] = useState<DetectedViolation[]>([]);
+  const [selectedViolations, setSelectedViolations] = useState<Set<number>>(new Set());
+  // [FV] open/close for the full-size screenshot modal
+  const [isPreviewModalOpen, setIsPreviewModalOpen] = useState(false);
 
   // [FV] open/close state for the OEM-logo pin overlaid on the uploaded screenshot
   const [createPinOpen, setCreatePinOpen] = useState(false);
@@ -125,38 +186,46 @@ export function WebMonitoringCreateForm({
   function runAiAutofill() {
     setIsAnalyzing(true);
     setAiFilled(false);
+    setDetectedViolations([]);
+    setSelectedViolations(new Set());
     setTimeout(() => {
-      // [FV] início — demo flow
-      // OEM mode: always Jack Daniels OEM-logo violation
-      // Dealer mode: report is about ANOTHER dealership, so pick from the pool excluding own dealer
       if (isDealerReport) {
-        // [FV] dealer-report: target a different dealership than the reporter's own
-        // Jack Daniels → reports Emich; Emich → reports Jack Daniels (so the demo flows both ways)
+        // [FV] dealer-report: detect Emich violations; target a different dealership
         const target = ownDealership === 'Jack Daniels Volkswagen'
-          ? { dealership: 'Emich Volkswagen', url: 'https://www.emichvw.com/' }
+          ? { dealership: 'Emich Volkswagen', url: 'https://www.emichvw.com/used-cars/' }
           : { dealership: 'Jack Daniels Volkswagen', url: 'https://www.jackdanielsvw.com/' };
         setDealership(target.dealership);
         setUrl(target.url);
-        setViolationType('Missing Disclosure');
+        setChannel('Website');
+        setDetectedOn(todayFormatted());
+        // [FV] multi-violation path — set violations + pre-select all
+        const violations = ownDealership === 'Jack Daniels Volkswagen' ? EMICH_VIOLATIONS : [
+          {
+            title: 'Missing Disclosure',
+            description: 'Required compliance disclosure is missing from the ad.',
+            ruleCode: 'CAT-B-6D',
+            severity: 'Medium' as const,
+            x: 26, y: 5,
+            direction: 'top-left' as PinDirection,
+            category: 'B' as const,
+            ruleNumber: '6D',
+          },
+        ];
+        setDetectedViolations(violations);
+        setSelectedViolations(new Set(violations.map((_, i) => i)));
+        setSeverity('High');
+        setComments('');
       } else {
         setDealership('Jack Daniels Volkswagen');
         setUrl('https://www.jackdanielsvw.com/');
         setViolationType('Incorrect OEM logo usage');
-      }
-      // [FV] dealer-report comments: Facebook Ads Library evidence link + violation label
-      if (isDealerReport) {
-        setComments(
-          'https://www.facebook.com/ads/library/?active_status=active&ad_type=all&country=BR&id=1295584492020416&is_targeted_country=false&media_type=all&search_type=page&sort_data[mode]=total_impressions&sort_data[direction]=desc&view_all_page_id=108224100619\n\nMissing Disclosure'
-        );
-      } else {
         setComments(
           'The logo formatting, with address info between the OEM and the dealership logo, is a compliance infraction. Please make sure the OEM and the dealership logo appear together with the address information guarding more horizontal space from them.'
         );
+        setSeverity(pickRandom(AI_POOL.severities));
+        setChannel('Website');
+        setDetectedOn(todayFormatted());
       }
-      // [FV] fim
-      setSeverity(pickRandom(AI_POOL.severities));
-      setChannel('Website');
-      setDetectedOn(todayFormatted());
       setIsAnalyzing(false);
       setAiFilled(true);
       emitSnackbar(t('AI analyzed screenshot — fields populated. Review before saving.'));
@@ -175,7 +244,39 @@ export function WebMonitoringCreateForm({
     if (file) handleFile(file);
   }
 
-  const canSave = !!screenshot && dealership.trim() && violationType.trim() && url.trim();
+  // [FV] derive violation type from checkboxes (dealer) or text input (oem)
+  const derivedViolationType = detectedViolations.length > 0 && selectedViolations.size > 0
+    ? Array.from(selectedViolations).sort().map(i => detectedViolations[i]?.title).filter(Boolean).join('; ')
+    : violationType;
+
+  const canSave = !!screenshot && dealership.trim() && url.trim() &&
+    (detectedViolations.length > 0 ? selectedViolations.size > 0 : violationType.trim().length > 0);
+
+  // [FV] synthesize a temporary WCMItem for the full-size preview modal
+  const previewModalItem: WCMItem = {
+    id: '—',
+    detectedOn: detectedOn || todayFormatted(),
+    dealership: dealership || 'Emich Volkswagen',
+    violationType: derivedViolationType || 'Multiple violations detected',
+    source: 'Manually Added',
+    url: url || 'emichvw.com',
+    severity,
+    status,
+    screenshotDataUrl: screenshot ?? undefined,
+    channel: 'website',
+    pins: Array.from(selectedViolations).sort().map(i => {
+      const v = detectedViolations[i];
+      return {
+        title: v.title,
+        description: v.description,
+        x: v.x,
+        y: v.y,
+        direction: v.direction,
+        category: v.category,
+        ruleNumber: v.ruleNumber,
+      };
+    }),
+  };
 
   function handleSave() {
     if (!canSave) return;
@@ -183,16 +284,23 @@ export function WebMonitoringCreateForm({
       id: nextInfractionId(),
       detectedOn: detectedOn || todayFormatted(),
       dealership: dealership.trim(),
-      violationType: violationType.trim(),
-      source: 'Manually Added', // [FV] OEM-created infractions are always Manually Added
+      violationType: derivedViolationType.trim(),
+      source: 'Manually Added',
       url: url.trim(),
       severity,
       status,
       comments: comments.trim() || undefined,
       screenshotDataUrl: screenshot ?? undefined,
-      // [FV] dealer-side report carries the reporter name so the OEM bell can surface it
       reportedBy: isDealerReport ? reporterName : undefined,
       createdAtISO: new Date().toISOString(),
+      channel: 'website',
+      // [FV] persist the detected pins so the view modal shows them correctly
+      pins: detectedViolations.length > 0
+        ? Array.from(selectedViolations).sort().map(i => {
+            const v = detectedViolations[i];
+            return { title: v.title, description: v.description, x: v.x, y: v.y, direction: v.direction, category: v.category, ruleNumber: v.ruleNumber };
+          })
+        : undefined,
     };
     onSave?.(infraction);
     onClose();
@@ -276,9 +384,12 @@ export function WebMonitoringCreateForm({
                 {dropError && <p className="text-[11px] text-[#D2323F] mt-1">{dropError}</p>}
               </div>
             ) : (
-              // [FV] outer keeps the rounded border but no overflow-hidden, so the pin bubble can expand outside the image
-              <div className="mt-3 rounded-2xl border border-[rgba(0,0,0,0.12)] relative">
-                {/* image is clipped at its own level */}
+              // [FV] outer: no overflow-hidden so annotation bubbles can expand outside. Clickable → full modal.
+              <div
+                className={`mt-3 rounded-2xl border border-[rgba(0,0,0,0.12)] relative ${aiFilled && !isAnalyzing ? 'cursor-pointer hover:shadow-md transition-shadow' : ''}`}
+                onClick={aiFilled && !isAnalyzing ? () => setIsPreviewModalOpen(true) : undefined}
+              >
+                {/* image clipped at its own level */}
                 <div className="overflow-hidden rounded-2xl max-h-[260px] relative">
                   <img src={screenshot} alt="Uploaded screenshot" className="w-full max-h-[260px] object-cover object-top" />
                   {isAnalyzing && (
@@ -288,9 +399,10 @@ export function WebMonitoringCreateForm({
                     </div>
                   )}
                 </div>
+                {/* Replace button — stop propagation so it doesn't open the modal */}
                 <button
                   type="button"
-                  onClick={() => fileInputRef.current?.click()}
+                  onClick={(e) => { e.stopPropagation(); fileInputRef.current?.click(); }}
                   className="absolute top-2 right-2 px-3 py-1 rounded-full bg-white/90 text-[11px] font-medium text-[#1f1d25] border border-[#E0E0E0] hover:bg-white cursor-pointer z-10"
                 >
                   {t('Replace')}
@@ -301,8 +413,31 @@ export function WebMonitoringCreateForm({
                     <span className="text-[11px] font-medium text-[#473BAB]">{t('AI pre-filled')}</span>
                   </div>
                 )}
-                {/* [FV] pin label adapts to flow: dealer-report → Missing Disclosure; OEM → Incorrect OEM logo usage */}
-                {aiFilled && !isAnalyzing && (
+                {/* [FV] pins on thumbnail: multi-violation (dealer) or single (oem) */}
+                {aiFilled && !isAnalyzing && detectedViolations.length > 0 && (
+                  Array.from(selectedViolations).sort().map((idx, pinIdx) => {
+                    const v = detectedViolations[idx];
+                    const key = `create-pin-${pinIdx}`;
+                    return (
+                      <InteractiveAnnotation
+                        key={key}
+                        id={key}
+                        number={pinIdx + 1}
+                        category={v.category}
+                        ruleNumber={v.ruleNumber}
+                        title={v.title}
+                        description={v.description}
+                        x={v.x}
+                        y={v.y}
+                        isOpen={false}
+                        onToggle={() => {}}
+                        direction={v.direction}
+                        showCategory={true}
+                      />
+                    );
+                  })
+                )}
+                {aiFilled && !isAnalyzing && detectedViolations.length === 0 && (
                   <InteractiveAnnotation
                     id="create-logo-pin"
                     number={1}
@@ -325,17 +460,94 @@ export function WebMonitoringCreateForm({
             )}
           </section>
 
-          {/* [FV] Comments — moved above Violation Details so the AI-generated note sits next to the screenshot */}
-          <section>
-            <h3 className="text-[#1f1d25] text-[15px] font-medium mb-2">{t('Comments')}</h3>
-            <textarea
-              className="w-full bg-white border border-[#E0E0E0] rounded-md px-3 py-2 text-[13px] text-[#1f1d25] focus:outline-none focus:border-[#473BAB] focus:ring-1 focus:ring-[#473BAB] resize-none"
-              rows={4}
-              value={comments}
-              onChange={(e) => setComments(e.target.value)}
-              placeholder={t('Add internal notes about this infraction…')}
-            />
-          </section>
+          {/* [FV] AI Analysis Results — shown after AI fill when violations detected (dealer-report flow) */}
+          {aiFilled && !isAnalyzing && detectedViolations.length > 0 && (
+            <section>
+              {/* Header row */}
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-[#1f1d25] text-[15px] font-medium">{t('Violations Detected')}</h3>
+                <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[rgba(71,59,171,0.08)] border border-[rgba(71,59,171,0.2)]">
+                  <Sparkles className="w-3 h-3 text-[#473BAB]" />
+                  <span className="text-[11px] font-medium text-[#473BAB]">
+                    {t('Found')} {detectedViolations.length} {t('infractions')}
+                  </span>
+                </div>
+              </div>
+
+              {/* Checkbox list */}
+              <div className="rounded-xl border border-[#E0E0E0] overflow-hidden divide-y divide-[#F0F0F0]">
+                {detectedViolations.map((v, idx) => {
+                  const checked = selectedViolations.has(idx);
+                  return (
+                    <label
+                      key={idx}
+                      className="flex items-start gap-3 px-4 py-3 cursor-pointer hover:bg-[#FAFAFB] transition-colors"
+                    >
+                      <input
+                        type="checkbox"
+                        checked={checked}
+                        onChange={() => {
+                          setSelectedViolations(prev => {
+                            const next = new Set(prev);
+                            if (next.has(idx)) next.delete(idx); else next.add(idx);
+                            return next;
+                          });
+                        }}
+                        className="mt-0.5 w-4 h-4 rounded accent-[#473BAB] flex-shrink-0 cursor-pointer"
+                      />
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="text-[13px] font-medium text-[#1f1d25] leading-snug">{v.title}</span>
+                          <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium ${
+                            v.category === 'A'
+                              ? 'bg-[rgba(210,50,63,0.08)] text-[#D2323F]'
+                              : 'bg-[rgba(71,59,171,0.08)] text-[#473BAB]'
+                          }`}>
+                            {v.ruleCode}
+                          </span>
+                          <span className={`inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-medium ${
+                            v.severity === 'High'
+                              ? 'bg-[rgba(210,50,63,0.08)] text-[#D2323F]'
+                              : v.severity === 'Medium'
+                                ? 'bg-[rgba(245,158,11,0.08)] text-[#B45309]'
+                                : 'bg-[rgba(0,0,0,0.05)] text-[#686576]'
+                          }`}>
+                            {v.severity}
+                          </span>
+                        </div>
+                        <p className="text-[11px] text-[#686576] mt-0.5 leading-relaxed">{v.description}</p>
+                      </div>
+                    </label>
+                  );
+                })}
+              </div>
+
+              {/* Description textarea below checkboxes */}
+              <div className="mt-3">
+                <textarea
+                  className="w-full bg-white border border-[#E0E0E0] rounded-md px-3 py-2 text-[13px] text-[#1f1d25] focus:outline-none focus:border-[#473BAB] focus:ring-1 focus:ring-[#473BAB] resize-none"
+                  rows={3}
+                  value={comments}
+                  onChange={(e) => setComments(e.target.value)}
+                  placeholder={t('Add internal notes about this infraction…')}
+                />
+              </div>
+            </section>
+          )}
+
+          {/* [FV] Comments — shown when NO multi-violation detection (oem flow or fallback) */}
+          {!(aiFilled && !isAnalyzing && detectedViolations.length > 0) && (
+            <section>
+              <h3 className="text-[#1f1d25] text-[15px] font-medium mb-2">{t('Comments')}</h3>
+              <textarea
+                className="w-full bg-white border border-[#E0E0E0] rounded-md px-3 py-2 text-[13px] text-[#1f1d25] focus:outline-none focus:border-[#473BAB] focus:ring-1 focus:ring-[#473BAB] resize-none"
+                rows={4}
+                value={comments}
+                onChange={(e) => setComments(e.target.value)}
+                placeholder={t('Add internal notes about this infraction…')}
+              />
+            </section>
+          )}
 
           {/* Violation Details — same field set as view mode, but as inputs */}
           <section>
@@ -353,9 +565,12 @@ export function WebMonitoringCreateForm({
                   options={AI_POOL.dealerships.map(d => ({ value: d, label: d }))}
                 />
               </FormRow>
-              <FormRow label={t('Violation Type')}>
-                <input className={inputCls} value={violationType} onChange={(e) => setViolationType(e.target.value)} placeholder={t('Describe the violation')} />
-              </FormRow>
+              {/* [FV] violation type: hidden when multi-violation checkboxes are active */}
+              {detectedViolations.length === 0 && (
+                <FormRow label={t('Violation Type')}>
+                  <input className={inputCls} value={violationType} onChange={(e) => setViolationType(e.target.value)} placeholder={t('Describe the violation')} />
+                </FormRow>
+              )}
               <FormRow label={t('Channel')}>
                 <CustomSelect
                   className="flex-1"
@@ -406,9 +621,19 @@ export function WebMonitoringCreateForm({
           className="flex items-center gap-2 px-6 py-2 bg-[#473BAB] hover:bg-[#3D3295] disabled:bg-[#D0CFD7] disabled:cursor-not-allowed text-white rounded-full text-sm font-medium transition-colors shadow-sm cursor-pointer whitespace-nowrap"
         >
           <Check className="w-4 h-4" />
-          {t('Report Infraction')}
+          {isDealerReport ? t('Report Infraction') : t('Save Infraction')}
         </button>
       </div>
+
+      {/* [FV] full-size screenshot modal — same modal as data grid, driven by synthesized previewModalItem */}
+      {isPreviewModalOpen && screenshot && (
+        <WebMonitoringModal
+          item={previewModalItem}
+          open={isPreviewModalOpen}
+          onClose={() => setIsPreviewModalOpen(false)}
+          userType={userType}
+        />
+      )}
     </div>
   );
 }

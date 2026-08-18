@@ -11,9 +11,11 @@
  *  • Derived memos accept dealership arguments to support multi-dealer demo
  */
 
-import { createContext, useContext, useCallback, useMemo, ReactNode } from 'react';
-import type { WCMItem, CaseSolution, WCMComment } from '../../data/types/compliance';
+import { createContext, useContext, useCallback, useMemo, ReactNode, useEffect, useRef } from 'react';
+import type { WCMItem, CaseSolution, WCMComment, WCMLifecycleStatus, LifecycleEvent } from '../../data/types/compliance';
 import { useLocalStorage } from '../hooks/useLocalStorage';
+
+const API_BASE = 'http://localhost:3001';
 
 // ─── Stable serializers (module-level = no new reference every render) ───────
 
@@ -52,6 +54,9 @@ const OEM_SEEN_REPORTED_KEY           = 'vw-funds-2:oemSeenReportedIds';
 const WCM_COMMENTS_STORAGE_KEY        = 'vw-funds-2:wcmComments';
 const DEALER_CASE_UPDATES_KEY         = 'vw-funds-2:dealerCaseUpdates';
 const DEALER_SEEN_CASE_UPDATE_KEY     = 'vw-funds-2:dealerSeenCaseUpdateIds';
+const OEM_APPEAL_UPDATES_KEY          = 'vw-funds-2:oemAppealUpdates';
+const OEM_SEEN_APPEAL_KEY             = 'vw-funds-2:oemSeenAppealIds';
+const STATIC_OVERRIDES_STORAGE_KEY    = 'vw-funds-2:staticOverrides';
 
 // ─── Dealer identity map ──────────────────────────────────────────────────────
 
@@ -80,6 +85,13 @@ export interface CaseUpdateNotif {
   timestampISO: string;
 }
 
+export interface OemAppealUpdate {
+  id: string;
+  itemId: string;
+  dealership: string;
+  timestampISO: string;
+}
+
 // ─── Context interface ────────────────────────────────────────────────────────
 
 interface ComplianceContextType {
@@ -96,12 +108,15 @@ interface ComplianceContextType {
   // Infraction actions
   addInfraction: (infraction: WCMItem) => void;
   deleteInfraction: (id: string) => void;
+  duplicateInfraction: (id: string) => void;
   updateInfractionStatus: (id: string, newStatus: string) => void;
+  patchInfraction: (id: string, patch: Partial<WCMItem>) => void;
   markSeenInfraction: (id: string) => void;
   markSeenSubmitted: (id: string) => void;
 
   // Case solution actions
   submitCaseSolution: (id: string, draft: { screenshotDataUrl: string; comment: string }, submittedBy: string) => void;
+  rejectCaseSolution: (id: string) => void;
   markCaseSolved: (id: string) => void;
   markOemSeenSolution: (id: string) => void;
   markOemSeenReported: (id: string) => void;
@@ -128,6 +143,25 @@ interface ComplianceContextType {
   oemSolutionUnread: number;
   oemReportedNotifs: WCMItem[];
   oemReportedUnread: number;
+  oemAppealUpdates: OemAppealUpdate[];
+  oemSeenAppealIds: Set<string>;
+  markOemSeenAppeal: (id: string) => void;
+  oemAppealUnread: number;
+
+  // Shadow-override map — lifecycle state for static WCM_DATA rows
+  staticOverrides: Record<string, Partial<WCMItem>>;
+  getEffectiveItem: (item: WCMItem) => WCMItem;
+  patchAnyItem: (id: string, patch: Partial<WCMItem>) => void;
+
+  // DMP Lifecycle actions
+  issueNotificationLetter: (id: string, notificationNumber: number, actor: string, dealership: string, caseCategory?: 'A' | 'B') => void;
+  dismissCase: (id: string, actor: string, dealership: string) => void;
+  submitAppeal: (id: string, actor: string, dealership: string) => void;
+  decideAppeal: (id: string, actor: string, decision: 'granted' | 'denied', dealership: string) => void;
+  markReMonitored: (id: string, actor: string) => void;
+  markCured: (id: string, actor: string, dealership: string) => void;
+  escalateCase: (id: string, actor: string, dealership: string) => void;
+  resetStaticOverride: (id: string) => void;
 }
 
 // ─── Context ──────────────────────────────────────────────────────────────────
@@ -138,6 +172,10 @@ const ComplianceContext = createContext<ComplianceContextType | null>(null);
 
 export function ComplianceProvider({ children }: { children: ReactNode }) {
   // [FV] user-added infractions (OEM Add Infraction + dealer Report Infraction flows)
+  // screenshotDataUrl is stripped before persisting — base64 images easily blow the ~5 MB
+  // localStorage quota, causing a silent QuotaExceededError that loses all items on reload.
+  // React state retains the full URL for the current session; after reload the panel shows
+  // a "screenshot not available" placeholder.
   const [userAddedInfractions, setUserAddedInfractions] = useLocalStorage<WCMItem[]>(
     USER_INFRACTIONS_STORAGE_KEY,
     [],
@@ -146,6 +184,7 @@ export function ComplianceProvider({ children }: { children: ReactNode }) {
       // [FV] migrate older entries that pre-date the `source` field
       return parsed.map(item => item.source ? item : { ...item, source: 'Manually Added' as const });
     },
+    (value) => JSON.stringify(value.map(item => ({ ...item, screenshotDataUrl: '' }))),
   );
 
   // [FV] right-click delete — deleted IDs (covers both static WCM_DATA and userAddedInfractions)
@@ -216,7 +255,98 @@ export function ComplianceProvider({ children }: { children: ReactNode }) {
     (value) => JSON.stringify(Array.from(value)),
   );
 
+  // OEM-side appeal notifications (dealer submits appeal → OEM bell)
+  const [oemAppealUpdates, setOemAppealUpdates] = useLocalStorage<OemAppealUpdate[]>(
+    OEM_APPEAL_UPDATES_KEY,
+    [],
+  );
+
+  const [oemSeenAppealIds, setOemSeenAppealIds] = useLocalStorage<Set<string>>(
+    OEM_SEEN_APPEAL_KEY,
+    new Set<string>(),
+    (raw) => new Set(JSON.parse(raw) as string[]),
+    (value) => JSON.stringify(Array.from(value)),
+  );
+
+  // Shadow-override map for static WCM_DATA rows — never use patchInfraction on static rows
+  const [staticOverrides, setStaticOverrides] = useLocalStorage<Record<string, Partial<WCMItem>>>(
+    STATIC_OVERRIDES_STORAGE_KEY,
+    {},
+  );
+
   // ── Infraction actions ────────────────────────────────────────────────────
+
+  // Server sync — debounced write so any change to userAddedInfractions is persisted.
+  // hydratedRef blocks the sync on initial load so stale localStorage never overwrites
+  // the server's canonical rebuild data.
+  const syncTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lastSyncedBodyRef = useRef<string>('');
+  const hydratedRef = useRef(false);
+
+  useEffect(() => {
+    if (!hydratedRef.current) return; // wait for hydration
+    if (userAddedInfractions.length === 0) return;
+    const items = userAddedInfractions.map(i => ({ ...i, screenshotDataUrl: '' }));
+    const body = JSON.stringify({ items });
+    if (body === lastSyncedBodyRef.current) return;
+    if (syncTimeoutRef.current) clearTimeout(syncTimeoutRef.current);
+    syncTimeoutRef.current = setTimeout(() => {
+      lastSyncedBodyRef.current = body;
+      fetch(`${API_BASE}/api/compliance/infractions`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body,
+      }).catch(() => {});
+    }, 1000);
+  }, [userAddedInfractions]);
+
+  // Server hydration — always load from server on mount (server is source of truth).
+  // Replaces localStorage entirely; unlock sync only after this resolves.
+  useEffect(() => {
+    fetch(`${API_BASE}/api/compliance/infractions`)
+      .then(r => r.json())
+      .then((data: { items?: WCMItem[] }) => {
+        const serverItems = data.items ?? [];
+        if (serverItems.length > 0) {
+          setUserAddedInfractions(serverItems);
+        }
+        hydratedRef.current = true;
+      })
+      .catch(() => {
+        hydratedRef.current = true; // allow sync even if hydration failed
+      });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // run once on mount
+
+  // On mount: backfill screenshotHash for existing items that pre-date the hash field.
+  // screenshotHash is stable (content-addressed by URL+channel on the server), so it
+  // survives page reloads without any client-side image storage.
+  useEffect(() => {
+    const needsHash = userAddedInfractions.filter(i => !i.screenshotHash && i.url && i.channel);
+    if (!needsHash.length) return;
+    Promise.all(
+      needsHash.map(item =>
+        fetch(`${API_BASE}/api/compliance/screenshot-hash`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ url: item.url, channel: item.channel }),
+        })
+          .then(r => r.json() as Promise<{ hash: string | null }>)
+          .then(({ hash }) => hash ? { id: item.id, hash } : null)
+          .catch(() => null),
+      ),
+    ).then(results => {
+      const updates: Record<string, string> = {};
+      for (const r of results) {
+        if (r) updates[r.id] = r.hash;
+      }
+      if (!Object.keys(updates).length) return;
+      setUserAddedInfractions(prev =>
+        prev.map(i => updates[i.id] ? { ...i, screenshotHash: updates[i.id] } : i),
+      );
+    }).catch(() => {});
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // run once on mount
 
   const addInfraction = useCallback((infraction: WCMItem) => {
     setUserAddedInfractions(prev => [infraction, ...prev]);
@@ -231,9 +361,28 @@ export function ComplianceProvider({ children }: { children: ReactNode }) {
     });
   }, [setUserAddedInfractions, setDeletedInfractionIds]);
 
+  const duplicateInfraction = useCallback((id: string) => {
+    const original = userAddedInfractions.find(i => i.id === id);
+    if (!original) return;
+    const newId = `SCN-${Math.random().toString(16).slice(2, 8).toUpperCase()}`;
+    const copy: WCMItem = {
+      ...original,
+      id: newId,
+      violationType: `${original.violationType} [copy]`,
+      createdAtISO: new Date().toISOString(),
+      screenshotDataUrl: '',
+      // keep screenshotHash so the screenshot thumbnail still loads
+    };
+    setUserAddedInfractions(prev => [copy, ...prev]);
+  }, [userAddedInfractions, setUserAddedInfractions]);
+
   // [FV] update status of a user-added (dealer-reported or OEM-added) infraction
   const updateInfractionStatus = useCallback((id: string, newStatus: string) => {
     setUserAddedInfractions(prev => prev.map(i => i.id === id ? { ...i, status: newStatus } : i));
+  }, [setUserAddedInfractions]);
+
+  const patchInfraction = useCallback((id: string, patch: Partial<WCMItem>) => {
+    setUserAddedInfractions(prev => prev.map(i => i.id === id ? { ...i, ...patch } : i));
   }, [setUserAddedInfractions]);
 
   const markSeenInfraction = useCallback((id: string) => {
@@ -288,6 +437,22 @@ export function ComplianceProvider({ children }: { children: ReactNode }) {
     }) : prev);
   }, [setCaseSolutions]);
 
+  const rejectCaseSolution = useCallback((id: string) => {
+    setCaseSolutions(prev => {
+      const next = { ...prev };
+      delete next[id];
+      return next;
+    });
+    // Move back to REMEDIATION_PENDING so dealer knows to re-submit
+    setStaticOverrides(prev => ({
+      ...prev,
+      [id]: {
+        ...(prev[id] ?? {}),
+        lifecycleStatus: 'REMEDIATION_PENDING' as const,
+      },
+    }));
+  }, [setCaseSolutions, setStaticOverrides]);
+
   const markOemSeenSolution = useCallback((id: string) => {
     setOemSeenSolutionIds(prev => {
       if (prev.has(id)) return prev;
@@ -327,6 +492,20 @@ export function ComplianceProvider({ children }: { children: ReactNode }) {
     setCaseUpdates(prev => [{ id, itemId, dealership, message, timestampISO: new Date().toISOString() }, ...prev]);
   }, [setCaseUpdates]);
 
+  const addOemAppealUpdate = useCallback((itemId: string, dealership: string) => {
+    const id = `oap-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+    setOemAppealUpdates(prev => [{ id, itemId, dealership, timestampISO: new Date().toISOString() }, ...prev]);
+  }, [setOemAppealUpdates]);
+
+  const markOemSeenAppeal = useCallback((id: string) => {
+    setOemSeenAppealIds(prev => {
+      if (prev.has(id)) return prev;
+      const next = new Set(prev);
+      next.add(id);
+      return next;
+    });
+  }, [setOemSeenAppealIds]);
+
   const markSeenCaseUpdate = useCallback((id: string) => {
     setSeenCaseUpdateIds(prev => {
       if (prev.has(id)) return prev;
@@ -346,6 +525,231 @@ export function ComplianceProvider({ children }: { children: ReactNode }) {
       dealerCaseUpdateNotifs(dealershipName).filter(n => !seenCaseUpdateIds.has(n.id)).length,
     [dealerCaseUpdateNotifs, seenCaseUpdateIds],
   );
+
+  // ── Shadow-override & lifecycle helpers ──────────────────────────────────
+
+  // Merges staticOverrides into a WCMItem — use this before passing any static row to the UI.
+  const getEffectiveItem = useCallback((item: WCMItem): WCMItem => {
+    const override = staticOverrides[item.id];
+    return override ? { ...item, ...override } : item;
+  }, [staticOverrides]);
+
+  // Smart patch: user-added rows go through setUserAddedInfractions; static rows go through staticOverrides.
+  const patchAnyItem = useCallback((id: string, patch: Partial<WCMItem>) => {
+    const isUserAdded = userAddedInfractions.some(i => i.id === id);
+    if (isUserAdded) {
+      setUserAddedInfractions(prev => prev.map(i => i.id === id ? { ...i, ...patch } : i));
+    } else {
+      setStaticOverrides(prev => ({ ...prev, [id]: { ...(prev[id] ?? {}), ...patch } }));
+    }
+  }, [userAddedInfractions, setUserAddedInfractions, setStaticOverrides]);
+
+  // Internal helper: applies a functional patch to whichever store owns this item.
+  const applyLifecyclePatch = useCallback((
+    id: string,
+    patcher: (current: Partial<WCMItem>) => Partial<WCMItem>,
+  ) => {
+    const isUserAdded = userAddedInfractions.some(i => i.id === id);
+    if (isUserAdded) {
+      setUserAddedInfractions(prev => prev.map(i => i.id === id ? { ...i, ...patcher(i) } : i));
+    } else {
+      setStaticOverrides(prev => ({ ...prev, [id]: patcher(prev[id] ?? {}) }));
+    }
+  }, [userAddedInfractions, setUserAddedInfractions, setStaticOverrides]);
+
+  // ── DMP Lifecycle actions ─────────────────────────────────────────────────
+
+  const issueNotificationLetter = useCallback((
+    id: string,
+    notificationNumber: number,
+    actor: string,
+    dealership: string,
+    caseCategory?: 'A' | 'B',
+  ) => {
+    const now = new Date().toISOString();
+    const appealDeadlineDate = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+    const appealDeadline = appealDeadlineDate.toISOString();
+    // penaltyStartMonth = 1st of the calendar month following the appeal deadline
+    const psDate = new Date(appealDeadlineDate);
+    psDate.setDate(1);
+    psDate.setMonth(psDate.getMonth() + 1);
+    const penaltyStartMonth = notificationNumber >= 2 ? psDate.toISOString().slice(0, 7) : undefined;
+    const event: LifecycleEvent = {
+      id: `lce-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+      timestampISO: now,
+      actor,
+      actorRole: 'oem',
+      type: 'NOTIFIED',
+      label: `Notification Letter #${notificationNumber} issued`,
+    };
+    applyLifecyclePatch(id, (cur) => ({
+      ...cur,
+      lifecycleStatus: 'NOTIFIED' as WCMLifecycleStatus,
+      notificationNumber,
+      notifiedAt: now,
+      appealDeadline,
+      appealStatus: null,
+      penaltyStep: notificationNumber - 1,
+      ...(caseCategory !== undefined ? { caseCategory } : {}),
+      ...(penaltyStartMonth !== undefined ? { penaltyStartMonth } : {}),
+      ...(notificationNumber >= 4 ? { awardsIneligible: true } : {}),
+      lifecycleHistory: [...(cur.lifecycleHistory ?? []), event],
+    }));
+    addDealerCaseUpdate(id, `A Notification Letter (#${notificationNumber}) has been issued for your dealership.`, dealership);
+  }, [applyLifecyclePatch, addDealerCaseUpdate]);
+
+  const dismissCase = useCallback((id: string, actor: string, dealership: string) => {
+    const event: LifecycleEvent = {
+      id: `lce-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+      timestampISO: new Date().toISOString(),
+      actor,
+      actorRole: 'oem',
+      type: 'DISMISSED',
+      label: 'Case dismissed — no further action required',
+    };
+    applyLifecyclePatch(id, (cur) => ({
+      ...cur,
+      lifecycleStatus: 'DISMISSED' as WCMLifecycleStatus,
+      lifecycleHistory: [...(cur.lifecycleHistory ?? []), event],
+    }));
+    addDealerCaseUpdate(id, 'Your compliance case has been dismissed by OEM.', dealership);
+  }, [applyLifecyclePatch, addDealerCaseUpdate]);
+
+  const submitAppeal = useCallback((id: string, actor: string, dealership: string) => {
+    const now = new Date().toISOString();
+    const event: LifecycleEvent = {
+      id: `lce-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+      timestampISO: now,
+      actor,
+      actorRole: 'dealer',
+      type: 'APPEAL_SUBMITTED',
+      label: 'Appeal submitted by dealer',
+    };
+    applyLifecyclePatch(id, (cur) => ({
+      ...cur,
+      appealStatus: 'submitted',
+      appealSubmittedAt: now,
+      lifecycleHistory: [...(cur.lifecycleHistory ?? []), event],
+    }));
+    addOemAppealUpdate(id, dealership);
+  }, [applyLifecyclePatch, addOemAppealUpdate]);
+
+  const decideAppeal = useCallback((id: string, actor: string, decision: 'granted' | 'denied', dealership: string) => {
+    // Lifecycle status: granted → APPEAL_GRANTED (PDF: infraction removed from record)
+    //                   denied  → REMEDIATION_PENDING (dealer must fix the violation)
+    const newStatus: WCMLifecycleStatus = decision === 'granted' ? 'APPEAL_GRANTED' : 'REMEDIATION_PENDING';
+    const event: LifecycleEvent = {
+      id: `lce-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+      timestampISO: new Date().toISOString(),
+      actor,
+      actorRole: 'oem',
+      type: decision === 'granted' ? 'APPEAL_GRANTED' : 'APPEAL_DENIED',
+      label: decision === 'granted' ? 'Appeal granted by OEM' : 'Appeal denied by OEM',
+    };
+    applyLifecyclePatch(id, (cur) => {
+      const patch: Partial<WCMItem> = {
+        lifecycleStatus: newStatus,
+        appealStatus: decision,
+        lifecycleHistory: [...(cur.lifecycleHistory ?? []), event],
+      };
+      // Per VW DMP Guidelines p.21: appeal granted → infraction removed from dealer record,
+      // previously enforced non-compliance actions reversed → decrement notification counter.
+      if (decision === 'granted') {
+        const prevNum = cur.notificationNumber ?? 1;
+        const newNum = Math.max(0, prevNum - 1);
+        patch.notificationNumber = newNum;
+        patch.penaltyStep = Math.max(0, newNum - 1);
+        if (newNum < 4) patch.awardsIneligible = false;
+      }
+      return { ...cur, ...patch };
+    });
+    const msg = decision === 'granted'
+      ? 'Your appeal has been granted by OEM. The infraction has been removed from your record.'
+      : 'Your appeal has been denied by OEM. The violation must be remediated.';
+    addDealerCaseUpdate(id, msg, dealership);
+  }, [applyLifecyclePatch, addDealerCaseUpdate]);
+
+  const markReMonitored = useCallback((id: string, actor: string) => {
+    const now = new Date().toISOString();
+    const event: LifecycleEvent = {
+      id: `lce-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+      timestampISO: now,
+      actor,
+      actorRole: 'oem',
+      type: 'RE_MONITORING',
+      label: 'Re-monitoring check completed',
+    };
+    applyLifecyclePatch(id, (cur) => ({
+      ...cur,
+      lifecycleStatus: 'RE_MONITORING' as WCMLifecycleStatus,
+      lastReMonitoredAt: now,
+      lifecycleHistory: [...(cur.lifecycleHistory ?? []), event],
+    }));
+  }, [applyLifecyclePatch]);
+
+  const markCured = useCallback((id: string, actor: string, dealership: string) => {
+    const event: LifecycleEvent = {
+      id: `lce-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+      timestampISO: new Date().toISOString(),
+      actor,
+      actorRole: 'oem',
+      type: 'CURED',
+      label: 'Infraction cured — dealership back in compliance',
+    };
+    applyLifecyclePatch(id, (cur) => ({
+      ...cur,
+      lifecycleStatus: 'CURED' as WCMLifecycleStatus,
+      lifecycleHistory: [...(cur.lifecycleHistory ?? []), event],
+    }));
+    addDealerCaseUpdate(id, 'Your compliance case has been marked as cured. You are back in compliance.', dealership);
+  }, [applyLifecyclePatch, addDealerCaseUpdate]);
+
+  const escalateCase = useCallback((id: string, actor: string, dealership: string) => {
+    const now = new Date().toISOString();
+    const appealDeadlineDate = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+    const appealDeadline = appealDeadlineDate.toISOString();
+    const psDate = new Date(appealDeadlineDate);
+    psDate.setDate(1);
+    psDate.setMonth(psDate.getMonth() + 1);
+    const escalateEvent: LifecycleEvent = {
+      id: `lce-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+      timestampISO: now,
+      actor,
+      actorRole: 'oem',
+      type: 'ESCALATED',
+      label: 'Penalty assigned — new Notification Letter issued',
+    };
+    applyLifecyclePatch(id, (cur) => {
+      const nextNum = (cur.notificationNumber ?? 1) + 1;
+      const penaltyStartMonth = nextNum >= 2 ? psDate.toISOString().slice(0, 7) : undefined;
+      return {
+        ...cur,
+        lifecycleStatus: 'ESCALATED' as WCMLifecycleStatus,
+        notificationNumber: nextNum,
+        notifiedAt: now,
+        appealDeadline,
+        appealStatus: null,
+        penaltyStep: nextNum - 1,
+        ...(penaltyStartMonth !== undefined ? { penaltyStartMonth } : {}),
+        ...(nextNum >= 4 ? { awardsIneligible: true } : {}),
+        lifecycleHistory: [...(cur.lifecycleHistory ?? []), escalateEvent],
+      };
+    });
+    addDealerCaseUpdate(id, 'A penalty has been assigned. A new Notification Letter has been issued.', dealership);
+  }, [applyLifecyclePatch, addDealerCaseUpdate]);
+
+  const resetStaticOverride = useCallback((id: string) => {
+    setStaticOverrides(prev => {
+      const next = { ...prev };
+      delete next[id];
+      return next;
+    });
+    setCaseSolutions(prev => {
+      const next = { ...prev };
+      delete next[id];
+      return next;
+    });
+  }, [setStaticOverrides, setCaseSolutions]);
 
   // ── Derived — dealer ──────────────────────────────────────────────────────
 
@@ -398,6 +802,11 @@ export function ComplianceProvider({ children }: { children: ReactNode }) {
     [oemReportedNotifs, oemSeenReportedIds],
   );
 
+  const oemAppealUnread = useMemo(
+    () => oemAppealUpdates.filter(u => !oemSeenAppealIds.has(u.id)).length,
+    [oemAppealUpdates, oemSeenAppealIds],
+  );
+
   return (
     <ComplianceContext.Provider
       value={{
@@ -411,10 +820,13 @@ export function ComplianceProvider({ children }: { children: ReactNode }) {
         wcmComments,
         addInfraction,
         deleteInfraction,
+        duplicateInfraction,
         updateInfractionStatus,
+        patchInfraction,
         markSeenInfraction,
         markSeenSubmitted,
         submitCaseSolution,
+        rejectCaseSolution,
         markCaseSolved,
         markOemSeenSolution,
         markOemSeenReported,
@@ -433,6 +845,21 @@ export function ComplianceProvider({ children }: { children: ReactNode }) {
         oemSolutionUnread,
         oemReportedNotifs,
         oemReportedUnread,
+        oemAppealUpdates,
+        oemSeenAppealIds,
+        markOemSeenAppeal,
+        oemAppealUnread,
+        staticOverrides,
+        getEffectiveItem,
+        patchAnyItem,
+        resetStaticOverride,
+        issueNotificationLetter,
+        dismissCase,
+        submitAppeal,
+        decideAppeal,
+        markReMonitored,
+        markCured,
+        escalateCase,
       }}
     >
       {children}

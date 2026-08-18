@@ -12,15 +12,19 @@ import React, { useState } from 'react';
 import { AngleColumn } from './AngleColumn';
 import { AnglePreviewModal } from './AnglePreviewModal';
 import type { SourceImageRecord, AngleGroup } from '../../../data/inventory/sourceImages';
+import { emitSnackbar } from '../Snackbar';
 
 const ANGLE_ORDER = ['34l', 'front', '34r', 'right', 'rear', 'left'];
 
 interface SourceImagesDrawerProps {
   record: SourceImageRecord;
   containerWidth?: number;
+  /** 'source' (default) shows "Source Images" / "Check Generated Image";
+   *  'generated' shows "Generated Images" / "Check Source Image" */
+  mode?: 'source' | 'generated';
 }
 
-export function SourceImagesDrawer({ record, containerWidth }: SourceImagesDrawerProps) {
+export function SourceImagesDrawer({ record, containerWidth, mode = 'source' }: SourceImagesDrawerProps) {
   const angleGroups: AngleGroup[] = record.angleGroups ?? [];
   const generatedAngles           = record.generatedAngles ?? {};
 
@@ -39,6 +43,10 @@ export function SourceImagesDrawer({ record, containerWidth }: SourceImagesDrawe
   const [modalIndex, setModalIndex] = useState(0);
   const currentAngle = anglesWithGenerated[modalIndex] ?? null;
 
+  const title      = mode === 'generated' ? 'Generated Images' : 'Source Images';
+  const buttonLabel = mode === 'generated' ? 'Check Source Image' : 'Check Generated Image';
+  const showButton  = mode === 'generated' ? orderedGroups.length > 0 : anglesWithGenerated.length > 0;
+
   return (
     <div className="bg-[#f7f7f7]" style={{ paddingTop: 16, paddingBottom: 24 }}>
       {/* ── Header — sticky to left viewport edge so it stays visible when table scrolls ── */}
@@ -52,12 +60,12 @@ export function SourceImagesDrawer({ record, containerWidth }: SourceImagesDrawe
         }}
       >
         <span className="font-['Roboto',sans-serif] font-medium text-[14px] leading-[1.57] tracking-[0.1px] text-[#1f1d25]">
-          Source Images
+          {title}
         </span>
 
-        {anglesWithGenerated.length > 0 && (
+        {showButton && (
           <button
-            onClick={() => { setModalIndex(0); setModalOpen(true); }}
+            onClick={() => { if (mode === 'source') { setModalIndex(0); setModalOpen(true); } }}
             className="flex items-center gap-[4px] font-['Roboto',sans-serif] text-[12px] leading-[1.43] tracking-[0.17px] text-[#473bab] hover:underline"
           >
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -65,7 +73,7 @@ export function SourceImagesDrawer({ record, containerWidth }: SourceImagesDrawe
               <polyline points="15 3 21 3 21 9" />
               <line x1="10" y1="14" x2="21" y2="3" />
             </svg>
-            Check Generated Image
+            {buttonLabel}
           </button>
         )}
       </div>
@@ -89,9 +97,14 @@ export function SourceImagesDrawer({ record, containerWidth }: SourceImagesDrawe
             angleName={group.label}
             cards={group.cards}
             activeCardId={activeCardIds[group.key] ?? null}
-            onActivate={cardId =>
-              setActiveCardIds(prev => ({ ...prev, [group.key]: cardId }))
-            }
+            onActivate={cardId => {
+              if (activeCardIds[group.key] !== cardId) {
+                setActiveCardIds(prev => ({ ...prev, [group.key]: cardId }));
+                emitSnackbar(mode === 'generated'
+                  ? 'Generated image updated successfully'
+                  : 'Source image updated successfully');
+              }
+            }}
           />
         ))}
       </div>

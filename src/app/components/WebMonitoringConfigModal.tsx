@@ -2,11 +2,16 @@
 import { useState, useRef, ChangeEvent, DragEvent, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'motion/react';
-import { X, Check, FileText, UploadCloud, ChevronDown, Plus, Trash2, ExternalLink, Mail } from 'lucide-react';
+import { X, Check, FileText, UploadCloud, ChevronDown, Plus, Trash2, ExternalLink, Mail, Loader2, ScanLine, Eye } from 'lucide-react';
+import { ActivityMonitor } from './ActivityMonitor';
 import { useTranslation } from '../contexts/LanguageContext';
 import { SchedulePanel } from './ShareReportModal';
 import { emitSnackbar } from './Snackbar';
 import { cn } from '../../lib/utils';
+import { useComplianceScan } from '../hooks/useComplianceScan';
+import { useCompliance } from '../contexts/ComplianceContext';
+import { DocumentPreviewModal } from './pre-approval/DocumentPreviewModal';
+import type { WorkflowDocument } from '../contexts/WorkflowContext';
 
 interface DealershipEntry {
   id: string;
@@ -30,16 +35,27 @@ const DEFAULT_OEM_USERS: OemUser[] = [
 ];
 
 const DEFAULT_DEALERSHIPS: DealershipEntry[] = [
-  { id: 'd-1',  name: 'Jack Daniels Volkswagen',       website: 'jackdanielsvw.com',  instagram: '@jackdanielsvw',       metaAds: 'jackdanielsvw' },
-  { id: 'd-2',  name: 'Emich Volkswagen',               website: 'emichvw.com',        instagram: '@emichvw',             metaAds: 'emichvw' },
-  { id: 'd-3',  name: 'Volkswagen of Downtown LA',      website: 'vwdtla.com',         instagram: '@vwdtla',              metaAds: 'vwdtla' },
-  { id: 'd-4',  name: 'Jim Ellis Volkswagen',           website: 'jimellisvw.com',     instagram: '@jimellisvw',          metaAds: 'jimellisvw' },
-  { id: 'd-5',  name: 'Hendrick Volkswagen Frisco',     website: 'hendrickvwfrisco.com', instagram: '@hendrickvwfrisco', metaAds: 'hendrickvwfrisco' },
-  { id: 'd-6',  name: 'Volkswagen of Union',            website: 'vwunion.com',        instagram: '@vwunion',             metaAds: 'vwunion' },
-  { id: 'd-7',  name: 'Palisades Volkswagen',           website: 'palisadesvw.com',    instagram: '@palisadesvw',         metaAds: 'palisadesvw' },
-  { id: 'd-8',  name: 'Trend Motors Volkswagen',        website: 'trendmotorsvw.com',  instagram: '@trendmotorsvw',       metaAds: 'trendmotorsvw' },
-  { id: 'd-9',  name: 'Open Road Volkswagen Manhattan', website: 'openroadvw.com',     instagram: '@openroadvw',          metaAds: 'openroadvw' },
-  { id: 'd-10', name: 'Douglas Volkswagen',             website: 'douglasvw.com',      instagram: '@douglasvw',           metaAds: 'douglasvw' },
+  { id: 'd-1',  name: 'Jack Daniels Volkswagen',         website: 'jackdanielsvw.com',          instagram: '', metaAds: 'jackdanielsvw' },
+  { id: 'd-2',  name: 'Emich Volkswagen',                 website: 'emichvw.com',                instagram: '', metaAds: 'emichvw' },
+  { id: 'd-3',  name: 'Volkswagen of Downtown LA',        website: 'vwdtla.com',                 instagram: '', metaAds: 'vwdtla' },
+  { id: 'd-4',  name: 'Jim Ellis Volkswagen',             website: 'jimellisvw.com',             instagram: '', metaAds: 'jimellisvw' },
+  { id: 'd-5',  name: 'Hendrick Volkswagen Frisco',       website: 'hendrickvwfrisco.com',        instagram: '', metaAds: 'hendrickvwfrisco' },
+  { id: 'd-6',  name: 'Volkswagen of Union',              website: 'vwunion.com',                instagram: '', metaAds: 'vwunion' },
+  { id: 'd-7',  name: 'Palisades Volkswagen',             website: 'palisadesvw.com',            instagram: '', metaAds: 'palisadesvw' },
+  { id: 'd-8',  name: 'Trend Motors Volkswagen',          website: 'trendmotorsvw.com',          instagram: '', metaAds: 'trendmotorsvw' },
+  { id: 'd-9',  name: 'Open Road Volkswagen Manhattan',   website: 'openroadvw.com',             instagram: '', metaAds: 'openroadvw' },
+  { id: 'd-10', name: 'Douglas Volkswagen',               website: 'douglasvw.com',              instagram: '', metaAds: 'douglasvw' },
+  // ── Shortlisted dealerships (compliance scan — Aug 2026) ─────────────────
+  { id: 'd-11', name: 'Schmelz Countryside Volkswagen',  website: 'schmelzvw.com',              instagram: '', metaAds: 'Schmelz Countryside Volkswagen' },
+  { id: 'd-12', name: 'Capitol Volkswagen',               website: 'capitolvw.com',              instagram: '', metaAds: 'Capitol Volkswagen' },
+  { id: 'd-13', name: 'Byers Volkswagen Columbus',        website: 'columbusvw.com',             instagram: '', metaAds: 'Byers Volkswagen' },
+  { id: 'd-14', name: 'Volkswagen of Portland',           website: 'vwofportland.com',           instagram: '', metaAds: 'Volkswagen of Portland' },
+  { id: 'd-15', name: 'Chapman Volkswagen Scottsdale',    website: 'chapmanvw.com',              instagram: '', metaAds: 'Chapman Volkswagen Scottsdale' },
+  { id: 'd-16', name: 'Crestmont Volkswagen',             website: 'crestmontvolkswagen.com',    instagram: '', metaAds: 'Crestmont Volkswagen' },
+  { id: 'd-17', name: 'Gunther Volkswagen Daytona',       website: 'gunthervwdaytona.com',       instagram: '', metaAds: 'Gunther Volkswagen Daytona' },
+  { id: 'd-18', name: 'Alexandria Volkswagen',            website: 'alexandriavw.com',           instagram: '', metaAds: 'Alexandria Volkswagen' },
+  { id: 'd-19', name: 'LHM Volkswagen Lakewood',          website: 'lhmvw.com',                  instagram: '', metaAds: 'Larry H. Miller Volkswagen Lakewood' },
+  { id: 'd-20', name: 'Centennial Volkswagen',            website: 'centennialvolkswagen.com',   instagram: '', metaAds: 'Centennial Volkswagen Las Vegas' },
 ];
 
 interface WebMonitoringConfigModalProps {
@@ -50,15 +66,25 @@ interface WebMonitoringConfigModalProps {
 export function WebMonitoringConfigModal({ open, onClose }: WebMonitoringConfigModalProps) {
   const { t } = useTranslation();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const { scanAllDealerships, isScanning, progress, stopScan } = useComplianceScan();
+  const { addInfraction, userAddedInfractions } = useCompliance();
+  const [isSending, setIsSending] = useState(false);
+
+  const [scanMonitorStage, setScanMonitorStage] = useState<'preparing' | 'complete' | null>(null);
+  const scanStoppedRef = useRef(false);
+
+  const foundCountRef = useRef(0);
+  const [scanCompleteLabel, setScanCompleteLabel] = useState('Scan complete');
 
   const [dealerships, setDealerships]           = useState<DealershipEntry[]>(DEFAULT_DEALERSHIPS);
   const [selectedIds, setSelectedIds]           = useState<Set<string>>(new Set(DEFAULT_DEALERSHIPS.map(d => d.id)));
   const [expandedIds, setExpandedIds]           = useState<Set<string>>(new Set());
   // [FV] multi-doc support — pre-seeded with the VW Brand Guidelines reference
-  interface ComplianceDoc { id: string; name: string; size: number }
+  interface ComplianceDoc { id: string; name: string; size: number; url?: string }
   const [docs, setDocs] = useState<ComplianceDoc[]>([
-    { id: 'doc-vw-brand', name: 'VW Brand Guidelines.pdf', size: 4_823_000 },
+    { id: 'doc-vw-brand', name: 'VW DMP Guidelines — March 2026.pdf', size: 4_710_000, url: '/vw-dmp-guidelines.pdf' },
   ]);
+  const [previewDoc, setPreviewDoc] = useState<WorkflowDocument | null>(null);
   const [isDragOver, setIsDragOver] = useState(false);
 
   // [FV] notify-by-email multi-select
@@ -125,7 +151,16 @@ export function WebMonitoringConfigModal({ open, onClose }: WebMonitoringConfigM
   }
 
   function handleFile(file: File) {
-    setDocs(prev => [...prev, { id: `doc-${Date.now()}`, name: file.name, size: file.size }]);
+    const url = URL.createObjectURL(file);
+    setDocs(prev => [...prev, { id: `doc-${Date.now()}`, name: file.name, size: file.size, url }]);
+  }
+
+  function openDocPreview(doc: ComplianceDoc) {
+    if (!doc.url) return;
+    const sizeStr = doc.size >= 1_048_576
+      ? `${(doc.size / 1_048_576).toFixed(1)} MB`
+      : `${(doc.size / 1024).toFixed(1)} KB`;
+    setPreviewDoc({ name: doc.name, size: sizeStr, type: 'pdf', url: doc.url });
   }
 
   function removeDoc(id: string) {
@@ -145,11 +180,129 @@ export function WebMonitoringConfigModal({ open, onClose }: WebMonitoringConfigM
   }
 
   function handleSave() {
-    emitSnackbar(t('Web Monitoring configuration saved'));
     onClose();
+    emitSnackbar(t('Configuration saved'));
   }
 
-  return createPortal(
+  async function handleSendReport() {
+    const wmItems = userAddedInfractions.filter(i => i.source === 'Web Monitoring');
+    if (wmItems.length === 0) {
+      emitSnackbar(t('No Web Monitoring infractions to send'));
+      return;
+    }
+    setIsSending(true);
+    try {
+      const res = await fetch('http://localhost:3001/api/compliance/send-wcm-report', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          infractions: wmItems.map(i => ({
+            id: i.id,
+            dealership: i.dealership,
+            violationType: i.violationType,
+            channel: i.channel,
+            severity: i.severity,
+            url: i.url,
+            detectedOn: i.detectedOn,
+          })),
+        }),
+      });
+      const data = await res.json() as { success?: boolean; sent?: number; failed?: number };
+      if (data.success) {
+        emitSnackbar(`Report sent to ${data.sent} recipient${data.sent !== 1 ? 's' : ''}`);
+      } else {
+        emitSnackbar(t('Failed to send report'));
+      }
+    } catch {
+      emitSnackbar(t('Failed to send report'));
+    } finally {
+      setIsSending(false);
+    }
+  }
+
+  // Demo screenshot overrides: these dealers use a local asset instead of live Playwright.
+  const DEMO_SCREENSHOTS: Record<string, string> = {
+    'd-2': '/api/compliance/demo-asset/emich-used-cars',
+  };
+
+  async function handleScanAll() {
+    const selected = dealerships.filter((d) => selectedIds.has(d.id));
+    scanStoppedRef.current = false;
+    foundCountRef.current = 0;
+    setScanMonitorStage('preparing');
+    await scanAllDealerships(selected, (item) => {
+      foundCountRef.current += 1;
+      addInfraction(item);
+    }, DEMO_SCREENSHOTS);
+    if (!scanStoppedRef.current) {
+      const n = foundCountRef.current;
+      setScanCompleteLabel(n === 0
+        ? t('Scan complete — no new issues found')
+        : n === 1
+          ? t('Scan complete — 1 issue found')
+          : `${t('Scan complete')} — ${n} ${t('issues found')}`,
+      );
+      setScanMonitorStage('complete');
+      setTimeout(() => setScanMonitorStage(null), 5000);
+    }
+  }
+
+  async function handleScanOne(d: DealershipEntry) {
+    scanStoppedRef.current = false;
+    foundCountRef.current = 0;
+    setScanMonitorStage('preparing');
+
+    const demoScreenshots = DEMO_SCREENSHOTS[d.id] ? { [d.id]: DEMO_SCREENSHOTS[d.id] } : undefined;
+
+    await scanAllDealerships([d], (item) => {
+      foundCountRef.current += 1;
+      addInfraction(item);
+    }, demoScreenshots);
+
+    if (!scanStoppedRef.current) {
+      const n = foundCountRef.current;
+      setScanCompleteLabel(n === 0
+        ? t('Scan complete — no new issues found')
+        : n === 1
+          ? t('Scan complete — 1 issue found')
+          : `${t('Scan complete')} — ${n} ${t('issues found')}`,
+      );
+      setScanMonitorStage('complete');
+      setTimeout(() => setScanMonitorStage(null), 5000);
+    }
+  }
+
+  function handleMonitorClose() {
+    if (scanMonitorStage === 'preparing') {
+      scanStoppedRef.current = true;
+      stopScan();
+    }
+    setScanMonitorStage(null);
+  }
+
+  const scanIcon = (
+    <div style={{ width: 28, height: 34, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <ScanLine size={22} color="#473BAB" />
+    </div>
+  );
+
+  return (
+    <>
+      {scanMonitorStage && (
+        <ActivityMonitor
+          stage={scanMonitorStage}
+          reportName="DMP Compliance Scan"
+          displayName={progress ?? t('DMP Compliance Scan')}
+          blobUrl={null}
+          onClose={handleMonitorClose}
+          icon={scanIcon}
+          stageLabels={{
+            preparing: t('Scanning dealerships'),
+            complete:  scanCompleteLabel,
+          }}
+        />
+      )}
+      {createPortal(
     <AnimatePresence>
       {open && (
         <motion.div
@@ -308,8 +461,18 @@ export function WebMonitoringConfigModal({ open, onClose }: WebMonitoringConfigM
                           </div>
                           <div className="flex-1 min-w-0">
                             <p className="text-[13px] font-medium text-[#1f1d25] truncate">{d.name}</p>
-                            <p className="text-[11px] text-[#9C99A9]">{(d.size / 1024).toFixed(1)} KB</p>
+                            <p className="text-[11px] text-[#9C99A9]">{(d.size / 1024 / 1024).toFixed(1)} MB</p>
                           </div>
+                          {d.url && (
+                            <button
+                              type="button"
+                              onClick={() => openDocPreview(d)}
+                              aria-label="Preview document"
+                              className="p-1.5 rounded text-[#473BAB] hover:bg-[rgba(71,59,171,0.08)]"
+                            >
+                              <Eye className="w-4 h-4" />
+                            </button>
+                          )}
                           <button
                             type="button"
                             onClick={() => removeDoc(d.id)}
@@ -431,6 +594,7 @@ export function WebMonitoringConfigModal({ open, onClose }: WebMonitoringConfigM
                                     return /^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`;
                                   }}
                                 />
+                                {/* Instagram field hidden — not used in current monitoring scope
                                 <Field
                                   label={t('Instagram account')}
                                   value={d.instagram}
@@ -440,7 +604,7 @@ export function WebMonitoringConfigModal({ open, onClose }: WebMonitoringConfigM
                                     const handle = v.trim().replace(/^@/, '');
                                     return handle ? `https://www.instagram.com/${handle}/` : null;
                                   }}
-                                />
+                                /> */}
                                 <Field
                                   label={t('Meta Ads')}
                                   value={d.metaAds}
@@ -495,11 +659,27 @@ export function WebMonitoringConfigModal({ open, onClose }: WebMonitoringConfigM
                 {t('Cancel')}
               </button>
               <button
+                onClick={handleSendReport}
+                disabled={isSending || isScanning}
+                className="flex items-center gap-2 px-6 py-2 border border-[#473BAB] text-[#473BAB] hover:bg-[rgba(71,59,171,0.06)] disabled:opacity-60 rounded-full text-sm font-medium transition-colors cursor-pointer whitespace-nowrap"
+              >
+                {isSending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Mail className="w-4 h-4" />}
+                {isSending ? t('Sending…') : t('Send')}
+              </button>
+              <button
+                onClick={handleScanAll}
+                disabled={isScanning}
+                className="flex items-center gap-2 px-6 py-2 border border-[#473BAB] text-[#473BAB] hover:bg-[rgba(71,59,171,0.06)] disabled:opacity-60 rounded-full text-sm font-medium transition-colors cursor-pointer whitespace-nowrap"
+              >
+                {isScanning ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
+                {isScanning ? t('Scanning…') : selectedIds.size === dealerships.length ? t('Scan All') : t('Scan Selected')}
+              </button>
+              <button
                 onClick={handleSave}
                 className="flex items-center gap-2 px-6 py-2 bg-[#473BAB] hover:bg-[#3D3295] text-white rounded-full text-sm font-medium transition-colors shadow-sm cursor-pointer whitespace-nowrap"
               >
                 <Check className="w-4 h-4" />
-                {t('Save Configuration')}
+                {t('Save')}
               </button>
             </div>
 
@@ -508,6 +688,11 @@ export function WebMonitoringConfigModal({ open, onClose }: WebMonitoringConfigM
       )}
     </AnimatePresence>,
     document.body,
+  )}
+    {previewDoc && (
+      <DocumentPreviewModal doc={previewDoc} onClose={() => setPreviewDoc(null)} />
+    )}
+    </>
   );
 }
 

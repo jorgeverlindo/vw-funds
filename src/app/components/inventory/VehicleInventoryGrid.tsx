@@ -3,13 +3,15 @@
 // Mirrors Figma node 3556:990943 — columns, chips, disabled-row styling,
 // AI-config badge on thumbnail, and drag-to-resize column headers.
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import { motion } from 'motion/react';
 import { MoreVertical, X } from 'lucide-react';
 import { cn } from '../../../lib/utils';
 import { emitSnackbar } from '../Snackbar';
 import { VehiclesMenu, type VehiclesMenuAnchor, type VehiclesMenuAction } from './VehiclesMenu';
 import { useInventory } from '../../contexts/InventoryContext';
+import { useMainGeneratedImage } from './generatedMainStore';
+import { getGeneratedConfigs } from '../../../data/inventory/generatedImages';
 import type {
   VinInventoryRecord,
   AIGenerationStatus,
@@ -285,6 +287,41 @@ function ThumbnailImg({ src, alt, cover, fallbackSrc }: { src: string; alt: stri
   );
 }
 
+// ─── VehicleThumbnail — uses generated main store + static default fallback ───
+// Shows the coverImage of the Main generated config.
+// mainOverride (store) reacts to user clicks; defaultCoverImage is the static
+// initial value so the correct image shows even before the store is populated.
+function VehicleThumbnail({ record, isDisabled }: { record: VinInventoryRecord; isDisabled: boolean }) {
+  const mainOverride = useMainGeneratedImage(record.vin);
+
+  const defaultCoverImage = useMemo(() => {
+    const configs = getGeneratedConfigs(record.vin);
+    const main = configs.find(c => c.isDefaultMain) ?? configs.find(c => c.status === 'Main');
+    return main?.coverImage ?? null;
+  }, [record.vin]);
+
+  // Prefer store override (user just clicked Make it Main), then static default,
+  // then plain vehicle thumbnail. Never use vehicleGroup.angles (landscape-only).
+  const src = mainOverride ?? defaultCoverImage ?? record.thumbnail ?? '';
+  const isCover = !!(mainOverride ?? defaultCoverImage);
+
+  return (
+    <motion.div
+      layoutId={`thumb-${record.id}`}
+      transition={{ type: 'tween', ease: 'easeOut', duration: 0.4 }}
+      className={cn('relative size-[76px]', isDisabled && 'opacity-50')}
+    >
+      <ThumbnailImg
+        src={src}
+        alt={`${record.make} ${record.model}`}
+        cover={isCover}
+        fallbackSrc={record.thumbnail ?? ''}
+      />
+      {record.aiGeneration === 'enabled' && <AIConfigBadge />}
+    </motion.div>
+  );
+}
+
 // ─── AI Config Badge ──────────────────────────────────────────────────────────
 // 24×24 circular white button with elevation shadow, shown when aiConfigApplied=true.
 // Icon: sparkle (AI) from _Icon_.svg — 16×16 inside 4px padding.
@@ -555,25 +592,8 @@ export function VehicleInventoryGrid({
                 </td>
 
                 {/* Thumbnail — 76×76; opacity-50 if disabled */}
-                {/* motion.div carries layoutId so the thumbnail morphs to the card image when switching views */}
                 <td style={w('thumbnail')}>
-                  <motion.div
-                    layoutId={`thumb-${record.id}`}
-                    transition={{ type: 'tween', ease: 'easeOut', duration: 0.4 }}
-                    className={cn('relative size-[76px]', isDisabled && 'opacity-50')}
-                  >
-                    <ThumbnailImg
-                      src={
-                        record.aiConfigApplied && record.vehicleGroup?.angles?.['34l']
-                          ? record.vehicleGroup.angles['34l'] as string
-                          : record.thumbnail
-                      }
-                      alt={`${record.make} ${record.model}`}
-                      cover={!!(record.aiConfigApplied && record.vehicleGroup?.angles?.['34l'])}
-                      fallbackSrc={record.thumbnail}
-                    />
-                    {record.aiGeneration === 'enabled' && <AIConfigBadge />}
-                  </motion.div>
+                  <VehicleThumbnail record={record} isDisabled={isDisabled} />
                 </td>
 
                 {/* VIN — always primary purple, always clickable → opens VIN Detail page */}

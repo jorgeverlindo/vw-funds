@@ -10,4 +10,11 @@ export const vwConfig: ClientConfig = {
   preApprovalCodePrefix: 'MFA',
   fundTypes: ['DMF - Media Costs', 'DMF - Hard Costs', 'DMP - Hard Costs'],
   userLabel: { dealer: 'Dealer', oem: 'OEM' },
+  complianceConfig: {
+    notificationIsInfraction: true,
+    appealWindowDays: 30,
+    reMonitoringCadenceDays: 10,
+    counterResetMonths: 6,
+    penaltyLadder: [0, 1, 3, 6, 2],
+  },
 };

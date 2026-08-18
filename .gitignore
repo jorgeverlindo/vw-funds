@@ -36,3 +36,16 @@ pnpm-debug.log*
 .vite/
 .vercel
 public/template-refs/outpainted/*.jpg
+
+# Compliance scan cache (binary screenshots + JSON indexes — local only)
+server/cache/screenshots.json
+server/cache/analysis.json
+server/cache/screenshots/
+
+# Local session snapshots
+_snapshot-*/
+
+# Compliance scan runtime outputs (not source)
+scripts/scan-log.txt
+scripts/scan-results.json
+scripts/scan-results-clean.json

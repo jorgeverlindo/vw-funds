@@ -34,6 +34,9 @@ import { AngleStripVin } from './AngleStripVin';
 import { SourceImagesGrid } from './SourceImagesGrid';
 import type { SourceImageRecord } from '../../../data/inventory/sourceImages';
 import { VIN_SOURCE_RECORDS } from '../../../data/inventory/sourceImages';
+import { GeneratedImagesGrid } from './GeneratedImagesGrid';
+import { getGeneratedConfigs } from '../../../data/inventory/generatedImages';
+import { useMainGeneratedImage, getMainConfigId } from './generatedMainStore';
 
 // ─── Typography ────────────────────────────────────────────────────────────────
 const BODY1   = "font-['Roboto',sans-serif] font-normal text-[14px] leading-[1.5] tracking-[0.15px]";
@@ -324,9 +327,25 @@ export function VinDetailContent({ record, onBack, variant = 'auto' }: VinDetail
   };
 
   // ── Current hero image ──────────────────────────────────────────────────────
+  const mainGeneratedOverride = useMainGeneratedImage(record.vin);
+  // Static default: find the active main config (store id takes precedence over isDefaultMain)
+  const generatedConfigs = getGeneratedConfigs(record.vin);
+  const storedConfigId   = getMainConfigId(record.vin);
+  const activeMainConfig = storedConfigId
+    ? (generatedConfigs.find(c => c.id === storedConfigId) ?? generatedConfigs.find(c => c.isDefaultMain) ?? generatedConfigs.find(c => c.status === 'Main'))
+    : (generatedConfigs.find(c => c.isDefaultMain) ?? generatedConfigs.find(c => c.status === 'Main'));
+  const defaultGeneratedCover = activeMainConfig?.coverImage ?? null;
+  const effectiveGeneratedCover = mainGeneratedOverride ?? defaultGeneratedCover;
+  // Per-angle images for the active main config (replaces vg.angles when present)
+  const activeAngleImages = activeMainConfig?.angleImages ?? null;
+
   const heroSrc: string | null = (() => {
     if (!vg) return record.thumbnail;
     if (imageMode === 'source') return vg.sourceAngles?.[activeAngle] ?? null;
+    // Use per-angle generated composite if available for this config
+    if (activeAngleImages?.[activeAngle]) return activeAngleImages[activeAngle]!;
+    // Fallback: cover image for 3/4 L only, then vehicleGroup generated angle
+    if (effectiveGeneratedCover && activeAngle === '34l') return effectiveGeneratedCover;
     return vg.angles[activeAngle] ?? null;
   })();
 
@@ -495,7 +514,7 @@ export function VinDetailContent({ record, onBack, variant = 'auto' }: VinDetail
               </div>
               {vg && (
                 <AngleStripVin
-                  angles={vg.angles}
+                  angles={{ ...vg.angles, ...(activeAngleImages ?? {}) }}
                   sourceAngles={vg.sourceAngles}
                   vehicleName={`${record.year} ${record.make} ${record.model} ${record.trim}`}
                   showSource={imageMode === 'source'}
@@ -595,9 +614,7 @@ export function VinDetailContent({ record, onBack, variant = 'auto' }: VinDetail
       ) : activeTab === 'source' ? (
         <SourceImagesGrid records={sourceImages} />
       ) : activeTab === 'generated' ? (
-        <div className="flex-1 flex items-center justify-center text-[rgba(17,16,20,0.38)]">
-          <span className="font-['Roboto',sans-serif] text-[14px]">Generated Images coming soon</span>
-        </div>
+        <GeneratedImagesGrid configs={getGeneratedConfigs(record.vin)} vin={record.vin} />
       ) : (
         <div className="flex-1 overflow-y-auto min-h-0">
           {/* Responsive 3-col layout:
@@ -667,7 +684,7 @@ export function VinDetailContent({ record, onBack, variant = 'auto' }: VinDetail
               {/* Angle thumbnail strip — 64×64 variant with drag, rover, modal */}
               {vg && (
                 <AngleStripVin
-                  angles={vg.angles}
+                  angles={{ ...vg.angles, ...(activeAngleImages ?? {}) }}
                   sourceAngles={vg.sourceAngles}
                   vehicleName={`${record.year} ${record.make} ${record.model} ${record.trim}`}
                   showSource={imageMode === 'source'}

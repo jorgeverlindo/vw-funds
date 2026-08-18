@@ -1,6 +1,7 @@
 import { NotificationItem } from './NotificationItem';
 import { cn } from '@/lib/utils';
 import { useWorkflow } from '../../contexts/WorkflowContext';
+import type { OemAppealUpdate } from '../../contexts/ComplianceContext';
 import type { WCMItem } from '../WebMonitoringContent';
 import type { NotifItem as CommentNotifItem } from '../comments/types';
 import { getUserById } from '../comments/constants';
@@ -20,6 +21,9 @@ interface NotificationOverlayOEMProps {
   reportedNotifs?: WCMItem[];
   seenReportedIds?: Set<string>;
   onOpenReported?: (id: string) => void;
+  appealNotifs?: OemAppealUpdate[];
+  seenAppealIds?: Set<string>;
+  onOpenAppeal?: (id: string) => void;
   // Comment notifications (bridged from CommentsContext)
   commentNotifs?: CommentNotifItem[];
   onMarkCommentNotifRead?: (id: string) => void;
@@ -36,6 +40,7 @@ export function NotificationOverlayOEM({
   className,
   solutionNotifs, seenSolutionIds, onOpenSolution,
   reportedNotifs, seenReportedIds, onOpenReported,
+  appealNotifs, seenAppealIds, onOpenAppeal,
   commentNotifs,
   onMarkCommentNotifRead,
   onCommentNotifNavigate,
@@ -151,6 +156,37 @@ export function NotificationOverlayOEM({
               : infr.detectedOn}
             isRead={isRead}
             user={{ name: '', initials: (infr.reportedBy ?? 'DR').split(' ').map(p => p[0]).slice(0, 2).join('').toUpperCase() }}
+          />
+        </div>
+      ),
+    });
+  });
+
+  // Dealer appeal submissions → OEM notification
+  (appealNotifs ?? []).forEach((upd) => {
+    const isRead = seenAppealIds?.has(upd.id) ?? false;
+    merged.push({
+      key: `appeal-${upd.id}`,
+      sortMs: new Date(upd.timestampISO).getTime(),
+      node: (
+        <div
+          onClick={() => { onOpenAppeal?.(upd.id); onClose(); }}
+          className={isRead ? 'opacity-70' : ''}
+        >
+          <NotificationItem
+            id={upd.id}
+            type="claim"
+            message={
+              <div className="flex flex-col items-start gap-0.5">
+                <span className="font-normal text-[#1f1d25]">{upd.dealership}</span>
+                <span className="font-normal text-[#1f1d25] text-[12px]">
+                  submitted an appeal for case <span className="font-medium">{upd.itemId}</span>
+                </span>
+              </div>
+            }
+            time={new Date(upd.timestampISO).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+            isRead={isRead}
+            user={{ name: '', initials: upd.dealership.split(' ').map(p => p[0]).slice(0, 2).join('').toUpperCase() }}
           />
         </div>
       ),
